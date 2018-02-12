@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from simple_models import get_ref_model, get_darch_model
+from simple_models import get_darch_model
 from utils import vocabulary, get_batch, get_size
 
 

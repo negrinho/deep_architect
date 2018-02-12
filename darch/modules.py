@@ -1,5 +1,4 @@
 import darch.core as co
-import darch.hyperparameters as hyp
 import darch.utils as ut
 from six import itervalues, iteritems
 from six.moves import xrange
