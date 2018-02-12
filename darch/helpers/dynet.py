@@ -1,3 +1,4 @@
+from six import iteritems
 import darch.core as co
 
 # TODO: adapt for the new type of module.
