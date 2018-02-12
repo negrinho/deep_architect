@@ -5,15 +5,13 @@ from six import itervalues, iteritems
 import darch.hyperparameters as hp
 import darch.searchers as se
 import darch.modules as mo
-import darch.utils as ut
 
 import tests.search_space as ss
 import tests.dataset as ds
 import tests.evaluator as ev
 
-import numpy as np
 import pickle
-import time
+
 
 D = hp.Discrete
 
@@ -77,12 +75,8 @@ def test_benchmark():
         vs_lst = []
         vs_hist_lst = []
         for _ in xrange(num_evals):
-            # start = time.time()
             (inputs, outputs, hs, vs_hist, cfg_d) = searcher.sample()
-            # print k, time.time() - start
-            # ut.draw_graph(outputs.values(), True)
             v = evaluator.eval(inputs, outputs, hs)
-            # print 
             searcher.update(v, cfg_d)
      
             vs_lst.append( v )
@@ -100,16 +94,3 @@ def test_benchmark():
 if __name__ == '__main__':
     # test_mcts()
     test_benchmark()
-
-# TODO: wrapper, such that if it exists an easy way of creating parameters
-# or maybe a class.
-
-# NOTE: the stuff for the evaluator can be moved to some other file.
-
-# TODO: add MCTS with different parameters and tree refit interval.
-# TODO: want to save the values that lead to this.
-
-# TODO: probably save a pickle with this information.
-# also the searchers at the end.
-
-# TODO: do a comparison of the searchers more extensively.

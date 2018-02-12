@@ -1,7 +1,5 @@
 from six.moves import xrange
 import numpy as np
-import scipy as sp
-import tensorflow as tf
 from six.moves import cPickle
 import os
 import cv2
@@ -310,7 +308,7 @@ def load_data(dataset):
         in_d = (32, 32, 3)
         num_classes = 100
     else:
-        ValueError
+        raise ValueError
 
     train_dataset = InMemoryDataset(Xtrain, ytrain, True, None)
     val_dataset = InMemoryDataset(Xval, yval, False, None)

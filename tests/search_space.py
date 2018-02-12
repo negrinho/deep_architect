@@ -51,7 +51,6 @@ def affine_cfn(In, m, W_init, b_init):
         if len(shape) > 2:
             In = tf.reshape(In, [-1, n])
         Out = tf.add(tf.matmul(In, W), b)
-        # print In.get_shape().as_list()
         return {'Out' : Out}
     return fn
 
@@ -217,17 +216,5 @@ def search_space_fn():
         'scale_delta' : D([ 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35 ]),
         'weight_decay_coeff' : D([ 0.0, 1e-6, 1e-5, 1e-4 ]),
         }
-
-    # hs = OrderedDict([
-    #     ('optimizer_type', D([ 'adam', 'sgd_mom' ])),
-    #     ('learning_rate_init', D( np.logspace(-1, -5, num=16) )),
-    #     ('rate_mult', D( np.logspace(-2, np.log10(0.9), num=8) )),
-    #     ('rate_patience', D( range(8, 65, 4) )), 
-    #     ('stop_patience', D([ 128 ])), 
-    #     ('learning_rate_min', D([ 1e-7 ])),
-    #     ('angle_delta', D([ 0, 5, 10, 15, 20, 25, 30, 35 ])),
-    #     ('scale_delta', D([ 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35 ])),
-    #     ('weight_decay_coeff', D([ 0.0, 1e-6, 1e-5, 1e-4 ])),
-    #     ])
 
     return ms[0].inputs, ms[-1].outputs, hs

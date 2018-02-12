@@ -1,5 +1,6 @@
 from __future__ import print_function
 from six.moves import xrange, zip
+import random
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ import darch.searchers as se
 import tests.search_space as ss
 import tests.dataset as ds
 import tests.evaluator as ev
-import tests.research_toolbox.tb_logging as lg
+import reduced_toolbox.tb_logging as lg
 
 def generate_data(num_evals, max_minutes_per_model):
     # loading the dataset and evaluator
@@ -97,8 +98,6 @@ def eval_maximize():
     plt.show()
 
 def test_clstm_surrogate():
-    from pprint import pprint
-
     import torch
     import torch.nn as nn
     from torch.autograd import Variable
@@ -140,11 +139,8 @@ def test_clstm_surrogate():
 
     def process(feats):
         xs = feats[0] + feats[1] + feats[2] + feats[3]
-        # print xs
         maxlen = max([len(x) for x in xs]) + 2
-        # print maxlen
 
-        # print ch_lst
         vec_lst = []
         for x in xs:
             vec = [ ch2idx['*'] ]
@@ -156,12 +152,8 @@ def test_clstm_surrogate():
             
             vec_lst.append(vec)
         return vec_lst
-    # print vec_lst
 
     d = pickle.load(open('evals_0.1.pkl', 'rb'))
-    import itertools 
-    import numpy as np
-    import random
 
     n = 1024
     v_lst = d['v_lst'][:n]
@@ -216,22 +208,11 @@ def test_clstm_surrogate():
             y = Variable( torch.FloatTensor([[v]]))
             out = mdl(vec)
 
-            # out = ch_embs(vec)
-
-            # (h0, c0) = (Variable(torch.zeros( 1, out.size(1), out.size(2) )), 
-            #     Variable(torch.zeros( 1, out.size(1), out.size(2) )))
-
-            # _, (_, out) = lstm( out, (h0, c0))
-            # out = out.mean(1)
-            # print out.size()
-
-            # out = fc(out)
             loss = mse(out, y)
             loss.backward()
             optimizer.step()
         
         print(error_other_fn(mdl, v_lst, feats_lst), error_other_fn(mdl, val_v_lst, val_feats_lst))
-        # def error_other_fn(v_lst, feats_lst)
 
 if __name__ == '__main__':
     # generate_data(128, 0.1)
@@ -240,93 +221,3 @@ if __name__ == '__main__':
     # main()
     # eval_fit()
     eval_maximize()
-
-# TODO: do the module part.
-
-# TODO: basically two of these.
-# always works with tensors.
-
-# TODO: maybe do bidirectional stuff.
-
-# NOTE: do a very simple regression problem. this is going to be interesting.
-
-# NOTE: this depends on what the embeddings are going to be used for. 
-# this is going to be interesting.
-# sample a few features and a few numbers.
-# there is really no order to it.
-    
-# check both the existing surrogates and surrogates that I may consider having.
-# TODO: do architecture search for the surrogate itself.
-
-# TODO: check that a full LSTM would also work.
-
-# TODO: note that the surrogate would be better evaluated on a GPU.
-# it can be quite slow without a GPU.
-# ignore for now perhaps.
-# TODO: maybe add some attention mechanism.
-
-# TODO: figure out how many steps of the optimization process are necessary to
-# do something about it. what is a reasonable value?
-
-# TODO: check interaction with search and what not. make sure that the 
-# validation performance is going down. 
-# add points to the validation performance as you go along.
-
-# TODO: perhaps add regularization.
-
-# TODO: for the meta learning aspect, try different data sizes.
-
-# TODO: is it possible to go from strings to numbers? just copying.
-# how to include the result in the sequential nature of the model.
-
-# TODO: analyze the results of the different surrogates in terms of the 
-# performance.
-
-# TODO: write the multi process code in python. master/worker.
-
-# saving compute.
-
-# TODO: consider different search spaces.
-# TODO: try a model that is going to give you state of the art performance.
-# TODO: make sure that I can reproduce it.
-
-# TODO: DyNet. PyTorch. Tensorflow example. all the same model. all the 
-# same performance.
-
-# TODO: simulate the expanding model. how?
-
-# TODO: check the performance of these models, but write about it 
-# first.
-
-# 128 examples each time.
-
-# TODO: maybe do batching in a different way, as it allows to make use of 
-# the fact that that some strings are going to have similar length.
-
-# TODO: try different models for this.
-
-# benchmarks for this task MNIST, CIFAR-10... other.
-
-# NOTE: it needs the features.
-# val: inputs, outputs, hs
-
-# I think that it should work directly on features.
-# TODO: can do it. just need an evaluator.
-
-# add code to the test the performance of the surrogates in 
-# performance prediction.
-
-# TODO: add functionality of while there is time, continue optimizing the 
-# surrogate.
-### TODO: check the other surrogate that processes the graph.
-# must be a
-# TODO: perhaps time each of these blocks. I'm sure one of them is much slower th
-# NOTE: the question is to check that the this method is better than
-# the other one.
-
-# profile this a little bit. what takes more time: feature extraction or 
-# processing.
-
-# TODO: consider a few variations of the model, like adjusting the exploration
-# bonus automatically
-

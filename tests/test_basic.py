@@ -6,10 +6,8 @@ import tests.evaluator as ev
 import tests.dataset as ds
 
 import darch.searchers as se
-import darch.core as co
 import darch.utils as ut
 
-import numpy as np
 from pprint import pprint
 import reduced_toolbox.tb_logging as tb_lg
 
@@ -78,9 +76,9 @@ def test_speed():
         feats = se.extract_features(inputs, outputs, hs)
         t_feats += t.time_since_last()
 
-    print 'Instantiate search space: %0.2e secs.' % (t_inst / num_samples)   
-    print 'Specify: %0.2e secs.' % (t_spec / num_samples)
-    print 'Extract features: %0.2e secs.' % (t_feats / num_samples)    
+    print('Instantiate search space: %0.2e secs.' % (t_inst / num_samples))
+    print('Specify: %0.2e secs.' % (t_spec / num_samples))
+    print('Extract features: %0.2e secs.' % (t_feats / num_samples))
     pprint(feats)
 
 
@@ -89,17 +87,3 @@ if __name__ == '__main__':
     # test_memory()
     # test_visualization()
     test_speed()
-
-
-# TODO: the iterator should not realize different orderings if it is reset
-# mid-iteration. this is not important if we only use the iterator on a
-# single pass to instantiate the model.
-
-# TODO: write tests to make sure that certains things are deterministic.
-# that I can save things to disk and retrieve them and so on.
-
-# TODO: profile for memory and speed. what are the bottlenecks of
-# running on the CPU and GPU.
-
-# TODO: make sure that I can start and restart and still works the same way than
-# doing things from the beginning.
