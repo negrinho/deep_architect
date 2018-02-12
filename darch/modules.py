@@ -6,11 +6,6 @@ from six.moves import xrange
 import copy
 import itertools
 
-# class SISOModule(co.Module):
-#     def __init__(self, scope=None, name=None):
-#         co.Module.__init__(self, scope, name)
-#         self._register_input("In")
-#         self._register_output("Out")
 
 class Empty(co.Module):
     def __init__(self, scope=None, name=None):
@@ -118,7 +113,6 @@ def SISOOr(fn_lst, h_or, scope=None, name=None):
 
 # NOTE: how to do repeat in the general case. it is possible,
 # but requires connections of the inputs and outputs. how.
-# TODO: perhaps assume that 
 def SISORepeat(fn, h_reps, scope=None, name=None):
     if name == None:
         name = "SISORepeat"
@@ -225,66 +219,3 @@ def SISOResidual(main_fn, res_fn, combine_fn):
     r_outputs['Out'].connect( c_inputs['In1'] )
 
     return (i_inputs, c_outputs)
-
-# NOTE: this is also possible, for example, if there is a 
-# function that instantiates a module by passing some hyper
-# parameters, it is possible to just do the repeat with always 
-# passing those hyperparameters.
-
-# NOTE: also, it has to do be done once. also, 
-# through a dictionary. 
-# this is going to be interesting. how to deal with the fact that 
-# these may have different names. that is not quite correct.
-# as
-# do it with a dictionary, but it given a function 
-# that already does that with the parameters , it should 
-# be easy to do sharing.
-
-# TODO I can have a wrapper that is just for the 
-# hyperparameters. this is a good idea.
-# tie all of them at the beginning.
-
-# Residual is a special of multi path combine.
-# do the multi path combine.
-
-# TODO: also opening some of these. it may not have some 
-# of these. this is going to be interesting.
-
-# NOTE: the creation of ors is going to be through this.
-# perhaps just add functions.
-
-# NOTE: the function is typically called once, and it returns 
-# the values of the hyperparameters is what makes it 
-# to call different models.
-
-# TODO: this is going to be true. it is just a matter of calling the 
-# function with the right inputs.
-
-# TODO: something to compose these substitution modules such
-# as Optional and Repeat, this is possible to do.
-
-# returns inputs and outputs.
-
-# calling a different function that returns a bunch of different 
-# things.
-# NOTE: if I can replace it with the behavior of different things, 
-# it just means that the module is already specified.
-
-# NOTE: substitution function that just returns a function at the end, 
-# and introduces some hyperparameters. 
-
-# NOTE: it does not make sense to register more 
-# updates or does it.
-
-# the problem is when as hyperparameter is set, 
-# update is called it can also be when the model is 
-# called.
-
-# TODO: modules with variable number of inputs and outputs.
-# for example, we can take a list of a tensors and output a single
-# tensors.
-
-# TODO: it should be possible to maintain the unspecified hyperparameters 
-# more easily through the scope.
-
-# TODO: it is possible to add some auxiliary tools for hyperparameter sharing.

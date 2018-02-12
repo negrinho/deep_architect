@@ -62,15 +62,3 @@ class OneOfK(Discrete):
 class OneOfKFactorial(Discrete):
     def __init__(self, k, scope=None, name=None):
         Discrete.__init__(self, np.product(np.arange(1, k + 1)), scope, name)
-
-# TODO: it may be useful to unset hyperparameters, or to change certain 
-# things, like extracting some network structure but figuring out the 
-# hyperparameters again.
-
-# TODO: it may also be worth to force compilation to restart a model. 
-# it may simply better to start from the beginning though.
-
-# TODO: add more hyperparameters types to guarantee type correctness.
-
-# NOTE: this can improved by keeping track of which hyperparameters 
-# are not specified yet, rather iterating over all of them.

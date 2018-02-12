@@ -1,46 +1,7 @@
 from six import iteritems, itervalues
 import darch.core as co
-import darch.modules as mo
-import torch 
 import torch.nn as nn
 
-# class PyTModule(mo.WrappedCompiledFn):
-#     def __init__(self, name, input_names, output_names, name_to_h, compile_fn, scope=None):
-#         mo.WrappedCompiledFn.__init__(self, name, input_names, output_names, 
-#             name_to_h, compile_fn, scope)
-#         nn.Module.__init__(self)
-
-# class PyTSISOModule(mo.WrappedSISOCompiledFn):
-#     def __init__(self, name, name_to_h, compile_fn, scope=None):
-#         mo.WrappedSISOCompiledFn.__init__(self, name, name_to_h, compile_fn, scope)
-#         nn.Module.__init__(self)
-
-# class PyTSISOModule(mo.SISOModule):
-#     def __init__(self, name, name_to_h, compile_fn, scope=None):
-#         co.Module.__init__(self, scope, name)
-#         self._register_input('In')
-#         self._register_output('Out')
-
-#         for name, h in name_to_h.iteritems():
-#             self._register_hyperparameter(h, name)
-        
-#         self._compile_fn = compile_fn
-
-#     def _compile(self):
-#         argnames = self._compile_fn.__code__.co_varnames
-
-#         kwargs = {}
-#         for name, h in self.hs.iteritems():
-#             kwargs[name] = h.get_val()
-#         for name, ix in self.inputs.iteritems():
-#             if name in argnames:        
-#                 kwargs[name] = ix.val
-
-#         self._m = self._compile_fn(**kwargs)
-#         assert isinstance(self._m, nn.Module)
-
-#     def _forward(self):
-#         self.outputs['Out'].val = self._m(self.inputs['In'].val)
 
 # NOTE: the init is very similar to the one for tensorflow. 
 class PyTModule(co.Module):

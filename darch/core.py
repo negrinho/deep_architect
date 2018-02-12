@@ -1,5 +1,7 @@
 from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
+from darch.utils import get_unconnected_inputs, get_unconnected_outputs
+
 
 class OrderedSet:
     def __init__(self):

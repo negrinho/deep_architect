@@ -8,7 +8,6 @@ import darch.core as co
 # TODO: also perhaps change this for reproducibility.
 # seems to be problematic.
 def unset_hyperparameter_iterator(module_lst, h_lst=None):
-
     if h_lst is not None:
         for h in h_lst:
             if not h.is_set():
@@ -43,9 +42,6 @@ def random_specify(output_or_module_lst, h_lst=None):
 def specify(output_or_module_lst, h_lst, vs):
     module_lst = co.extract_unique_modules(output_or_module_lst)
     for i, h in enumerate( unset_hyperparameter_iterator(module_lst, h_lst) ):
-        # print h.get_name(), h.vs
-        # print h.get_name()
-        # print h.vs, vs[i]
         h.set_val( vs[i] )
 
 # NOTE: I may have to do some adaptation, but this is kind of correct.
@@ -64,10 +60,6 @@ class RandomSearcher(Searcher):
         inputs, outputs, hs = self.search_space_fn()
 
         vs = random_specify(outputs.values(), hs.values())
-        # import darch.utils as ut 
-        # ut.draw_graph( outputs.values(), True, True)
-        # from pprint import pprint
-        # pprint( extract_features(inputs, outputs, hs) )
         return inputs, outputs, hs, vs, {}
     
     def update(self, val, cfg_d):
@@ -143,7 +135,6 @@ class MCTSearcher(Searcher):
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
-        # print "sample", tree_hist, rollout_hist
         cfg_d = {'tree_hist' : tree_hist, 'rollout_hist' : rollout_hist}
 
         return inputs, outputs, hs, vs, cfg_d
@@ -277,70 +268,6 @@ class HashingSurrogate(SurrogateModel):
         y = np.array(self.vals)
         self.model.fit(X, y)
 
-# TODO: implement this for a single one.
-# TODO: thsi is going to be a model that either predicts 
-# NOTE: potentially, this is going to be different from the things that I'm
-# doing right now.
-# TODO: in progress.
-# TODO: I commented this out because tensorflow and pytorch dont work simultaneously https://github.com/tensorflow/tensorflow/issues/14812
-# PLUS, it doesnt make sense to be here
-# class CharLSTMSurrogate(SurrogateModel):
-#     def __init__(self):
-#         self.ch_lst = [chr(i) for i in range(ord('A'), ord('Z')) + 1] + [
-#             chr(i) for i in range(ord('a'), ord('z') + 1)] + [
-#             chr(i) for i in range(ord('0'), ord('9') + 1)] + [
-#                 '.', ':', '-', '_', '<', '>', '/', '=', '*']
-#         self.ch2idx = {ch : idx for (idx, ch) in enumerate(self.ch_lst)}
-#
-#         # maybe process them right away. may it easy to process.
-#         # proc_feats =
-#
-#
-#         self.hash_size = hash_size
-#         self.refit_interval = refit_interval
-#         self.feats_lst = []
-#         self.vals = []
-#         self.weight_decay_coeff = 1e-5
-#         self.model = None
-#
-#         self.hidden_size = 100
-#         self.embedding_size = 100
-#
-#         self.rnn = torch.nn.LSTM(self.embedding_size, self.hidden_size, 1)
-#         self.ch_embs = nn.Embedding(len(self.ch_lst), self.embedding_size)
-#
-#     def eval(self, feats):
-#         # TODO: check features here.
-#
-#
-#         if self.model == None:
-#             return 0.0
-#         else:
-#             feats = extract_features(inputs, outputs, hs)
-#             vec = self._feats2vec(feats)
-#             return self.model.predict(vec)[0]
-#
-#     def update(self, val, feats):
-#         feats = extract_features(inputs, outputs, hs)
-#
-#
-#
-#         vec = self._feats2vec(feats)
-#         self.feats_lst.append(vec)
-#         self.vals.append(val)
-#
-#         if len(self.vals) % self.refit_interval == 0:
-#             self._refit()
-#
-#     # TODO: it is not clear what is the best way of doing this.
-#     def _refit(self):
-#         if self.model == None:
-#             self.model = lm.Ridge(self.weight_decay_coeff)
-#
-#         X = sp.vstack(self.feats_lst, format='csr')
-#         y = np.array(self.vals)
-#         self.model.fit(X, y)
-
 
 # extract some simple features from the network. useful for smbo surrogate models.
 # TODO: this may include features of the composite modules.
@@ -454,8 +381,6 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
             best_score = - np.inf
             for _ in xrange(self.num_samples):
                 (inputs, outputs, hs, vs, m_cfg_d) = self.mcts.sample()
-                # print vs
-                # print
                 feats = extract_features(inputs, outputs, hs)
                 score = self.surr_model.eval(feats)
                 if score > best_score:
@@ -470,7 +395,6 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
         return inputs, outputs, hs, best_vs, cfg_d 
         
     def update(self, val, cfg_d):
-        # print(cfg_d['vs'], len(cfg_d['vs']))
         (inputs, outputs, hs) = self.search_space_fn()
         specify(outputs.values(), hs.values(), cfg_d['vs'])
         feats = extract_features(inputs, outputs, hs)
@@ -495,63 +419,3 @@ def run_searcher(searcher, evaluator, num_samples):
         cfg_d_lst.append(cfg_d)
     
     return vs_lst, score_lst, cfg_d_lst
-
-# TODO: how to handle the case where the surrogate model was to use 
-# information that is only available after compilation.
-# TODO: write a few use cases for the model.
-# TODO: assess how much memory is kept around by using this model.
-# TODO: perhaps give the probability of exploration to the sample function in 
-# SMBO. same for the number of samples.
-# TODO: make sure that it is easy to run some of these models.
-# TODO: add some feature functions for the surrogate model.
-# TODO: how should searchers keep track of the out standing models.
-# TODO: move the features to some other file.
-# TODO: how to keep the state of a searcher? how to do a model of architectures.
-# TODO: do a directory based distributed architecture. the updates to the 
-# surrogate model are done on master. can we do it for distributed cases.
-# TODO: do the serialization of these models. 
-# TODO: finish the model to do all intermediate aspects.
-# TODO: evaluator can be based on taking model and solving some task.
-# TODO: it must be easy to start one of these searchers from scratch.
-# TODO: add more searchers and more complex searchers.
-# TODO: perhaps add dimensions to the model.
-# TODO: it is important to come up with a good policy for the update of the 
-# surrogate model in the case where it is complicated.
-# TODO: I think that this can be in many cases a single file model.
-# TODO: how to do start and begin on search spaces, especially on these kinds 
-# of models.
-# TODO: way of using hyperparameters in the definition of the data 
-# augmentation in the dataset.
-# TODO: the hashing functions may require a faster alternative.
-# TODO: it is possible to implement these models in a different way.
-# TODO: perhaps have an efficient way of iterating over the hyperparameters
-# that can be used by the different models. 
-# TODO: how to write or in hyperparameters. currently not supported.
-# for example, currently it is not supported. that is not true. 
-# no need for that. can have those attached to some dummy module.
-# TODO: do something like split merge and add it to the search space.
-# TODO: ability to do contextual parameters.
-# TODO: add a way to keep information about the model.
-# TODO: check if I can do things more efficiently when evaluationg the evaluation 
-# model.
-# TODO: keep the history in the case I use multiple GPUs.
-# TODO: need to add a rule for the exploration probability.
-# TODO: add the binarization of the model. 
-
-# TODO: write tests for MCTS (behavior, convergence)
-# NOTE: the surrogate function can do something even if there are no values
-# there yet.
-# TODO: add some online adaptation to the exploration probability.
-
-# TODO: explore MCTS by plotting some things.
-# TODO: it needs a better rollout policy. this is true for MCTS. 
-# random is pretty bad.
-# possibility of doing MCTS 
-
-# TODO: define better features.
-
-# TODO: I don't know if by moving MCTS to this case, I'm going to have to 
-# change things, as there might exist unexpanded nodes.
-
-# TODO: add bissection to MCTS. if it was the maximum, that is a good 
-# idea.
