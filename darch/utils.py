@@ -1,10 +1,11 @@
+import numpy as np
 import graphviz
 from six import itervalues, iteritems
 import darch.core as co
 from copy import deepcopy
 import pickle
 
-# TODO: may be worth to think about the right level of complexity for 
+# TODO: may be worth to think about the right level of complexity for
 # representing computation.
 # add the dimensionality to all terminals.
 
@@ -17,7 +18,7 @@ import pickle
 def draw_graph(output_or_module_lst, draw_hyperparameters=False, 
         draw_io_labels=False, graph_name='graph', out_folderpath=None, 
         print_to_screen=True):
-    assert print_to_screen or out_fpath is not None
+    assert print_to_screen or out_folderpath is not None
 
     g = graphviz.Digraph()
     edge_fs = '10'
@@ -125,13 +126,8 @@ def get_unconnected_outputs(input_or_module_lst):
                 ox_lst.append(ox)
         return False
 
-    co.forward_traverse(module_lst, fn, memo)
+    co.forward_traverse(module_lst, fn)
     return ox_lst
-
-def unregister_unused_hyperparameters(scope):
-    for x in self.elem_to_name:
-        if isinstance(x, Hyperparameter) and len(x.modules) == 0:
-             scope.unregister(x)
 
 # TODO: needs to be done in all parts of the model. perhaps add more info.
 def propagate_outputs(module):
@@ -144,7 +140,6 @@ def connect_sequentially(module_lst):
         x.outputs['Out'].connect(x_next.inputs['In'])
 
 # TODO: can be extended for the case where there are multiple outputs.
-# TODO: also extend for the case where there are multiple outputs.
 def module_to_io(m):
     return (m.inputs, m.outputs) 
 
@@ -156,19 +151,6 @@ def module_fn_to_io_fn(fn):
 
 def module_lst_fn_to_io_fn(fn):
     return lambda : module_lst_to_io( fn() )
-
-### TODO: perhaps map these to a different one.
-# def extract_io(m):
-#     return (m.inputs['In'], m.outputs['Out']) 
-
-# def extract_io_lst(m_lst):
-#     return (m_lst[0].inputs['In'], m_lst[-1].outputs['Out'])
-
-# TODO: add function to remove empty modules.
-# NOTE: some of these assume some functionality among these.
-
-# NOTE: probably just deal in terms of modules. 
-# or both. it makes sense.
 
 def running_max(vs):
     return np.maximum.accumulate(vs)
