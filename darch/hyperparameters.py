@@ -1,6 +1,8 @@
-import darch.core as co
+from six import itervalues, iteritems
 import numpy as np
-from collections import OrderedDict 
+from collections import OrderedDict
+import darch.core as co
+
 
 class HyperparameterSharer:
     def __init__(self):
@@ -29,15 +31,15 @@ class DependentHyperparameter(co.Hyperparameter):
         if self.set_done:
             return True
         else:
-            if all( h.is_set() for h in self._hs.itervalues() ):
-                kwargs = { name : h.get_val() for name, h in self._hs.iteritems() }
+            if all( h.is_set() for h in itervalues(self._hs) ):
+                kwargs = { name : h.get_val() for name, h in iteritems(self._hs) }
                 self.set_val( self._fn(**kwargs) )
             
             return self.set_done
 
     def get_unset_dependent_hyperparameter(self):
         assert not self.set_done
-        for h in self._hs.itervalues() :
+        for h in itervalues(self._hs) :
             if not h.is_set():
                 return h
 
