@@ -16,8 +16,6 @@ test_data = np.array(test_data)
 train_it = valid_it = test_it = 0
 
 
-#train_data = train_data[:10000]  # TODO just for testing
-
 def get_data(name):
     if name == 'train':
         data = train_data
