@@ -282,19 +282,3 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
         self.cnt += 1
         if self.cnt % self.tree_refit_interval == 0:
             self.mcts = MCTSearcher(self.search_space_fn)
-
-def run_searcher(searcher, evaluator, num_samples):
-    vs_lst = []
-    score_lst = []
-    cfg_d_lst = []
-
-    for _ in xrange(num_samples):
-        inputs, outputs, hs, vs, cfg_d = searcher.sample()
-        score = evaluator.eval(inputs, outputs, hs)
-        searcher.update(score, cfg_d)
-
-        vs_lst.append(vs)
-        score_lst.append(score)
-        cfg_d_lst.append(cfg_d)
-    
-    return vs_lst, score_lst, cfg_d_lst

@@ -3,7 +3,6 @@ import numpy as np
 from collections import OrderedDict
 import darch.core as co
 
-
 class HyperparameterSharer:
     def __init__(self):
         self.name2hfn = OrderedDict()    

@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from six import iteritems
 import darch.core as co
 
-
 # NOTE: most of this is from the other module. 
 # do a static module.
 class TFModule(co.Module):

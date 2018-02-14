@@ -2,8 +2,6 @@ from six import iteritems, itervalues
 import darch.core as co
 import torch.nn as nn
 
-
-# NOTE: the init is very similar to the one for tensorflow. 
 class PyTModule(co.Module):
     def __init__(self, name, name_to_h, compile_fn, 
             input_names, output_names, scope=None):
@@ -42,8 +40,6 @@ class PyTModule(co.Module):
         val = self._m(**kwargs)
         self.outputs['Out'].val = val  # TODO generalize for multiple outputs
 
-# NOTE: perhaps have a simpler way of defining these things.
-
 def _call_fn_on_torch_module(output_or_module_lst, fn):
     def fn_iter(x):
         d = vars(x)
@@ -76,11 +72,6 @@ def parameters(output_or_module_lst):
         ps.update(m.parameters())
     return ps
 
-
-# NOTE: how to adapt this is 
-# NOTE: this is convenient to work with pytorch coming from darch. 
-# typical functions are train, eval, cuda, parameters. 
-# can use add_modules to support this.
 class PyTNetContainer(nn.Module):
     def __init__(self, name_to_input, name_to_output):
         nn.Module.__init__(self)        
