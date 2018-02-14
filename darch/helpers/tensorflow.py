@@ -2,31 +2,23 @@ from __future__ import absolute_import
 from six import iteritems
 import darch.core as co
 
-# NOTE: most of this is from the other module. 
-# do a static module.
+# repeated code for helpers. perhaps improve: registering inputs, outputs, and 
+# hyperparameters. retrieving values to use in the function call. could do 
+# everything in terms of cfn and fn functions.
 class TFModule(co.Module):
     def __init__(self, name, name_to_h, compile_fn, 
             input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
 
-        if input_names is None:
-            input_names = ["In"]
         for name in input_names:
             self._register_input(name)
-        
-        if output_names is None:
-            output_names = ["Out"]        
         for name in output_names:
             self._register_output(name)
-
         for name, h in iteritems(name_to_h):
             self._register_hyperparameter(h, name)
 
         self._compile_fn = compile_fn
 
-    # NOTE: while it may not depend on the inputs, it should 
-    # always depend on the hyperparameters, otherwise it does not 
-    # make sense.
     def _compile(self):
         argnames = self._compile_fn.__code__.co_varnames
 
@@ -48,7 +40,6 @@ class TFModule(co.Module):
         name_to_val = self._fn(**kwargs)
         for name, val in iteritems(name_to_val):
             self.outputs[name].val = val
-
 
 def get_feed_dicts(output_or_module_lst):
     train_feed = {}

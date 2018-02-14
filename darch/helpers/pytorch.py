@@ -7,16 +7,10 @@ class PyTModule(co.Module):
             input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
 
-        if input_names is None:
-            input_names = ["In"]
         for name in input_names:
             self._register_input(name)
-        
-        if output_names is None:
-            output_names = ["Out"]        
         for name in output_names:
             self._register_output(name)
-
         for name, h in iteritems(name_to_h):
             self._register_hyperparameter(h, name)
 
@@ -98,5 +92,4 @@ class PyTNetContainer(nn.Module):
             for i, m in enumerate(modules):
                 self.add_module(str(i), m)
             self._is_compiled = True
-
         return d

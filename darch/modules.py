@@ -14,7 +14,7 @@ class Empty(co.Module):
     def forward(self):
         self.outputs['Out'].val = self.inputs['In'].val
 
-# NOTE: this is kind of similar to TFModule and the other helper. perhaps refactor.
+# NOTE: perhaps refactor to capture similarities between modules.
 class SubstitutionModule(co.Module):
     def __init__(self, name, name_to_h, fn, input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
@@ -23,7 +23,6 @@ class SubstitutionModule(co.Module):
             self._register_input(name)
         for name in output_names:
             self._register_output(name)
-
         for name, h in iteritems(name_to_h):
             self._register_hyperparameter(h, name)
         
@@ -73,7 +72,6 @@ def Or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     return SubstitutionModule(name, {'idx' : h_or}, sub_fn,
         input_names, output_names, scope)
 
-# NOTE: useful for nesting constructions.
 def NestedRepeat(fn_first, fn_iter, h_reps, input_names, output_names, scope=None, name=None):
     if name == None:
         name = "NestedRepeat"
@@ -144,12 +142,8 @@ def SISOOptional(fn, h_opt, scope=None, name=None):
     return SubstitutionModule(name, {'Opt' : h_opt}, sub_fn,
         ['In'], ['Out'], scope)
 
-# NOTE: this assumes that there is a single one.
-# TODO: add some simple hyperparameters.
 # NOTE: this is only meant for permutations of a few elements.
-# TODO: this can be done better without enumerating the 
-# permutations
-# TODO: also change hyperparameter.
+# TODO: done better without enumerating permutations
 def SISOPermutation(fn_lst, h_perm, scope=None, name=None):
     if name == None:
         name = "SISOPermutation"
@@ -170,8 +164,7 @@ def SISOPermutation(fn_lst, h_perm, scope=None, name=None):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
 
-            # NOTE: if extending this, it is worth to look in terms of 
-            # the connection structure.
+            # NOTE: to extend this, think about the connection structure.
             next_inputs['In'].connect(prev_outputs['Out'])
         return (inputs_lst[0], outputs_lst[-1])
 

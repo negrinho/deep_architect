@@ -2,9 +2,6 @@ import sklearn.linear_model as lm
 import scipy.sparse as sp
 
 class SurrogateModel:
-    def __init__(self):
-        pass
-    
     def eval(self, feats):
         raise NotImplementedError
     
