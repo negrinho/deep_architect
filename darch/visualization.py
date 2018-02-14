@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import graphviz
 from six import itervalues, iteritems
 import darch.core as co
@@ -78,3 +79,38 @@ def draw_graph(output_or_module_lst, draw_hyperparameters=False,
         g.node(s, fontsize=h_fs)
 
     g.render(graph_name, out_folderpath, view=print_to_screen)  
+
+class LinePlot:
+    def __init__(self, title=None, xlabel=None, ylabel=None):
+        self.data = []
+        self.title = title
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+    
+    def add_line(self, xs, ys, label=None, err=None):
+        d = {"xs" : xs, 
+             "ys" : ys, 
+             "label" : label,
+             "err" : err}
+        self.data.append(d)
+
+    def plot(self, show=True, fpath=None):
+        f = plt.figure()
+        for d in self.data:
+             plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'])
+        
+        if self.title is not None:
+            plt.title(self.title)
+        if self.xlabel is not None:
+            plt.xlabel(self.xlabel)
+        if self.ylabel is not None:
+            plt.ylabel(self.ylabel)
+        
+        if any([d['label'] is not None for d in self.data]):
+            plt.legend(loc='best')
+
+        if fpath != None:
+            f.savefig(fpath, bbox_inches='tight')
+        if show:
+            plt.show()
+        return f
