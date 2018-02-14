@@ -5,7 +5,6 @@ from six.moves import xrange
 import copy
 import itertools
 
-
 class Empty(co.Module):
     def __init__(self, scope=None, name=None):
         co.Module.__init__(self, scope, name)
@@ -15,10 +14,7 @@ class Empty(co.Module):
     def forward(self):
         self.outputs['Out'].val = self.inputs['In'].val
 
-# NOTE: this is kind of similar to TFModule and the other helper.
-# perhaps only add the modifications to that functionality.
-# NOTE: this part can be done at the module functionality.
-# also unregister modules.
+# NOTE: this is kind of similar to TFModule and the other helper. perhaps refactor.
 class SubstitutionModule(co.Module):
     def __init__(self, name, name_to_h, fn, input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
@@ -65,9 +61,6 @@ class SubstitutionModule(co.Module):
                     old_ox.reroute_all_connected_inputs(new_ox)
                 self.outputs[name] = new_ox
             
-            # NOTE: unregister removed from now.
-            # could be done here in an OK manner.
-            # self._unregister()
             self._is_done = True
 
 def Or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
@@ -111,7 +104,7 @@ def SISOOr(fn_lst, h_or, scope=None, name=None):
         ['In'], ['Out'], scope=scope, name=name)
 
 # NOTE: how to do repeat in the general case. it is possible,
-# but requires connections of the inputs and outputs. how.
+# but requires connections of the inputs and outputs.
 def SISORepeat(fn, h_reps, scope=None, name=None):
     if name == None:
         name = "SISORepeat"
@@ -132,9 +125,8 @@ def SISORepeat(fn, h_reps, scope=None, name=None):
             # NOTE: if extending this, it is worth to look in terms of 
             # the connection structure.
             next_inputs['In'].connect(prev_outputs['Out'])
-
         return (inputs_lst[0], outputs_lst[-1])
-    
+
     return SubstitutionModule(name, {'num_reps' : h_reps}, sub_fn,
         ['In'], ['Out'], scope)
 
@@ -181,7 +173,6 @@ def SISOPermutation(fn_lst, h_perm, scope=None, name=None):
             # NOTE: if extending this, it is worth to look in terms of 
             # the connection structure.
             next_inputs['In'].connect(prev_outputs['Out'])
-        
         return (inputs_lst[0], outputs_lst[-1])
 
     return SubstitutionModule(name, {'perm_idx' : h_perm}, sub_fn,
@@ -199,7 +190,6 @@ def SISOSplitCombine(fn, combine_fn, h_num_splits, scope=None, name=None):
         for i in xrange(num_splits):
             i_outputs['Out'].connect( inputs_lst[i]['In'] )
             c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
-
         return (i_inputs, c_outputs)
 
     return SubstitutionModule(name, {'num_splits' : h_num_splits}, sub_fn,
