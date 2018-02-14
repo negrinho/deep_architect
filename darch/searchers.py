@@ -5,8 +5,6 @@ import darch.hyperparameters as hp
 import darch.core as co
 
 # TODO: perhaps change to not have to work until everything is specified.
-# TODO: also perhaps change this for reproducibility.
-# seems to be problematic.
 def unset_hyperparameter_iterator(module_lst, h_lst=None):
     if h_lst is not None:
         for h in h_lst:
@@ -27,7 +25,6 @@ def random_specify_hyperparameter(h):
         h.set_val(v)
     else:
         raise ValueError
-
     return v
     
 def random_specify(output_or_module_lst, h_lst=None):
@@ -44,7 +41,6 @@ def specify(output_or_module_lst, h_lst, vs):
     for i, h in enumerate( unset_hyperparameter_iterator(module_lst, h_lst) ):
         h.set_val( vs[i] )
 
-# NOTE: I may have to do some adaptation, but this is kind of correct.
 class Searcher:
     def sample(self):
         raise NotImplementedError
@@ -195,123 +191,6 @@ class MCTSearcher(Searcher):
                 raise ValueError
         return hist, vs
 
-# NOTE: may be based on features or not.
-class SurrogateModel:
-    def __init__(self):
-        pass
-    
-    def eval(self, feats):
-        raise NotImplementedError
-    
-    def update(self, val, feats):
-        raise NotImplementedError
-
-class DummyModel(SurrogateModel):
-    def eval(self, feats):
-        return 0.0
-
-    def update(self, val, feats):
-        pass
-
-# TODO: perhaps add some regularization.
-# TODO: perhaps choose different ways of coming up with an objective. 
-# it can be regression, it can be classification, it can be something else.
-# TODO: what to do if the model is still not there.
-# TODO: SMBO has to call update on the surrogate model.
-# TODO: add the regularization type. this is the problem, the question 
-# is that I can do many things.
-# TODO: can be binary or additive.
-# TODO: can be classification or ranking.
-import sklearn.linear_model as lm
-import scipy.sparse as sp
-
-class HashingSurrogate(SurrogateModel):
-    def __init__(self, hash_size, refit_interval, weight_decay_coeff=1e-5):
-        self.hash_size = hash_size
-        self.refit_interval = refit_interval
-        self.vecs = []
-        self.vals = []
-        # NOTE: I'm going to use something like scikit learn for now.
-        self.weight_decay_coeff = weight_decay_coeff
-        self.model = None
-        # NOTE: regression, classification, ranking.
-
-    def eval(self, feats):
-        if self.model == None:
-            return 0.0
-        else:
-            vec = self._feats2vec(feats)
-            return self.model.predict(vec)[0]
-
-    def update(self, val, feats):
-        vec = self._feats2vec(feats)        
-        self.vecs.append(vec)
-        self.vals.append(val)
-
-        if len(self.vals) % self.refit_interval == 0:
-            self._refit()
-
-    def _feats2vec(self, feats):
-        vec = sp.dok_matrix((1, self.hash_size), dtype='float') 
-        for fs in feats:
-            for f in fs:
-                idx = hash(f) % self.hash_size
-                vec[0, idx] += 1.0
-        
-        return vec.tocsr()
-        
-    def _refit(self):
-        if self.model == None:
-            self.model = lm.Ridge(self.weight_decay_coeff)
-        
-        X = sp.vstack(self.vecs, format='csr')
-        y = np.array(self.vals)
-        self.model.fit(X, y)
-
-
-# extract some simple features from the network. useful for smbo surrogate models.
-# TODO: this may include features of the composite modules.
-# NOTE: probably assume that all modules have the same scope.
-def extract_features(inputs, outputs, hs):
-    module_memo = co.OrderedSet()
-
-    module_feats = []
-    connection_feats = []
-    module_hps_feats = []
-    other_hps_feats = []
-
-    # getting all the modules
-    module_lst = co.extract_unique_modules(outputs.values())
-    co.backward_traverse(module_lst, lambda _: None, module_memo)
-
-    for m in module_memo:
-        # module features
-        m_feats = m.get_name()
-        module_feats.append( m_feats ) 
-
-        for ox_localname, ox in iteritems(m.outputs):
-            if ox.is_connected():
-                ix_lst = ox.get_connected_inputs()
-                for ix in ix_lst:
-                    # connection features
-                    c_feats = "%s |-> %s" % (ox.get_name(), ix.get_name())
-                    connection_feats.append( c_feats )
-        
-        # module hyperparameters
-        for h_localname, h in iteritems(m.hs):
-            mh_feats = "%s/%s : %s = %s" % (
-                m.get_name(), h_localname, h.get_name(), h.val)
-            module_hps_feats.append( mh_feats )
-
-    # other features
-    for h_localname, h in iteritems(hs):
-        oh_feats = "%s : %s = %s" % (h_localname, h.get_name(), h.val)
-        other_hps_feats.append( oh_feats ) 
-    
-    return (module_feats, connection_feats, module_hps_feats, other_hps_feats)
-
-# either samples some models and picks one greedily according to the 
-# surrogate model or samples a model randomly. 
 class SMBOSearcher(Searcher):
     def __init__(self, search_space_fn, surrogate_model, num_samples, eps_prob):
         self.search_space_fn = search_space_fn
@@ -354,7 +233,7 @@ class SMBOSearcher(Searcher):
         self.surr_model.update(val, feats)
 
 # surrogate with MCTS optimization.
-# TODO: make sure tht can keep the tree while the surrogate changes behind me.
+# TODO: make sure that can keep the tree while the surrogate changes behind me.
 # TODO: maybe done with part of the model.
 # TODO: I would just compute the std for the scores.
 class SMBOSearcherWithMCTSOptimizer(Searcher):
