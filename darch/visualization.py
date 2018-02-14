@@ -1,6 +1,10 @@
 import graphviz
 from six import itervalues, iteritems
 import darch.core as co
+import numpy as np
+
+def running_max(vs):
+    return np.maximum.accumulate(vs)
 
 def draw_graph(output_or_module_lst, draw_hyperparameters=False, 
         draw_io_labels=False, graph_name='graph', out_folderpath=None, 

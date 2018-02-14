@@ -1,5 +1,8 @@
+import darch.core as co
 import sklearn.linear_model as lm
 import scipy.sparse as sp
+import numpy as np
+from six import iteritems
 
 class SurrogateModel:
     def eval(self, feats):

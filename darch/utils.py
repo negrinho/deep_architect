@@ -31,3 +31,6 @@ def get_unconnected_outputs(input_or_module_lst):
 def connect_sequentially(module_lst):
     for x, x_next in zip(module_lst[:-1], module_lst[1:]):
         x.outputs['Out'].connect(x_next.inputs['In'])
+
+def m2io(m):
+    return (m.inputs, m.outputs)

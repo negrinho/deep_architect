@@ -3,6 +3,7 @@ from six.moves import xrange
 import numpy as np
 import darch.hyperparameters as hp
 import darch.core as co
+import darch.surrogates as su
 
 # TODO: perhaps change to not have to work until everything is specified.
 def unset_hyperparameter_iterator(module_lst, h_lst=None):
@@ -214,7 +215,7 @@ class SMBOSearcher(Searcher):
                 # NOTE: the model may require a compile to do the surrogate 
                 # this would be the case if it requires information that is 
                 # available only after compilation.
-                feats = extract_features(inputs, outputs, hs)
+                feats = su.extract_features(inputs, outputs, hs)
                 score = self.surr_model.eval(feats)
                 if score > best_score:
                     best_model = (inputs, outputs, hs)
@@ -229,7 +230,7 @@ class SMBOSearcher(Searcher):
     def update(self, val, cfg_d):
         (inputs, outputs, hs) = self.search_space_fn()
         specify(outputs.values(), hs.values(), cfg_d['vs'])
-        feats = extract_features(inputs, outputs, hs)
+        feats = su.extract_features(inputs, outputs, hs)
         self.surr_model.update(val, feats)
 
 # surrogate with MCTS optimization.
@@ -260,7 +261,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
             best_score = - np.inf
             for _ in xrange(self.num_samples):
                 (inputs, outputs, hs, vs, m_cfg_d) = self.mcts.sample()
-                feats = extract_features(inputs, outputs, hs)
+                feats = su.extract_features(inputs, outputs, hs)
                 score = self.surr_model.eval(feats)
                 if score > best_score:
                     best_model = (inputs, outputs, hs)
@@ -276,7 +277,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
     def update(self, val, cfg_d):
         (inputs, outputs, hs) = self.search_space_fn()
         specify(outputs.values(), hs.values(), cfg_d['vs'])
-        feats = extract_features(inputs, outputs, hs)
+        feats = su.extract_features(inputs, outputs, hs)
         self.surr_model.update(val, feats)
         
         self.cnt += 1
