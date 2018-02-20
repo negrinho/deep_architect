@@ -21,8 +21,8 @@ class OrderedSet:
         for x in iterkeys(self.d):
             yield x
     
-    def __in__(self, x):
-        return x in self.d
+    def __contains__(self, item):
+        return item in self.d
 
 # TODO: it is possible to structure the scope in more nicely to keep 
 # hyperparameters, inputs, outputs, and modules separated.
