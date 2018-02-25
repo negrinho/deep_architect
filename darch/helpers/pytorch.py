@@ -20,7 +20,7 @@ class PyTModule(co.Module):
         argnames = self._compile_fn.__code__.co_varnames
 
         kwargs = {}
-        for name, h in iteritems(self.hs):
+        for name, h in iteritems(self.hyperps):
             kwargs[name] = h.get_val()
         for name, ix in iteritems(self.inputs):
             if name in argnames:        
@@ -34,33 +34,31 @@ class PyTModule(co.Module):
         val = self._m(**kwargs)
         self.outputs['Out'].val = val  # TODO generalize for multiple outputs
 
-def _call_fn_on_torch_module(output_or_module_lst, fn):
+def _call_fn_on_torch_module(output_lst, fn):
     def fn_iter(x):
         d = vars(x)
         for v in itervalues(d):
             if isinstance(v, nn.Module):
                 fn(v)
         return False
-
-    module_lst = co.extract_unique_modules(output_or_module_lst)    
     co.backward_traverse(module_lst, fn_iter)
 
-def get_pytorch_modules(output_or_module_lst):
+def get_pytorch_modules(output_lst):
     pyt_modules = set()
-    _call_fn_on_torch_module(output_or_module_lst, lambda x: pyt_modules.add(x))
+    _call_fn_on_torch_module(output_lst, lambda x: pyt_modules.add(x))
     return pyt_modules
 
-def train(output_or_module_lst):
-    _call_fn_on_torch_module(output_or_module_lst, lambda x: x.train())
+def train(output_lst):
+    _call_fn_on_torch_module(output_lst, lambda x: x.train())
 
-def eval(output_or_module_lst):
-    _call_fn_on_torch_module(output_or_module_lst, lambda x: x.eval())
+def eval(output_lst):
+    _call_fn_on_torch_module(output_lst, lambda x: x.eval())
 
-def cuda(output_or_module_lst):
-    _call_fn_on_torch_module(output_or_module_lst, lambda x: x.cuda())
+def cuda(output_lst):
+    _call_fn_on_torch_module(output_lst, lambda x: x.cuda())
 
-def parameters(output_or_module_lst):
-    ms = get_pytorch_modules(output_or_module_lst)
+def parameters(output_lst):
+    ms = get_pytorch_modules(output_lst)
     ps = set()
     for m in ms:
         ps.update(m.parameters())

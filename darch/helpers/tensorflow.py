@@ -2,9 +2,6 @@ from __future__ import absolute_import
 from six import iteritems
 import darch.core as co
 
-# repeated code for helpers. perhaps improve: registering inputs, outputs, and 
-# hyperparameters. retrieving values to use in the function call. could do 
-# everything in terms of cfn and fn functions.
 class TFModule(co.Module):
     def __init__(self, name, name_to_h, compile_fn, 
             input_names, output_names, scope=None):
@@ -23,7 +20,7 @@ class TFModule(co.Module):
         argnames = self._compile_fn.__code__.co_varnames
 
         kwargs = {}
-        for name, h in iteritems(self.hs):
+        for name, h in iteritems(self.hyperps):
             kwargs[name] = h.get_val()
         for name, ix in iteritems(self.inputs):
             if name in argnames:        
@@ -41,7 +38,7 @@ class TFModule(co.Module):
         for name, val in iteritems(name_to_val):
             self.outputs[name].val = val
 
-def get_feed_dicts(output_or_module_lst):
+def get_feed_dicts(output_lst):
     train_feed = {}
     eval_feed = {}
     def fn(x):
@@ -50,8 +47,6 @@ def get_feed_dicts(output_or_module_lst):
         if hasattr(x, 'eval_feed'):
             eval_feed.update(x.eval_feed)
         return False
-
-    module_lst = co.extract_unique_modules(output_or_module_lst)    
-    co.backward_traverse(module_lst, fn)
+    co.backward_traverse(output_lst, fn)
 
     return (train_feed, eval_feed)

@@ -6,41 +6,39 @@ import darch.core as co
 import darch.surrogates as su
 
 # TODO: perhaps change to not have to work until everything is specified.
-def unset_hyperparameter_iterator(module_lst, h_lst=None):
-    if h_lst is not None:
-        for h in h_lst:
+def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
+    if hyperp_lst is not None:
+        for h in hyperp_lst:
             if not h.is_set():
                 yield h
 
-    while not co.is_specified(module_lst):
-        hs = co.get_unset_hyperparameters(module_lst)
+    while not co.is_specified(output_lst):
+        hs = co.get_unset_hyperparameters(output_lst)
         for h in hs:
             if not h.is_set():
                 yield h
             
-def random_specify_hyperparameter(h):
-    assert not h.is_set()
+def random_specify_hyperparameter(hyperp):
+    assert not hyperp.is_set()
 
-    if isinstance(h, hp.Discrete):
-        v = h.vs[np.random.randint(len(h.vs))]
-        h.set_val(v)
+    if isinstance(hyperp, hp.Discrete):
+        v = hyperp.vs[np.random.randint(len(hyperp.vs))]
+        hyperp.set_val(v)
     else:
         raise ValueError
     return v
     
-def random_specify(output_or_module_lst, h_lst=None):
+def random_specify(output_lst, hyperp_lst=None):
     vs = []
-    module_lst = co.extract_unique_modules(output_or_module_lst)
-    for h in unset_hyperparameter_iterator(module_lst, h_lst):
+    for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
         # print h.get_name()
         v = random_specify_hyperparameter(h)
         vs.append(v)
     return vs
 
-def specify(output_or_module_lst, h_lst, vs):
-    module_lst = co.extract_unique_modules(output_or_module_lst)
-    for i, h in enumerate( unset_hyperparameter_iterator(module_lst, h_lst) ):
-        h.set_val( vs[i] )
+def specify(output_lst, hyperp_lst, vs):
+    for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
+        h.set_val(vs[i])
 
 class Searcher:
     def sample(self):
@@ -55,7 +53,6 @@ class RandomSearcher(Searcher):
         
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
-
         vs = random_specify(outputs.values(), hs.values())
         return inputs, outputs, hs, vs, {}
     
@@ -127,8 +124,7 @@ class MCTSearcher(Searcher):
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
 
-        module_lst = co.extract_unique_modules(outputs.values())
-        h_it = unset_hyperparameter_iterator(module_lst, hs.values())
+        h_it = unset_hyperparameter_iterator(outputs.values(), hs.values())
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
