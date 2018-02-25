@@ -6,13 +6,25 @@ import copy
 import itertools
 
 class Empty(co.Module):
-    def __init__(self, scope=None, name=None):
+    def __init__(self, num_connections=1, scope=None, name=None):
         co.Module.__init__(self, scope, name)
-        self._register_input("In")
-        self._register_output("Out")
+        self.num_connections = num_connections
+        if self.num_connections == 1:
+            self._register_input("In")
+            self._register_output("Out")
+        else:
+            for i in range(self.num_connections):
+                self._register_input("In" + str(i))
+                self._register_output("Out" + str(i))
+
 
     def forward(self):
-        self.outputs['Out'].val = self.inputs['In'].val
+        if self.num_connections == 1:
+            self.outputs['Out'].val = self.inputs['In'].val
+        else:
+            for i in range(self.num_connections):
+                self.outputs['Out' + str(i)].val = self.inputs['In' + str(i)].val
+
 
 # NOTE: perhaps refactor to capture similarities between modules.
 class SubstitutionModule(co.Module):
@@ -179,7 +191,7 @@ def SISOSplitCombine(fn, combine_fn, h_num_splits, scope=None, name=None):
         inputs_lst, outputs_lst = zip(*[fn() for _ in xrange(num_splits)])
         c_inputs, c_outputs = combine_fn(num_splits)        
 
-        i_inputs, i_outputs = ut.module_to_io( Empty() )
+        i_inputs, i_outputs = ut.m2io( Empty() )
         for i in xrange(num_splits):
             i_outputs['Out'].connect( inputs_lst[i]['In'] )
             c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
@@ -188,12 +200,39 @@ def SISOSplitCombine(fn, combine_fn, h_num_splits, scope=None, name=None):
     return SubstitutionModule(name, {'num_splits' : h_num_splits}, sub_fn,
         ['In'], ['Out'], scope)   
 
+def Combine(fns, combine_fn, scope=None, name=None):
+    if name == None:
+        name = "Combine"
+
+    def sub_fn():
+        inputs_lst, outputs_lst = zip(*[fns[i]() for i in xrange(len(fns))])
+        c_inputs, c_outputs = combine_fn(len(fns))        
+
+        i_inputs, i_outputs = ut.m2io( Empty(num_connections=len(fns)) )
+        for i in xrange(len(fns)):
+            i_outputs['Out' + str(i)].connect( inputs_lst[i]['In' + str(i)] )
+            c_inputs['In' + str(i)].connect( outputs_lst[i]['Out' + str(i)] )
+        return (i_inputs, c_outputs)
+
+    return SubstitutionModule(name, {}, sub_fn,
+        ['In' + str(i) for i in xrange(len(fns))], ['Out'], scope)
+
+def Selector(fn, h_selection, scope=None, name=None):
+    if name == None:
+        name = "Selector"
+    
+    def sub_fn(selection):
+        return fn(selection)
+
+    return SubstitutionModule(name, {'selection' : h_selection}, sub_fn,
+        input_names, output_names, scope)
+
 def SISOResidual(main_fn, res_fn, combine_fn):
     (m_inputs, m_outputs) = main_fn()
     (r_inputs, r_outputs) = res_fn()
     (c_inputs, c_outputs) = combine_fn()
 
-    i_inputs, i_outputs = ut.module_to_io( Empty() )
+    i_inputs, i_outputs = ut.m2io( Empty() )
     i_outputs['Out'].connect( m_inputs['In'] )
     i_outputs['Out'].connect( r_inputs['In'] )
 
