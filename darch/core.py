@@ -218,6 +218,30 @@ class Module(Addressable):
         self.hyperps[name] = h
         h._register_module(self)
 
+    def _register(self, input_names, output_names, name_to_hyperp):
+        for name in input_names:
+            self._register_input(name)
+        for name in output_names:
+            self._register_output(name)
+        for name, h in iteritems(name_to_hyperp):
+            self._register_hyperparameter(h, name)
+
+    def _get_input_values(self):
+        return {name : ix.val for name, ix in iteritems(self.inputs)}
+
+    def _get_hyperp_values(self):
+        return {name : h.val for name, h in iteritems(self.hyperps)}
+
+    def _set_output_values(self, output_name_to_val):
+        for name, val in iteritems(output_name_to_val):
+            self.outputs[name].val = val
+
+    def get_io(self):
+        return (self.inputs, self.outputs)
+
+    def get_hyperps(self):
+        return self.hyperps
+
     def _update(self):
         """Called when an hyperparameter that the module depends on is set."""
         raise NotImplementedError
@@ -247,7 +271,13 @@ def extract_unique_modules(input_or_output_lst):
     return list(ms)
 
 # assumes that the inputs provided are sufficient to evaluate all the network.
-def determine_module_eval_seq(input_lst):   
+def determine_module_eval_seq(input_lst):
+    """Computes the module forward evaluation sequence necessary to evaluate 
+    the computation graph starting from the provided inputs.
+
+    In dynamic frameworks where forward is called multiple times, it is best 
+    to precompute the module evaluation sequence. Also see forward.
+    """
     module_seq = []
     module_memo = set()
     input_memo = set(input_lst)
@@ -264,11 +294,11 @@ def determine_module_eval_seq(input_lst):
                 ms.extend(m_lst)
     return module_seq
 
-def backward_traverse(output_lst, fn):
+def traverse_backward(output_lst, fn):
     """Traverses the graph going backward, from outputs to inputs. The 
     provided function is applied once to each module reached this way. 
 
-    Also see forward_traverse.
+    Also see traverse_forward.
     """    
     memo = set()
     ms = extract_unique_modules(output_lst)
@@ -284,11 +314,11 @@ def backward_traverse(output_lst, fn):
                         memo.add(m_prev)
                         ms.append(m_prev)
 
-def forward_traverse(input_lst, fn):
+def traverse_forward(input_lst, fn):
     """Traverses the graph going forward, from inputs to outputs. The 
     provided function is applied once to each module reached this way. 
 
-    Also see backward_traverse.
+    Also see traverse_backward.
     """    
     memo = set()
     ms = extract_unique_modules(input_lst)
@@ -316,7 +346,7 @@ def is_specified(output_lst):
                 is_spec[0] = False
                 return True
         return False
-    backward_traverse(output_lst, fn)
+    traverse_backward(output_lst, fn)
     return is_spec[0]
 
 def get_unset_hyperparameters(output_lst):
@@ -332,12 +362,18 @@ def get_unset_hyperparameters(output_lst):
             if not h.is_set():
                 hs.add(h)
         return False
-    backward_traverse(output_lst, fn)
+    traverse_backward(output_lst, fn)
     return hs
 
 # NOTE: forward needs to be efficient in the dynamic case.
 # precompute the evaluation sequence and apply in that case.
 def forward(input_to_val, _module_seq=None):
+    """Forward pass starting from the inputs.
+
+    The forward computation of each module is called in the turn. For efficiency,
+    in dynamic frameworks, the module evaluation sequence is best computed once 
+    and reused in each forward call.
+    """
     if _module_seq is None:
         _module_seq = determine_module_eval_seq(input_to_val.keys())
 

@@ -61,7 +61,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
 
     # generate most of the graph.
     module_lst = co.extract_unique_modules(output_lst)
-    co.backward_traverse(output_lst, fn)
+    co.traverse_backward(output_lst, fn)
 
     # add the output terminals.
     for m in module_lst:

@@ -10,7 +10,7 @@ def get_unconnected_inputs(output_lst):
                 ix_lst.append(ix)
         return False
 
-    co.backward_traverse(output_lst, fn)
+    co.traverse_backward(output_lst, fn)
     return ix_lst
 
 def get_unconnected_outputs(input_lst):
@@ -21,7 +21,7 @@ def get_unconnected_outputs(input_lst):
                 ox_lst.append(ox)
         return False
 
-    co.forward_traverse(input_lst, fn)
+    co.traverse_forward(input_lst, fn)
     return ox_lst
 
 def m2io(m):

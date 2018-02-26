@@ -3,30 +3,16 @@ import darch.core as co
 import torch.nn as nn
 
 class PyTModule(co.Module):
-    def __init__(self, name, name_to_h, compile_fn, 
+    def __init__(self, name, name_to_hyperp, compile_fn, 
             input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
-
-        for name in input_names:
-            self._register_input(name)
-        for name in output_names:
-            self._register_output(name)
-        for name, h in iteritems(name_to_h):
-            self._register_hyperparameter(h, name)
-
+        self._register(input_names, output_names, name_to_hyperp)
         self._compile_fn = compile_fn
 
     def _compile(self):
-        argnames = self._compile_fn.__code__.co_varnames
-
-        kwargs = {}
-        for name, h in iteritems(self.hyperps):
-            kwargs[name] = h.get_val()
-        for name, ix in iteritems(self.inputs):
-            if name in argnames:        
-                kwargs[name] = ix.val
-
-        self._m = self._compile_fn(**kwargs)
+        input_name_to_val = self._get_input_values()
+        hyperp_name_to_val = self._get_hyperp_values()
+        self._m = self._compile_fn(input_name_to_val, hyperp_name_to_val)
         assert isinstance(self._m, nn.Module)
 
     def _forward(self):
@@ -41,7 +27,7 @@ def _call_fn_on_torch_module(output_lst, fn):
             if isinstance(v, nn.Module):
                 fn(v)
         return False
-    co.backward_traverse(module_lst, fn_iter)
+    co.traverse_backward(output_lst, fn_iter)
 
 def get_pytorch_modules(output_lst):
     pyt_modules = set()

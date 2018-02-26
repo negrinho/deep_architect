@@ -31,7 +31,6 @@ def random_specify_hyperparameter(hyperp):
 def random_specify(output_lst, hyperp_lst=None):
     vs = []
     for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
-        # print h.get_name()
         v = random_specify_hyperparameter(h)
         vs.append(v)
     return vs
@@ -146,7 +145,6 @@ class MCTSearcher(Searcher):
 
         node = self.mcts_root_node
         for h in h_it:
-            # print h.get_name(), h.vs
             if not node.is_leaf():            
                 node, i = node.best_child(self.exploration_bonus)
                 v = h.vs[i]
@@ -176,7 +174,6 @@ class MCTSearcher(Searcher):
         vs = []
 
         for h in h_it:
-            # print h.get_name(), h.vs
             if isinstance(h, hp.Discrete):
                 i = np.random.randint(0, len(h.vs))
                 v = h.vs[i]
@@ -231,7 +228,6 @@ class SMBOSearcher(Searcher):
 
 # surrogate with MCTS optimization.
 # TODO: make sure that can keep the tree while the surrogate changes behind me.
-# TODO: maybe done with part of the model.
 # TODO: I would just compute the std for the scores.
 class SMBOSearcherWithMCTSOptimizer(Searcher):
     def __init__(self, search_space_fn, surrogate_model, num_samples, 
