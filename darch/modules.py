@@ -184,32 +184,16 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     return substitution_module(_get_name(name, "SISOSplitCombine"), 
         {'num_splits' : h_num_splits}, sub_fn, ['In'], ['Out'], scope)   
 
-def Combine(fns, combine_fn, scope=None, name=None):
-    if name == None:
-        name = "Combine"
+def mimo_combine(fns, combine_fn, scope=None, name=None):
+    inputs_lst, outputs_lst = zip(*[fns[i]() for i in xrange(len(fns))])
+    c_inputs, c_outputs = combine_fn(len(fns))        
 
-    def sub_fn():
-        inputs_lst, outputs_lst = zip(*[fns[i]() for i in xrange(len(fns))])
-        c_inputs, c_outputs = combine_fn(len(fns))        
+    i_inputs, i_outputs = empty(num_connections=len(fns))
+    for i in xrange(len(fns)):
+        i_outputs['Out' + str(i)].connect( inputs_lst[i]['In'] )
+        c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
+    return (i_inputs, c_outputs)
 
-        i_inputs, i_outputs = ut.m2io( Empty(num_connections=len(fns)) )
-        for i in xrange(len(fns)):
-            i_outputs['Out' + str(i)].connect( inputs_lst[i]['In' + str(i)] )
-            c_inputs['In' + str(i)].connect( outputs_lst[i]['Out' + str(i)] )
-        return (i_inputs, c_outputs)
-
-    return SubstitutionModule(name, {}, sub_fn,
-        ['In' + str(i) for i in xrange(len(fns))], ['Out'], scope)
-
-def Selector(fn, h_selection, scope=None, name=None):
-    if name == None:
-        name = "Selector"
-    
-    def sub_fn(selection):
-        return fn(selection)
-
-    return SubstitutionModule(name, {'selection' : h_selection}, sub_fn,
-        input_names, output_names, scope)
 
 def siso_residual(main_fn, residual_fn, combine_fn):
     (m_inputs, m_outputs) = main_fn()
