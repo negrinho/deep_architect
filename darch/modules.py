@@ -217,3 +217,11 @@ def siso_sequential(io_lst):
         prev_outputs['Out'].connect(next_inputs['In'])
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
+
+def simo_split(num_split):
+    i_inputs, i_outputs = empty()
+    o_inputs, o_outputs = empty(num_split)
+    for i in xrange(num_split):
+        i_outputs['Out'].connect(o_inputs['In' + str(i)])
+    return (i_inputs, o_outputs)
+

@@ -42,6 +42,14 @@ def ReLU():
         return fn
     return siso_tfm('ReLU', cfn)
 
+def softmax():
+    def cfn(di, dh):
+        def fn(di):
+            flat = tf.contrib.layers.flatten(di['In'])
+            return {'Out': tf.nn.softmax(flat)}
+        return fn
+    return TFM('Softmax', {}, cfn, ['In'], ['Out']).get_io()
+
 def Affine(h_m, h_W_init_fn, h_b_init_fn):
     def cfn(In, m, W_init_fn, b_init_fn):
         shape = In.get_shape().as_list()
@@ -179,7 +187,7 @@ def io_fn2(in0, in1, out):
     return {'In0': in0, 'In1': in1}, {'Out': out}
 
 def ResidualSimplified(fn):
-    return mo.siso_residual(fn, lambda: io_fn( mo.Empty() ), lambda: io_fn( Add() ))
+    return mo.siso_residual(fn, lambda: io_fn( mo.Empty() ), lambda: add() )
 
 def conv2D_simplified(h_num_filters, h_filter_size, stride):
     def cfn(In, num_filters, filter_size):
@@ -198,7 +206,7 @@ def conv2D_simplified(h_num_filters, h_filter_size, stride):
         'num_filters' : h_num_filters,
         'filter_size' : h_filter_size})
 
-def conv_bottleneck(h_filter_size, h_stride):
+def conv_spatial_separable(h_filter_size, h_stride):
     def cfn(In, filter_size, stride):
         (_, _, _, channels) = In.get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
@@ -245,7 +253,7 @@ def conv2D_dilated(h_filter_size, h_dilation, h_stride):
         'dilation' : h_dilation,
         'stride' : h_stride})
 
-def conv2D_separable(h_filter_size, h_channel_multiplier, h_stride):
+def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
     def cfn(In, filter_size, channel_multiplier, stride):
         (_, _, _, channels) = In.get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
@@ -267,22 +275,56 @@ def conv2D_separable(h_filter_size, h_channel_multiplier, h_stride):
         'channel_multiplier' : h_channel_multiplier,
         'stride' : h_stride})
 
+def conv1x1(h_num_filters):
+    return conv2D_simplified(h_num_filters, D([1]), D([1]))
+
 def sp1_operation(h_op_name, h_stride):
     return mo.siso_or({
             'identity': lambda: mo.empty(),
-            'sep3': lambda: conv2D_separable(D([3]), D([1]), h_stride),
-            'sep5': lambda: conv2D_separable(D([5]), D([1]), h_stride),
-            'sep7': lambda: conv2D_separable(D([7]), D([1]), h_stride),
+            'd_sep3': lambda: conv2D_depth_separable(D([3]), D([1]), h_stride),
+            'd_sep5': lambda: conv2D_depth_separable(D([5]), D([1]), h_stride),
+            'd_sep7': lambda: conv2D_depth_separable(D([7]), D([1]), h_stride),
             'avg3': lambda: avg_pool(D([3]), h_stride),
             'max3': lambda: max_pool(D([3]), h_stride),
             'dil3': lambda: conv2D_dilated(D([3]), D([2]), h_stride),
-            'bot7': lambda: conv_bottleneck(D([7]), h_stride)
+            's_sep7': lambda: conv_spatial_separable(D([7]), h_stride)
             }, h_op_name)
+
+def mi_add(num_terms):
+    def cfn(di, dh):
+        (_, _, _, min_channels) = di['In0'].get_shape().as_list()
+        for i in range(num_terms):
+            (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
+            min_channels = channels if channels < min_channels else min_channels
+
+        W_init_fn = kaiming2015delving_initializer_conv()
+        b_init_fn = const_fn(0.0)
+        w_dict = {}
+        b_dict = {}
+        for i in range(num_terms):
+            (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
+            if channels != min_channels:
+                w_dict[i] = tf.Variable( W_init_fn( [1, 1, channels, min_channels]))
+                b_dict[i] = tf.Variable( b_init_fn( [min_channels]))
+
+        def fn(In):
+            trans = []
+            for i in range(num_terms):
+                if i in w_dict:
+                    trans.append(tf.nn.bias_add(tf.nn.conv2d(di['In' + str(i)], w_dict[i], [1, 1, 1, 1], 'SAME'), b_dict[i]))
+                else:
+                    trans.append(di['In' + str(i)])
+            total_sum = trans[0]
+            for i in range(1, num_terms):
+                total_sum = tf.add(total_sum, trans[i])
+            return {'Out' : total_sum}
+        return fn
+    return TFM('MultiInputAdd', {}, cfn, ['In' + str(i) for i in xrange(num_terms)], ['Out']).get_io()
 
 def sp1_combine(h_op1_name, h_op2_name, h_stride):
     in1 = lambda: sp1_operation(h_op1_name, h_stride)
     in2 = lambda: sp1_operation(h_op2_name, h_stride)
-    return mo.mimo_combine([in1, in2], add)
+    return mo.mimo_combine([in1, in2], mi_add)
 
 def selector(h_selection, sel_fn, num_selections):
     def cfn(di, dh):
@@ -293,13 +335,13 @@ def selector(h_selection, sel_fn, num_selections):
         return fn
     return TFM('Selector', {'selection': h_selection}, cfn, ['In' + str(i) for i in xrange(num_selections)], ['Out']).get_io()
 
-def basic_cell(C=5, normal=True):
+def basic_cell(h_sharer, C=5, normal=True):
     i_inputs, i_outputs = mo.empty(num_connections=2)
     available = [i_outputs['Out' + str(i)] for i in xrange(len(i_outputs))]
     unused = [False] * (C + 2)
     for i in xrange(C):
-        h_in0_pos = D(range(len(available)))
-        h_in1_pos = D(range(len(available)))
+        h_in0_pos = h_sharer.get('h_in0_pos_' + str(i))
+        h_in1_pos = h_sharer.get('h_in1_pos_' + str(i))
 
         def select(selection):
             unused[selection] = True
@@ -307,8 +349,8 @@ def basic_cell(C=5, normal=True):
         sel0_inputs, sel0_outputs = selector(h_in0_pos, select, len(available))
         sel1_inputs, sel1_outputs = selector(h_in1_pos, select, len(available))
 
-        h_op1 = D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7'])
-        h_op2 = D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7'])
+        h_op1 = h_sharer.get('h_op1_' + str(i))
+        h_op2 = h_sharer.get('h_op2_' + str(i))
         
         for o_idx in xrange(len(available)):
             available[o_idx].connect(sel0_inputs['In' + str(o_idx)])
@@ -320,13 +362,10 @@ def basic_cell(C=5, normal=True):
         available.append(comb_outputs['Out'])
     
     unused_outs = [available[i] for i in xrange(len(unused)) if unused[i]]
-    sum_unused = unused_outs[0][0]
-    for out in unused_outs[1:]:
-        add_inputs, add_outputs = add()
-        sum_unused.connect(add_inputs['In0'])
-        out.connect(add_inputs['In1'])
-        sum_unused = add_outputs['Out']
-    return i_inputs, {'Out': sum_unused}
+    s_inputs, s_outputs = mi_add(len(unused_outs))
+    for i in range(len(unused_outs)):
+        unused_outs[i].connect(s_inputs['In' + str(i)])
+    return i_inputs, {'Out': s_outputs}
 
 ### my interpretation.
 def hyperparameters_fn():
@@ -342,6 +381,50 @@ def hyperparameters_fn():
         # 'scale_delta' : D([ 0.0, 0.05, 0.1, 0.2 ]),
         # 'angle_delta' : D([ 0, 5, 10, 15, 20 ])
         }
+
+def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
+    def sub_fn(N):
+        assert N > 0
+        i_inputs, i_outputs = mo.simo_split(2)
+        prev_2 = [i_outputs['Out0'], i_outputs['Out1']]
+
+        for i in range(num_ov_repeat):
+            for j in range(N):
+                norm_inputs, norm_outputs = basic_cell(h_sharer, C=C, normal=True)
+                prev_2[0].connect(norm_inputs['In0'])
+                prev_2[1].connect(norm_inputs['In1'])
+                prev_2[0] = prev_2[1]
+                prev_2[1] = norm_outputs['Out']
+            if j < num_ov_repeat - 1:
+                red_inputs, red_outputs = basic_cell(h_sharer, C=C, normal=False)
+                prev_2[0].connect(red_inputs['In0'])
+                prev_2[1].connect(red_inputs['In1'])
+                prev_2[0] = prev_2[1]
+                prev_2[1] = red_outputs['Out']
+        
+        soft_inputs, soft_outputs = softmax()
+        prev_2[1].connect(soft_inputs['In'])
+        return i_inputs, soft_outputs
+    return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)
+
+
+def get_sample_space(num_classes):
+    co.Scope.reset_default_scope()
+    C = 5
+    h_N = D([4, 6])
+    h_F = D([32, 64, 128])
+    h_sharer = hp.HyperparameterSharer()
+    for i in xrange(C):
+        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
+        h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
+    i_inputs, i_outputs = conv1x1(h_F)
+    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
+    i_outputs['Out'].connect(o_inputs['In'])
+    return i_inputs, o_outputs, hyperparameters_fn()
+
+
 
 #def get_ss0_fn(num_classes):
 #    def fn():
@@ -386,12 +469,6 @@ def hyperparameters_fn():
 #        return ms[0].inputs, ms[-1].outputs, hyperparameters_fn()
 #    return fn
 #
-def get_sample_space(num_classes):
-    co.Scope.reset_default_scope()
-    h_N = D([4, 6])
-    h_F = D([32, 64, 128])
-
-
 
 #def get_ss2_fn(num_classes):
 #    def fn():
