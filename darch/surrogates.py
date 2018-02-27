@@ -84,13 +84,15 @@ def extract_features(inputs, outputs, hs):
     other_hps_feats = []
 
     # getting all the modules
-    module_lst = co.extract_unique_modules(outputs.values())
-    co.backward_traverse(module_lst, lambda _: None, module_memo)
+    module_memo = []
+    def fn(m):
+        module_memo.append(m)
+    co.traverse_backward(outputs.values(), fn)
 
     for m in module_memo:
         # module features
         m_feats = m.get_name()
-        module_feats.append( m_feats ) 
+        module_feats.append(m_feats) 
 
         for ox_localname, ox in iteritems(m.outputs):
             if ox.is_connected():
@@ -101,7 +103,7 @@ def extract_features(inputs, outputs, hs):
                     connection_feats.append( c_feats )
         
         # module hyperparameters
-        for h_localname, h in iteritems(m.hs):
+        for h_localname, h in iteritems(m.hyperps):
             mh_feats = "%s/%s : %s = %s" % (
                 m.get_name(), h_localname, h.get_name(), h.val)
             module_hps_feats.append( mh_feats )

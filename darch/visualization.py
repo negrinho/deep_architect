@@ -7,7 +7,7 @@ import numpy as np
 def running_max(vs):
     return np.maximum.accumulate(vs)
 
-def draw_graph(output_or_module_lst, draw_hyperparameters=False, 
+def draw_graph(output_lst, draw_hyperparameters=False, 
         draw_io_labels=False, graph_name='graph', out_folderpath=None, 
         print_to_screen=True):
     assert print_to_screen or out_folderpath is not None
@@ -19,9 +19,9 @@ def draw_graph(output_or_module_lst, draw_hyperparameters=False,
     
     nodes = set()
     hs = set()
-    def fn(x):
-        nodes.add( x.get_name() )
-        for ix_localname, ix in iteritems(x.inputs):
+    def fn(m):
+        nodes.add(m.get_name())
+        for ix_localname, ix in iteritems(m.inputs):
             if ix.is_connected():
                 ox = ix.get_connected_output()
                 if not draw_io_labels:
@@ -43,11 +43,11 @@ def draw_graph(output_or_module_lst, draw_hyperparameters=False,
                 g.node(ix.get_name(), shape='invhouse', penwidth=penwidth)
                 g.edge(
                     ix.get_name(),
-                    ix.get_module().get_name() )
+                    ix.get_module().get_name())
 
         if draw_hyperparameters:
-            for (h_localname, h) in iteritems(x.hs):
-                hs.add( h.get_name() )
+            for (h_localname, h) in iteritems(m.hyperps):
+                hs.add(h.get_name())
                 if not h.is_set():
                     label = h_localname
                 else:
@@ -55,13 +55,13 @@ def draw_graph(output_or_module_lst, draw_hyperparameters=False,
 
                 g.edge(
                     h.get_name(), 
-                    x.get_name(), 
+                    m.get_name(), 
                     label=label, fontsize=edge_fs)
         return False
 
     # generate most of the graph.
-    module_lst = co.extract_unique_modules(output_or_module_lst)
-    co.backward_traverse(module_lst, fn)
+    module_lst = co.extract_unique_modules(output_lst)
+    co.traverse_backward(output_lst, fn)
 
     # add the output terminals.
     for m in module_lst:
@@ -69,7 +69,7 @@ def draw_graph(output_or_module_lst, draw_hyperparameters=False,
                 g.node(ox.get_name(), shape='house', penwidth=penwidth)
                 g.edge(
                     ox.get_module().get_name(),
-                    ox.get_name() )
+                    ox.get_name())
     
     # minor adjustments to attributes.
     for s in nodes:
