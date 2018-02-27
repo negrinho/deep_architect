@@ -78,7 +78,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     for s in hs:
         g.node(s, fontsize=h_fs)
 
-    g.render(graph_name, out_folderpath, view=print_to_screen)  
+    g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)  
 
 class LinePlot:
     def __init__(self, title=None, xlabel=None, ylabel=None):

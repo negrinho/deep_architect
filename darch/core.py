@@ -365,8 +365,6 @@ def get_unset_hyperparameters(output_lst):
     traverse_backward(output_lst, fn)
     return hs
 
-# NOTE: forward needs to be efficient in the dynamic case.
-# precompute the evaluation sequence and apply in that case.
 def forward(input_to_val, _module_seq=None):
     """Forward pass starting from the inputs.
 
@@ -385,3 +383,23 @@ def forward(input_to_val, _module_seq=None):
         for ox in itervalues(m.outputs):
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
+
+def get_unconnected_inputs(output_lst):
+    ix_lst = []
+    def fn(x):
+        for ix in itervalues(x.inputs):
+            if not ix.is_connected():
+                ix_lst.append(ix)
+        return False
+    traverse_backward(output_lst, fn)
+    return ix_lst
+
+def get_unconnected_outputs(input_lst):
+    ox_lst = []
+    def fn(x):
+        for ox in itervalues(x.outputs):
+            if not ox.is_connected():
+                ox_lst.append(ox)
+        return False
+    traverse_forward(input_lst, fn)
+    return ox_lst
