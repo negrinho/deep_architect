@@ -55,15 +55,15 @@ def evaluate_fn(inputs, outputs, hs):
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
 
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        
-        r = {'val_acc' : accuracy.eval({x: val_x, y:val_y}), 
+
+        r = {'val_acc' : accuracy.eval({x: val_x, y:val_y}),
              'test_acc' : accuracy.eval({x:test_x, y:test_y})}
         return r
 
 def Affine(h_m):
     def cfn(In, m):
         in_dim = In.get_shape().as_list()[1]
-        W = tf.Variable(tf.random_normal([in_dim, m])) 
+        W = tf.Variable(tf.random_normal([in_dim, m]))
         b = tf.Variable(tf.random_normal([m]))
         def fn(In):
             return {'Out' : tf.add(tf.matmul(In, W), b)}
@@ -71,9 +71,9 @@ def Affine(h_m):
     return htf.TFModule('Affine', {'m' : h_m}, cfn, ['In'], ['Out'])
 
 def ReLU():
-    return htf.TFModule('ReLU', {}, lambda: lambda In: {'Out' : tf.nn.relu(In)}, 
+    return htf.TFModule('ReLU', {}, lambda: lambda In: {'Out' : tf.nn.relu(In)},
         ['In'], ['Out'])
-    
+
 def search_space_model_fn():
     co.Scope.reset_default_scope()
     ms = [
@@ -117,7 +117,7 @@ def ss1_fn():
 
     ms = [
         mo.SISORepeat(lambda: io_DNNBlock( D([ 64, 128, 256, 512 ]) ), D([ 1, 2, 4 ])),
-        Affine( D([ n_classes ]) )        
+        Affine( D([ n_classes ]) )
     ]
     ut.connect_sequentially(ms)
     return ms[0].inputs, ms[-1].outputs, {'lr' : D([ 1e-2, 1e-3, 1e-4])}

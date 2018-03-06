@@ -16,6 +16,7 @@ from create_sentiment_featuresets import create_feature_sets_and_labels
 import numpy as np
 import darch.surrogates
 import logger
+import os
 
 D = hp.Discrete
 
@@ -147,13 +148,18 @@ if __name__ == '__main__':
     train_y, val_y = np.array(train_y[:train_size]), np.array(train_y[train_size:])
 
     searcher = se.MCTSearcher(ss1_fn, 0.1)
+    logger_manager = logger.LoggerManager(exp_label = "exp", exp_dir_path="exps", code_dir_path=os.getcwd())
+    custom_logger_def = {"name": "custom", "file_type": "txt", "inc": ["time", "hyperparameters"]}
+    logger_manager.add_custom_logger(custom_logger_def)
+    print(str(logger_manager))
     for _ in xrange(5):
         (inputs, outputs, hs, vs, cfg_d) = searcher.sample()
+        # generate config file (cfg_d and vs)
         s = darch.surrogates.extract_features(inputs, outputs, hs)
         # set up directories?
         r = evaluate_fn(inputs, outputs, hs)
         # print vs, r, cfg_d
-        logger.log_instance(hyperparameters = hs,
+        logger_manager.log_all(hyperparameters = hs,
                           values = vs,
                           config = cfg_d,
                           results = r,
