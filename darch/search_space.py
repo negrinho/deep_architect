@@ -304,7 +304,7 @@ def wrap_relu_batch_norm(io_pair):
     r_inputs, r_outputs = relu()
     b_inputs, b_outputs = batch_normalization()
     r_outputs['Out'].connect(io_pair[0]['In'])
-    io_pair[0]['Out'].connect(b_inputs['In'])
+    io_pair[1]['Out'].connect(b_inputs['In'])
     return r_inputs, b_outputs
 
 def sp1_operation(h_op_name, h_stride):
@@ -408,11 +408,11 @@ def basic_cell(h_sharer, C=5, normal=True):
         sel1_outputs['Out'].connect(comb_inputs['In1'])
         available.append(comb_outputs['Out'])
     
-    unused_outs = [available[i] for i in xrange(len(unused)) if unused[i]]
+    unused_outs = [available[i] for i in xrange(len(unused)) if not unused[i]]
     s_inputs, s_outputs = mi_add(len(unused_outs))
     for i in range(len(unused_outs)):
         unused_outs[i].connect(s_inputs['In' + str(i)])
-    return i_inputs, {'Out': s_outputs}
+    return i_inputs, s_outputs
 
 ### my interpretation.
 def hyperparameters_fn():
@@ -437,6 +437,7 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
 
         for i in range(num_ov_repeat):
             for j in range(N):
+                print '(%d, %d)' %(i,  j)
                 norm_inputs, norm_outputs = basic_cell(h_sharer, C=C, normal=True)
                 prev_2[0].connect(norm_inputs['In0'])
                 prev_2[1].connect(norm_inputs['In1'])
@@ -462,14 +463,15 @@ def get_search_space_1(num_classes):
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
-        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
         h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
         h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
     i_outputs['Out'].connect(o_inputs['In'])
-    return i_inputs, o_outputs, hyperparameters_fn()
+    r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
+    return r_inputs, r_outputs, hyperparameters_fn()
 
 
 def get_search_space_3(num_classes):
@@ -479,14 +481,15 @@ def get_search_space_3(num_classes):
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
-        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
         h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
         h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
     i_outputs['Out'].connect(o_inputs['In'])
-    return i_inputs, o_outputs, hyperparameters_fn()
+    r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
+    return r_inputs, r_outputs, hyperparameters_fn()
 
 def get_search_space_2(num_classes):
     co.Scope.reset_default_scope()
