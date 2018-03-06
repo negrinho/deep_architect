@@ -64,12 +64,12 @@ class SubstitutionModule(co.Module):
             self._is_done = True
 
 def empty():
-    return ut.m2io(Empty())
+    return Empty().get_io()
 
 def substitution_module(name, name_to_hyperp, sub_fn, 
         input_names, output_names, scope):
-    return ut.m2io(SubstitutionModule(name, 
-        name_to_hyperp, sub_fn, input_names, output_names, scope))
+    return SubstitutionModule(name, 
+        name_to_hyperp, sub_fn, input_names, output_names, scope).get_io()
 
 def _get_name(name, default_name):
     return name if name is not None else default_name
@@ -123,12 +123,7 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
 
 def siso_optional(fn, h_opt, scope=None, name=None):
     def sub_fn(opt):
-        return fn() if opt else ut.m2io(Empty())
-        if opt:
-            return fn()
-        else:
-            m = Empty()
-            return (m.inputs, m.outputs)
+        return fn() if opt else empty()
 
     return substitution_module(_get_name(name, "SISOOptional"), 
         {'opt' : h_opt}, sub_fn, ['In'], ['Out'], scope)
@@ -165,8 +160,8 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
 
         i_inputs, i_outputs = empty()
         for i in xrange(num_splits):
-            i_outputs['Out'].connect( inputs_lst[i]['In'] )
-            c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
+            i_outputs['Out'].connect(inputs_lst[i]['In'])
+            c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
         return (i_inputs, c_outputs)
 
     return substitution_module(_get_name(name, "SISOSplitCombine"), 
@@ -178,11 +173,11 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     (c_inputs, c_outputs) = combine_fn()
 
     i_inputs, i_outputs = empty()
-    i_outputs['Out'].connect( m_inputs['In'] )
-    i_outputs['Out'].connect( r_inputs['In'] )
+    i_outputs['Out'].connect(m_inputs['In'])
+    i_outputs['Out'].connect(r_inputs['In'])
 
-    m_outputs['Out'].connect( c_inputs['In0'] )
-    r_outputs['Out'].connect( c_inputs['In1'] )
+    m_outputs['Out'].connect(c_inputs['In0'])
+    r_outputs['Out'].connect(c_inputs['In1'])
 
     return (i_inputs, c_outputs)
 
