@@ -35,10 +35,10 @@ def xavier_initializer_affine(gain=1.0):
         return init_vals
     return init_fn
 
-def ReLU():
-    def cfn():
-        def fn(In):
-            return {'Out' : tf.nn.relu(In)}
+def relu():
+    def cfn(di, dh):
+        def fn(di):
+            return {'Out' : tf.nn.relu(di['In'])}
         return fn
     return siso_tfm('ReLU', cfn)
 
@@ -75,23 +75,25 @@ def Dropout(h_keep_prob):
     return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
     
 # TODO: perhaps add hyperparameters.
-def BatchNormalization():
-    def cfn():
+def batch_normalization():
+    def cfn(di, dh):
         p_var = tf.placeholder(tf.bool)
-        def fn(In):
-            return {'Out' : tf.layers.batch_normalization(In, training=p_var) }
+        def fn(di):
+            return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var) }
         return fn, {p_var : 1}, {p_var : 0}     
     return siso_tfm('BatchNormalization', cfn)
 
 def Conv2D(h_num_filters, h_filter_size, h_stride, h_W_init_fn, h_b_init_fn):
-    def cfn(In, num_filters, filter_size, stride, W_init_fn, b_init_fn):
-        (_, height, width, channels) = In.get_shape().as_list()
+    def cfn(di, dh):
+        (_, height, width, channels) = di['In'].get_shape().as_list()
+        W_init_fn = dh['W_init_fn']
+        b_init_fn = dh['b_init_fn']
 
-        W = tf.Variable( W_init_fn( [filter_size, filter_size, channels, num_filters] ) )
-        b = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(In):
+        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['num_filters']] ) )
+        b = tf.Variable( b_init_fn( [dh['num_filters']] ) )
+        def fn(di):
             return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(In, W, [1, stride, stride, 1], 'SAME'), b)}
+                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
         return fn
 
     return siso_tfm('Conv2D', cfn, {
@@ -103,10 +105,10 @@ def Conv2D(h_num_filters, h_filter_size, h_stride, h_W_init_fn, h_b_init_fn):
         })
 
 def max_pool(h_kernel_size, h_stride):
-    def cfn(kernel_size, stride):
-        def fn(In):
-            return {'Out' : tf.nn.max_pool(In, 
-                [1, kernel_size, kernel_size, 1], [1, stride, stride, 1], 'SAME')}
+    def cfn(di, dh):
+        def fn(di):
+            return {'Out' : tf.nn.max_pool(di['In'], 
+                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
     return siso_tfm('MaxPool', cfn, {
         'kernel_size' : h_kernel_size, 
@@ -114,10 +116,10 @@ def max_pool(h_kernel_size, h_stride):
         })
 
 def avg_pool(h_kernel_size, h_stride):
-    def cfn(kernel_size, stride):
-        def fn(In):
-            return {'Out' : tf.nn.avg_pool(In, 
-                [1, kernel_size, kernel_size, 1], [1, stride, stride, 1], 'SAME')}
+    def cfn(di, dh):
+        def fn(di):
+            return {'Out' : tf.nn.avg_pool(di['In'], 
+                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
     return siso_tfm('AvgPool', cfn, {
         'kernel_size' : h_kernel_size, 
@@ -189,39 +191,59 @@ def io_fn2(in0, in1, out):
 def ResidualSimplified(fn):
     return mo.siso_residual(fn, lambda: io_fn( mo.Empty() ), lambda: add() )
 
-def conv2D_simplified(h_num_filters, h_filter_size, stride):
-    def cfn(In, num_filters, filter_size):
-        (_, _, _, channels) = In.get_shape().as_list()
+def conv2D_simplified(h_num_filters, h_filter_size, h_stride):
+    def cfn(di, dh):
+        (_, _, _, channels) = di['In'].get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        W = tf.Variable( W_init_fn( [filter_size, filter_size, channels, num_filters] ) )
-        b = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(In):
+        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['num_filters']] ) )
+        b = tf.Variable( b_init_fn( [dh['num_filters']] ) )
+        def fn(di):
             return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(In, W, [1, stride, stride, 1], 'SAME'), b)}
+                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
         return fn
 
     return siso_tfm('Conv2DSimplified', cfn, {
         'num_filters' : h_num_filters,
+        'stride' : h_stride,
         'filter_size' : h_filter_size})
 
-def conv_spatial_separable(h_filter_size, h_stride):
-    def cfn(In, filter_size, stride):
-        (_, _, _, channels) = In.get_shape().as_list()
+def conv2D(h_filter_size, h_stride):
+    def cfn(di, dh):
+        (_, _, _, channels) = di['In'].get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(stride == 2):
+        if(dh['stride'] == 2):
+            num_filters = 2 * channels
+        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, num_filters] ) )
+        b = tf.Variable( b_init_fn( [num_filters] ) )
+        def fn(di):
+            return {'Out' : tf.nn.bias_add(
+                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
+        return fn
+
+    return siso_tfm('Conv2D', cfn, {
+        'stride' : h_stride,
+        'filter_size' : h_filter_size})
+
+def conv_spatial_separable(h_filter_size, h_stride):
+    def cfn(di, dh):
+        (_, _, _, channels) = di['In'].get_shape().as_list()
+        W_init_fn = kaiming2015delving_initializer_conv()
+        b_init_fn = const_fn(0.0)
+
+        if(dh['stride'] == 2):
             num_filters = 2 * channels
 
-        W1 = tf.Variable( W_init_fn( [1, filter_size, channels, num_filters] ) )
+        W1 = tf.Variable( W_init_fn( [1, dh['filter_size'], channels, num_filters] ) )
         b1 = tf.Variable( b_init_fn( [num_filters] ) )
-        W2 = tf.Variable( W_init_fn( [filter_size, 1, num_filters, num_filters] ) )
+        W2 = tf.Variable( W_init_fn( [dh['filter_size'], 1, num_filters, num_filters] ) )
         b2 = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(In):
+        def fn(di):
             intermediate = tf.nn.bias_add(
-                tf.nn.conv2d(In, W1, [1, stride, stride, 1], 'SAME'), b1)
+                tf.nn.conv2d(di['In'], W1, [1, dh['stride'], dh['stride'], 1], 'SAME'), b1)
             return {'Out' : tf.nn.bias_add(
                 tf.nn.conv2d(intermediate, W2, [1, 1, 1, 1], 'SAME'), b2)}
         return fn
@@ -233,19 +255,19 @@ def conv_spatial_separable(h_filter_size, h_stride):
 
 
 def conv2D_dilated(h_filter_size, h_dilation, h_stride):
-    def cfn(In, filter_size, dilation, stride):
-        (_, _, _, channels) = In.get_shape().as_list()
+    def cfn(di, dh):
+        (_, _, _, channels) = di['In'].get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(stride == 2):
+        if(dh['stride'] == 2):
             num_filters = 2 * channels
 
-        W = tf.Variable( W_init_fn( [filter_size, filter_size, channels, num_filters] ) )
+        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, num_filters] ) )
         b = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(In):
+        def fn(di):
             return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(In, W, [1, stride, stride, 1], 'SAME', dilations=[1, dilation, dilation, 1]), b)}
+                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME', dilations=[1, dh['dilation'], dh['dilation'], 1]), b)}
         return fn
 
     return siso_tfm('Conv2DDilated', cfn, {
@@ -254,20 +276,20 @@ def conv2D_dilated(h_filter_size, h_dilation, h_stride):
         'stride' : h_stride})
 
 def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
-    def cfn(In, filter_size, channel_multiplier, stride):
-        (_, _, _, channels) = In.get_shape().as_list()
+    def cfn(di, dh):
+        (_, _, _, channels) = di['In'].get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(stride == 2):
+        if(dh['stride'] == 2):
             num_filters = 2 * channels
 
-        W_depth = tf.Variable( W_init_fn( [filter_size, filter_size, channels, channel_multiplier] ) )
-        W_point = tf.Variable( W_init_fn( [1, 1, channels * channel_multiplier, num_filters] ) )
+        W_depth = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['channel_multiplier']] ) )
+        W_point = tf.Variable( W_init_fn( [1, 1, channels * dh['channel_multiplier'], num_filters] ) )
         b = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(In):
+        def fn(di):
             return {'Out' : tf.nn.bias_add(
-                tf.nn.separable_conv2d(In, W_depth, W_point, [1, stride, stride, 1], 'SAME', [1, 1]), b)}
+                tf.nn.separable_conv2d(di['In'], W_depth, W_point, [1, dh['stride'], dh['stride'], 1], 'SAME', [1, 1]), b)}
         return fn
 
     return siso_tfm('Conv2DSeparable', cfn, {
@@ -278,16 +300,41 @@ def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
 def conv1x1(h_num_filters):
     return conv2D_simplified(h_num_filters, D([1]), D([1]))
 
+def wrap_relu_batch_norm(io_pair):
+    r_inputs, r_outputs = relu()
+    b_inputs, b_outputs = batch_normalization()
+    r_outputs['Out'].connect(io_pair[0]['In'])
+    io_pair[0]['Out'].connect(b_inputs['In'])
+    return r_inputs, b_outputs
+
 def sp1_operation(h_op_name, h_stride):
     return mo.siso_or({
             'identity': lambda: mo.empty(),
-            'd_sep3': lambda: conv2D_depth_separable(D([3]), D([1]), h_stride),
-            'd_sep5': lambda: conv2D_depth_separable(D([5]), D([1]), h_stride),
-            'd_sep7': lambda: conv2D_depth_separable(D([7]), D([1]), h_stride),
+            'd_sep3': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([3]), D([1]), h_stride)),
+            'd_sep5': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([5]), D([1]), h_stride)),
+            'd_sep7': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([7]), D([1]), h_stride)),
             'avg3': lambda: avg_pool(D([3]), h_stride),
             'max3': lambda: max_pool(D([3]), h_stride),
-            'dil3': lambda: conv2D_dilated(D([3]), D([2]), h_stride),
-            's_sep7': lambda: conv_spatial_separable(D([7]), h_stride)
+            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
+            's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
+            }, h_op_name)
+
+def sp2_operation(h_op_name, h_stride):
+    return mo.siso_or({
+            'identity': lambda: mo.empty(),
+            'conv1': lambda: wrap_relu_batch_norm(conv2D(D([1]), h_stride)),
+            'conv3': lambda: wrap_relu_batch_norm(conv2D(D([3]), h_stride)),
+            'd_sep3': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([3]), D([1]), h_stride)),
+            'd_sep5': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([5]), D([1]), h_stride)),
+            'd_sep7': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([7]), D([1]), h_stride)),
+            'avg2': lambda: avg_pool(D([2]), h_stride),
+            'avg3': lambda: avg_pool(D([3]), h_stride),
+            'min2': lambda: mo.empty(),
+            'max2': lambda: max_pool(D([2]), h_stride),
+            'max2': lambda: max_pool(D([2]), h_stride),
+            'max3': lambda: max_pool(D([3]), h_stride),
+            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
+            's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
             }, h_op_name)
 
 def mi_add(num_terms):
@@ -408,7 +455,7 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)
 
 
-def get_sample_space(num_classes):
+def get_search_space_1(num_classes):
     co.Scope.reset_default_scope()
     C = 5
     h_N = D([4, 6])
@@ -425,6 +472,37 @@ def get_sample_space(num_classes):
     return i_inputs, o_outputs, hyperparameters_fn()
 
 
+def get_search_space_3(num_classes):
+    co.Scope.reset_default_scope()
+    C = 15
+    h_N = D([4, 6])
+    h_F = D([32, 64, 128])
+    h_sharer = hp.HyperparameterSharer()
+    for i in xrange(C):
+        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
+        h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
+    i_inputs, i_outputs = conv1x1(h_F)
+    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
+    i_outputs['Out'].connect(o_inputs['In'])
+    return i_inputs, o_outputs, hyperparameters_fn()
+
+def get_search_space_2(num_classes):
+    co.Scope.reset_default_scope()
+    C = 5
+    h_N = D([4, 6])
+    h_F = D([32, 64, 128])
+    h_sharer = hp.HyperparameterSharer()
+    for i in xrange(C):
+        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
+        h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
+    i_inputs, i_outputs = conv1x1(h_F)
+    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
+    i_outputs['Out'].connect(o_inputs['In'])
+    return i_inputs, o_outputs, hyperparameters_fn()
 
 #def get_ss0_fn(num_classes):
 #    def fn():
