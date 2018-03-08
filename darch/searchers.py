@@ -17,7 +17,7 @@ def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
         for h in hs:
             if not h.is_set():
                 yield h
-            
+
 def random_specify_hyperparameter(hyperp):
     assert not hyperp.is_set()
 
@@ -27,7 +27,7 @@ def random_specify_hyperparameter(hyperp):
     else:
         raise ValueError
     return v
-    
+
 def random_specify(output_lst, hyperp_lst=None):
     vs = []
     for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
@@ -42,19 +42,19 @@ def specify(output_lst, hyperp_lst, vs):
 class Searcher:
     def sample(self):
         raise NotImplementedError
-    
+
     def update(self, val, cfg_d):
         raise NotImplementedError
 
 class RandomSearcher(Searcher):
     def __init__(self, search_space_fn):
         self.search_space_fn = search_space_fn
-        
+
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
         vs = random_specify(outputs.values(), hs.values())
         return inputs, outputs, hs, vs, {}
-    
+
     def update(self, val, cfg_d):
         pass
 
@@ -78,7 +78,7 @@ class MCTSTreeNode:
     def best_child(self, exploration_bonus):
         assert not self.is_leaf()
 
-        # if two nodes have the same score. 
+        # if two nodes have the same score.
         best_inds = None
         best_score = -np.inf
 
@@ -86,23 +86,23 @@ class MCTSTreeNode:
         for (i, node) in enumerate(self.children):
             # NOTE: potentially, do a different definition for the scores.
             # especially once the surrogate model is introduced.
-            # selection policy may be somewhat biased towards what the 
+            # selection policy may be somewhat biased towards what the
             # rollout policy based on surrogate functions says.
             # think about how to extend this.
             if node.num_trials > 0:
-                score = ( node.sum_scores / node.num_trials + 
+                score = (node.sum_scores / node.num_trials +
                             exploration_bonus * np.sqrt(
-                                2.0 * parent_log_nt / node.num_trials) )
+                                2.0 * parent_log_nt / node.num_trials))
             else:
                 score = np.inf
-            
+
             # keep the best node.
             if score > best_score:
                 best_inds = [i]
                 best_score = score
             elif score == best_score:
                 best_inds.append(i)
-            
+
             # draw a child at random and expand.
             best_i = np.random.choice(best_inds)
             best_child = self.children[best_i]
@@ -118,7 +118,7 @@ class MCTSearcher(Searcher):
         self.search_space_fn = search_space_fn
         self.exploration_bonus = exploration_bonus
         self.mcts_root_node = MCTSTreeNode(None)
-        
+
     # NOTE: this operation changes the state of the tree.
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
@@ -145,7 +145,7 @@ class MCTSearcher(Searcher):
 
         node = self.mcts_root_node
         for h in h_it:
-            if not node.is_leaf():            
+            if not node.is_leaf():
                 node, i = node.best_child(self.exploration_bonus)
                 v = h.vs[i]
                 h.set_val(v)
@@ -153,15 +153,15 @@ class MCTSearcher(Searcher):
                 hist.append(i)
                 vs.append(v)
             else:
-                # NOTE: only implemented for discrete hyperparameters. 
+                # NOTE: only implemented for discrete hyperparameters.
                 # does the expansion after tree walk.
                 if isinstance(h, hp.Discrete):
-                    node.expand( len(h.vs) )
+                    node.expand(len(h.vs))
 
                     i = np.random.randint(0, len(h.vs))
                     v = h.vs[i]
                     h.set_val(v)
-                
+
                     hist.append(i)
                     vs.append(v)
                 else:
@@ -178,7 +178,7 @@ class MCTSearcher(Searcher):
                 i = np.random.randint(0, len(h.vs))
                 v = h.vs[i]
                 h.set_val(v)
-                
+
                 hist.append(i)
                 vs.append(v)
             else:
@@ -191,13 +191,13 @@ class SMBOSearcher(Searcher):
         self.surr_model = surrogate_model
         self.num_samples = num_samples
         self.eps_prob = eps_prob
-    
+
     def sample(self):
         if np.random.rand() < self.eps_prob:
             inputs, outputs, hs = self.search_space_fn()
 
             best_vs = random_specify(outputs.values(), hs.values())
-        else: 
+        else:
             best_model = None
             best_vs = None
             best_score = - np.inf
@@ -205,9 +205,6 @@ class SMBOSearcher(Searcher):
                 inputs, outputs, hs = self.search_space_fn()
                 vs = random_specify(outputs.values(), hs.values())
 
-                # NOTE: the model may require a compile to do the surrogate 
-                # this would be the case if it requires information that is 
-                # available only after compilation.
                 feats = su.extract_features(inputs, outputs, hs)
                 score = self.surr_model.eval(feats)
                 if score > best_score:
@@ -216,10 +213,10 @@ class SMBOSearcher(Searcher):
                     best_score = score
 
             inputs, outputs, hs = best_model
-        
+
         cfg_d = {'vs' : best_vs}
-        return inputs, outputs, hs, best_vs, cfg_d    
-        
+        return inputs, outputs, hs, best_vs, cfg_d
+
     def update(self, val, cfg_d):
         (inputs, outputs, hs) = self.search_space_fn()
         specify(outputs.values(), hs.values(), cfg_d['vs'])
@@ -230,7 +227,7 @@ class SMBOSearcher(Searcher):
 # TODO: make sure that can keep the tree while the surrogate changes behind me.
 # TODO: I would just compute the std for the scores.
 class SMBOSearcherWithMCTSOptimizer(Searcher):
-    def __init__(self, search_space_fn, surrogate_model, num_samples, 
+    def __init__(self, search_space_fn, surrogate_model, num_samples,
         eps_prob, tree_refit_interval):
         self.search_space_fn = search_space_fn
         self.surr_model = surrogate_model
@@ -259,19 +256,19 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
                     best_model = (inputs, outputs, hs)
                     best_vs = vs
                     best_score = score
-                
+
                 self.mcts.update(score, m_cfg_d)
             inputs, outputs, hs = best_model
-        
+
         cfg_d = {'vs' : best_vs}
-        return inputs, outputs, hs, best_vs, cfg_d 
-        
+        return inputs, outputs, hs, best_vs, cfg_d
+
     def update(self, val, cfg_d):
         (inputs, outputs, hs) = self.search_space_fn()
         specify(outputs.values(), hs.values(), cfg_d['vs'])
         feats = su.extract_features(inputs, outputs, hs)
         self.surr_model.update(val, feats)
-        
+
         self.cnt += 1
         if self.cnt % self.tree_refit_interval == 0:
             self.mcts = MCTSearcher(self.search_space_fn)
