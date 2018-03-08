@@ -12,42 +12,46 @@ class PyTModule(co.Module):
     def _compile(self):
         input_name_to_val = self._get_input_values()
         hyperp_name_to_val = self._get_hyperp_values()
-        self._m = self._compile_fn(input_name_to_val, hyperp_name_to_val)
-        assert isinstance(self._m, nn.Module)
+        self._fn, self.pyth_modules = self._compile_fn(input_name_to_val, hyperp_name_to_val)
+        for pyth_m in self.pyth_modules:
+            assert isinstance(pyth_m, nn.Module)
 
     def _forward(self):
-        kwargs = {name : ix.val for name, ix in iteritems(self.inputs) }
-        val = self._m(**kwargs)
-        self.outputs['Out'].val = val  # TODO generalize for multiple outputs
+        input_name_to_val = self._get_input_values()
+        output_name_to_val = self._fn(input_name_to_val)
+        self._set_output_values(output_name_to_val)
 
-def _call_fn_on_torch_module(output_lst, fn):
-    def fn_iter(x):
-        d = vars(x)
-        for v in itervalues(d):
-            if isinstance(v, nn.Module):
-                fn(v)
+# NOTE: this is done for the case where all the PyTorch modules are created 
+# using the helper here described, i.e., it assumes the existence of pyth_modules.
+def _call_fn_on_pytorch_module(output_lst, fn):
+    def fn_iter(mx):
+        for pyth_m in mx.pyth_modules:
+            fn(pyth_m)
         return False
     co.traverse_backward(output_lst, fn_iter)
 
 def get_pytorch_modules(output_lst):
-    pyt_modules = set()
-    _call_fn_on_torch_module(output_lst, lambda x: pyt_modules.add(x))
-    return pyt_modules
+    all_modules = set()
+    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: all_modules.add(pyth_m))
+    return all_modules
 
 def train(output_lst):
-    _call_fn_on_torch_module(output_lst, lambda x: x.train())
+    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.train())
 
 def eval(output_lst):
-    _call_fn_on_torch_module(output_lst, lambda x: x.eval())
+    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.eval())
 
 def cuda(output_lst):
-    _call_fn_on_torch_module(output_lst, lambda x: x.cuda())
+    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cuda())
+
+def cpu(output_lst):
+    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cpu())
 
 def parameters(output_lst):
-    ms = get_pytorch_modules(output_lst)
+    pyth_modules = get_pytorch_modules(output_lst)
     ps = set()
-    for m in ms:
-        ps.update(m.parameters())
+    for pyth_m in pyth_modules:
+        ps.update(pyth_m.parameters())
     return ps
 
 class PyTNetContainer(nn.Module):
@@ -67,13 +71,15 @@ class PyTNetContainer(nn.Module):
             self._module_seq = co.determine_module_eval_seq_general(
                 self.name_to_input.values(), self.name_to_output.values())[0]
 
-        input_to_val = {ix : name_to_val[name] for name, ix in iteritems(self.name_to_input)}
-        co.forward(input_to_val, self._module_seq)
-        d = {name : ox.val for name, ox in iteritems(self.name_to_output)}
+        input_name_to_val = {ix : name_to_val[name] 
+            for name, ix in iteritems(self.name_to_input)}
+        co.forward(input_name_to_val, self._module_seq)
+        output_name_to_val = {name : ox.val 
+            for name, ox in iteritems(self.name_to_output)}
 
         if not self._is_compiled:
             modules = get_pytorch_modules(self.name_to_output.values())
             for i, m in enumerate(modules):
                 self.add_module(str(i), m)
             self._is_compiled = True
-        return d
+        return output_name_to_val
