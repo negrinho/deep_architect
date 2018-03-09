@@ -22,7 +22,7 @@ class SimpleClassifierEvaluator:
             stop_patience=20, rate_patience=7,
             save_patience=2, learning_rate_mult=0.5, optimizer_type='adam',
             learning_rate_init=1e-3, learning_rate_min=1e-6, batch_size=32,
-            display_step=1, log_output_to_terminal=False, test_dataset=None):
+            display_step=1, log_output_to_terminal=True, test_dataset=None):
 
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset

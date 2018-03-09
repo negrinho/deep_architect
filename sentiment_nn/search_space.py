@@ -6,11 +6,7 @@ import darch.core as co
 import darch.hyperparameters as hp
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
-import darch.searchers as se
-import darch.visualization as vi
-
 import tensorflow as tf
-from create_sentiment_featuresets import create_feature_sets_and_labels
 
 D = hp.Discrete
 

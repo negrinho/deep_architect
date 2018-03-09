@@ -1,9 +1,11 @@
 
+import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
 import tensorflow as tf
 import numpy as np
-from darch.contrib.search_spaces.tensorflow.common import siso_tfm
+from darch.contrib.search_spaces.tensorflow.common import siso_tfm, D
+
 
 # initializers
 def constant_initializer(c):
@@ -77,8 +79,9 @@ def affine_simplified(h_m):
         shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
         def fn(di):
+            In = di['In']
             if len(shape) > 2:
-                In = tf.reshape(di['In'], [-1, n])
+                In = tf.reshape(In, [-1, n])
             return {'Out' : tf.layers.dense(In, dh['m'])}
         return fn
     return siso_tfm('AffineSimplified', cfn, {'m' : h_m})
@@ -103,11 +106,23 @@ def nonlinearity(h_nonlin_name):
         return fn
     return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
 
-def dnn_cell(h_num_hidden, h_nonlin, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
+def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([
         affine_simplified(h_num_hidden),
-        nonlinearity(h_nonlin),
+        nonlinearity(h_nonlin_name),
         mo.siso_permutation([
             lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
             lambda: mo.siso_optional(lambda: batch_normalization(), h_opt_bn),
         ], h_swap)])
+
+def dnn_net(num_classes):
+    h_nonlin_name = D(['relu', 'relu6', 'crelu', 'elu', 'softplus'])
+    h_swap = D([0, 1])
+    h_opt_drop = D([0, 1])
+    h_opt_bn = D([0, 1])
+    return mo.siso_sequential([
+        mo.siso_repeat(lambda: dnn_cell(
+            D([64, 128, 256, 512, 1024]), 
+            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, 
+            D([0.25, 0.5, 0.75])), D([1, 2, 4, 8])),
+        affine_simplified(D([num_classes]))])

@@ -11,7 +11,7 @@ def idx_to_onehot(y_idx, num_classes):
     return y_one_hot
 
 def center_crop(X, out_height, out_width):
-    num_examples, in_height, in_width, in_depth = X.shape
+    _, in_height, in_width, _ = X.shape
     assert out_height <= in_height and out_width <= in_width
 
     start_i = (in_height - out_height) / 2
@@ -22,7 +22,7 @@ def center_crop(X, out_height, out_width):
 
 # random crops for each of the images.
 def random_crop(X, out_height, out_width):
-    num_examples, in_height, in_width, in_depth = X.shape
+    num_examples, in_height, in_width, _ = X.shape
     # the ouput dimensions have to be smaller or equal that the input dimensions.
     assert out_height <= in_height and out_width <= in_width
 
@@ -40,8 +40,7 @@ def random_crop(X, out_height, out_width):
     return out_X
 
 def random_flip_left_right(X, p_flip):
-    num_examples, height, width, depth = X.shape
-
+    num_examples = X.shape[0]
     out_X = X.copy()
     flip_mask = np.random.random(num_examples) < p_flip
     out_X[flip_mask] = out_X[flip_mask, :, ::-1, :]
@@ -50,8 +49,7 @@ def random_flip_left_right(X, p_flip):
 def per_image_whiten(X):
     """ Subtracts the mean of each image in X and renormalizes them to unit norm.
     """
-    num_examples, height, width, depth = X.shape
-
+    num_examples = X.shape[0]
     X_flat = X.reshape((num_examples, -1))
     X_mean = X_flat.mean(axis=1)
     X_cent = X_flat - X_mean[:, None]
