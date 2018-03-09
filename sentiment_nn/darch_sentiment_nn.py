@@ -5,7 +5,6 @@ import darch.core as co
 import darch.hyperparameters as hp
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
-import darch.utils as ut
 import darch.searchers as se
 import darch.visualization as vi
 import logging as lo

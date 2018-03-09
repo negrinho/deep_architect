@@ -1,9 +1,9 @@
-import darch.core as co
-import darch.hyperparameters as hp
+
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
 import tensorflow as tf
 import numpy as np
+from darch.contrib.search_spaces.tensorflow.common import siso_tfm
 
 # initializers
 def constant_initializer(c):
@@ -33,12 +33,6 @@ def xavier_initializer_affine(gain=1.0):
         init_vals = tf.random_uniform([n, m], -sc, sc)
         return init_vals
     return init_fn
-
-# auxiliary definitions
-D = hp.Discrete
-
-def siso_tfm(name, compile_fn, name_to_h={}, scope=None):
-    return htf.TFModule(name, name_to_h, compile_fn, ['In'], ['Out'], scope).get_io()
 
 # modules
 def relu():
@@ -76,70 +70,40 @@ def batch_normalization():
         return fn, {p_var : 1}, {p_var : 0}
     return siso_tfm('BatchNormalization', cfn)
 
-def conv2d(h_num_filters, h_filter_width, h_stride, h_W_init_fn, h_b_init_fn):
-    def cfn(In, num_filters, filter_width, stride, W_init_fn, b_init_fn):
-        (_, _, _, num_channels) = In.get_shape().as_list()
-        W = tf.Variable(W_init_fn([filter_width, filter_width, num_channels, num_filters]))
-        b = tf.Variable(b_init_fn([num_filters]))
-        def fn(In):
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(In, W, [1, stride, stride, 1], 'SAME'), b)}
-        return fn
-    return siso_tfm('Conv2D', cfn, {
-        'num_filters' : h_num_filters,
-        'filter_width' : h_filter_width,
-        'stride' : h_stride,
-        'W_init_fn' : h_W_init_fn,
-        'b_init_fn' : h_b_init_fn,
-        })
-
-def conv2d_simplified(h_num_filters, h_filter_width, stride):
-    W_init_fn = kaiming2015delving_initializer_conv()
-    b_init_fn = constant_initializer(0.0)
-    return conv2d(h_num_filters, h_filter_width,
-        D([stride]), D([W_init_fn]), D([b_init_fn]))
-
-def max_pool2d(h_kernel_size, h_stride):
-    def cfn(kernel_size, stride):
-        def fn(In):
-            return {'Out' : tf.nn.max_pool(In,
-                [1, kernel_size, kernel_size, 1], [1, stride, stride, 1], 'SAME')}
-        return fn
-    return siso_tfm('MaxPool2D', cfn, {
-        'kernel_size' : h_kernel_size, 'stride' : h_stride,})
+# add having a bias or not.
 
 def affine_simplified(h_m):
-    def cfn(In, m):
-        shape = In.get_shape().as_list()
+    def cfn(di, dh):
+        shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
-        def fn(In):
+        def fn(di):
             if len(shape) > 2:
-                In = tf.reshape(In, [-1, n])
-            return {'Out' : tf.layers.dense(In, m)}
+                In = tf.reshape(di['In'], [-1, n])
+            return {'Out' : tf.layers.dense(In, dh['m'])}
         return fn
     return siso_tfm('AffineSimplified', cfn, {'m' : h_m})
 
-def nonlinearity(h_or):
-    def cfn(nonlin_name):
-        def fn(In):
+def nonlinearity(h_nonlin_name):
+    def cfn(di, dh):
+        def fn(di):
+            nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = tf.nn.relu(In)
+                Out = tf.nn.relu(di['In'])
             elif nonlin_name == 'relu6':
-                Out = tf.nn.relu6(In)
+                Out = tf.nn.relu6(di['In'])
             elif nonlin_name == 'crelu':
-                Out = tf.nn.crelu(In)
+                Out = tf.nn.crelu(di['In'])
             elif nonlin_name == 'elu':
-                Out = tf.nn.elu(In)
+                Out = tf.nn.elu(di['In'])
             elif nonlin_name == 'softplus':
-                Out = tf.nn.softplus(In)
+                Out = tf.nn.softplus(di['In'])
             else:
                 raise ValueError
             return {"Out" : Out}
         return fn
-    return siso_tfm('Nonlinearity', cfn, {'idx' : h_or})
+    return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
 
-def dnn_cell(h_num_hidden, h_nonlin, h_swap,
-        h_opt_drop, h_opt_bn, h_drop_keep_prob):
+def dnn_cell(h_num_hidden, h_nonlin, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([
         affine_simplified(h_num_hidden),
         nonlinearity(h_nonlin),

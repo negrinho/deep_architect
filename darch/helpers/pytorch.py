@@ -66,10 +66,11 @@ class PyTNetContainer(nn.Module):
     def __call__(self, input_to_val):
         return self.forward(input_to_val)
 
+    # TODO: needs additional error checking to make sure that the set of 
+    # outputs is correct.
     def forward(self, name_to_val):
         if self._module_seq is None:
-            self._module_seq = co.determine_module_eval_seq_general(
-                self.name_to_input.values(), self.name_to_output.values())[0]
+            self._module_seq = co.determine_module_eval_seq(self.name_to_input.values())
 
         input_name_to_val = {ix : name_to_val[name] 
             for name, ix in iteritems(self.name_to_input)}
