@@ -17,7 +17,7 @@ def evaluate_fn(inputs, outputs, hs, data):
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=y))
     optimizer = tf.train.AdamOptimizer(lr).minimize(cost)
 
-    hm_epochs = 100
+    hm_epochs = 25
     batch_size = 128
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -33,7 +33,7 @@ def evaluate_fn(inputs, outputs, hs, data):
 
         correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        
-        r = {'val_acc' : accuracy.eval({x: val_x, y:val_y}), 
+
+        r = {'val_acc' : accuracy.eval({x: val_x, y:val_y}),
              'train_acc' : accuracy.eval({x: train_x, y:train_y})}
         return r

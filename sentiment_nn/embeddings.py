@@ -15,7 +15,7 @@ import torch.nn.functional as fnc
 from torch.autograd import Variable
 import torch.optim as opt
 from pprint import pprint
-import itertools 
+import itertools
 import numpy as np
 import random
 
@@ -45,7 +45,7 @@ def process_to_same_length(ch2idx, xs):
 
 def compute_pred(surr_model, feats_lst):
     return [surr_model.eval(f) for f in feats_lst]
-    
+
 def compute_error(surr_model, val_lst, feats_lst):
     av = 0.0
     for v, feats in zip(val_lst, feats_lst):
@@ -62,8 +62,8 @@ def concatenate_features(feats):
 def plot_true_vs_pred(true_val_lst, hat_val_lst):
     plt.scatter(true_val_lst, hat_val_lst)
     plt.plot([0, 1], [0, 1])
-    plt.xlim([0, 1])
-    plt.ylim([0, 1])
+    # plt.xlim([0, 1])
+    # plt.ylim([0, 1])
     plt.show()
 
 class CLSTM(nn.Module):
@@ -80,8 +80,8 @@ class CLSTM(nn.Module):
 
     def forward(self, char_repr):
         out = self.ch_embs(char_repr)
-        (h0, c0) = (Variable(torch.zeros( 1, out.size(1), out.size(2) )), 
-            Variable(torch.zeros( 1, out.size(1), out.size(2) )))            
+        (h0, c0) = (Variable(torch.zeros(1, out.size(1), out.size(2))),
+            Variable(torch.zeros(1, out.size(1), out.size(2))))
 
         _, (_, out) = self.lstm(out, (h0, c0))
         out = out.mean(1)
@@ -105,7 +105,7 @@ class CLSTMSurrogate(su.SurrogateModel):
 
     def eval(self, feats):
         vec_lst = process_to_same_length(self.ch2idx, concatenate_features(feats))
-        vec = Variable( torch.LongTensor(vec_lst).t() )
+        vec = Variable(torch.LongTensor(vec_lst).t())
         return self.clstm.forward(vec).data[0]
 
     def update(self, val, feats):
@@ -124,7 +124,7 @@ class CLSTMSurrogate(su.SurrogateModel):
         idxs = range(len(train_val_lst))
 
         print "Train: %f, Val: %f" % (
-            compute_error(self, train_val_lst, train_feats_lst), 
+            compute_error(self, train_val_lst, train_feats_lst),
             compute_error(self, val_val_lst, val_feats_lst))
 
         for _ in xrange(self.num_epochs):
@@ -143,7 +143,7 @@ class CLSTMSurrogate(su.SurrogateModel):
                 loss.backward()
                 self.optimizer.step()
             print "Train: %f, Val: %f" % (
-                compute_error(self, train_val_lst, train_feats_lst), 
+                compute_error(self, train_val_lst, train_feats_lst),
                 compute_error(self, val_val_lst, val_feats_lst))
 
 if __name__ == '__main__':
@@ -163,16 +163,17 @@ if __name__ == '__main__':
     hash_size = 1024
     refit_interval = 1e6
     for weight_decay_coeff in [10.0]:#[1e-4, 1e-5, 1e-6]:
-        surr_model = su.HashingSurrogate(hash_size, refit_interval, 
+        surr_model = su.HashingSurrogate(hash_size, refit_interval,
             weight_decay_coeff=weight_decay_coeff)
         for val, feats in zip(train_val_lst, train_feats_lst):
             surr_model.update(val, feats)
         surr_model._refit()
         print "Train MSE: %f, Val MSE: %f" % (
-            compute_error(surr_model, train_val_lst, train_feats_lst), 
+            compute_error(surr_model, train_val_lst, train_feats_lst),
             compute_error(surr_model, val_val_lst, val_feats_lst))
-        plot_true_vs_pred(val_val_lst, compute_pred(surr_model, val_feats_lst))        
-        
+        plot_true_vs_pred(train_val_lst, compute_pred(surr_model, train_feats_lst))
+        plot_true_vs_pred(val_val_lst, compute_pred(surr_model, val_feats_lst))
+
 
 ### NOTE: the linear type models are easier to fit
 
@@ -182,17 +183,17 @@ if __name__ == '__main__':
     num_epochs = 100
     surr_model = CLSTMSurrogate(embedding_size, hidden_size, learning_rate, num_epochs)
     for val, feats in zip(val_lst, feats_lst):
-        surr_model.update(val, feats)    
+        surr_model.update(val, feats)
     surr_model._refit()
 
-    
+
 
 # TODO: maybe do bidirectional stuff.
 # NOTE: do a very simple regression problem. consider a ranking problem
-# NOTE: this depends on what the embeddings are going to be used for. 
-# sample a few features and a few numbers. 
+# NOTE: this depends on what the embeddings are going to be used for.
+# sample a few features and a few numbers.
 # check both the existing surrogates and surrogates that I may consider having.
-# TODO: do architecture search for the surrogate itself. example, better models 
+# TODO: do architecture search for the surrogate itself. example, better models
 # may work best.
 # TODO: check that a full LSTM would also work.
 # TODO: generate the embeddings that I can give to Yiming.
@@ -203,3 +204,30 @@ if __name__ == '__main__':
 # bonus automatically (for optimization in MCTS case).
 # TODO: change the name vec_lst
 # TODO: more careful separation of the features.
+# TODO: different training objectives.
+
+#### example features.
+# "connection_feats": [
+#     "M.ReLU-1.O.Out |-> M.Affine-0.I.In",
+#     "M.Affine-2.O.Out |-> M.ReLU-1.I.In",
+#     "M.ReLU-0.O.Out |-> M.Affine-2.I.In",
+#     "M.Affine-1.O.Out |-> M.ReLU-0.I.In"
+# ],
+# "module_hyperp_feats": [
+#     "M.Affine-0/m : H.Discrete-1 = 2",
+#     "M.Affine-2/m : H.Discrete-4 = 256",
+#     "M.Affine-1/m : H.Discrete-3 = 128"
+# ],
+# "other_hyper_feats": [
+#     "lr : H.Discrete-2 = 0.01"
+# ],
+# "module_feats": [
+#     "M.Affine-0",
+#     "M.ReLU-1",
+#     "M.Affine-2",
+#     "M.ReLU-0",
+#     "M.Affine-1"
+# ]
+
+
+# TODO: do evolution of MSE with training error.

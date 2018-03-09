@@ -32,7 +32,7 @@ def file_exists(path):
 def folder_exists(path):
     return os.path.isdir(path)
 
-def create_folder(folderpath, 
+def create_folder(folderpath,
         abort_if_exists=True, create_parent_folders=False):
 
     assert not file_exists(folderpath)
@@ -58,13 +58,13 @@ def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
 #         self.out_folderpath = out_folderpath
 #         self.search_name = search_name
 #         self.current_eval_id = 1
-    
+
 #         self.search_folderpath = join_paths([out_folderpath, search_name])
 #         self.search_data_folderpath = join_paths([
 #             self.search_folderpath, 'search_data'])
 #         self.evaluations_folderpath = join_paths([
 #             self.search_folderpath, 'evaluations'])
-        
+
 #         assert folder_exists(folderpath) and not folder_exists(self.search_folderpath)
 #         create_folder(self.search_folderpath)
 #         create_folder(self.search_data_folderpath)
@@ -79,7 +79,7 @@ def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
 
 #     def log(self, inputs, outputs, hs, cfg_d, vs, r):
 #         feats = su.extract_features(inputs, outputs, hs)
-#         feats = {'module_feats' : feats[0], 'connection_feats' : feats[1], 
+#         feats = {'module_feats' : feats[0], 'connection_feats' : feats[1],
 #             'module_hyperp_feats' : feats[2], 'other_hyper_feats' : feats[3]}
 #         write_jsonfile(feats, join_paths(self.c))
 
@@ -93,18 +93,20 @@ def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
 #             json.dump(tbd, fi, indent=4)
 
 # # NOTE: something that seems reasonable is to move the user loggers to
-# # some other place. this context dictionary, it should be able to do 
+# # some other place. this context dictionary, it should be able to do
 # # something with them. everything should be placed in the context dictionary.
 
-# NOTE: the logger is extremely tied to the evaluation of a model and to the 
+# NOTE: the logger is extremely tied to the evaluation of a model and to the
 # results returned. a lot more sophistication is needed with some cases.
 
 class SearchLogger:
-    def __init__(self, folderpath, search_name):
+    def __init__(self, folderpath, search_name, delete_if_exists=False):
         self.search_name = search_name
         self.current_eval_id = 1
-    
-        self.search_folderpath = join_paths([folderpath, search_name])        
+
+        self.search_folderpath = join_paths([folderpath, search_name])
+        if delete_if_exists:
+            delete_folder(self.search_folderpath, abort_if_nonempty=False, abort_if_notexists=False)
         assert folder_exists(folderpath) and not folder_exists(self.search_folderpath)
         create_folder(self.search_folderpath)
 
@@ -116,7 +118,7 @@ class SearchLogger:
 
         d = {}
         feats = su.extract_features(inputs, outputs, hs)
-        feats = {'module_feats' : feats[0], 'connection_feats' : feats[1], 
+        feats = {'module_feats' : feats[0], 'connection_feats' : feats[1],
             'module_hyperp_feats' : feats[2], 'other_hyper_feats' : feats[3]}
         d['hyperp_values'] = vs
         d['features'] = feats
@@ -141,10 +143,10 @@ def load_logs(folderpath, search_name):
             d_logs[eval_name] = read_jsonfile(log_filepath)
             i += 1
         else:
-            break 
+            break
     return d_logs
 
-# the most important part of this model is to make sure that it works in the 
+# the most important part of this model is to make sure that it works in the
 # simplest things. it can be done at the sequence level.
 
 import data as da
@@ -154,7 +156,7 @@ import search_space as ss
 import darch.visualization as vi
 
 if __name__ == '__main__':
-    delete_folder('test', abort_if_nonempty=False)
+    delete_folder('test', abort_if_nonempty=False, abort_if_notexists=False)
     data = da.load_data(True)
     searcher = se.MCTSearcher(ss.ss1_fn, 0.1)
     logger = SearchLogger('.', 'test')

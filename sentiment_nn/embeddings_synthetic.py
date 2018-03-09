@@ -115,8 +115,6 @@ plt.scatter(embs[:, 0], embs[:, 1], c=vals, cmap='viridis')
 plt.colorbar()
 plt.show()
 
-
-
 #%%
 # print y[num_train:]
 
@@ -138,3 +136,9 @@ plt.show()
 # TODO: treat it as a classification problem where we are looking at 
 # quantiles.
 # or perhaps, just try to classify it in different quantiles.
+
+# TODO: it would be nice to do some dimensionality reduction.
+# TODO: maybe different sampling of the points.
+
+# Try changing the feature representation (e.g., bucketing).
+# Try using a convolutional architecture for encoding the ids.

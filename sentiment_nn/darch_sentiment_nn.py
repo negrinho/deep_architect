@@ -32,7 +32,7 @@ def evaluate_fn(inputs, outputs, hs):
     optimizer = tf.train.AdamOptimizer(lr).minimize(cost)
 
     # cycles of feed forward + backprop
-    hm_epochs = 100
+    hm_epochs = 10
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -74,7 +74,7 @@ def relu():
         ['In'], ['Out']).get_io()
 
 def dnn_block(h_m):
-    return mo.siso_sequential([affine(h_m), relu()])
+    return mo.siso_sequential([affine(h_m), mo.siso_optional(relu, hp.Bool())])
 
 def ss1_fn():
     co.Scope.reset_default_scope()
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     train_x, val_x = np.array(train_x[:train_size]), np.array(train_x[train_size:])
     train_y, val_y = np.array(train_y[:train_size]), np.array(train_y[train_size:])
 
-    searcher = se.MCTSearcher(ss1_fn, 0.1)
+    searcher = se.RandomSearcher(ss1_fn)
     for _ in xrange(128):
         (inputs, outputs, hs, vs, cfg_d) = searcher.sample()
         r = evaluate_fn(inputs, outputs, hs)

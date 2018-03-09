@@ -5,8 +5,8 @@ import darch.searchers as se
 import search_space as ss
 
 if __name__ == '__main__':
-    data = da.load_data(True)
-    searcher = se.MCTSearcher(ss.ss1_fn, 0.1)
+    data = da.load_data(False)
+    searcher = se.MCTSearcher(ss.get_ss1_fn(2), 0.1)
     for _ in xrange(128):
         (inputs, outputs, hs, vs, cfg_d) = searcher.sample()
         r = ev.evaluate_fn(inputs, outputs, hs, data)

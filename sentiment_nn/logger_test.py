@@ -22,7 +22,7 @@ D = hp.Discrete
 
 def evaluate_fn(inputs, outputs, hs):
     x = tf.placeholder('float', [None, len(train_x[0])])
-    y = tf.placeholder('float', )
+    y = tf.placeholder('float',)
 
     co.forward({inputs['In']: x})
     prediction = outputs['Out'].val
