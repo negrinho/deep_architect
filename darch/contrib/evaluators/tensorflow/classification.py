@@ -19,9 +19,10 @@ class SimpleClassifierEvaluator:
 
     def __init__(self, train_dataset, val_dataset, num_classes, model_path,
             max_num_training_epochs=200, max_eval_time_in_minutes=180.0,
-            stop_patience=20, rate_patience=7,
-            save_patience=2, learning_rate_mult=0.5, optimizer_type='adam',
-            learning_rate_init=1e-3, learning_rate_min=1e-6, batch_size=32,
+            stop_patience=20, save_patience=2, 
+            optimizer_type='adam', batch_size=256,
+            learning_rate_patience=7, learning_rate_init=1e-3, 
+            learning_rate_min=1e-6, learning_rate_mult=0.1, 
             display_step=1, log_output_to_terminal=True, test_dataset=None):
 
         self.train_dataset = train_dataset
@@ -33,8 +34,8 @@ class SimpleClassifierEvaluator:
         self.max_eval_time_in_minutes = max_eval_time_in_minutes
         self.display_step = display_step
         self.stop_patience = stop_patience
-        self.rate_patience = rate_patience
         self.save_patience = save_patience
+        self.learning_rate_patience = learning_rate_patience
         self.learning_rate_mult = learning_rate_mult
         self.learning_rate_init = learning_rate_init
         self.learning_rate_min = learning_rate_min
@@ -92,14 +93,21 @@ class SimpleClassifierEvaluator:
         with tf.Session() as sess:
             sess.run(init)
 
+            learning_rate_init = self.learning_rate_init if 'learning_rate_init' not in hs else hs['learning_rate_init'].val
+            learning_rate_mult = self.learning_rate_mult if 'learning_rate_mult' not in hs else hs['learning_rate_mult'].val
+            learning_rate_min = self.learning_rate_min if 'learning_rate_min' not in hs else hs['learning_rate_min'].val
+            stop_patience = self.stop_patience if 'stop_patience' not in hs else hs['stop_patience'].val
+            learning_rate_patience = self.learning_rate_patience if 'learning_rate_patience' not in hs else hs['learning_rate_patience'].val
+            save_patience = self.save_patience if 'save_patience' not in hs else hs['save_patience'].val
+
             best_val_acc = - np.inf
             best_val_acc_saved = - np.inf
-            stop_counter = self.stop_patience
-            rate_counter = self.rate_patience
-            save_counter = self.save_patience
+            stop_counter = stop_patience
+            rate_counter = learning_rate_patience
+            save_counter = save_patience
             time_start = time.time()
 
-            lr = self.learning_rate_init
+            lr = learning_rate_init
             num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
             for epoch in xrange(self.max_num_training_epochs):
                 avg_loss = 0.
@@ -126,9 +134,9 @@ class SimpleClassifierEvaluator:
                 if best_val_acc < val_acc:
                     best_val_acc = val_acc
                     # reinitialize all the counters.
-                    stop_counter = self.stop_patience
-                    rate_counter = self.rate_patience
-                    save_counter = self.save_patience
+                    stop_counter = stop_patience
+                    rate_counter = learning_rate_patience
+                    save_counter = save_patience
                 else:
                     stop_counter -= 1
                     rate_counter -= 1
@@ -136,8 +144,8 @@ class SimpleClassifierEvaluator:
                         break
 
                     if rate_counter == 0:
-                        lr = max(lr * self.learning_rate_mult, self.learning_rate_min)
-                        rate_counter = self.rate_patience
+                        lr = max(lr * learning_rate_mult, learning_rate_min)
+                        rate_counter = learning_rate_patience
 
                     if best_val_acc_saved < val_acc:
                         save_counter -= 1
@@ -145,7 +153,7 @@ class SimpleClassifierEvaluator:
                             save_path = saver.save(sess, self.model_path)
                             print("Model saved in file: %s" % save_path)
 
-                            save_counter = self.save_patience
+                            save_counter = save_patience
                             best_val_acc_saved = val_acc
 
                 # at the end of the epoch, if spent more time than budget, exit.

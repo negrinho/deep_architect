@@ -112,7 +112,7 @@ def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_k
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
             lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
-            lambda: mo.siso_optional(lambda: batch_normalization(), h_opt_bn),
+            lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)])
 
 def dnn_net(num_classes):
