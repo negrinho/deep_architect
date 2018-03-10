@@ -33,7 +33,7 @@ def evaluate_fn(inputs, outputs, hs, data, vocab_size, batch_size, num_steps):
                 loss += cost_val
             print 'Epoch %d: %f' % (epoch, math.exp(loss/len(train_x)))
 
-        correct = tf.equal(tf.argmax(prediction, 2), tf.argmax(y, 2))
+        correct = tf.equal(tf.argmax(prediction, 2), y)
         accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         
         r = {'val_acc' : accuracy.eval({x: val_x.reshape(-1, val_x.shape[2]), y:val_y.reshape(-1, val_x.shape[2])}), 

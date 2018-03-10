@@ -85,8 +85,7 @@ def hyperparameters_fn():
 def ptb_search_space(batch_size, num_steps, vocab_size):
     h_sharer = hp.HyperparameterSharer()
     h_embedding_size = D([300])
-    #h_sharer.register('h_hidden_size', lambda:D([200, 650, 1500]))
-    h_sharer.register('h_hidden_size', lambda:D([200]))
+    h_sharer.register('h_hidden_size', lambda:D([200, 650, 1500]))
     h_num_layers= D([2])
     h_keep_prob = D([1, .5, .35])
 
