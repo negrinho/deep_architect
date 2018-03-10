@@ -148,21 +148,28 @@ if __name__ == '__main__':
     train_y, val_y = np.array(train_y[:train_size]), np.array(train_y[train_size:])
 
     searcher = se.MCTSearcher(ss1_fn, 0.1)
-    logger_manager = logger.LoggerManager(exp_label = "exp", exp_dir_path="exps", code_dir_path=os.getcwd())
-    custom_logger_def = {"name": "custom", "file_type": "txt", "inc": ["time", "hyperparameters"]}
-    logger_manager.add_custom_logger(custom_logger_def)
-    print(str(logger_manager))
-    for _ in xrange(5):
+    # logger_manager = logger.LoggerManager(exp_label = "exp", exp_dir_path="exps", code_dir_path=os.getcwd())
+    # custom_logger_def = {"name": "custom", "file_type": "txt", "inc": ["time", "hyperparameters"]}
+    # logger_manager.add_custom_logger(custom_logger_def)
+    # print(str(logger_manager))
+    exp_dir_path, code_dir_path, code_archive_dir_path = logger.setup_directories("experiments","","code_archive")
+    logger.archive_code(code_dir_path,code_archive_dir_path)
+    exp_iter = logger.experiment_directory_iterator(exp_dir_path,experiment_label="experiment",resume=True)
+    for i in xrange(1):
         (inputs, outputs, hs, vs, cfg_d) = searcher.sample()
-        # generate config file (cfg_d and vs)
+        inst_dir = exp_iter.next()
+        config_logger = logger.JSONLogger(name = "config",
+                                          inc = ["vs", "cfg_d"],
+                                          path = inst_dir)
+
+        config_logger.log({"vs": vs, "cfg_d": cfg_d})
+
         s = darch.surrogates.extract_features(inputs, outputs, hs)
-        # set up directories?
         r = evaluate_fn(inputs, outputs, hs)
-        # print vs, r, cfg_d
-        logger_manager.log_all(hyperparameters = hs,
-                          values = vs,
-                          config = cfg_d,
-                          results = r,
-                          module_connections = s)
+
+        result_logger = logger.JSONLogger(name = "results",
+                                          inc = ["r"],
+                                          path = inst_dir)
+
+        result_logger.log({"r": r})
         searcher.update(r['val_acc'], cfg_d)
-        # vi.draw_graph(outputs.values(), True)
