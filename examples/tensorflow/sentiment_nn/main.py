@@ -13,7 +13,7 @@ def ss1_fn():
 def main():
     num_classes = 2
     Xtrain, ytrain, Xtest, ytest = create_feature_sets_and_labels(
-        'data/sentiment/pos.txt', 'data/sentiment/neg.txt')
+        'data/sentiment/small_pos.txt', 'data/sentiment/small_neg.txt')
     Xtrain, Xtest = np.array(Xtrain, dtype=np.float), np.array(Xtest, dtype=np.float)
     ytrain, ytest = np.array(ytrain, dtype=np.int), np.array(ytest, dtype=np.int)
     train_size = int(len(Xtrain)*.8)
