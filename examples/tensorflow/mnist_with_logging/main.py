@@ -3,8 +3,10 @@ from darch.contrib.datasets.loaders import load_mnist
 from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.datasets.dataset import InMemoryDataset
 import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
-import darch.searchers as se
 import darch.core as co
+import darch.searchers as se
+import darch.search_logging as sl
+import darch.visualization as vi
 
 class SearchSpaceFactory:
     def __init__(self, num_classes):
@@ -27,10 +29,17 @@ def main():
     search_space_factory = SearchSpaceFactory(num_classes)
 
     searcher = se.RandomSearcher(search_space_factory.get_search_space)
+    search_logger = sl.SearchLogger('./logs', 'test')
     for _ in xrange(num_samples):
-        inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
-        val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
-        searcher.update(val_acc, searcher_eval_token)
+        evaluation_logger = search_logger.get_current_evaluation_logger()
+        inputs, outputs, hs, hyperp_value_lst, searcher_eval_token = searcher.sample()
+        evaluation_logger.log_config(hyperp_value_lst, searcher_eval_token)
+        evaluation_logger.log_features(inputs, outputs, hs)
+        results = evaluator.eval(inputs, outputs, hs)
+        evaluation_logger.log_results(results)      
+        vi.draw_graph(outputs.values(), True, True, print_to_screen=False,
+            out_folderpath=evaluation_logger.get_user_data_folderpath())
+        searcher.update(results['val_acc'], searcher_eval_token)
 
 if __name__ == '__main__':
     main()

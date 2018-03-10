@@ -170,9 +170,10 @@ class SimpleClassifierEvaluator:
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                 self.val_dataset, eval_feed)
             print("Validation accuracy: %f" % val_acc)
+            results = {'val_acc' : val_acc}
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                     self.test_dataset, eval_feed)
                 print("Test accuracy: %f" % test_acc)
-
-        return val_acc
+                results['test_acc'] = test_acc
+        return results

@@ -141,7 +141,6 @@ class SearchLogger:
         # create_folder(self.code_folderpath)
 
     def get_current_evaluation_logger(self):
-        print vars(self)
         logger = EvaluationLogger(self.all_evaluations_folderpath, self.current_evaluation_id)
         self.current_evaluation_id += 1
         return logger
