@@ -1,4 +1,4 @@
-from six import iteritems, itervalues
+from six import iteritems
 import darch.core as co
 import torch.nn as nn
 
@@ -32,7 +32,7 @@ def _call_fn_on_pytorch_module(output_lst, fn):
 
 def get_pytorch_modules(output_lst):
     all_modules = set()
-    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: all_modules.add(pyth_m))
+    _call_fn_on_pytorch_module(output_lst, all_modules.add)
     return all_modules
 
 def train(output_lst):

@@ -4,8 +4,6 @@ from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 import time
-import os
-import errno
 import darch.core as co
 import darch.helpers.tensorflow as htf
 
@@ -111,7 +109,7 @@ class SimpleClassifierEvaluator:
             num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
             for epoch in xrange(self.max_num_training_epochs):
                 avg_loss = 0.
-                for i in xrange(num_batches):
+                for _ in xrange(num_batches):
                     X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
                     train_feed.update({X_pl: X_batch, y_pl: y_batch, lr_pl: lr})
 

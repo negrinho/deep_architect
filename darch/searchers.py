@@ -1,4 +1,3 @@
-from six import iteritems
 from six.moves import xrange
 import numpy as np
 import darch.hyperparameters as hp
@@ -201,7 +200,7 @@ class SMBOSearcher(Searcher):
             best_model = None
             best_vs = None
             best_score = - np.inf
-            for i in xrange(self.num_samples):
+            for _ in xrange(self.num_samples):
                 inputs, outputs, hs = self.search_space_fn()
                 vs = random_specify(outputs.values(), hs.values())
 

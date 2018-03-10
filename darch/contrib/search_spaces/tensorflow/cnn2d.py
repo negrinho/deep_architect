@@ -4,10 +4,10 @@ from darch.contrib.search_spaces.tensorflow.dnn import kaiming2015delving_initia
 
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_W_init_fn, h_b_init_fn):
-    def cfn(di, dh , num_filters, filter_width, stride, W_init_fn, b_init_fn):
+    def cfn(di, dh):
         (_, _, _, num_channels) = di['In'].get_shape().as_list()
-        W = tf.Variable(W_init_fn([dh['filter_width'], dh['filter_width'], num_channels, dh['num_filters']]))
-        b = tf.Variable(b_init_fn([dh['num_filters']]))
+        W = tf.Variable(dh['W_init_fn']([dh['filter_width'], dh['filter_width'], num_channels, dh['num_filters']]))
+        b = tf.Variable(dh['b_init_fn']([dh['num_filters']]))
         def fn(di):
             return {'Out' : tf.nn.bias_add(
                 tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}

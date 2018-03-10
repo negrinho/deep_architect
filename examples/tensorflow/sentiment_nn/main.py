@@ -1,21 +1,16 @@
-import darch.core as co
-import darch.hyperparameters as hp
-import darch.helpers.tensorflow as htf
-import darch.modules as mo
 import darch.searchers as se
 import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
 from create_sentiment_featuresets import create_feature_sets_and_labels
 from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.datasets.dataset import InMemoryDataset
 from darch.contrib.search_spaces.tensorflow.common import D
-import tensorflow as tf
 import numpy as np
 
 def ss1_fn():
     inputs, outputs = css_dnn.dnn_net(2)
     return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
 
-if __name__ == '__main__':
+def main():
     num_classes = 2
     Xtrain, ytrain, Xtest, ytest = create_feature_sets_and_labels(
         'data/sentiment/pos.txt', 'data/sentiment/neg.txt')
@@ -39,3 +34,6 @@ if __name__ == '__main__':
         val_acc = evaluator.eval(inputs, outputs, hs)
         print hyperp_value_hist, val_acc, searcher_eval_token
         searcher.update(val_acc, searcher_eval_token)
+
+if __name__ == '__main__':
+    main()

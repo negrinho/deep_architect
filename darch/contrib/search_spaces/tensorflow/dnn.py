@@ -1,6 +1,5 @@
 
 import darch.core as co
-import darch.helpers.tensorflow as htf
 import darch.modules as mo
 import tensorflow as tf
 import numpy as np
@@ -38,7 +37,7 @@ def xavier_initializer_affine(gain=1.0):
 
 # modules
 def relu():
-    return siso_tfm('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])})
+    return siso_tfm('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
 
 def affine(h_m, h_W_init_fn, h_b_init_fn):
     def cfn(di, dh):
@@ -59,7 +58,7 @@ def affine(h_m, h_W_init_fn, h_b_init_fn):
 def dropout(h_keep_prob):
     def cfn(di, dh):
         p = tf.placeholder(tf.float32)
-        def fn(In):
+        def fn(di):
             return {'Out' : tf.nn.dropout(di['In'], p)}
         return fn, {p : dh['keep_prob']}, {p : 1.0}
     return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
@@ -70,7 +69,7 @@ def batch_normalization():
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn)
+    return siso_tfm('BatchNormalization', cfn), {}
 
 # add having a bias or not.
 

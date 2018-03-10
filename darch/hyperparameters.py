@@ -26,8 +26,7 @@ class HyperparameterSharer:
         return self.name_to_h[hyperp_name]
 
 class DependentHyperparameter(co.Hyperparameter):
-    """Used to implement behavior where
-    """
+
     def __init__(self, fn, hs, scope=None, name=None):
         co.Hyperparameter.__init__(self, scope, name)
 

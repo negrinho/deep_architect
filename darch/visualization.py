@@ -66,10 +66,10 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     # add the output terminals.
     for m in module_lst:
         for ox in itervalues(m.outputs):
-                g.node(ox.get_name(), shape='house', penwidth=penwidth)
-                g.edge(
-                    ox.get_module().get_name(),
-                    ox.get_name())
+            g.node(ox.get_name(), shape='house', penwidth=penwidth)
+            g.edge(
+                ox.get_module().get_name(),
+                ox.get_name())
 
     # minor adjustments to attributes.
     for s in nodes:
@@ -97,7 +97,7 @@ class LinePlot:
     def plot(self, show=True, fpath=None):
         f = plt.figure()
         for d in self.data:
-             plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'])
+            plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'])
 
         if self.title is not None:
             plt.title(self.title)
