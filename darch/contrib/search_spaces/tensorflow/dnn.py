@@ -69,7 +69,7 @@ def batch_normalization():
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn), {}
+    return siso_tfm('BatchNormalization', cfn, {})
 
 # add having a bias or not.
 
