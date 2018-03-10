@@ -66,7 +66,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     # add the output terminals.
     for m in module_lst:
         for ox in itervalues(m.outputs):
-            g.node(ox.get_name(), shape='house', penwidth=penwidth)
+            g.node(ox.get_name(), shape='rectangle', penwidth=penwidth)
             g.edge(
                 ox.get_module().get_name(),
                 ox.get_name())

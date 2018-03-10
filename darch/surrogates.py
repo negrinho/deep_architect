@@ -2,7 +2,7 @@ import darch.core as co
 import sklearn.linear_model as lm
 import scipy.sparse as sp
 import numpy as np
-from six import iteritems
+from six import iteritems, itervalues
 
 class SurrogateModel:
     def eval(self, feats):
@@ -45,7 +45,7 @@ class HashingSurrogate(SurrogateModel):
 
     def _feats2vec(self, feats):
         vec = sp.dok_matrix((1, self.hash_size), dtype='float')
-        for fs in feats:
+        for fs in itervalues(feats):
             for f in fs:
                 idx = hash(f) % self.hash_size
                 vec[0, idx] += 1.0
@@ -65,8 +65,8 @@ def extract_features(inputs, outputs, hs):
 
     module_feats = []
     connection_feats = []
-    module_hps_feats = []
-    other_hps_feats = []
+    module_hyperp_feats = []
+    other_hyperps_feats = []
 
     # getting all the modules
     module_memo = []
@@ -91,13 +91,14 @@ def extract_features(inputs, outputs, hs):
         for h_localname, h in iteritems(m.hyperps):
             mh_feats = "%s/%s : %s = %s" % (
                 m.get_name(), h_localname, h.get_name(), h.val)
-            module_hps_feats.append(mh_feats)
+            module_hyperp_feats.append(mh_feats)
 
     # other features
     for h_localname, h in iteritems(hs):
         oh_feats = "%s : %s = %s" % (h_localname, h.get_name(), h.val)
-        other_hps_feats.append(oh_feats)
+        other_hyperps_feats.append(oh_feats)
 
-    return (module_feats, connection_feats, module_hps_feats, other_hps_feats)
-
-
+    return {'module_feats' : module_feats, 
+            'connection_feats' : connection_feats, 
+            'module_hyperp_feats' : module_hyperp_feats, 
+            'other_hyperp_feats' : other_hyperps_feats }
