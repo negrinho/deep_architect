@@ -1,6 +1,7 @@
 import darch.helpers.pytorch as hpt
 import darch.hyperparameters as hp
-from examples.pytorch.cifar.model import CifarResNeXt
+# from examples.pytorch.cifar.model import CifarResNeXt
+from model import CifarResNeXt
 
 
 D = hp.Discrete
@@ -12,22 +13,24 @@ def SISOPTM(name, compile_fn, name_to_h={}, scope=None):
 
 
 def get_net(nlabels):
-    def cfn(cardinality, block_depth, base_width, nr_stages, widen_factor):
-        # def fn(In):
-        net = CifarResNeXt(cardinality, block_depth, nlabels, base_width, nr_stages, widen_factor)
-            # return {'Out': net(In)}
-        return net
-        # return fn
+    def cfn(input_name_to_val, hyperp_name_to_val):
+        net = CifarResNeXt(nlabels=nlabels, **hyperp_name_to_val)
+        return lambda inp_dict: {'Out': net(inp_dict['In'])}, [net]
     return SISOPTM('CifarResNeXt', cfn, hyperparameters_fn())
 
 
 def hyperparameters_fn():
     return {
-        'cardinality': D([ 1, 2, 3 ]),
-        'base_width': D([ 2, 4, 8 ]),
-        'widen_factor': D([ 1, 2, 4 ]),
-        'block_depth': D([ 0, 1, 2, 3, 4, 5 ]),
-        'nr_stages': D([ 1, 2, 3, 4 ])
+        # 'cardinality': D([ 1, 2, 3 ]),
+        # 'base_width': D([ 2, 4, 8 ]),
+        # 'widen_factor': D([ 1, 2, 4 ]),
+        # 'block_depth': D([ 0, 1, 2, 3, 4, 5 ]),
+        # 'nr_stages': D([ 1, 2, 3, 4 ])
+        'cardinality': D([ 1 ]),
+        'base_width': D([ 2 ]),
+        'widen_factor': D([ 1 ]),
+        'block_depth': D([ 2 ]),
+        'nr_stages': D([ 1 ])
     }
 
 

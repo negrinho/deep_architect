@@ -56,9 +56,9 @@ def start_fn(d):
         # data = data.cuda()
         # TODO make darch-compatible for multi-gpu
 
-    if d['args'].ngpu > 0:
+    elif d['args'].ngpu > 0:
         # d['net'].cuda()
-        hpt.cuda(outputs.values())
+        hpt.cuda(list(outputs.values()))
         # data = data.cuda()
 
     optimizer = torch.optim.SGD(hpt.parameters(outputs.values()), d['learning_rate'], momentum=d['momentum'],
@@ -69,10 +69,13 @@ def start_fn(d):
 # train function (forward, backward, update)
 def train_fn(d):
     net = d['net']
+    if d['args'].ngpu > 0:
+        net.cuda()  # TODO this shouldn't be necessary (and yet, removing breaks things)
     net.train()
     loss_avg = 0.0
     for batch_idx, (data, target) in enumerate(d['train_loader']):
         if d['args'].ngpu > 0:
+            net.cuda()  # TODO this shouldn't be necessary (and yet, removing breaks things)
             data, target = torch.autograd.Variable(data.cuda()), torch.autograd.Variable(target.cuda())
         else:
             data, target = torch.autograd.Variable(data), torch.autograd.Variable(target)

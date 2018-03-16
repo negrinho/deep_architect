@@ -42,8 +42,10 @@ __email__ = "pau.rodri1@gmail.com"
 import argparse
 import darch.searchers as se
 import darch.helpers.pytorch as hpt
-from examples.pytorch.cifar.evaluator import get_eval_fn
-import examples.pytorch.cifar.search_space as ss
+# from examples.pytorch.cifar.evaluator import get_eval_fn
+from evaluator import get_eval_fn
+# import examples.pytorch.cifar.search_space as ss
+import search_space as ss
 
 
 # TODO remove unused arguments
@@ -88,7 +90,10 @@ if __name__ == '__main__':
     }
 
     # Main loop
-    search_space_fn = ss.get_ss_fn(10)  # TODO change to parse nr from input
+    if args.dataset == 'cifar10':
+        search_space_fn = ss.get_ss_fn(10)
+    else:
+        search_space_fn = ss.get_ss_fn(100)
     searcher = se.MCTSearcher(search_space_fn)
 
     eval_fn = get_eval_fn()
