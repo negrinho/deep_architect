@@ -7,8 +7,8 @@ import numpy as np
 def running_max(vs):
     return np.maximum.accumulate(vs)
 
-def draw_graph(output_lst, draw_hyperparameters=False, 
-        draw_io_labels=False, graph_name='graph', out_folderpath=None, 
+def draw_graph(output_lst, draw_hyperparameters=False,
+        draw_io_labels=False, graph_name='graph', out_folderpath=None,
         print_to_screen=True):
     assert print_to_screen or out_folderpath is not None
 
@@ -16,7 +16,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     edge_fs = '10'
     h_fs = '10'
     penwidth = '3'
-    
+
     nodes = set()
     hs = set()
     def fn(m):
@@ -34,7 +34,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
                     label = ix_localname + ':' + ox_localname
 
                 g.edge(
-                    ox.get_module().get_name(), 
+                    ox.get_module().get_name(),
                     ix.get_module().get_name(),
                     label=label, fontsize=edge_fs)
 
@@ -54,8 +54,8 @@ def draw_graph(output_lst, draw_hyperparameters=False,
                     label = h_localname + '=' + str(h.val)
 
                 g.edge(
-                    h.get_name(), 
-                    m.get_name(), 
+                    h.get_name(),
+                    m.get_name(),
                     label=label, fontsize=edge_fs)
         return False
 
@@ -66,11 +66,11 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     # add the output terminals.
     for m in module_lst:
         for ox in itervalues(m.outputs):
-                g.node(ox.get_name(), shape='house', penwidth=penwidth)
-                g.edge(
-                    ox.get_module().get_name(),
-                    ox.get_name())
-    
+            g.node(ox.get_name(), shape='rectangle', penwidth=penwidth)
+            g.edge(
+                ox.get_module().get_name(),
+                ox.get_name())
+
     # minor adjustments to attributes.
     for s in nodes:
         g.node(s, shape='invtrapezium', penwidth=penwidth)
@@ -78,7 +78,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     for s in hs:
         g.node(s, fontsize=h_fs)
 
-    g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)  
+    g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
 class LinePlot:
     def __init__(self, title=None, xlabel=None, ylabel=None):
@@ -86,10 +86,10 @@ class LinePlot:
         self.title = title
         self.xlabel = xlabel
         self.ylabel = ylabel
-    
+
     def add_line(self, xs, ys, label=None, err=None):
-        d = {"xs" : xs, 
-             "ys" : ys, 
+        d = {"xs" : xs,
+             "ys" : ys,
              "label" : label,
              "err" : err}
         self.data.append(d)
@@ -97,15 +97,15 @@ class LinePlot:
     def plot(self, show=True, fpath=None):
         f = plt.figure()
         for d in self.data:
-             plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'])
-        
+            plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'])
+
         if self.title is not None:
             plt.title(self.title)
         if self.xlabel is not None:
             plt.xlabel(self.xlabel)
         if self.ylabel is not None:
             plt.ylabel(self.ylabel)
-        
+
         if any([d['label'] is not None for d in self.data]):
             plt.legend(loc='best')
 
