@@ -21,6 +21,9 @@ class PyTModule(co.Module):
         output_name_to_val = self._fn(input_name_to_val)
         self._set_output_values(output_name_to_val)
 
+    def _update(self):
+        pass
+
 # NOTE: this is done for the case where all the PyTorch modules are created 
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
 def _call_fn_on_pytorch_module(output_lst, fn):
@@ -41,8 +44,8 @@ def train(output_lst):
 def eval(output_lst):
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.eval())
 
-def cuda(output_lst):
-    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cuda())
+def cuda(output_lst, *args, **kwargs):
+    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cuda(*args, **kwargs))
 
 def cpu(output_lst):
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cpu())
