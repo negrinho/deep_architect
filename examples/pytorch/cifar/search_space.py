@@ -15,6 +15,7 @@ def SISOPTM(name, compile_fn, name_to_h={}, scope=None):
 def get_net(nlabels):
     def cfn(input_name_to_val, hyperp_name_to_val):
         net = CifarResNeXt(nlabels=nlabels, **hyperp_name_to_val)
+        print('net_create', id(net))
         return lambda inp_dict: {'Out': net(inp_dict['In'])}, [net]
     return SISOPTM('CifarResNeXt', cfn, hyperparameters_fn())
 

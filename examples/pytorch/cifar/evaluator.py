@@ -69,6 +69,7 @@ def start_fn(d):
 # train function (forward, backward, update)
 def train_fn(d):
     net = d['net']
+    print('train', id(net))
     if d['args'].ngpu > 0:
         net.cuda()  # TODO this shouldn't be necessary (and yet, removing breaks things)
     net.train()
