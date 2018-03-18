@@ -50,29 +50,29 @@ def softmax():
         return fn
     return TFM('Softmax', {}, cfn, ['In'], ['Out']).get_io()
 
-def Affine(h_m, h_W_init_fn, h_b_init_fn):
-    def cfn(In, m, W_init_fn, b_init_fn):
-        shape = In.get_shape().as_list()
-        n = np.product(shape[1:])
-        W = tf.Variable( W_init_fn( [n, m] ) )
-        b = tf.Variable( b_init_fn( [m] ) )
-        def fn(In):
-            if len(shape) > 2:
-                In = tf.reshape(In, [-1, n])
-            Out = tf.add(tf.matmul(In, W), b)
-            # print In.get_shape().as_list()
-            return {'Out' : Out}
-        return fn
-    return siso_tfm('Affine', cfn, 
-        {'m' : h_m, 'W_init_fn' : h_W_init_fn, 'b_init_fn' : h_b_init_fn})
+#def Affine(h_m, h_W_init_fn, h_b_init_fn):
+#    def cfn(In, m, W_init_fn, b_init_fn):
+#        shape = In.get_shape().as_list()
+#        n = np.product(shape[1:])
+#        W = tf.Variable( W_init_fn( [n, m] ) )
+#        b = tf.Variable( b_init_fn( [m] ) )
+#        def fn(In):
+#            if len(shape) > 2:
+#                In = tf.reshape(In, [-1, n])
+#            Out = tf.add(tf.matmul(In, W), b)
+#            # print In.get_shape().as_list()
+#            return {'Out' : Out}
+#        return fn
+#    return siso_tfm('Affine', cfn, 
+#        {'m' : h_m, 'W_init_fn' : h_W_init_fn, 'b_init_fn' : h_b_init_fn})
 
-def Dropout(h_keep_prob):
-    def cfn(keep_prob):
-        p = tf.placeholder(tf.float32)
-        def fn(In):
-            return {'Out' : tf.nn.dropout(In, p)} 
-        return fn, {p : keep_prob}, {p : 1.0} 
-    return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+#def Dropout(h_keep_prob):
+#    def cfn(keep_prob):
+#        p = tf.placeholder(tf.float32)
+#        def fn(In):
+#            return {'Out' : tf.nn.dropout(In, p)} 
+#        return fn, {p : keep_prob}, {p : 1.0} 
+#    return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
     
 # TODO: perhaps add hyperparameters.
 def batch_normalization():
@@ -126,41 +126,42 @@ def avg_pool(h_kernel_size, h_stride):
         'stride' : h_stride,
         })
 
+# Add two inputs
 def add():
     return htf.TFModule('Add', {}, 
         lambda: lambda In0, In1: tf.add(In0, In1), 
         ['In0', 'In1'], ['Out']).get_io()
 
-def AffineSimplified(h_m):
-    def cfn(In, m):
-        shape = In.get_shape().as_list()
-        n = np.product(shape[1:])
+#def AffineSimplified(h_m):
+#    def cfn(In, m):
+#        shape = In.get_shape().as_list()
+#        n = np.product(shape[1:])
+#
+#        def fn(In):
+#            if len(shape) > 2:
+#                In = tf.reshape(In, [-1, n])
+#            return {'Out' : tf.layers.dense(In, m)}
+#        return fn
+#    return siso_tfm('AffineSimplified', cfn, {'m' : h_m})
 
-        def fn(In):
-            if len(shape) > 2:
-                In = tf.reshape(In, [-1, n])
-            return {'Out' : tf.layers.dense(In, m)}
-        return fn
-    return siso_tfm('AffineSimplified', cfn, {'m' : h_m})
-
-def Nonlinearity(h_or):
-    def cfn(idx):
-        def fn(In):
-            if idx == 0:
-                Out = tf.nn.relu(In)
-            elif idx == 1:
-                Out = tf.nn.relu6(In)
-            elif idx == 2:
-                Out = tf.nn.crelu(In)
-            elif idx == 3:
-                Out = tf.nn.elu(In)
-            elif idx == 4:
-                Out = tf.nn.softplus(In)
-            else:
-                raise ValueError
-            return {"Out" : Out}
-        return fn
-    return siso_tfm('Nonlinearity', cfn, {'idx' : h_or})
+#def Nonlinearity(h_or):
+#    def cfn(idx):
+#        def fn(In):
+#            if idx == 0:
+#                Out = tf.nn.relu(In)
+#            elif idx == 1:
+#                Out = tf.nn.relu6(In)
+#            elif idx == 2:
+#                Out = tf.nn.crelu(In)
+#            elif idx == 3:
+#                Out = tf.nn.elu(In)
+#            elif idx == 4:
+#                Out = tf.nn.softplus(In)
+#            else:
+#                raise ValueError
+#            return {"Out" : Out}
+#        return fn
+#    return siso_tfm('Nonlinearity', cfn, {'idx' : h_or})
 
 #def DNNCell(h_num_hidden, h_nonlin, h_swap, 
 #        h_opt_drop, h_opt_bn, h_drop_keep_prob):
@@ -182,15 +183,16 @@ def Nonlinearity(h_or):
 #    ut.connect_sequentially(ms)
 #    return io_lst_fn( ms )
 
-io_fn = lambda m: (m.inputs, m.outputs)
-io_lst_fn = lambda m_lst: (m_lst[0].inputs, m_lst[-1].outputs)
+#io_fn = lambda m: (m.inputs, m.outputs)
+#io_lst_fn = lambda m_lst: (m_lst[0].inputs, m_lst[-1].outputs)
+#
+#def io_fn2(in0, in1, out):
+#    return {'In0': in0, 'In1': in1}, {'Out': out}
+#
+#def ResidualSimplified(fn):
+#    return mo.siso_residual(fn, lambda: io_fn( mo.Empty() ), lambda: add() )
 
-def io_fn2(in0, in1, out):
-    return {'In0': in0, 'In1': in1}, {'Out': out}
-
-def ResidualSimplified(fn):
-    return mo.siso_residual(fn, lambda: io_fn( mo.Empty() ), lambda: add() )
-
+# Basic convolutional module with preselected initialization function
 def conv2D_simplified(h_num_filters, h_filter_size, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
@@ -209,6 +211,9 @@ def conv2D_simplified(h_num_filters, h_filter_size, h_stride):
         'stride' : h_stride,
         'filter_size' : h_filter_size})
 
+# Basic convolutional module that selects number of filters based on number of
+# input channels and the stride as in "Learning transferable architectures for scalable
+# image recognition" (Zoph et al, 2017)
 def conv2D(h_filter_size, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
@@ -228,6 +233,7 @@ def conv2D(h_filter_size, h_stride):
         'stride' : h_stride,
         'filter_size' : h_filter_size})
 
+# Spatially separable convolutions, with output filter calculations as in Zoph17
 def conv_spatial_separable(h_filter_size, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
@@ -253,7 +259,7 @@ def conv_spatial_separable(h_filter_size, h_stride):
         'stride' : h_stride})
         
 
-
+# Dilated convolutions, with output filter calculations as in Zoph17
 def conv2D_dilated(h_filter_size, h_dilation, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
@@ -275,6 +281,8 @@ def conv2D_dilated(h_filter_size, h_dilation, h_stride):
         'dilation' : h_dilation,
         'stride' : h_stride})
 
+
+# Depth separable convolutions, with output filter calculations as in Zoph17
 def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
@@ -300,6 +308,7 @@ def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
 def conv1x1(h_num_filters):
     return conv2D_simplified(h_num_filters, D([1]), D([1]))
 
+# A module that wraps an io pair with relu at the before and batch norm after
 def wrap_relu_batch_norm(io_pair):
     r_inputs, r_outputs = relu()
     b_inputs, b_outputs = batch_normalization()
@@ -307,6 +316,8 @@ def wrap_relu_batch_norm(io_pair):
     io_pair[1]['Out'].connect(b_inputs['In'])
     return r_inputs, b_outputs
 
+# The operations used in search space 1 and search space 3 in Regularized Evolution for
+# Image Classifier Architecture Search (Real et al, 2018)
 def sp1_operation(h_op_name, h_stride):
     return mo.siso_or({
             'identity': lambda: mo.empty(),
@@ -319,6 +330,8 @@ def sp1_operation(h_op_name, h_stride):
             's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
             }, h_op_name)
 
+# The operations used in search space 2 in Regularized Evolution for
+# Image Classifier Architecture Search (Real et al, 2018)
 def sp2_operation(h_op_name, h_stride):
     return mo.siso_or({
             'identity': lambda: mo.empty(),
@@ -331,12 +344,19 @@ def sp2_operation(h_op_name, h_stride):
             'avg3': lambda: avg_pool(D([3]), h_stride),
             'min2': lambda: mo.empty(),
             'max2': lambda: max_pool(D([2]), h_stride),
-            'max2': lambda: max_pool(D([2]), h_stride),
             'max3': lambda: max_pool(D([3]), h_stride),
             'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
-            's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
+            'dil5': lambda: wrap_relu_batch_norm(conv2D_dilated(D([5]), D([2]), h_stride)),
+            'dil7': lambda: wrap_relu_batch_norm(conv2D_dilated(D([7]), D([2]), h_stride)),
+            's_sep3': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([3]), h_stride)),
+            's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride)),
+            'dil3_2': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
+            'dil3_4': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([4]), h_stride)),
+            'dil3_6': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([6]), h_stride))
             }, h_op_name)
 
+# A module that takes in a specifiable number of inputs, uses 1x1 convolutions to make the number
+# filters match, and then adds the inputs together
 def mi_add(num_terms):
     def cfn(di, dh):
         (_, _, _, min_channels) = di['In0'].get_shape().as_list()
@@ -368,11 +388,13 @@ def mi_add(num_terms):
         return fn
     return TFM('MultiInputAdd', {}, cfn, ['In' + str(i) for i in xrange(num_terms)], ['Out']).get_io()
 
+# A module that applies a sp1_operation to two inputs, and adds them together
 def sp1_combine(h_op1_name, h_op2_name, h_stride):
     in1 = lambda: sp1_operation(h_op1_name, h_stride)
     in2 = lambda: sp1_operation(h_op2_name, h_stride)
     return mo.mimo_combine([in1, in2], mi_add)
 
+# A module that selects an input from a list of inputs
 def selector(h_selection, sel_fn, num_selections):
     def cfn(di, dh):
         selection = dh['selection']
@@ -382,6 +404,8 @@ def selector(h_selection, sel_fn, num_selections):
         return fn
     return TFM('Selector', {'selection': h_selection}, cfn, ['In' + str(i) for i in xrange(num_selections)], ['Out']).get_io()
 
+# A module that outlines the basic cell structure in Learning Transferable 
+# Architectures for Scalable Image Recognition (Zoph et al, 2017)
 def basic_cell(h_sharer, C=5, normal=True):
     i_inputs, i_outputs = mo.empty(num_connections=2)
     available = [i_outputs['Out' + str(i)] for i in xrange(len(i_outputs))]
@@ -429,6 +453,8 @@ def hyperparameters_fn():
         # 'angle_delta' : D([ 0, 5, 10, 15, 20 ])
         }
 
+# A module that creates a number of repeated cells (both reduction and normal)
+# as in Learning Transferable Architectures for Scalable Image Recognition (Zoph et al, 2017)
 def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
     def sub_fn(N):
         assert N > 0
@@ -455,7 +481,7 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
         return i_inputs, soft_outputs
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)
 
-
+# Search space 1 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_1(num_classes):
     co.Scope.reset_default_scope()
     C = 5
@@ -474,6 +500,7 @@ def get_search_space_1(num_classes):
     return r_inputs, r_outputs, hyperparameters_fn()
 
 
+# Search space 3 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_3(num_classes):
     co.Scope.reset_default_scope()
     C = 15
@@ -491,6 +518,7 @@ def get_search_space_3(num_classes):
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
     return r_inputs, r_outputs, hyperparameters_fn()
 
+# Search space 2 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_2(num_classes):
     co.Scope.reset_default_scope()
     C = 5
@@ -498,8 +526,10 @@ def get_search_space_2(num_classes):
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
-        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'sep3', 'sep5', 'sep7', 'avg3', 'max3', 'dil3', 'bot7']))
+        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+          'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+          'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
         h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
         h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
     i_inputs, i_outputs = conv1x1(h_F)
