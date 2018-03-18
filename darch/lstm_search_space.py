@@ -14,6 +14,7 @@ def siso_tfm(name, compile_fn, name_to_h={}, scope=None):
     return htf.TFModule(name, name_to_h, compile_fn, 
             ['In'], ['Out'], scope).get_io()
 
+# Learned embeddings module
 def embeddings(h_embedding_size, vocab_size):
     def cfn(di, dh):
         embedding = tf.get_variable("embedding", [vocab_size, dh['embedding_size']], dtype=tf.float32)
@@ -25,12 +26,14 @@ def embeddings(h_embedding_size, vocab_size):
         'embedding_size': h_embedding_size
         })
 
+# Creates an lstm cell (Note: Not a module)
 def lstm_cell(hidden_size, keep_prob):
     cell = tf.contrib.rnn.BasicLSTMCell(hidden_size,
             forget_bias=0.0, state_is_tuple=True)
     cell = tf.contrib.rnn.DropoutWrapper(cell, output_keep_prob=keep_prob)
     return cell
 
+# Creates an Multi layer LSTM module
 def multi_rnn_cell(h_hidden_size, h_keep_prob, h_num_layers, batch_size, num_steps):
     def cfn(di, dh):
         cell = tf.contrib.rnn.MultiRNNCell([lstm_cell(dh['hidden_size'], 
@@ -82,6 +85,7 @@ def hyperparameters_fn():
         # 'angle_delta' : D([ 0, 5, 10, 15, 20 ])
         }
 
+# Creates a basic search space using an LSTM for the Penn Treebank dataset
 def ptb_search_space(batch_size, num_steps, vocab_size):
     h_sharer = hp.HyperparameterSharer()
     h_embedding_size = D([300])

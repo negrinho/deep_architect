@@ -5,6 +5,7 @@ import tensorflow as tf
 import math
 
 def evaluate_fn(inputs, outputs, hs, data, vocab_size, batch_size, num_steps):
+    tf.reset_default_graph()
     train_x, train_y = data['train']
     val_x, val_y = data['val']
     
@@ -16,9 +17,9 @@ def evaluate_fn(inputs, outputs, hs, data, vocab_size, batch_size, num_steps):
     co.forward({inputs['In'] : x})
     prediction = outputs['Out'].val
     lr = hs['lr'].val if 'lr' in hs else 1e-3
-    print(prediction.get_shape())
-    print(y.get_shape())
     cost = tf.reduce_mean(tf.contrib.seq2seq.sequence_loss(logits=prediction, targets=y, weights=tf.ones([batch_size, num_steps])))
+    correct = tf.equal(tf.argmax(prediction, 2, output_type=tf.int32), y)
+    accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
     optimizer = tf.train.AdamOptimizer(lr).minimize(cost)
 
     hm_epochs = 20
@@ -33,12 +34,16 @@ def evaluate_fn(inputs, outputs, hs, data, vocab_size, batch_size, num_steps):
                 loss += cost_val
             print 'Epoch %d: %f' % (epoch, math.exp(loss/len(train_x)))
 
-        correct = tf.equal(tf.argmax(prediction, 2), y)
-        accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
         
-        r = {'val_acc' : accuracy.eval({x: val_x.reshape(-1, val_x.shape[2]), y:val_y.reshape(-1, val_x.shape[2])}), 
-             'train_acc' : accuracy.eval({x: train_x.reshape(-1, train_x.shape[2]), y:train_y.reshape(-1, train_y.shape[2])}),
-             'val_perp' : math.exp(cost.eval({x: val_x.reshape(-1, val_x.shape[2]), y:val_y.reshape(-1, val_y.shape[2])})),
-             'train_perp' : math.exp(cost.eval({x: train_x.reshape(-1, train_x.shape[2]), y:train_y.reshape(-1, train_y.shape[2])}))
+	val_acc = 0.
+	val_loss = 0.
+	for i in range(0, len(val_x)):
+	    batch_x = val_x[i]
+	    batch_y = val_y[i]
+            _, cost_val, acc_val = sess.run([optimizer, cost, accuracy], feed_dict = {x: batch_x, y: batch_y})
+            val_loss += cost_val
+	    val_acc += acc_val
+        r = {'val_perp' : math.exp(val_loss/len(val_x)),
+	     'val_acc' : val_acc / len(val_x)
              }
         return r
