@@ -49,12 +49,9 @@ class CLSTMSurrogateModel(torch.nn.Module):
         _, (out_1, _) = self.lstm_in[1](out_1, (self.h0[1], self.c0[1]))
         _, (out_2, _) = self.lstm_in[2](out_2, (self.h0[2], self.c0[2]))
         _, (out_3, _) = self.lstm_in[3](out_3, (self.h0[3], self.c0[3]))
-        print(out_0.size())
         out = torch.cat((out_0, out_1, out_2, out_3), dim=2)
-        print(out.size())
         _, (out, _) = self.lstm_out(out, (self.h_out, self.c_out))
         out = self.fc_out(out)
-        print(out)
         return out
 
 
@@ -98,9 +95,7 @@ class CLSTMSurrogate(su.SurrogateModel):
         return output
 
     def eval(self, feats):
-        val = self.model(self.preprocess(feats))
-        # print(val)
-        return float(val)
+        return self.model(self.preprocess(feats)).data[0, 0, 0]
 
     def update(self, val, feats):
         self.optimizer.zero_grad()               # Zero out the gradient buffer
