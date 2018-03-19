@@ -27,7 +27,7 @@ def kaiming2015delving_initializer_conv(gain=1.0):
 
 def xavier_initializer_affine(gain=1.0):
     def init_fn(shape):
-        print shape
+        print(shape)
         n, m = shape
 
         sc = gain * (np.sqrt(6.0) / np.sqrt(m + n))

@@ -2,10 +2,6 @@ import os
 import os.path
 import numpy as np
 import sys
-if sys.version_info[0] == 2:
-    import cPickle as pickle
-else:
-    import pickle
 
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url, check_integrity

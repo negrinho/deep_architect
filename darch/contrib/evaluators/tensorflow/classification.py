@@ -107,9 +107,9 @@ class SimpleClassifierEvaluator:
 
             lr = learning_rate_init
             num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
-            for epoch in xrange(self.max_num_training_epochs):
+            for epoch in range(self.max_num_training_epochs):
                 avg_loss = 0.
-                for _ in xrange(num_batches):
+                for _ in range(num_batches):
                     X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
                     train_feed.update({X_pl: X_batch, y_pl: y_batch, lr_pl: lr})
 
