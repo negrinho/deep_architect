@@ -10,6 +10,7 @@ import darch.contrib.search_spaces.tensorflow.dnn as search_dnn
 from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.search_spaces.tensorflow.common import D
 from darch.contrib.datasets.dataset import InMemoryDataset
+from darch.contrib.datasets.loaders import load_mnist
 from sklearn.model_selection import train_test_split
 
 
@@ -77,20 +78,14 @@ class CLSTMSurrogate(su.SurrogateModel):
 
     def preprocess(self, feats):
         # Feats is a 4-tuple of a list of strings. Need to convert this into a tensor
-        # To make this into a tensor, we pad * symbols to the right of all shorter string lengths
         # Convert strings to tensor by mapping the characters to indicies in the character_list
-        # Final output is a list of 4 Char Tensors
-        # max_len = max([max(len(s) for s in feat) for feat in feats]) + 2
+        # Final output is a list of 4 Long Tensors
         output = []
         for i, feat in enumerate(feats):
-            # vec_feat = [self.char_to_index['*']]
             vec_feat = []
             for obj in feat:
                 for char in obj:
                     vec_feat.append(self.char_to_index[char])
-            # print(len(vec_feat), max_len)
-            # while len(vec_feat) < max_len:
-            #     vec_feat.append(self.char_to_index['*'])
             output.append(torch.autograd.Variable(torch.LongTensor(vec_feat)))
         return output
 
@@ -101,10 +96,19 @@ class CLSTMSurrogate(su.SurrogateModel):
         self.optimizer.zero_grad()               # Zero out the gradient buffer
         # TODO: refactor api to pass this in as an arg?
         out = self.model(self.preprocess(feats)) # Need to copmute network output
-        loss = self.loss_fn(out, val)
+        loss = self.loss_fn(out, torch.autograd.Variable(torch.FloatTensor([[val]]).unsqueeze(0)))
         loss.backward()
         self.optimizer.step()
 
+
+class SearchSpaceFactory:
+    def __init__(self, num_classes):
+        self.num_classes = num_classes
+    
+    def get_search_space(self):
+        co.Scope.reset_default_scope()
+        inputs, outputs = search_dnn.dnn_net(self.num_classes)
+        return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
 
 
 
@@ -112,39 +116,38 @@ def test_clstm_surrogate():
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
 
-    ## Choose our dataset and split train/valid/test data
-    datasets.IRIS('.temp/data')
-    # For tensorflow usage, hardcoding in the data, once I change the contrib to PyTorch, can use the dataloaders
-    def iris_labels(label):
-            if label == b'Iris-setosa':
-                return 0
-            elif label == b'Iris-versicolor':
-                return 1
-            elif label == b'Iris-virginica':
-                return 2
-    data = np.loadtxt('.temp/data/iris.data', delimiter=',', usecols=[0,1,2,3])
-    labels = np.loadtxt('.temp/data/iris.data', delimiter=',', usecols=[4], converters={4: iris_labels})
+    # ## Choose our dataset and split train/valid/test data
+    # datasets.IRIS('.temp/data')
+    # # For tensorflow usage, hardcoding in the data, once I change the contrib to PyTorch, can use the dataloaders
+    # def iris_labels(label):
+    #         if label == b'Iris-setosa':
+    #             return 0
+    #         elif label == b'Iris-versicolor':
+    #             return 1
+    #         elif label == b'Iris-virginica':
+    #             return 2
+    # data = np.loadtxt('.temp/data/iris.data', delimiter=',', usecols=[0,1,2,3])
+    # labels = np.loadtxt('.temp/data/iris.data', delimiter=',', usecols=[4], converters={4: iris_labels})
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.33)
-    X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.50)
+    # X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.33)
+    # X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.50)
+    # Steal MNIST Tensorflow example data:
+    (X_train, y_train, X_valid, y_valid, X_test, y_test) = load_mnist('.temp/data/mnist')
     # Define datasets for contrib tensorflow evaluator
     train_dataset = InMemoryDataset(X_train, y_train, True)
     val_dataset = InMemoryDataset(X_valid, y_valid, False)
     test_dataset = InMemoryDataset(X_test, y_test, False)
-    num_classes = 3
+
+
+    num_classes = 10 # Change this per dataset
 
 
     ## Declare the model evaluator
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
-        './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True,
-        batch_size=256)
+        './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True)
     
-
     ## Define our search space
-    def search_space_fn():
-        co.Scope.reset_default_scope()
-        inputs, outputs = search_dnn.dnn_net(2)
-        return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
+    search_space_fn = SearchSpaceFactory(num_classes).get_search_space
 
     ## Define our surrogate models
     clstm_sur = CLSTMSurrogate()
@@ -161,20 +164,23 @@ def test_clstm_surrogate():
     baseline_true_accs = []
 
     for _ in range(128):
-        for model, searcher, pred_accs, true_accs in zip([clstm_sur, baseline_sur], [searcher_clstm, searcher_baseline],
-            [clstm_pred_accs, baseline_pred_accs], [clstm_true_accs, baseline_true_accs]):
+        for model, searcher, pred_accs, true_accs, mode in zip([clstm_sur, baseline_sur], [searcher_clstm, searcher_baseline],
+            [clstm_pred_accs, baseline_pred_accs], [clstm_true_accs, baseline_true_accs], ['CLSTM', 'Baseline']):
+            print(mode)
             # Sample from our searcher
-            (inputs, outputs, hs, hyperp_value_hist, searcher_eval_token) = searcher.sample()
+            (inputs, outputs, hs, _, searcher_eval_token) = searcher.sample()
             # Since Searcher doesn't return the score, we recompute it again, should be cheap since that's a goal
             feats = su.extract_features(inputs, outputs, hs)
             score = model.eval(feats)
             pred_accs.append(score)
             # Get the true score
-            val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
+            # val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
+            x = evaluator.eval(inputs, outputs, hs)
+            print(x)
+            val_acc = x
             true_accs.append(val_acc)
             searcher.update(val_acc, searcher_eval_token)
     
-
 
 if __name__ == '__main__':
     test_clstm_surrogate()

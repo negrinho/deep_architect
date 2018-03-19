@@ -1,7 +1,11 @@
 import numpy as np
-import cPickle
 import os
+import sys
 import darch.contrib.datasets.augmentation as au
+if sys.version_info[0] == 2:		
+    import cPickle as pickle # pylint: disable=E0401	
+else:		
+    import pickle
 
 def load_mnist(data_dir, flatten=False, one_hot=True, normalize_range=False):
     from tensorflow.examples.tutorials.mnist import input_data
@@ -38,7 +42,7 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
     # flatten, one_hot, normalize_range, and possibly others once added.
     def _load_data(fpath):
         with open(fpath, 'rb') as f:
-            d = cPickle.load(f)
+            d = pickle.load(f)
 
             # for the data
             X = d['data'].astype('float32')
