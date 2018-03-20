@@ -16,10 +16,19 @@ def test_ordered_set():
 
 
 def test_scope():
+    from darch.core import Scope
+
     scope = Scope()
-    elem = 2  # TODO change this to something that makes more sense
-    scope.register(elem, 'test-name')
-    assert scope.get_name(elem) == 'test-name'
+    e1 = {'name': 'test-name', 'elem': 'arbitrary-val'}
+    e2 = {'name': 'test-name2', 'elem': 'arbitrary-val2'}
+    scope.register(e1['name'], e1['elem'])
+    scope.register(name=e2['name'], elem=e2['elem'])
+
+    assert scope.get_name(e1['elem']) == e1['name']
+    assert scope.get_name(e2['elem']) == e2['name']
+
+    assert scope.get_elem(e1['name']) == e1['elem']
+    assert scope.get_elem(e2['name']) == e2['elem']
 
 
 def test_addressable():
