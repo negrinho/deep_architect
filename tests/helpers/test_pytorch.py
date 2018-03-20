@@ -1,20 +1,25 @@
 import torch.nn as nn
 
 
-def get_empty_net():
+class EmptyNet(nn.Module):
+    def __init__(self):
+        super(EmptyNet, self).__init__()
+
+    def forward(self, x):
+        return x
+
+
+def get_empty_cfn():
     def cfn(input_name_to_cal, hyperp_name_to_val):
-        class Net(nn.Module):
-            def forward(self, x):
-                return x
-        net = Net()
+        net = EmptyNet()
         return lambda inp_dict: {'Out': net(inp_dict['In'])}, [net]
     return cfn
 
 
 def test_pytmodule():
-    from darch.helpers.pytorch import PyTModule
+    from darch.helpers.pytorch import PyTModule, PyTNetContainer
 
-    cfn = get_empty_net()
+    cfn = get_empty_cfn()
     mod = PyTModule(name='test',
                     name_to_hyperp={},
                     compile_fn=cfn,
