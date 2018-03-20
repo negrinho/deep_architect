@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from six import iteritems
 import darch.core as co
 
 class TFModule(co.Module):

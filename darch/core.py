@@ -4,23 +4,23 @@ from six import iterkeys, itervalues, iteritems
 class OrderedSet:
     def __init__(self):
         self.d = OrderedDict()
-    
+
     def add(self, x):
         if x not in self.d:
             self.d[x] = None
-    
+
     def update(self, xs):
         for x in xs:
             if x not in self.d:
                 self.d[x] = None
-    
+
     def __len__(self):
         return len(self.d)
 
     def __iter__(self):
         for x in iterkeys(self.d):
             yield x
-    
+
     def __in__(self, x):
         return x in self.d
 
@@ -49,7 +49,7 @@ class Scope:
 
     def get_name(self, elem):
         return self.elem_to_name[elem]
-    
+
     def get_elem(self, name):
         return self.name_to_elem[name]
 
@@ -67,9 +67,9 @@ class Addressable:
     def __init__(self, scope, name):
         scope.register(name, self)
         self.scope = scope
-    
+
     def __repr__(self):
-        return self.get_name()   
+        return self.get_name()
 
     def get_name(self):
         return self.scope.get_name(self)
@@ -80,11 +80,11 @@ class Addressable:
 class Hyperparameter(Addressable):
     """Base hyperparameter class.
 
-    Specific hyperparameter types are created by extending this base class. 
+    Specific hyperparameter types are created by extending this base class.
     Hyperparameters keep references to the modules that are dependent on them.
     """
     def __init__(self, scope=None, name=None):
-        scope = scope if scope is not None else Scope.default_scope        
+        scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
             ['H', (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
@@ -94,7 +94,7 @@ class Hyperparameter(Addressable):
 
     def is_set(self):
         return self.set_done
-    
+
     def set_val(self, val):
         assert not self.set_done
         self._check_val(val)
@@ -113,11 +113,11 @@ class Hyperparameter(Addressable):
 
     def _check_val(self, val):
         raise NotImplementedError
-    
+
 class Input(Addressable):
     """An input is potentially connected to an output.
 
-    Also check Output. Inputs and outputs are used to connect modules. Inputs 
+    Also check Output. Inputs and outputs are used to connect modules. Inputs
     are registered in the scope.
     """
     def __init__(self, module, scope, name):
@@ -137,11 +137,11 @@ class Input(Addressable):
         return self.module
 
     def connect(self, from_output):
-        assert isinstance(from_output, Output) 
+        assert isinstance(from_output, Output)
         assert self.from_output is None
         self.from_output = from_output
         from_output.to_inputs.append(self)
-    
+
     def disconnect(self):
         assert self.from_output is not None
         self.from_output.to_inputs.remove(self)
@@ -156,7 +156,7 @@ class Input(Addressable):
 class Output(Addressable):
     """An output is potentially connected to multiple inputs
 
-    Also check Input. Inputs and outputs are used to connect modules. Outputs 
+    Also check Input. Inputs and outputs are used to connect modules. Outputs
     are registered in the scope.
     """
     def __init__(self, module, scope, name):
@@ -171,7 +171,7 @@ class Output(Addressable):
 
     def get_connected_inputs(self):
         return self.to_inputs
-    
+
     def get_module(self):
         return self.module
 
@@ -192,16 +192,16 @@ class Module(Addressable):
     """A module has inputs, outputs, and hyperparameters.
     """
     def __init__(self, scope=None, name=None):
-        scope = scope if scope is not None else Scope.default_scope        
+        scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
             ['M', (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
-        
+
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
         self.hyperps = OrderedDict()
         self._is_compiled = False
-    
+
     def _register_input(self, name):
         """Creates a new input with the chosen local name."""
         assert name not in self.inputs
@@ -214,7 +214,7 @@ class Module(Addressable):
 
     def _register_hyperparameter(self, h, name):
         """Registers an hyperparameter that the module depends on it."""
-        assert isinstance(h, Hyperparameter) and name not in self.hyperps 
+        assert isinstance(h, Hyperparameter) and name not in self.hyperps
         self.hyperps[name] = h
         h._register_module(self)
 
@@ -248,14 +248,14 @@ class Module(Addressable):
 
     def _compile(self):
         raise NotImplementedError
-    
+
     def _forward(self):
         raise NotImplementedError
 
     def forward(self):
         """Computation done by the module after being specified.
 
-        The first time forward is called, _compile is called to instantiate 
+        The first time forward is called, _compile is called to instantiate
         any parameters. These functions change the state.
         """
         if not self._is_compiled:
@@ -266,16 +266,16 @@ class Module(Addressable):
 def extract_unique_modules(input_or_output_lst):
     ms = OrderedSet()
     for x in input_or_output_lst:
-        assert isinstance(x, Input) or isinstance(x, Output)
+        assert isinstance(x, (Input, Output))
         ms.add(x.get_module())
     return list(ms)
 
 # assumes that the inputs provided are sufficient to evaluate all the network.
 def determine_module_eval_seq(input_lst):
-    """Computes the module forward evaluation sequence necessary to evaluate 
+    """Computes the module forward evaluation sequence necessary to evaluate
     the computation graph starting from the provided inputs.
 
-    In dynamic frameworks where forward is called multiple times, it is best 
+    In dynamic frameworks where forward is called multiple times, it is best
     to precompute the module evaluation sequence. Also see forward.
     """
     module_seq = []
@@ -295,11 +295,11 @@ def determine_module_eval_seq(input_lst):
     return module_seq
 
 def traverse_backward(output_lst, fn):
-    """Traverses the graph going backward, from outputs to inputs. The 
-    provided function is applied once to each module reached this way. 
+    """Traverses the graph going backward, from outputs to inputs. The
+    provided function is applied once to each module reached this way.
 
     Also see traverse_forward.
-    """    
+    """
     memo = set()
     ms = extract_unique_modules(output_lst)
     for m in ms:
@@ -315,11 +315,11 @@ def traverse_backward(output_lst, fn):
                         ms.append(m_prev)
 
 def traverse_forward(input_lst, fn):
-    """Traverses the graph going forward, from inputs to outputs. The 
-    provided function is applied once to each module reached this way. 
+    """Traverses the graph going forward, from inputs to outputs. The
+    provided function is applied once to each module reached this way.
 
     Also see traverse_backward.
-    """    
+    """
     memo = set()
     ms = extract_unique_modules(input_lst)
     for m in ms:
@@ -336,7 +336,7 @@ def traverse_forward(input_lst, fn):
                             ms.append(m_next)
 
 def is_specified(output_lst):
-    """Checks if all the hyperparameters reachable by traversing backward from 
+    """Checks if all the hyperparameters reachable by traversing backward from
     the outputs have been set.
     """
     is_spec = [True]
@@ -356,7 +356,7 @@ def get_unset_hyperparameters(output_lst):
     e.g., optional or repeat.
     """
     assert not is_specified(output_lst)
-    hs = OrderedSet() 
+    hs = OrderedSet()
     def fn(module):
         for h in itervalues(module.hyperps):
             if not h.is_set():
@@ -365,13 +365,11 @@ def get_unset_hyperparameters(output_lst):
     traverse_backward(output_lst, fn)
     return hs
 
-# NOTE: forward needs to be efficient in the dynamic case.
-# precompute the evaluation sequence and apply in that case.
 def forward(input_to_val, _module_seq=None):
     """Forward pass starting from the inputs.
 
     The forward computation of each module is called in the turn. For efficiency,
-    in dynamic frameworks, the module evaluation sequence is best computed once 
+    in dynamic frameworks, the module evaluation sequence is best computed once
     and reused in each forward call.
     """
     if _module_seq is None:
@@ -385,3 +383,23 @@ def forward(input_to_val, _module_seq=None):
         for ox in itervalues(m.outputs):
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
+
+def get_unconnected_inputs(output_lst):
+    ix_lst = []
+    def fn(x):
+        for ix in itervalues(x.inputs):
+            if not ix.is_connected():
+                ix_lst.append(ix)
+        return False
+    traverse_backward(output_lst, fn)
+    return ix_lst
+
+def get_unconnected_outputs(input_lst):
+    ox_lst = []
+    def fn(x):
+        for ox in itervalues(x.outputs):
+            if not ox.is_connected():
+                ox_lst.append(ox)
+        return False
+    traverse_forward(input_lst, fn)
+    return ox_lst

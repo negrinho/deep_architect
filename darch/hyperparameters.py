@@ -6,12 +6,12 @@ import darch.core as co
 class HyperparameterSharer:
     """Used to implement different sharing patterns of hyperparameters.
 
-    Hyperparameters are registered with a name and a function that creates the 
-    hyperparameter and stores it in a dictionary. Once created, following calls 
+    Hyperparameters are registered with a name and a function that creates the
+    hyperparameter and stores it in a dictionary. Once created, following calls
     get the hyperparameter from the dictionary.
     """
     def __init__(self):
-        self.name_to_h_fn = OrderedDict()    
+        self.name_to_h_fn = OrderedDict()
         self.name_to_h = OrderedDict()
 
     def register(self, hyperp_name, hyperp_fn):
@@ -26,8 +26,7 @@ class HyperparameterSharer:
         return self.name_to_h[hyperp_name]
 
 class DependentHyperparameter(co.Hyperparameter):
-    """Used to implement behavior where 
-    """
+
     def __init__(self, fn, hs, scope=None, name=None):
         co.Hyperparameter.__init__(self, scope, name)
 
@@ -38,10 +37,10 @@ class DependentHyperparameter(co.Hyperparameter):
         if self.set_done:
             return True
         else:
-            if all( h.is_set() for h in itervalues(self._hs) ):
+            if all(h.is_set() for h in itervalues(self._hs)):
                 kwargs = {name : h.get_val() for name, h in iteritems(self._hs)}
-                self.set_val( self._fn(**kwargs) )
-            
+                self.set_val(self._fn(**kwargs))
+
             return self.set_done
 
     def get_unset_dependent_hyperparameter(self):
@@ -55,8 +54,8 @@ class Discrete(co.Hyperparameter):
         co.Hyperparameter.__init__(self, scope, name)
         self.vs = vs
 
-    def _check_val(self, v):
-        assert v in self.vs
+    def _check_val(self, val):
+        assert val in self.vs
 
 class Bool(Discrete):
     def __init__(self, scope=None, name=None):
