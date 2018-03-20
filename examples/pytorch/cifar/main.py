@@ -36,19 +36,13 @@ SOFTWARE.
 
 from __future__ import division
 
-__author__ = "Pau Rodríguez López, ISELAB, CVC-UAB"
-__email__ = "pau.rodri1@gmail.com"
-
 import argparse
 import darch.searchers as se
 import darch.helpers.pytorch as hpt
-# from examples.pytorch.cifar.evaluator import get_eval_fn
 from evaluator import get_eval_fn
-# import examples.pytorch.cifar.search_space as ss
 import search_space as ss
 
 
-# TODO remove unused arguments
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trains ResNeXt on CIFAR',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -69,11 +63,6 @@ if __name__ == '__main__':
     parser.add_argument('--save', '-s', type=str, default='./', help='Folder to save checkpoints.')
     parser.add_argument('--load', '-l', type=str, help='Checkpoint path to resume / test.')
     parser.add_argument('--test', '-t', action='store_true', help='Test only flag.')
-    # Architecture
-    parser.add_argument('--depth', type=int, default=29, help='Model depth.')
-    parser.add_argument('--cardinality', type=int, default=8, help='Model cardinality (group).')
-    parser.add_argument('--base_width', type=int, default=64, help='Number of channels in each group.')
-    parser.add_argument('--widen_factor', type=int, default=4, help='Widen factor. 4 -> 64, 8 -> 128, ...')
     # Acceleration
     parser.add_argument('--ngpu', type=int, default=1, help='0 = CPU.')
     parser.add_argument('--prefetch', type=int, default=2, help='Pre-fetching threads.')

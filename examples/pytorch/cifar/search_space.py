@@ -1,6 +1,5 @@
 import darch.helpers.pytorch as hpt
 import darch.hyperparameters as hp
-# from examples.pytorch.cifar.model import CifarResNeXt
 from model import CifarResNeXt
 
 

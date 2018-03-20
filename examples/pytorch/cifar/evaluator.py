@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import darch.helpers.pytorch as hpt
 
 
-# TODO check/delete comments
 def start_fn(d):
     outputs = d['darch']['outputs']
 
@@ -39,17 +38,12 @@ def start_fn(d):
     if not os.path.isdir(d['args'].save):
         os.makedirs(d['args'].save)
 
-    # Init model, criterion, and optimizer
-    # net = CifarResNeXt(hs['cardinality'], hs['depth'], nlabels, hs['base_width'], hs['widen_factor'])
-    # d['net'] = net
-    # print(net)
     data, _ = next(iter(d['train_loader']))
     d['net']({ 'In': torch.autograd.Variable(data) })  # make a preemptive forward pass to initialize things
 
     if d['args'].ngpu > 1:
         d['net'] = torch.nn.DataParallel(d['net'], device_ids=list(range(d['args'].ngpu)))
-        hpt.cuda(outputs.values())
-        # data = data.cuda()
+        hpt.cuda(list(outputs.values()))
         # TODO make darch-compatible for multi-gpu
 
     elif d['args'].ngpu > 0:

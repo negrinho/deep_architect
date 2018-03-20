@@ -36,9 +36,6 @@ SOFTWARE.
 
 from __future__ import division
 
-__author__ = "Pau Rodríguez López, ISELAB, CVC-UAB"
-__email__ = "pau.rodri1@gmail.com"
-
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import init
