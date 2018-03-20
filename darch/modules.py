@@ -1,5 +1,4 @@
 import darch.core as co
-import darch.utils as ut
 from six import itervalues, iteritems
 from six.moves import xrange
 import copy
@@ -16,42 +15,37 @@ class Empty(co.Module):
 
 # NOTE: perhaps refactor to capture similarities between modules.
 class SubstitutionModule(co.Module):
-    def __init__(self, name, name_to_h, fn, input_names, output_names, scope=None):
+    def __init__(self, name, name_to_hyperp, sub_fn,
+            input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
 
-        for name in input_names:
-            self._register_input(name)
-        for name in output_names:
-            self._register_output(name)
-        for name, h in iteritems(name_to_h):
-            self._register_hyperparameter(h, name)
-        
-        self._fn = fn
+        self._register(input_names, output_names, name_to_hyperp)
+        self._sub_fn = sub_fn
         self._is_done = False
         self._update()
 
     def _update(self):
-        if (not self._is_done) and all(h.is_set() for h in itervalues(self.hs)):
-            argnames = self._fn.__code__.co_varnames
-            
+        if (not self._is_done) and all(h.is_set() for h in itervalues(self.hyperps)):
+            argnames = self._sub_fn.__code__.co_varnames
+
             kwargs = {}
-            for name, h in iteritems(self.hs):
+            for name, h in iteritems(self.hyperps):
                 kwargs[name] = h.get_val()
             for name, ix in iteritems(self.inputs):
-                if name in argnames:        
+                if name in argnames:
                     kwargs[name] = ix.val
 
-            new_inputs, new_outputs = self._fn(**kwargs)
+            new_inputs, new_outputs = self._sub_fn(**kwargs)
             assert frozenset(new_inputs.keys()) == frozenset(self.inputs.keys())
             assert frozenset(new_outputs.keys()) == frozenset(self.outputs.keys())
-                
+
             self.old_inputs = copy.copy(self.inputs)
             self.old_outputs = copy.copy(self.outputs)
 
             for name, new_ix in iteritems(new_inputs):
                 old_ix = self.inputs[name]
                 if old_ix.is_connected():
-                    old_ix.reroute_connected_output(new_ix)                
+                    old_ix.reroute_connected_output(new_ix)
                 self.inputs[name] = new_ix
 
             for name, new_ox in iteritems(new_outputs):
@@ -59,54 +53,49 @@ class SubstitutionModule(co.Module):
                 if old_ox.is_connected():
                     old_ox.reroute_all_connected_inputs(new_ox)
                 self.outputs[name] = new_ox
-            
+
             self._is_done = True
 
-def Or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
-    if name == None:
-        name = "Or"
+def empty():
+    return Empty().get_io()
 
+def substitution_module(name, name_to_hyperp, sub_fn,
+        input_names, output_names, scope):
+    return SubstitutionModule(name,
+        name_to_hyperp, sub_fn, input_names, output_names, scope).get_io()
+
+def _get_name(name, default_name):
+    return name if name is not None else default_name
+
+def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     def sub_fn(idx):
         return fn_lst[idx]()
 
-    return SubstitutionModule(name, {'idx' : h_or}, sub_fn,
-        input_names, output_names, scope)
+    return substitution_module(_get_name(name, "Or"),
+        {'idx' : h_or}, sub_fn, input_names, output_names, scope)
 
-def NestedRepeat(fn_first, fn_iter, h_reps, input_names, output_names, scope=None, name=None):
-    if name == None:
-        name = "NestedRepeat"
-
+def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
+        input_names, output_names, scope=None, name=None):
     def sub_fn(num_reps):
         assert num_reps > 0
-
         inputs, outputs = fn_first()
         for _ in range(1, num_reps):
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
-    
-    return SubstitutionModule(name, {'num_reps' : h_reps}, sub_fn,
-        input_names, output_names, scope)
 
-def SISONestedRepeat(fn_first, fn_iter, h_reps, scope=None, name=None):
-    if name == None:
-        name = "SISONestedRepeat"
+    return substitution_module(_get_name(name, "NestedRepeat"),
+        {'num_reps' : h_num_repeats}, sub_fn, input_names, output_names, scope)
 
-    return NestedRepeat(fn_first, fn_iter, h_reps, 
-        ['In'], ['Out'], scope=scope, name=name)
+def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
+    return mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, ['In'], ['Out'],
+        scope=scope, name=_get_name(name, "SISONestedRepeat"))
 
-def SISOOr(fn_lst, h_or, scope=None, name=None):
-    if name == None:
-        name = "SISOOr"
+def siso_or(fn_lst, h_or, scope=None, name=None):
+    return mimo_or(fn_lst, h_or, ['In'], ['Out'],
+        scope=scope, name=_get_name(name, "SISOOr"))
 
-    return Or(fn_lst, h_or, 
-        ['In'], ['Out'], scope=scope, name=name)
-
-# NOTE: how to do repeat in the general case. it is possible,
-# but requires connections of the inputs and outputs.
-def SISORepeat(fn, h_reps, scope=None, name=None):
-    if name == None:
-        name = "SISORepeat"
-
+# NOTE: how to do repeat in the general mimo case.
+def siso_repeat(fn, h_num_repeats, scope=None, name=None):
     def sub_fn(num_reps):
         assert num_reps > 0
         inputs_lst = []
@@ -119,35 +108,21 @@ def SISORepeat(fn, h_reps, scope=None, name=None):
         for i in range(1, num_reps):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
-
-            # NOTE: if extending this, it is worth to look in terms of 
-            # the connection structure.
             next_inputs['In'].connect(prev_outputs['Out'])
         return (inputs_lst[0], outputs_lst[-1])
 
-    return SubstitutionModule(name, {'num_reps' : h_reps}, sub_fn,
-        ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISORepeat"),
+        {'num_reps' : h_num_repeats}, sub_fn, ['In'], ['Out'], scope)
 
-def SISOOptional(fn, h_opt, scope=None, name=None):
-    if name == None:
-        name = "SISOOptional"
+def siso_optional(fn, h_opt, scope=None, name=None):
+    def sub_fn(opt):
+        return fn() if opt else empty()
 
-    def sub_fn(Opt):
-        if Opt:
-            return fn()
-        else:
-            m = Empty()
-            return (m.inputs, m.outputs)
+    return substitution_module(_get_name(name, "SISOOptional"),
+        {'opt' : h_opt}, sub_fn, ['In'], ['Out'], scope)
 
-    return SubstitutionModule(name, {'Opt' : h_opt}, sub_fn,
-        ['In'], ['Out'], scope)
-
-# NOTE: this is only meant for permutations of a few elements.
-# TODO: done better without enumerating permutations
-def SISOPermutation(fn_lst, h_perm, scope=None, name=None):
-    if name == None:
-        name = "SISOPermutation"
-
+# TODO: improve by not enumerating permutations
+def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     def sub_fn(perm_idx):
         g = itertools.permutations(range(len(fn_lst)))
         for _ in range(perm_idx + 1):
@@ -168,36 +143,42 @@ def SISOPermutation(fn_lst, h_perm, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return (inputs_lst[0], outputs_lst[-1])
 
-    return SubstitutionModule(name, {'perm_idx' : h_perm}, sub_fn,
-        ['In'], ['Out'], scope)    
+    return substitution_module(_get_name(name, "SISOPermutation"),
+        {'perm_idx' : h_perm}, sub_fn, ['In'], ['Out'], scope)
 
-def SISOSplitCombine(fn, combine_fn, h_num_splits, scope=None, name=None):
-    if name == None:
-        name = "SISOSplitCombine"
-
+def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     def sub_fn(num_splits):
         inputs_lst, outputs_lst = zip(*[fn() for _ in xrange(num_splits)])
-        c_inputs, c_outputs = combine_fn(num_splits)        
+        c_inputs, c_outputs = combine_fn(num_splits)
 
-        i_inputs, i_outputs = ut.module_to_io( Empty() )
+        i_inputs, i_outputs = empty()
         for i in xrange(num_splits):
-            i_outputs['Out'].connect( inputs_lst[i]['In'] )
-            c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
+            i_outputs['Out'].connect(inputs_lst[i]['In'])
+            c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
         return (i_inputs, c_outputs)
 
-    return SubstitutionModule(name, {'num_splits' : h_num_splits}, sub_fn,
-        ['In'], ['Out'], scope)   
+    return substitution_module(_get_name(name, "SISOSplitCombine"),
+        {'num_splits' : h_num_splits}, sub_fn, ['In'], ['Out'], scope)
 
-def SISOResidual(main_fn, res_fn, combine_fn):
+def siso_residual(main_fn, residual_fn, combine_fn):
     (m_inputs, m_outputs) = main_fn()
-    (r_inputs, r_outputs) = res_fn()
+    (r_inputs, r_outputs) = residual_fn()
     (c_inputs, c_outputs) = combine_fn()
 
-    i_inputs, i_outputs = ut.module_to_io( Empty() )
-    i_outputs['Out'].connect( m_inputs['In'] )
-    i_outputs['Out'].connect( r_inputs['In'] )
+    i_inputs, i_outputs = empty()
+    i_outputs['Out'].connect(m_inputs['In'])
+    i_outputs['Out'].connect(r_inputs['In'])
 
-    m_outputs['Out'].connect( c_inputs['In0'] )
-    r_outputs['Out'].connect( c_inputs['In1'] )
+    m_outputs['Out'].connect(c_inputs['In0'])
+    r_outputs['Out'].connect(c_inputs['In1'])
 
     return (i_inputs, c_outputs)
+
+def siso_sequential(io_lst):
+    assert len(io_lst) > 0
+
+    prev_outputs = io_lst[0][1]
+    for next_inputs, next_outputs in io_lst[1:]:
+        prev_outputs['Out'].connect(next_inputs['In'])
+        prev_outputs = next_outputs
+    return io_lst[0][0], io_lst[-1][1]
