@@ -27,15 +27,3 @@ def test_addressable():
     assert add.get_name() == 'test_addressable'
     assert str(add) == add.get_name()
     assert add._get_base_name() == 'Addressable'
-
-
-def test_hyperparameter():
-    name = 'test_hyp'
-    val = 2
-    hyp = Hyperparameter(name=name)
-    hyp2 = Hyperparameter()
-
-    assert not hyp.is_set()
-    hyp.set_val(val)
-    assert hyp.is_set()
-    assert hyp.get_val() == val
