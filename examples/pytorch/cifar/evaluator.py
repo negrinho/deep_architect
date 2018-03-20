@@ -8,9 +8,7 @@ import darch.helpers.pytorch as hpt
 
 # TODO check/delete comments
 def start_fn(d):
-    inputs = d['darch']['inputs']
     outputs = d['darch']['outputs']
-    hs = d['darch']['hs']
 
     # Init dataset
     if not os.path.isdir(d['args'].data_path):
@@ -27,11 +25,9 @@ def start_fn(d):
     if d['args'].dataset == 'cifar10':
         train_data = dset.CIFAR10(d['args'].data_path, train=True, transform=train_transform, download=True)
         test_data = dset.CIFAR10(d['args'].data_path, train=False, transform=test_transform, download=True)
-        nlabels = 10
     else:
         train_data = dset.CIFAR100(d['args'].data_path, train=True, transform=train_transform, download=True)
         test_data = dset.CIFAR100(d['args'].data_path, train=False, transform=test_transform, download=True)
-        nlabels = 100
     d['train_loader'] = torch.utils.data.DataLoader(train_data, batch_size=d['args'].batch_size, shuffle=True,
                                                     num_workers=d['args'].prefetch, pin_memory=True if d['args'].ngpu
                                                                                                        > 0 else False)
@@ -57,9 +53,7 @@ def start_fn(d):
         # TODO make darch-compatible for multi-gpu
 
     elif d['args'].ngpu > 0:
-        # d['net'].cuda()
         hpt.cuda(list(outputs.values()))
-        # data = data.cuda()
 
     optimizer = torch.optim.SGD(hpt.parameters(outputs.values()), d['learning_rate'], momentum=d['momentum'],
                                 weight_decay=d['decay'], nesterov=True)
@@ -69,14 +63,10 @@ def start_fn(d):
 # train function (forward, backward, update)
 def train_fn(d):
     net = d['net']
-    print('train', id(net))
-    if d['args'].ngpu > 0:
-        net.cuda()  # TODO this shouldn't be necessary (and yet, removing breaks things)
     net.train()
     loss_avg = 0.0
     for batch_idx, (data, target) in enumerate(d['train_loader']):
         if d['args'].ngpu > 0:
-            net.cuda()  # TODO this shouldn't be necessary (and yet, removing breaks things)
             data, target = torch.autograd.Variable(data.cuda()), torch.autograd.Variable(target.cuda())
         else:
             data, target = torch.autograd.Variable(data), torch.autograd.Variable(target)

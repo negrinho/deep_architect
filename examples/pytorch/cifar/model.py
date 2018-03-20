@@ -117,10 +117,9 @@ class CifarResNeXt(nn.Module):
         self.stages = [2**(self.init64 + x) * self.widen_factor for x in range(self.nr_stages)]
         self.stages.insert(0, 64)
 
-
         self.conv_1_3x3 = nn.Conv2d(3, 64, 3, 1, 1, bias=False)
         self.bn_1 = nn.BatchNorm2d(64)
-        self.stage_blocks = []
+        self.stage_blocks = nn.ModuleList()
         for x in range(self.nr_stages):
             n = 1 if x == 0 else 2
             self.stage_blocks.append(self.block('stage_' + str(x), self.stages[x], self.stages[x+1], n))
