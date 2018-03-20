@@ -1,7 +1,6 @@
-from darch.core import *
-
-
 def test_ordered_set():
+    from darch.core import OrderedSet
+
     ord_s = OrderedSet()
     assert len(ord_s) == 0
     assert 'test' not in ord_s
@@ -32,6 +31,8 @@ def test_scope():
 
 
 def test_addressable():
+    from darch.core import Addressable, Scope
+
     add = Addressable(Scope(), name='test_addressable')
     assert add.get_name() == 'test_addressable'
     assert str(add) == add.get_name()
