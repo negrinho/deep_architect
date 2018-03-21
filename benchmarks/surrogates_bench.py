@@ -2,7 +2,7 @@ from darch import searchers as se, surrogates as su, core as co
 import benchmarks.datasets as datasets
 import numpy as np
 import torch
-import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 
 # TODO: Change the below imports when using PyTorch
@@ -93,9 +93,10 @@ class CLSTMSurrogate(su.SurrogateModel):
         return self.model(self.preprocess(feats)).data[0, 0, 0]
 
     def update(self, val, feats):
-        self.optimizer.zero_grad()               # Zero out the gradient buffer
+        self.optimizer.zero_grad()  # Zero out the gradient buffer
         # TODO: refactor api to pass this in as an arg?
         out = self.model(self.preprocess(feats)) # Need to copmute network output
+        # Wrap true value in a Float Tensor Variable
         loss = self.loss_fn(out, torch.autograd.Variable(torch.FloatTensor([[val]]).unsqueeze(0)))
         loss.backward()
         self.optimizer.step()
@@ -109,6 +110,9 @@ class SearchSpaceFactory:
         co.Scope.reset_default_scope()
         inputs, outputs = search_dnn.dnn_net(self.num_classes)
         return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
+
+def savefig(filename):
+    plt.savefig('{}.png'.format(filename), bbox_inches='tight')
 
 
 
@@ -163,7 +167,10 @@ def test_clstm_surrogate():
     clstm_true_accs = []
     baseline_true_accs = []
 
-    for _ in range(128):
+
+    num_iters = 128
+
+    for _ in range(num_iters):
         for model, searcher, pred_accs, true_accs, mode in zip([clstm_sur, baseline_sur], [searcher_clstm, searcher_baseline],
             [clstm_pred_accs, baseline_pred_accs], [clstm_true_accs, baseline_true_accs], ['CLSTM', 'Baseline']):
             print(mode)
@@ -172,15 +179,29 @@ def test_clstm_surrogate():
             # Since Searcher doesn't return the score, we recompute it again, should be cheap since that's a goal
             feats = su.extract_features(inputs, outputs, hs)
             score = model.eval(feats)
+            print('Predicted score: {}'.format(score))
             pred_accs.append(score)
             # Get the true score
             # val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
-            x = evaluator.eval(inputs, outputs, hs)
-            print(x)
-            val_acc = x
+            val_acc = evaluator.eval(inputs, outputs, hs)
             true_accs.append(val_acc)
             searcher.update(val_acc, searcher_eval_token)
     
+    # Plot the accuracies
+    plt.plot(np.arange(num_iters), baseline_pred_accs)
+    plt.plot(np.arange(num_iters), baseline_true_accs)
+    plt.plot(np.arange(num_iters), clstm_pred_accs)
+    plt.plot(np.arange(num_iters), clstm_true_accs)
+    plt.legend(['Baseline Pred', 'Baseline True', 'CLSTM Pred', 'CLSTM True'], loc='lower right')
+    plt.xlabel('Iteration')
+    plt.ylabel('Accuracy')
+    savefig('test_fig')
+    print('CLSTM Predictions:\n{}\nCLSTM Actual:\n{}\nBaseline Predictions:\n{}\nBaseline Actual:\n{}\n'.format(
+        clstm_pred_accs, clstm_true_accs, baseline_pred_accs, baseline_true_accs
+    ))
+    # TODO: log the accuracies
+    
+
 
 if __name__ == '__main__':
     test_clstm_surrogate()
