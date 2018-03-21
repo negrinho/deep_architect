@@ -17,10 +17,10 @@ class SimpleClassifierEvaluator:
 
     def __init__(self, train_dataset, val_dataset, num_classes, model_path,
             max_num_training_epochs=200, max_eval_time_in_minutes=180.0,
-            stop_patience=20, save_patience=2, 
+            stop_patience=20, save_patience=2,
             optimizer_type='adam', batch_size=256,
-            learning_rate_patience=7, learning_rate_init=1e-3, 
-            learning_rate_min=1e-6, learning_rate_mult=0.1, 
+            learning_rate_patience=7, learning_rate_init=1e-3,
+            learning_rate_min=1e-6, learning_rate_mult=0.1,
             display_step=1, log_output_to_terminal=True, test_dataset=None):
 
         self.train_dataset = train_dataset
@@ -116,6 +116,11 @@ class SimpleClassifierEvaluator:
                     _, c = sess.run([optimizer, loss], feed_dict=train_feed)
                     avg_loss += c / num_batches
 
+                    # if spent more time than budget, exit.
+                    time_now = time.time()
+                    if (time_now - time_start) / 60.0 > self.max_eval_time_in_minutes:
+                        break
+
                 # early stopping
                 val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                     self.val_dataset, eval_feed)
@@ -154,7 +159,7 @@ class SimpleClassifierEvaluator:
                             save_counter = save_patience
                             best_val_acc_saved = val_acc
 
-                # at the end of the epoch, if spent more time than budget, exit.
+                # if spent more time than budget, exit.
                 time_now = time.time()
                 if (time_now - time_start) / 60.0 > self.max_eval_time_in_minutes:
                     break
@@ -170,7 +175,8 @@ class SimpleClassifierEvaluator:
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                 self.val_dataset, eval_feed)
             print("Validation accuracy: %f" % val_acc)
-            results = {'val_acc' : val_acc}
+            results = {'val_acc' : val_acc,
+                       'num_parameters' : htf.get_num_trainable_parameters()}
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                     self.test_dataset, eval_feed)

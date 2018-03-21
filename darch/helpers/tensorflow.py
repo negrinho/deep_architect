@@ -1,8 +1,10 @@
 from __future__ import absolute_import
 import darch.core as co
+import tensorflow as tf
+import numpy as np
 
 class TFModule(co.Module):
-    def __init__(self, name, name_to_hyperp, compile_fn, 
+    def __init__(self, name, name_to_hyperp, compile_fn,
             input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
 
@@ -38,3 +40,6 @@ def get_feed_dicts(output_lst):
         return False
     co.traverse_backward(output_lst, fn)
     return (train_feed, eval_feed)
+
+def get_num_trainable_parameters():
+    return np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
