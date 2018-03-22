@@ -161,7 +161,7 @@ def test_clstm_surrogate():
 
     ## Define our surrogate models
     clstm_sur = CLSTMSurrogate()
-    baseline_sur = su.HashingSurrogate(1024, 100000)
+    baseline_sur = su.HashingSurrogate(1024, 1)
     
     ## Choose our searching algorithm, using benchmarking surrogate model
     # Assumes new model is better than benchmark, and better models -> better searcher
