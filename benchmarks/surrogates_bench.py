@@ -121,7 +121,7 @@ def savefig(filename):
 def test_clstm_surrogate():
     ## Params:
     batch_size = 16
-    num_iters = 32 #128
+    num_iters = 64 #128
 
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
@@ -173,15 +173,14 @@ def test_clstm_surrogate():
     
 
     def sample_and_evaluate():
-        # Get the logger for this iterations
-        eval_logger = search_logger.get_current_evaluation_logger()
         # Sample from our searcher
         (inputs, outputs, hs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
-        # Log the configurations and features to form a training/valid dataset
+         # Get the true score by training the model sampled and log them
+        results = evaluator.eval(inputs, outputs, hs)
+        # Get the logger for this iteration and log configurations, features, and results
+        eval_logger = search_logger.get_current_evaluation_logger()
         eval_logger.log_config(hyperp_value_lst, searcher_eval_token)
         eval_logger.log_features(inputs, outputs, hs)
-        # Get the true score by training the model sampled and log them
-        results = evaluator.eval(inputs, outputs, hs)
         eval_logger.log_results(results)
 
     ## Training loop
@@ -193,11 +192,11 @@ def test_clstm_surrogate():
         while search_logger.current_evaluation_id < batch_size:
             sample_and_evaluate()
     
-    print('Sufficient data to begin training loop.')
+    print('Sufficient data to begin training loop. Dataset size: {}'.format(search_logger.current_evaluation_id - 1))
     clstm_mse, baseline_mse = [], []
 
     for _ in range(num_iters):
-        # sample_and_evaluate()
+        sample_and_evaluate()
         # Sample a batch of batch_size from the Logger
         # We manually call .update() for the models, instead of using the searcher
         # TODO: Multiple gradient steps
