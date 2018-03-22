@@ -4,9 +4,11 @@ from create_sentiment_featuresets import create_feature_sets_and_labels
 from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.datasets.dataset import InMemoryDataset
 from darch.contrib.search_spaces.tensorflow.common import D
+import darch.core as co
 import numpy as np
 
 def ss1_fn():
+    co.Scope.reset_default_scope()
     inputs, outputs = css_dnn.dnn_net(2)
     return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
 
@@ -31,7 +33,7 @@ def main():
     searcher = se.RandomSearcher(ss1_fn)
     for _ in range(128):
         (inputs, outputs, hs, hyperp_value_hist, searcher_eval_token) = searcher.sample()
-        val_acc = evaluator.eval(inputs, outputs, hs)
+        val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
         print(hyperp_value_hist, val_acc, searcher_eval_token)
         searcher.update(val_acc, searcher_eval_token)
 
