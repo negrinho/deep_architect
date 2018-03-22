@@ -220,8 +220,8 @@ def conv2D(h_filter_size, h_stride):
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(dh['stride'] == 2):
-            num_filters = 2 * channels
+        num_filters = 2 * channels if dh['stride'] == 2 else channels
+
         W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, num_filters] ) )
         b = tf.Variable( b_init_fn( [num_filters] ) )
         def fn(di):
@@ -240,8 +240,7 @@ def conv_spatial_separable(h_filter_size, h_stride):
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(dh['stride'] == 2):
-            num_filters = 2 * channels
+        num_filters = 2 * channels if dh['stride'] == 2 else channels
 
         W1 = tf.Variable( W_init_fn( [1, dh['filter_size'], channels, num_filters] ) )
         b1 = tf.Variable( b_init_fn( [num_filters] ) )
@@ -266,8 +265,7 @@ def conv2D_dilated(h_filter_size, h_dilation, h_stride):
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(dh['stride'] == 2):
-            num_filters = 2 * channels
+        num_filters = 2 * channels if dh['stride'] == 2 else channels
 
         W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, num_filters] ) )
         b = tf.Variable( b_init_fn( [num_filters] ) )
@@ -289,8 +287,7 @@ def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        if(dh['stride'] == 2):
-            num_filters = 2 * channels
+        num_filters = 2 * channels if dh['stride'] == 2 else channels
 
         W_depth = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['channel_multiplier']] ) )
         W_point = tf.Variable( W_init_fn( [1, 1, channels * dh['channel_multiplier'], num_filters] ) )
@@ -399,6 +396,10 @@ def selector(h_selection, sel_fn, num_selections):
     def cfn(di, dh):
         selection = dh['selection']
         sel_fn(selection)
+        print num_selections
+        print h_selection
+        print dh
+        print di
         def fn(di):
             return {'Out': di['In' + str(selection)]}
         return fn
@@ -415,9 +416,18 @@ def basic_cell(h_sharer, C=5, normal=True):
         h_in1_pos = h_sharer.get('h_in1_pos_' + str(i))
 
         def select(selection):
+            print "SELECT"
+            print i
+            print available
+            print h_in0_pos
+            print h_in1_pos
             unused[selection] = True
 
+        print available
+        print len(available)
+        print h_in0_pos
         sel0_inputs, sel0_outputs = selector(h_in0_pos, select, len(available))
+        print sel0_inputs
         sel1_inputs, sel1_outputs = selector(h_in1_pos, select, len(available))
 
         h_op1 = h_sharer.get('h_op1_' + str(i))
@@ -484,20 +494,22 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
 # Search space 1 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_1(num_classes):
     co.Scope.reset_default_scope()
-    C = 5
-    h_N = D([4, 6])
+    #C = 5
+    #h_N = D([4, 6])
+    C = 3
+    h_N = D([1])
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
         h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
         h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
-        h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
+        h_sharer.register('h_in0_pos_' + str(i), lambda: D(range(2 + i)))
+        h_sharer.register('h_in1_pos_' + str(i), lambda: D(range(2 + i)))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
     i_outputs['Out'].connect(o_inputs['In'])
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
-    return r_inputs, r_outputs, hyperparameters_fn()
+    return r_inputs, r_outputs
 
 
 # Search space 3 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)

@@ -69,7 +69,7 @@ class SubstitutionModule(co.Module):
             self._is_done = True
 
 def empty(num_connections=1):
-    return ut.m2io(Empty(num_connections))
+    return Empty(num_connections).get_io()
 
 def substitution_module(name, name_to_hyperp, sub_fn,
         input_names, output_names, scope):
