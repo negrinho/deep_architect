@@ -30,7 +30,7 @@ def run_searcher(searcher, evaluator, num_samples, search_logger):
         evaluation_logger.log_results(results)
         vi.draw_graph(outputs.values(), True, True, print_to_screen=False,
             out_folderpath=evaluation_logger.get_user_data_folderpath())
-        searcher.update(results['val_acc'], searcher_eval_token)
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
 
 # NOTE: This is wrong because of the creation of the models.
 def main():

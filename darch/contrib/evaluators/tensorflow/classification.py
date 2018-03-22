@@ -6,6 +6,7 @@ import numpy as np
 import time
 import darch.core as co
 import darch.helpers.tensorflow as htf
+import darch.search_logging as sl
 
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
@@ -130,8 +131,8 @@ class SimpleClassifierEvaluator:
                     print("time:", "%7.1f" % (time.time() - time_start),
                           "epoch:", '%04d' % (epoch + 1),
                           "loss:", "{:.9f}".format(avg_loss),
-                          "val_acc:", "%.5f" % val_acc,
-                          "lr:", '%.3e' % lr)
+                          "validation_accuracy:", "%.5f" % val_acc,
+                          "learning_rate:", '%.3e' % lr)
 
                 # update the patience counters.
                 if best_val_acc < val_acc:
@@ -172,14 +173,19 @@ class SimpleClassifierEvaluator:
 
             print("Optimization Finished!")
 
+            timer = sl.TimeTracker()
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                 self.val_dataset, eval_feed)
+            t_infer = (timer.time_since_creation('miliseconds') / self.val_dataset.get_num_examples())
+
             print("Validation accuracy: %f" % val_acc)
-            results = {'val_acc' : val_acc,
-                       'num_parameters' : htf.get_num_trainable_parameters()}
+            results = {'validation_accuracy' : val_acc,
+                       'num_parameters' : htf.get_num_trainable_parameters(),
+                       'inference_time_per_example_in_miliseconds' : t_infer
+                       }
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                     self.test_dataset, eval_feed)
                 print("Test accuracy: %f" % test_acc)
-                results['test_acc'] = test_acc
+                results['test_accuracy'] = test_acc
         return results

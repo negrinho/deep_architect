@@ -17,7 +17,6 @@ def truncated_normal_initializer(stddev):
 
 def xavier_initializer_affine(gain=1.0):
     def init_fn(shape):
-        print shape
         n, m = shape
 
         sc = gain * (np.sqrt(6.0) / np.sqrt(m + n))
