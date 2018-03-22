@@ -121,6 +121,7 @@ def savefig(filename):
 def test_clstm_surrogate():
     ## Params:
     batch_size = 16
+    num_iters = 32 #128
 
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
@@ -169,7 +170,7 @@ def test_clstm_surrogate():
     ## Define our Logger (Almost like Replay Memory)
     search_logger = sl.SearchLogger('./logs', 'train', resume_if_exists=True)
 
-    num_iters = 128
+    
 
     def sample_and_evaluate():
         # Get the logger for this iterations
@@ -187,25 +188,27 @@ def test_clstm_surrogate():
     # We train two surrogate models with one searcher based on the non-baseline model
     # Each iteration we sample a model from the searcher
     # We want to populate our dataset with some initial configurations and evaluations
-    while search_logger.current_evaluation_id < batch_size:
+    if search_logger.current_evaluation_id < batch_size:
         print('Not enough data found, training preliminary models.')
-        sample_and_evaluate()
+        while search_logger.current_evaluation_id < batch_size:
+            sample_and_evaluate()
+    
     print('Sufficient data to begin training loop.')
     clstm_mse, baseline_mse = [], []
 
     for _ in range(num_iters):
-        sample_and_evaluate()
+        # sample_and_evaluate()
         # Sample a batch of batch_size from the Logger
         # We manually call .update() for the models, instead of using the searcher
         # TODO: Multiple gradient steps
         # TODO: Validation Set for loss
-        eval_logs = sl.read_search_folder(search_logger.get_search_data_folderpath())
+        # TODO: Possibly make the read_search_folder step more efficient
+        eval_logs = sl.read_search_folder(search_logger.search_folderpath)
         total_squared_error_baseline = 0.0
         total_squared_error_clstm = 0.0
         for eval_log in random.sample(eval_logs, batch_size):
-            log = sl.read_evaluation_folder(eval_log)
-            feats = log['features']
-            results = log['results']
+            feats = eval_log['features']
+            results = eval_log['results']
             # Get the predictions and calculate squared error
             total_squared_error_baseline = (baseline_sur.eval(feats) - results['val_acc'])**2
             total_squared_error_clstm = (clstm_sur.eval(feats) - results['val_acc'])**2
