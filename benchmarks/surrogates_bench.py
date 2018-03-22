@@ -1,9 +1,10 @@
-from darch import searchers as se, surrogates as su, core as co
+from darch import searchers as se, surrogates as su, core as co, search_logging as sl
 import benchmarks.datasets as datasets
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
+import random
 
 # TODO: Change the below imports when using PyTorch
 import darch.contrib.search_spaces.tensorflow.dnn as search_dnn
@@ -77,11 +78,11 @@ class CLSTMSurrogate(su.SurrogateModel):
         self.loss_fn = torch.nn.MSELoss()
 
     def preprocess(self, feats):
-        # Feats is a 4-tuple of a list of strings. Need to convert this into a tensor
+        # Feats is a dictionary where values are lists of strings. Need to convert this into a tensor
         # Convert strings to tensor by mapping the characters to indicies in the character_list
         # Final output is a list of 4 Long Tensors
         output = []
-        for i, feat in enumerate(feats):
+        for i, feat in enumerate(feats.values()):
             vec_feat = []
             for obj in feat:
                 for char in obj:
@@ -111,12 +112,16 @@ class SearchSpaceFactory:
         inputs, outputs = search_dnn.dnn_net(self.num_classes)
         return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
 
+
 def savefig(filename):
     plt.savefig('{}.png'.format(filename), bbox_inches='tight')
 
 
 
 def test_clstm_surrogate():
+    ## Params:
+    batch_size = 16
+
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
 
@@ -157,50 +162,68 @@ def test_clstm_surrogate():
     clstm_sur = CLSTMSurrogate()
     baseline_sur = su.HashingSurrogate(1024, 100000)
     
-    ## Choose our searching algorithm
-    searcher_clstm = se.SMBOSearcher(search_space_fn, clstm_sur, 32, 0.2)
-    searcher_baseline = se.SMBOSearcher(search_space_fn, baseline_sur, 32, 0.2)
+    ## Choose our searching algorithm, using benchmarking surrogate model
+    # Assumes new model is better than benchmark, and better models -> better searcher
+    searcher = se.SMBOSearcher(search_space_fn, clstm_sur, 32, 0.2)
 
-    ## Search the model space
-    clstm_pred_accs = []
-    baseline_pred_accs = []
-    clstm_true_accs = []
-    baseline_true_accs = []
-
+    ## Define our Logger (Almost like Replay Memory)
+    search_logger = sl.SearchLogger('./logs', 'train', resume_if_exists=True)
 
     num_iters = 128
 
+    def sample_and_evaluate():
+        # Get the logger for this iterations
+        eval_logger = search_logger.get_current_evaluation_logger()
+        # Sample from our searcher
+        (inputs, outputs, hs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
+        # Log the configurations and features to form a training/valid dataset
+        eval_logger.log_config(hyperp_value_lst, searcher_eval_token)
+        eval_logger.log_features(inputs, outputs, hs)
+        # Get the true score by training the model sampled and log them
+        results = evaluator.eval(inputs, outputs, hs)
+        eval_logger.log_results(results)
+
+    ## Training loop
+    # We train two surrogate models with one searcher based on the non-baseline model
+    # Each iteration we sample a model from the searcher
+    # We want to populate our dataset with some initial configurations and evaluations
+    while search_logger.current_evaluation_id < batch_size:
+        print('Not enough data found, training preliminary models.')
+        sample_and_evaluate()
+    print('Sufficient data to begin training loop.')
+    clstm_mse, baseline_mse = [], []
+
     for _ in range(num_iters):
-        for model, searcher, pred_accs, true_accs, mode in zip([clstm_sur, baseline_sur], [searcher_clstm, searcher_baseline],
-            [clstm_pred_accs, baseline_pred_accs], [clstm_true_accs, baseline_true_accs], ['CLSTM', 'Baseline']):
-            print(mode)
-            # Sample from our searcher
-            (inputs, outputs, hs, _, searcher_eval_token) = searcher.sample()
-            # Since Searcher doesn't return the score, we recompute it again, should be cheap since that's a goal
-            feats = su.extract_features(inputs, outputs, hs)
-            score = model.eval(feats)
-            print('Predicted score: {}'.format(score))
-            pred_accs.append(score)
-            # Get the true score
-            # val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
-            val_acc = evaluator.eval(inputs, outputs, hs)
-            true_accs.append(val_acc)
-            searcher.update(val_acc, searcher_eval_token)
+        sample_and_evaluate()
+        # Sample a batch of batch_size from the Logger
+        # We manually call .update() for the models, instead of using the searcher
+        # TODO: Multiple gradient steps
+        # TODO: Validation Set for loss
+        eval_logs = sl.read_search_folder(search_logger.get_search_data_folderpath())
+        total_squared_error_baseline = 0.0
+        total_squared_error_clstm = 0.0
+        for eval_log in random.sample(eval_logs, batch_size):
+            log = sl.read_evaluation_folder(eval_log)
+            feats = log['features']
+            results = log['results']
+            # Get the predictions and calculate squared error
+            total_squared_error_baseline = (baseline_sur.eval(feats) - results['val_acc'])**2
+            total_squared_error_clstm = (clstm_sur.eval(feats) - results['val_acc'])**2
+            # Take a backward step for both surrogate models (gradient step)
+            baseline_sur.update(results['val_acc'], feats)
+            clstm_sur.update(results['val_acc'], feats)
+
+        baseline_mse.append(total_squared_error_baseline / batch_size)
+        clstm_mse.append(total_squared_error_clstm / batch_size)
     
-    # Plot the accuracies
-    plt.plot(np.arange(num_iters), baseline_pred_accs)
-    plt.plot(np.arange(num_iters), baseline_true_accs)
-    plt.plot(np.arange(num_iters), clstm_pred_accs)
-    plt.plot(np.arange(num_iters), clstm_true_accs)
-    plt.legend(['Baseline Pred', 'Baseline True', 'CLSTM Pred', 'CLSTM True'], loc='lower right')
+    # Plot the MSEs
+    plt.plot(np.arange(num_iters), baseline_mse)
+    plt.plot(np.arange(num_iters), clstm_mse)
+    plt.legend(['Baseline MSE', 'CSLTM MSE'], loc='lower right')
     plt.xlabel('Iteration')
-    plt.ylabel('Accuracy')
-    savefig('test_fig')
-    print('CLSTM Predictions:\n{}\nCLSTM Actual:\n{}\nBaseline Predictions:\n{}\nBaseline Actual:\n{}\n'.format(
-        clstm_pred_accs, clstm_true_accs, baseline_pred_accs, baseline_true_accs
-    ))
-    # TODO: log the accuracies
-    
+    plt.ylabel('Mean Squared Error')
+    savefig('surrogate_benchmark')
+    print('Baseline MSE:\n{}\nCLSTM MSE:\n{}\n'.format(baseline_mse, clstm_mse))
 
 
 if __name__ == '__main__':
