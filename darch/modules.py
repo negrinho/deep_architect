@@ -22,9 +22,9 @@ class SubstitutionModule(co.Module):
         self._register(input_names, output_names, name_to_hyperp)
         self._sub_fn = sub_fn
         self._is_done = False
-        self._update()
+        self.update()
 
-    def _update(self):
+    def update(self):
         if (not self._is_done) and all(h.is_set() for h in itervalues(self.hyperps)):
             argnames = self._sub_fn.__code__.co_varnames
 

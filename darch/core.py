@@ -134,6 +134,8 @@ class Hyperparameter(Addressable):
         self.set_done = False
         self.modules = OrderedSet()
 
+        self.val = None
+
     def is_set(self):
         """
         :rtype: bool
@@ -147,13 +149,13 @@ class Hyperparameter(Addressable):
         self.val = val
 
         for m in self.modules:
-            m._update()
+            m.update()
 
     def get_val(self):
         assert self.set_done
         return self.val
 
-    def _register_module(self, module):
+    def register_module(self, module):
         """
         :type module: Module
         """
@@ -316,7 +318,7 @@ class Module(Addressable):
         """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
         self.hyperps[name] = h
-        h._register_module(self)
+        h.register_module(self)
 
     def _register(self, input_names, output_names, name_to_hyperp):
         """
@@ -334,13 +336,13 @@ class Module(Addressable):
         """
         :rtype: dict[str,Any]
         """
-        return {name : ix.val for name, ix in iteritems(self.inputs)}
+        return {name: ix.val for name, ix in iteritems(self.inputs)}
 
     def _get_hyperp_values(self):
         """
         :rtype: dict[str,Any]
         """
-        return {name : h.val for name, h in iteritems(self.hyperps)}
+        return {name: h.val for name, h in iteritems(self.hyperps)}
 
     def _set_output_values(self, output_name_to_val):
         """
@@ -353,7 +355,7 @@ class Module(Addressable):
         """
         :rtype: (list of Input, list of Output)
         """
-        return (self.inputs, self.outputs)
+        return self.inputs, self.outputs
 
     def get_hyperps(self):
         """
@@ -361,7 +363,7 @@ class Module(Addressable):
         """
         return self.hyperps
 
-    def _update(self):
+    def update(self):
         """Called when an hyperparameter that the module depends on is set."""
         raise NotImplementedError
 
@@ -492,6 +494,7 @@ def is_specified(output_lst):
     :rtype: bool
     """
     is_spec = [True]
+
     def fn(module):
         for h in itervalues(module.hyperps):
             if not h.is_set():
@@ -515,6 +518,7 @@ def get_unset_hyperparameters(output_lst):
     """
     assert not is_specified(output_lst)
     hs = OrderedSet()
+
     def fn(module):
         for h in itervalues(module.hyperps):
             if not h.is_set():
@@ -555,6 +559,7 @@ def get_unconnected_inputs(output_lst):
     :rtype: list of Input
     """
     ix_lst = []
+
     def fn(x):
         for ix in itervalues(x.inputs):
             if not ix.is_connected():
@@ -571,6 +576,7 @@ def get_unconnected_outputs(input_lst):
     :rtype: list of Output
     """
     ox_lst = []
+
     def fn(x):
         for ox in itervalues(x.outputs):
             if not ox.is_connected():

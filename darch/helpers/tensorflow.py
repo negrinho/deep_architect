@@ -24,7 +24,7 @@ class TFModule(co.Module):
         output_name_to_val = self._fn(input_name_to_val)
         self._set_output_values(output_name_to_val)
 
-    def _update(self):
+    def update(self):
         pass
 
 def get_feed_dicts(output_lst):
