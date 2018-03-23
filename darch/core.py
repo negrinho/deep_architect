@@ -184,6 +184,9 @@ class Input(Addressable):
         return self.from_output is not None
 
     def get_connected_output(self):
+        """
+        :rtype: Output
+        """
         return self.from_output
 
     def get_module(self):
@@ -240,6 +243,9 @@ class Output(Addressable):
         return len(self.to_inputs) > 0
 
     def get_connected_inputs(self):
+        """
+        :rtype: list of Input
+        """
         return self.to_inputs
 
     def get_module(self):
