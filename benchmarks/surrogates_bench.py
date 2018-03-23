@@ -72,10 +72,15 @@ class CLSTMSurrogate(su.SurrogateModel):
     embedding_size = 128
     hidden_size = 128
 
-    def __init__(self):
+    def __init__(self, max_batch_size=1024, refit_interval=1):
         self.model = CLSTMSurrogateModel(self.character_list, self.embedding_size, self.hidden_size)
         self.optimizer = torch.optim.Adam(self.model.parameters())
         self.loss_fn = torch.nn.MSELoss()
+        self.feats = []
+        self.vals = []
+        self.batch_size = 1
+        self.max_batch_size = max_batch_size
+        self.refit_interval = refit_interval
 
     def preprocess(self, feats):
         # Feats is a dictionary where values are lists of strings. Need to convert this into a tensor
@@ -94,13 +99,24 @@ class CLSTMSurrogate(su.SurrogateModel):
         return self.model(self.preprocess(feats)).data[0, 0, 0]
 
     def update(self, val, feats):
-        self.optimizer.zero_grad()  # Zero out the gradient buffer
-        # TODO: refactor api to pass this in as an arg?
-        out = self.model(self.preprocess(feats)) # Need to copmute network output
-        # Wrap true value in a Float Tensor Variable
-        loss = self.loss_fn(out, torch.autograd.Variable(torch.FloatTensor([[val]]).unsqueeze(0)))
-        loss.backward()
-        self.optimizer.step()
+        # Add datapoint to memory
+        self.feats.append(self.preprocess(feats))
+        self.vals.append(val)
+        # Refit only after seing refit_interval many new points
+        if len(self.vals) % self.refit_interval == 0:
+            self._refit()
+        
+    def _refit(self):
+        # Sample batch_size many points from memory to train from
+        for feats, val in random.sample(list(zip(self.feats, self.vals)), self.batch_size):  
+            self.optimizer.zero_grad()  # Zero out the gradient buffer
+            out = self.model(feats) # Need to compute network output
+            # Wrap true value in a Float Tensor Variable
+            loss = self.loss_fn(out, torch.autograd.Variable(torch.FloatTensor([[[val]]])))
+            loss.backward()
+            self.optimizer.step()
+        # Increase the batch_size by a power of two
+        self.batch_size = min(len(self.feats), min(self.batch_size * 2, self.max_batch_size))
 
 
 class SearchSpaceFactory:
@@ -120,8 +136,9 @@ def savefig(filename):
 
 def test_clstm_surrogate():
     ## Params:
-    batch_size = 16
-    num_iters = 64 #128
+    dataset_size = 4 # Initial dataset size
+    val_size = dataset_size // 2
+    num_iters = 4 #128
 
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
@@ -141,6 +158,8 @@ def test_clstm_surrogate():
     # Split data
     # X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.33)
     # X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.50)
+
+
     # Steal MNIST Tensorflow example data:
     (X_train, y_train, X_valid, y_valid, X_test, y_test) = load_mnist('.temp/data/mnist')
     # Define datasets for contrib tensorflow evaluator
@@ -164,15 +183,17 @@ def test_clstm_surrogate():
     baseline_sur = su.HashingSurrogate(1024, 1)
     
     ## Choose our searching algorithm, using benchmarking surrogate model
+    # We use a random searcher to populate our initial dataset
     # Assumes new model is better than benchmark, and better models -> better searcher
-    searcher = se.SMBOSearcher(search_space_fn, clstm_sur, 32, 0.2)
+    searcher_rand = se.RandomSearcher(search_space_fn)
+    searcher_modl = se.SMBOSearcher(search_space_fn, clstm_sur, 32, 0.2)
 
     ## Define our Logger (Almost like Replay Memory)
     search_logger = sl.SearchLogger('./logs', 'train', resume_if_exists=True)
 
     
-
-    def sample_and_evaluate():
+    # Samples and evaluates a model from a searcher. Logs the result
+    def sample_and_evaluate(searcher):
         # Sample from our searcher
         (inputs, outputs, hs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
          # Get the true score by training the model sampled and log them
@@ -182,45 +203,69 @@ def test_clstm_surrogate():
         eval_logger.log_config(hyperp_value_lst, searcher_eval_token)
         eval_logger.log_features(inputs, outputs, hs)
         eval_logger.log_results(results)
+        # Kinda silly, but not the bottleneck
+        return sl.read_evaluation_folder(eval_logger.get_evaluation_folderpath())
+
+    def validate(val_data):
+        total_squared_error_baseline = 0.0
+        total_squared_error_clstm = 0.0
+        for eval_log in val_data:
+            feats = eval_log['features']
+            results = eval_log['results']
+            total_squared_error_baseline = (baseline_sur.eval(feats) - results['val_acc'])**2
+            total_squared_error_clstm = (clstm_sur.eval(feats) - results['val_acc'])**2
+        return total_squared_error_baseline / len(val_data), total_squared_error_clstm / len(val_data)
+
+    # trains both surrogates on a list of data: (feat,val) tuples
+    def train_and_validate(train_data, val_data):
+        baseline_mse, clstm_mse = [], []
+        for eval_log in random.sample(train_data, len(train_data)):
+            feats = eval_log['features']
+            results = eval_log['results']
+            # Take a backward step for both surrogate models (gradient step)
+            baseline_sur.update(results['val_acc'], feats)
+            clstm_sur.update(results['val_acc'], feats)
+            # Validate data
+            # TODO: Validate every x iterations
+            if val_data is not None:
+                baseline_val, clstm_val = validate(val_data)
+                baseline_mse.append(baseline_val)
+                clstm_mse.append(clstm_val)
+        return baseline_mse, clstm_mse
+                
 
     ## Training loop
     # We train two surrogate models with one searcher based on the non-baseline model
     # Each iteration we sample a model from the searcher
     # We want to populate our dataset with some initial configurations and evaluations
-    if search_logger.current_evaluation_id < batch_size:
+    if search_logger.current_evaluation_id < dataset_size:
         print('Not enough data found, training preliminary models.')
-        while search_logger.current_evaluation_id < batch_size:
-            sample_and_evaluate()
-    
-    print('Sufficient data to begin training loop. Dataset size: {}'.format(search_logger.current_evaluation_id - 1))
-    clstm_mse, baseline_mse = [], []
+        while search_logger.current_evaluation_id < dataset_size:
+            sample_and_evaluate(searcher_rand)
+
+    print('Sufficient data to begin training loop. Dataset size: {}'.format(search_logger.current_evaluation_id))
+
+    # Partition the dataset so the first val_size points are the validation set
+    dataset = sl.read_search_folder(search_logger.search_folderpath)
+    val_data = dataset[:val_size]
+    train_data = dataset[val_size:]
+
+    # Train on the data already there
+    baseline_mse, clstm_mse = train_and_validate(train_data, val_data)
+
+    # For an additional num_iter iterations, sample and evaluate models using the model searcher
+
+    print('Trained on dataset for 1 epoch. Begin adding new evaluations.')
 
     for _ in range(num_iters):
-        sample_and_evaluate()
-        # Sample a batch of batch_size from the Logger
-        # We manually call .update() for the models, instead of using the searcher
-        # TODO: Multiple gradient steps
-        # TODO: Validation Set for loss
-        # TODO: Possibly make the read_search_folder step more efficient
-        eval_logs = sl.read_search_folder(search_logger.search_folderpath)
-        total_squared_error_baseline = 0.0
-        total_squared_error_clstm = 0.0
-        for eval_log in random.sample(eval_logs, batch_size):
-            feats = eval_log['features']
-            results = eval_log['results']
-            # Get the predictions and calculate squared error
-            total_squared_error_baseline = (baseline_sur.eval(feats) - results['val_acc'])**2
-            total_squared_error_clstm = (clstm_sur.eval(feats) - results['val_acc'])**2
-            # Take a backward step for both surrogate models (gradient step)
-            baseline_sur.update(results['val_acc'], feats)
-            clstm_sur.update(results['val_acc'], feats)
-
-        baseline_mse.append(total_squared_error_baseline / batch_size)
-        clstm_mse.append(total_squared_error_clstm / batch_size)
+        eval_log = sample_and_evaluate(searcher_modl)
+        baseline_mse_next, clstm_mse_next = train_and_validate([eval_log], val_data)
+        baseline_mse += baseline_mse_next
+        clstm_mse += clstm_mse_next
     
     # Plot the MSEs
-    plt.plot(np.arange(num_iters), baseline_mse)
-    plt.plot(np.arange(num_iters), clstm_mse)
+    plt.plot(np.arange(len(baseline_mse)), baseline_mse)
+    plt.plot(np.arange(len(clstm_mse)), clstm_mse)
     plt.legend(['Baseline MSE', 'CSLTM MSE'], loc='lower right')
     plt.xlabel('Iteration')
     plt.ylabel('Mean Squared Error')
