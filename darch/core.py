@@ -353,7 +353,7 @@ class Module(Addressable):
 
     def get_io(self):
         """
-        :rtype: (list of Input, list of Output)
+        :rtype: (dict[str,Input], dict[str,Output])
         """
         return self.inputs, self.outputs
 
