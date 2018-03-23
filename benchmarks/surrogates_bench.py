@@ -136,9 +136,9 @@ def savefig(filename):
 
 def test_clstm_surrogate():
     ## Params:
-    dataset_size = 4 # Initial dataset size
+    dataset_size = 4096 # Initial dataset size
     val_size = dataset_size // 2
-    num_iters = 4 #128
+    num_iters = 128
 
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
