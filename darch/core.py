@@ -248,8 +248,8 @@ class Output(Addressable):
     def connect(self, to_input):
         """Connects an input to this output.
 
-        :param from_output: Input to which this output goes to.
-        :type from_output: Input
+        :param to_input: Input to which this output goes to.
+        :type to_input: Input
         """
         to_input.connect(self)
 
