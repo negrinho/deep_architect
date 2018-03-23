@@ -88,7 +88,10 @@ class SimpleClassifierEvaluator:
         num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
 
         init = tf.global_variables_initializer()
-        with tf.Session() as sess:
+        # Setting the session to allow growth, so it doesn't allocate all GPU memory.
+        gpu_ops = tf.GPUOptions(allow_growth=True)
+        config = tf.ConfigProto(gpu_options=gpu_ops)
+        with tf.Session(config=config) as sess:
             sess.run(init)
 
             learning_rate_init = self.learning_rate_init if 'learning_rate_init' not in hs else hs['learning_rate_init'].val
