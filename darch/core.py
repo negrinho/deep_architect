@@ -436,7 +436,7 @@ def traverse_backward(output_lst, fn):
     :param output_lst: Outputs to start from.
     :type output_lst: collections.Iterable of Output
     :param fn: Function to apply to modules.
-    :type fn: function
+    :type fn: types.FunctionType
 
     .. seealso:: :func:`traverse_forward`
     """
@@ -462,7 +462,7 @@ def traverse_forward(input_lst, fn):
     :param input_lst: Inputs to start from.
     :type input_lst: collections.Iterable of Input
     :param fn: Function to apply to modules.
-    :type fn: function
+    :type fn: types.FunctionType
 
     .. seealso:: :func:`traverse_backward`
     """
