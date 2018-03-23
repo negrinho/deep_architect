@@ -1,8 +1,8 @@
 import darch.core as co
 from six import itervalues, iteritems
-from six.moves import xrange
-import copy
+from six.moves import range
 import itertools
+
 
 class Empty(co.Module):
     def __init__(self, scope=None, name=None):
@@ -13,10 +13,20 @@ class Empty(co.Module):
     def forward(self):
         self.outputs['Out'].val = self.inputs['In'].val
 
+    def update(self):
+        pass
+
+    def _compile(self):
+        pass
+
+    def _forward(self):
+        pass
+
+
 # NOTE: perhaps refactor to capture similarities between modules.
 class SubstitutionModule(co.Module):
     def __init__(self, name, name_to_hyperp, sub_fn,
-            input_names, output_names, scope=None):
+                 input_names, output_names, scope=None):
         """
         # FIXME add documentation
 
@@ -53,9 +63,6 @@ class SubstitutionModule(co.Module):
             assert frozenset(new_inputs.keys()) == frozenset(self.inputs.keys())
             assert frozenset(new_outputs.keys()) == frozenset(self.outputs.keys())
 
-            self.old_inputs = copy.copy(self.inputs)
-            self.old_outputs = copy.copy(self.outputs)
-
             for name, new_ix in iteritems(new_inputs):
                 old_ix = self.inputs[name]
                 if old_ix.is_connected():
@@ -70,27 +77,40 @@ class SubstitutionModule(co.Module):
 
             self._is_done = True
 
+    def _compile(self):
+        pass
+
+    def _forward(self):
+        pass
+
+
 def empty():
     return Empty().get_io()
 
+
 def substitution_module(name, name_to_hyperp, sub_fn,
-        input_names, output_names, scope):
+                        input_names, output_names, scope):
     """
     # FIXME add documentation
 
-    :param name: Name of module
+    :param name: Name of module.
     :type name: str
-    :param name_to_hyperp: Dictionary of names to hyperparameters
+    :param name_to_hyperp: Dictionary of names to hyperparameters.
     :type name_to_hyperp: dict[str,darch.core.Hyperparameter]
     :param sub_fn: # FIXME add documentation
     :type sub_fn: types.FunctionType
-    :param input_names: List of names of inputs
+    :param input_names: List of names of inputs.
     :type input_names: collections.Iterable of str
-    :param output_names: List of names of outputs
+    :param output_names: List of names of outputs.
     :type output_names: collections.Iterable of str
+    :param scope: Scope for the module.
+    :type scope: darch.core.Scope
     """
-    return SubstitutionModule(name,
-        name_to_hyperp, sub_fn, input_names, output_names, scope).get_io()
+    return SubstitutionModule(
+        name, name_to_hyperp, sub_fn,
+        input_names, output_names, scope
+    ).get_io()
+
 
 def _get_name(name, default_name):
     """
@@ -99,6 +119,7 @@ def _get_name(name, default_name):
     :rtype: str
     """
     return name if name is not None else default_name
+
 
 def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     """
@@ -116,11 +137,15 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     def sub_fn(idx):
         return fn_lst[idx]()
 
-    return substitution_module(_get_name(name, "Or"),
-        {'idx' : h_or}, sub_fn, input_names, output_names, scope)
+    return substitution_module(
+        _get_name(name, "Or"), {'idx': h_or},
+        sub_fn, input_names, output_names, scope
+    )
+
 
 def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
-        input_names, output_names, scope=None, name=None):
+                       input_names, output_names,
+                       scope=None, name=None):
     """
     # FIXME add documentation
 
@@ -142,8 +167,11 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
-    return substitution_module(_get_name(name, "NestedRepeat"),
-        {'num_reps' : h_num_repeats}, sub_fn, input_names, output_names, scope)
+    return substitution_module(
+        _get_name(name, "NestedRepeat"), {'num_reps': h_num_repeats},
+        sub_fn, input_names, output_names, scope
+    )
+
 
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     """
@@ -156,8 +184,11 @@ def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     :param h_num_repeats: Hyperparameter with number of repetitions
     :type h_num_repeats: darch.core.Hyperparameter
     """
-    return mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, ['In'], ['Out'],
-        scope=scope, name=_get_name(name, "SISONestedRepeat"))
+    return mimo_nested_repeat(
+        fn_first, fn_iter, h_num_repeats, ['In'], ['Out'],
+        scope=scope, name=_get_name(name, "SISONestedRepeat")
+    )
+
 
 def siso_or(fn_lst, h_or, scope=None, name=None):
     """
@@ -168,8 +199,11 @@ def siso_or(fn_lst, h_or, scope=None, name=None):
     :param h_or: # FIXME add documentation
     :type h_or: # FIXME add documentation
     """
-    return mimo_or(fn_lst, h_or, ['In'], ['Out'],
-        scope=scope, name=_get_name(name, "SISOOr"))
+    return mimo_or(
+        fn_lst, h_or, ['In'], ['Out'],
+        scope=scope, name=_get_name(name, "SISOOr")
+    )
+
 
 # NOTE: how to do repeat in the general mimo case.
 def siso_repeat(fn, h_num_repeats, scope=None, name=None):
@@ -194,10 +228,13 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
             next_inputs['In'].connect(prev_outputs['Out'])
-        return (inputs_lst[0], outputs_lst[-1])
+        return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISORepeat"),
-        {'num_reps' : h_num_repeats}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISORepeat"),
+        {'num_reps': h_num_repeats}, sub_fn, ['In'], ['Out'], scope
+    )
+
 
 def siso_optional(fn, h_opt, scope=None, name=None):
     """
@@ -212,8 +249,11 @@ def siso_optional(fn, h_opt, scope=None, name=None):
     def sub_fn(opt):
         return fn() if opt else empty()
 
-    return substitution_module(_get_name(name, "SISOOptional"),
-        {'opt' : h_opt}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOOptional"),
+        {'opt': h_opt}, sub_fn, ['In'], ['Out'], scope
+    )
+
 
 # TODO: improve by not enumerating permutations
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
@@ -227,6 +267,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     """
     def sub_fn(perm_idx):
         g = itertools.permutations(range(len(fn_lst)))
+        idxs = []
         for _ in range(perm_idx + 1):
             idxs = next(g)
 
@@ -243,10 +284,13 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
 
             # NOTE: to extend this, think about the connection structure.
             next_inputs['In'].connect(prev_outputs['Out'])
-        return (inputs_lst[0], outputs_lst[-1])
+        return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISOPermutation"),
-        {'perm_idx' : h_perm}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOPermutation"),
+        {'perm_idx': h_perm}, sub_fn, ['In'], ['Out'], scope
+    )
+
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     """
@@ -260,17 +304,20 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     :type h_num_splits: darch.core.Hyperparameter
     """
     def sub_fn(num_splits):
-        inputs_lst, outputs_lst = zip(*[fn() for _ in xrange(num_splits)])
+        inputs_lst, outputs_lst = zip(*[fn() for _ in range(num_splits)])
         c_inputs, c_outputs = combine_fn(num_splits)
 
         i_inputs, i_outputs = empty()
-        for i in xrange(num_splits):
+        for i in range(num_splits):
             i_outputs['Out'].connect(inputs_lst[i]['In'])
             c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
-        return (i_inputs, c_outputs)
+        return i_inputs, c_outputs
 
-    return substitution_module(_get_name(name, "SISOSplitCombine"),
-        {'num_splits' : h_num_splits}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOSplitCombine"),
+        {'num_splits': h_num_splits}, sub_fn, ['In'], ['Out'], scope
+    )
+
 
 def siso_residual(main_fn, residual_fn, combine_fn):
     """
@@ -295,7 +342,8 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     m_outputs['Out'].connect(c_inputs['In0'])
     r_outputs['Out'].connect(c_inputs['In1'])
 
-    return (i_inputs, c_outputs)
+    return i_inputs, c_outputs
+
 
 def siso_sequential(io_lst):
     """
