@@ -42,13 +42,14 @@ def relu():
         return fn
     return siso_tfm('ReLU', cfn)
 
-def softmax():
+def pool_and_logits(num_classes):
     def cfn(di, dh):
+        (_, height, width, _) = di['In'].get_shape().as_list()
         def fn(di):
-            flat = tf.contrib.layers.flatten(di['In'])
-            return {'Out': tf.nn.softmax(flat)}
+            logits = tf.squeeze(tf.layers.conv2d(di['In'], num_classes, (height, width)))
+            return {'Out': logits}
         return fn
-    return TFM('Softmax', {}, cfn, ['In'], ['Out']).get_io()
+    return TFM('Logits', {}, cfn, ['In'], ['Out']).get_io()
 
 #def Affine(h_m, h_W_init_fn, h_b_init_fn):
 #    def cfn(In, m, W_init_fn, b_init_fn):
@@ -440,7 +441,7 @@ def basic_cell(h_sharer, C=5, normal=True):
 
 # A module that creates a number of repeated cells (both reduction and normal)
 # as in Learning Transferable Architectures for Scalable Image Recognition (Zoph et al, 2017)
-def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
+def ss_repeat(h_N, h_sharer, C, num_ov_repeat, num_classes, scope=None):
     def sub_fn(N):
         assert N > 0
         i_inputs, i_outputs = mo.simo_split(2)
@@ -460,9 +461,9 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
                 prev_2[0] = prev_2[1]
                 prev_2[1] = red_outputs['Out']
         
-        soft_inputs, soft_outputs = softmax()
-        prev_2[1].connect(soft_inputs['In'])
-        return i_inputs, soft_outputs
+        logits_inputs, logits_outputs = pool_and_logits(num_classes)
+        prev_2[1].connect(logits_inputs['In'])
+        return i_inputs, logits_outputs
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)
 
 # Creates search space using operations from search spaces 1 and 3 from 
@@ -470,8 +471,8 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
 def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
     C = 5
-    h_N = D([4, 6])
-    h_F = D([32, 64, 128])
+    h_N = D([3])
+    h_F = D([8])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
         h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
@@ -488,7 +489,7 @@ def get_search_space_small(num_classes, C):
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))    
     i_inputs, i_outputs = conv1x1(h_F)
-    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
+    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
     return r_inputs, r_outputs
@@ -505,8 +506,8 @@ def get_search_space_3(num_classes):
 def get_search_space_2(num_classes):
     co.Scope.reset_default_scope()
     C = 5
-    h_N = D([4, 6])
-    h_F = D([32, 64, 128])
+    h_N = D([3])
+    h_F = D([8])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
         h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
@@ -529,7 +530,7 @@ def get_search_space_2(num_classes):
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
     i_inputs, i_outputs = conv1x1(h_F)
-    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
+    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])
     return i_inputs, o_outputs
 

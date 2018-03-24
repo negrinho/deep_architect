@@ -23,7 +23,7 @@ def main():
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
-                    './temp', max_num_training_epochs=25, log_output_to_terminal=True)
+                    './temp', max_num_training_epochs=4, log_output_to_terminal=True)
     search_space_factory = SearchSpaceFactory(num_classes)
 
     searcher = se.RandomSearcher(search_space_factory.get_search_space)
