@@ -265,10 +265,8 @@ def conv2D_dilated(h_filter_size, h_dilation):
         W_init_fn = kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
-        num_filters = 2 * channels if dh['stride'] == 2 else channels
-
-        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, num_filters] ) )
-        b = tf.Variable( b_init_fn( [num_filters] ) )
+        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, channels] ) )
+        b = tf.Variable( b_init_fn( [channels] ) )
         def fn(di):
             return {'Out' : tf.nn.bias_add(
                 tf.nn.atrous_conv2d(di['In'], W, dh['dilation'], 'SAME'), b)}
@@ -467,8 +465,9 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
         return i_inputs, soft_outputs
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)
 
-# Search space 1 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
-def get_search_space_1(num_classes):
+# Creates search space using operations from search spaces 1 and 3 from 
+# Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
+def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
     C = 5
     h_N = D([4, 6])
@@ -480,8 +479,12 @@ def get_search_space_1(num_classes):
         h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
         h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
     for i in xrange(C):
-        h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
-        h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+        if i == 0:
+            h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+            h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+        else:
+            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+            h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))    
     i_inputs, i_outputs = conv1x1(h_F)
@@ -490,29 +493,13 @@ def get_search_space_1(num_classes):
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
     return r_inputs, r_outputs
 
+# Search space 1 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
+def get_search_space_1(num_classes):
+    return get_search_space_small(num_classes, 5)
 
 # Search space 3 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_3(num_classes):
-    co.Scope.reset_default_scope()
-    C = 15
-    h_N = D([4, 6])
-    h_F = D([32, 64, 128])
-    h_sharer = hp.HyperparameterSharer()
-    for i in xrange(C):
-        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
-        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
-    for i in xrange(C):
-        h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
-        h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
-    i_inputs, i_outputs = conv1x1(h_F)
-    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
-    i_outputs['Out'].connect(o_inputs['In'])
-    r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
-    return r_inputs, r_outputs
+    return get_search_space_small(num_classes, 15)
 
 # Search space 2 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_2(num_classes):
@@ -529,10 +516,16 @@ def get_search_space_2(num_classes):
         h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
         h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
     for i in xrange(C):
-        h_sharer.register('h_red_op1_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'max3', 's_sep3' 's_sep7']))
-        h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+        if i == 0:
+            h_sharer.register('h_red_op1_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+            'min2', 'max2', 'max3', 's_sep3' 's_sep7']))
+            h_sharer.register('h_red_op2_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+            'min2', 'max2', 'max3', 's_sep3' 's_sep7']))
+        else:
+            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+            h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
     i_inputs, i_outputs = conv1x1(h_F)
