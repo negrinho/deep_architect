@@ -259,7 +259,7 @@ def conv_spatial_separable(h_filter_size, h_stride):
         
 
 # Dilated convolutions, with output filter calculations as in Zoph17
-def conv2D_dilated(h_filter_size, h_dilation, h_stride):
+def conv2D_dilated(h_filter_size, h_dilation):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
         W_init_fn = kaiming2015delving_initializer_conv()
@@ -271,13 +271,13 @@ def conv2D_dilated(h_filter_size, h_dilation, h_stride):
         b = tf.Variable( b_init_fn( [num_filters] ) )
         def fn(di):
             return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME', dilations=[1, dh['dilation'], dh['dilation'], 1]), b)}
+                tf.nn.atrous_conv2d(di['In'], W, dh['dilation'], 'SAME'), b)}
         return fn
 
     return siso_tfm('Conv2DDilated', cfn, {
         'filter_size' : h_filter_size,
-        'dilation' : h_dilation,
-        'stride' : h_stride})
+        'dilation' : h_dilation
+        })
 
 
 # Depth separable convolutions, with output filter calculations as in Zoph17
@@ -323,7 +323,7 @@ def sp1_operation(h_op_name, h_stride):
             'd_sep7': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([7]), D([1]), h_stride)),
             'avg3': lambda: avg_pool(D([3]), h_stride),
             'max3': lambda: max_pool(D([3]), h_stride),
-            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
+            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
             's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
             }, h_op_name)
 
@@ -342,14 +342,14 @@ def sp2_operation(h_op_name, h_stride):
             'min2': lambda: mo.empty(),
             'max2': lambda: max_pool(D([2]), h_stride),
             'max3': lambda: max_pool(D([3]), h_stride),
-            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
-            'dil5': lambda: wrap_relu_batch_norm(conv2D_dilated(D([5]), D([2]), h_stride)),
-            'dil7': lambda: wrap_relu_batch_norm(conv2D_dilated(D([7]), D([2]), h_stride)),
+            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
+            'dil5': lambda: wrap_relu_batch_norm(conv2D_dilated(D([5]), D([2]))),
+            'dil7': lambda: wrap_relu_batch_norm(conv2D_dilated(D([7]), D([2]))),
             's_sep3': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([3]), h_stride)),
             's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride)),
-            'dil3_2': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]), h_stride)),
-            'dil3_4': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([4]), h_stride)),
-            'dil3_6': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([6]), h_stride))
+            'dil3_2': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
+            'dil3_4': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([4]))),
+            'dil3_6': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([6])))
             }, h_op_name)
 
 # A module that takes in a specifiable number of inputs, uses 1x1 convolutions to make the number
@@ -396,10 +396,6 @@ def selector(h_selection, sel_fn, num_selections):
     def cfn(di, dh):
         selection = dh['selection']
         sel_fn(selection)
-        print num_selections
-        print h_selection
-        print dh
-        print di
         def fn(di):
             return {'Out': di['In' + str(selection)]}
         return fn
@@ -412,26 +408,22 @@ def basic_cell(h_sharer, C=5, normal=True):
     available = [i_outputs['Out' + str(i)] for i in xrange(len(i_outputs))]
     unused = [False] * (C + 2)
     for i in xrange(C):
-        h_in0_pos = h_sharer.get('h_in0_pos_' + str(i))
-        h_in1_pos = h_sharer.get('h_in1_pos_' + str(i))
+        if normal:
+            h_op1 = h_sharer.get('h_norm_op1_' + str(i))
+            h_op2 = h_sharer.get('h_norm_op2_' + str(i))
+            h_in0_pos = h_sharer.get('h_norm_in0_pos_' + str(i))
+            h_in1_pos = h_sharer.get('h_norm_in1_pos_' + str(i))
+        else:
+            h_op1 = h_sharer.get('h_red_op1_' + str(i))
+            h_op2 = h_sharer.get('h_red_op2_' + str(i))
+            h_in0_pos = h_sharer.get('h_red_in0_pos_' + str(i))
+            h_in1_pos = h_sharer.get('h_red_in1_pos_' + str(i))
 
         def select(selection):
-            print "SELECT"
-            print i
-            print available
-            print h_in0_pos
-            print h_in1_pos
             unused[selection] = True
 
-        print available
-        print len(available)
-        print h_in0_pos
         sel0_inputs, sel0_outputs = selector(h_in0_pos, select, len(available))
-        print sel0_inputs
         sel1_inputs, sel1_outputs = selector(h_in1_pos, select, len(available))
-
-        h_op1 = h_sharer.get('h_op1_' + str(i))
-        h_op2 = h_sharer.get('h_op2_' + str(i))
         
         for o_idx in xrange(len(available)):
             available[o_idx].connect(sel0_inputs['In' + str(o_idx)])
@@ -448,21 +440,6 @@ def basic_cell(h_sharer, C=5, normal=True):
         unused_outs[i].connect(s_inputs['In' + str(i)])
     return i_inputs, s_outputs
 
-### my interpretation.
-def hyperparameters_fn():
-    return {
-        'optimizer_type' : D([ 'adam' ]),
-        'lr_start' : D( np.logspace(-1, -4, num=16) ),
-        'stop_patience' : D([ 512 ]), 
-        'lr_end' : D([ 1e-6 ]),
-        # 'max_num_epochs' : D([ 100 ]),
-        # 'angle_delta' : D([ 0, 5, 10, 15, 20, 25, 30, 35 ]),
-        # 'scale_delta' : D([ 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35 ]),
-        'weight_decay_coeff' : D([ 0.0, 1e-6, 1e-5, 1e-4 ]),
-        # 'scale_delta' : D([ 0.0, 0.05, 0.1, 0.2 ]),
-        # 'angle_delta' : D([ 0, 5, 10, 15, 20 ])
-        }
-
 # A module that creates a number of repeated cells (both reduction and normal)
 # as in Learning Transferable Architectures for Scalable Image Recognition (Zoph et al, 2017)
 def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
@@ -473,7 +450,6 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
 
         for i in range(num_ov_repeat):
             for j in range(N):
-                print '(%d, %d)' %(i,  j)
                 norm_inputs, norm_outputs = basic_cell(h_sharer, C=C, normal=True)
                 prev_2[0].connect(norm_inputs['In0'])
                 prev_2[1].connect(norm_inputs['In1'])
@@ -494,17 +470,20 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, scope=None):
 # Search space 1 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_1(num_classes):
     co.Scope.reset_default_scope()
-    #C = 5
-    #h_N = D([4, 6])
-    C = 3
-    h_N = D([1])
+    C = 5
+    h_N = D([4, 6])
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_in0_pos_' + str(i), lambda: D(range(2 + i)))
-        h_sharer.register('h_in1_pos_' + str(i), lambda: D(range(2 + i)))
+        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+        h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
+    for i in xrange(C):
+        h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+        h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))    
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
     i_outputs['Out'].connect(o_inputs['In'])
@@ -520,15 +499,20 @@ def get_search_space_3(num_classes):
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
-        h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
+        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+        h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
+        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
+    for i in xrange(C):
+        h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+        h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
     i_outputs['Out'].connect(o_inputs['In'])
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
-    return r_inputs, r_outputs, hyperparameters_fn()
+    return r_inputs, r_outputs
 
 # Search space 2 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_2(num_classes):
@@ -538,16 +522,23 @@ def get_search_space_2(num_classes):
     h_F = D([32, 64, 128])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+          'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+        h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+          'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+        h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
+    for i in xrange(C):
+        h_sharer.register('h_red_op1_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
+          'min2', 'max2', 'max3', 's_sep3' 's_sep7']))
+        h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
           'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
-        h_sharer.register('h_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
-        h_sharer.register('h_in0_pos_' + str(i), lambda: D([range(2 + i)]))
-        h_sharer.register('h_in1_pos_' + str(i), lambda: D([range(2 + i)]))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3)
     i_outputs['Out'].connect(o_inputs['In'])
-    return i_inputs, o_outputs, hyperparameters_fn()
+    return i_inputs, o_outputs
 
 #def get_ss0_fn(num_classes):
 #    def fn():
