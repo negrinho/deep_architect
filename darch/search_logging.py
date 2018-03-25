@@ -114,6 +114,30 @@ def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
     d['nanoseconds'] = d['seconds'] * 1e-9
     return (x * d[src_units]) / d[dst_units]
 
+def convert_between_byte_units(x, src_units='bytes', dst_units='megabytes'):
+    units = ['bytes', 'kilobytes', 'megabytes', 'gigabytes', 'terabytes']
+    assert (src_units in units) and (dst_units in units)
+    return x / float(
+        2 ** (10 * (units.index(dst_units) - units.index(src_units))))
+
+class SequenceTracker:
+    def __init__(self, abort_if_different_lengths=False):
+        self.abort_if_different_lengths = abort_if_different_lengths
+        self.d = {}
+
+    def append(self, d):
+        for k, v in d.iteritems():
+            assert type(k) == str and len(k) > 0
+            if k not in self.d:
+                self.d[k] = []
+            self.d[k].append(v)
+
+        if self.abort_if_different_lengths:
+            assert len(set([len(v) for v in self.d.itervalues()])) <= 1
+
+    def get_dict(self):
+        return dict(self.d)
+
 class TimeTracker:
     def __init__(self):
         self.init_time = time.time()
@@ -132,12 +156,21 @@ class TimeTracker:
 
 class SearchLogger:
     def __init__(self, folderpath, search_name,
-            resume_if_exists=False, delete_if_exists=False):
-        assert not (resume_if_exists and delete_if_exists)
+            resume_if_exists=False, delete_if_exists=False,
+            make_search_name_unique_by_numbering=False, create_parent_folders=False):
+        assert sum(x for x in [resume_if_exists, delete_if_exists,
+            make_search_name_unique_by_numbering]) <= 1
 
         self.folderpath = folderpath
-        self.search_name = search_name
-        self.search_folderpath = join_paths([folderpath, search_name])
+        if not make_search_name_unique_by_numbering:
+            self.search_name = search_name
+        else:
+            cnt = 0
+            while folder_exists(join_paths([folderpath, search_name + '-%d' % cnt])):
+                cnt += 1
+            self.search_name = search_name + '-%d' % cnt
+
+        self.search_folderpath = join_paths([folderpath, self.search_name])
         self.search_data_folderpath = join_paths([self.search_folderpath, 'search_data'])
         self.all_evaluations_folderpath = join_paths([self.search_folderpath, 'evaluations'])
         # self.code_folderpath = join_paths([self.search_folderpath, 'code'])
@@ -155,14 +188,14 @@ class SearchLogger:
 
             if delete_if_exists:
                 delete_folder(self.search_folderpath, False, True)
-                self._create_search_folders()
+                self._create_search_folders(create_parent_folders)
                 self.current_evaluation_id = 0
         else:
-            self._create_search_folders()
+            self._create_search_folders(create_parent_folders)
             self.current_evaluation_id = 0
 
-    def _create_search_folders(self):
-        create_folder(self.search_folderpath)
+    def _create_search_folders(self, create_parent_folders):
+        create_folder(self.search_folderpath, create_parent_folders=create_parent_folders)
         create_folder(self.search_data_folderpath)
         create_folder(self.all_evaluations_folderpath)
         # create_folder(self.code_folderpath)

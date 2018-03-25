@@ -7,6 +7,7 @@ import time
 import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl
+import darch.contrib.gpu_utils as gpu_utils
 
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
@@ -58,6 +59,7 @@ class SimpleClassifierEvaluator:
         return acc
 
     def eval(self, inputs, outputs, hs):
+        evaluation_timer = sl.TimeTracker()
         tf.reset_default_graph()
 
         X_pl = tf.placeholder("float", [None] + self.in_dim)
@@ -89,6 +91,7 @@ class SimpleClassifierEvaluator:
         num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
 
         init = tf.global_variables_initializer()
+        seqs = sl.SequenceTracker(abort_if_different_lengths=True)
         with tf.Session() as sess:
             sess.run(init)
 
@@ -133,6 +136,21 @@ class SimpleClassifierEvaluator:
                           "loss:", "{:.9f}".format(avg_loss),
                           "validation_accuracy:", "%.5f" % val_acc,
                           "learning_rate:", '%.3e' % lr)
+
+                d = {
+                    'validation_accuracy' : val_acc,
+                    'training_loss' : avg_loss,
+                    'epoch_number' : epoch + 1,
+                    'learning_rate' : lr,
+                    'time_in_minutes' : 0.0,
+                }
+                d_gpu = gpu_utils.get_gpu_information()
+                if len(d_gpu) == 1:
+                    seqs.append({
+                        'gpu_utilization_in_percent' : d_gpu[0]['gpu_utilization_in_percent'],
+                        'gpu_memory_utlization_in_gigabytes' : d_gpu[0]['gpu_memory_utlization_in_gigabytes']
+                    })
+                seqs.append(d)
 
                 # update the patience counters.
                 if best_val_acc < val_acc:
@@ -179,13 +197,24 @@ class SimpleClassifierEvaluator:
             t_infer = (timer.time_since_creation('miliseconds') / self.val_dataset.get_num_examples())
 
             print("Validation accuracy: %f" % val_acc)
+            seqs_dict = seqs.get_dict()
             results = {'validation_accuracy' : val_acc,
                        'num_parameters' : htf.get_num_trainable_parameters(),
-                       'inference_time_per_example_in_miliseconds' : t_infer
+                       'inference_time_per_example_in_miliseconds' : t_infer,
+                       'num_training_epochs' : seqs_dict['epoch_number'],
+                       'sequences' : seqs_dict
                        }
+            if 'gpu_utilization_in_percent' in seqs_dict:
+                seqs_dict['average_gpu_utilization_in_percent'] = np.mean(
+                    seqs_dict['gpu_utilization_in_percent']),
+                seqs_dict['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
+                    seqs_dict['average_gpu_memory_utilization_in_gigabytes']),
+
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                     self.test_dataset, eval_feed)
                 print("Test accuracy: %f" % test_acc)
                 results['test_accuracy'] = test_acc
+
+        results['training_time_in_hours'] = evaluation_timer.time_since_creation(units='hours')
         return results
