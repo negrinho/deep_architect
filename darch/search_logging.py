@@ -154,6 +154,41 @@ class TimeTracker:
         self.last_registered = now
         return convert_between_time_units(elapsed, dst_units=units)
 
+class TimerManager:
+    def __init__(self):
+        self.init_time = time.time()
+        self.last_registered = self.init_time
+        self.name_to_timer = {}
+
+    def create_timer(self, timer_name, abort_if_timer_exists=True):
+        assert not abort_if_timer_exists or timer_name not in self.name_to_timer
+        start_time = time.time()
+        self.name_to_timer[timer_name] = {'start' : start_time, 'tick' : start_time}
+
+    def create_timer_event(self, timer_name, event_name, abort_if_event_exists=True):
+        assert not timer_name == 'tick'
+        timer = self.name_to_timer[timer_name]
+        assert not abort_if_event_exists or event_name not in timer
+        timer[event_name] = time.time()
+
+    def tick_timer(self, timer_name):
+        self.name_to_timer[timer_name]['tick'] = time.time()
+
+    def get_time_since_event(self, timer_name, event_name, units='seconds'):
+        delta = time.time() - self.name_to_timer[timer_name][event_name]
+        return convert_between_time_units(delta, dst_units=units)
+
+    def get_time_between_events(self, timer_name,
+            earlier_event_name, later_event_name, units='seconds'):
+        timer = self.name_to_timer[timer_name]
+        delta = timer[earlier_event_name] - timer[later_event_name]
+        assert delta >= 0.0
+        return convert_between_time_units(delta, dst_units=units)
+
+    def get_time_since_last_tick(self, timer_name, units='seconds'):
+        delta = time.time() - self.name_to_timer[timer_name]['tick']
+        return convert_between_time_units(delta, dst_units=units)
+
 class SearchLogger:
     def __init__(self, folderpath, search_name,
             resume_if_exists=False, delete_if_exists=False,

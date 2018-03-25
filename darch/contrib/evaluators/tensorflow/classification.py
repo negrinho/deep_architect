@@ -59,7 +59,6 @@ class SimpleClassifierEvaluator:
         return acc
 
     def eval(self, inputs, outputs, hs):
-        evaluation_timer = sl.TimeTracker()
         tf.reset_default_graph()
 
         X_pl = tf.placeholder("float", [None] + self.in_dim)
@@ -107,6 +106,8 @@ class SimpleClassifierEvaluator:
             stop_counter = stop_patience
             rate_counter = learning_rate_patience
             save_counter = save_patience
+            timer_manager = sl.TimerManager()
+            timer_manager.create_timer('eval')
             time_start = time.time()
 
             lr = learning_rate_init
@@ -121,8 +122,8 @@ class SimpleClassifierEvaluator:
                     avg_loss += c / num_batches
 
                     # if spent more time than budget, exit.
-                    time_now = time.time()
-                    if (time_now - time_start) / 60.0 > self.max_eval_time_in_minutes:
+                    if (timer_manager.get_time_since_event(
+                        'eval', 'start', 'minutes') > self.max_eval_time_in_minutes):
                         break
 
                 # early stopping
@@ -142,13 +143,14 @@ class SimpleClassifierEvaluator:
                     'training_loss' : avg_loss,
                     'epoch_number' : epoch + 1,
                     'learning_rate' : lr,
-                    'time_in_minutes' : 0.0,
+                    'time_in_minutes' : timer_manager.get_time_since_event('eval', 'start', units='minutes'),
                 }
-                d_gpu = gpu_utils.get_gpu_information()
-                if len(d_gpu) == 1:
-                    seqs.append({
-                        'gpu_utilization_in_percent' : d_gpu[0]['gpu_utilization_in_percent'],
-                        'gpu_memory_utlization_in_gigabytes' : d_gpu[0]['gpu_memory_utlization_in_gigabytes']
+                gpus = gpu_utils.get_gpu_information()
+                print(gpus)
+                if len(gpus) == 1:
+                    d.update({
+                        'gpu_utilization_in_percent' : gpus[0]['gpu_utilization_in_percent'],
+                        'gpu_memory_utlization_in_gigabytes' : gpus[0]['gpu_memory_utlization_in_gigabytes']
                     })
                 seqs.append(d)
 
@@ -179,8 +181,8 @@ class SimpleClassifierEvaluator:
                             best_val_acc_saved = val_acc
 
                 # if spent more time than budget, exit.
-                time_now = time.time()
-                if (time_now - time_start) / 60.0 > self.max_eval_time_in_minutes:
+                if (timer_manager.get_time_since_event(
+                    'eval', 'start', 'minutes') > self.max_eval_time_in_minutes):
                     break
 
             # if the model saved has better performance than the current model,
@@ -191,10 +193,11 @@ class SimpleClassifierEvaluator:
 
             print("Optimization Finished!")
 
-            timer = sl.TimeTracker()
+            timer_manager.tick_timer('eval')
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                 self.val_dataset, eval_feed)
-            t_infer = (timer.time_since_creation('miliseconds') / self.val_dataset.get_num_examples())
+            t_infer = (timer_manager.get_time_since_last_tick(
+                'eval', 'miliseconds') / self.val_dataset.get_num_examples())
 
             print("Validation accuracy: %f" % val_acc)
             seqs_dict = seqs.get_dict()
@@ -216,5 +219,6 @@ class SimpleClassifierEvaluator:
                 print("Test accuracy: %f" % test_acc)
                 results['test_accuracy'] = test_acc
 
-        results['training_time_in_hours'] = evaluation_timer.time_since_creation(units='hours')
+        results['training_time_in_hours'] = timer_manager.get_time_since_event(
+            'eval', 'start', units='hours')
         return results

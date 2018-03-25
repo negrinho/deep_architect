@@ -53,4 +53,3 @@ def set_visible_gpus(gpu_ids):
     assert all([i < n and i >= 0 for i in gpu_ids])
     set_environment_variable('CUDA_VISIBLE_DEVICES', ",".join(map(str, gpu_ids)),
         abort_if_notexists=False)
-    # subprocess.call(['export', 'CUDA_VISIBLE_DEVICES=%s' % ",".join(map(str, gpu_ids))])
