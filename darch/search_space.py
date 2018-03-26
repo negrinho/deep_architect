@@ -475,19 +475,19 @@ def get_search_space_small(num_classes, C):
     h_F = D([8])
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
-        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
-        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
+        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
+        h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
+        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
+        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
     for i in xrange(C):
         if i == 0:
-            h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
-            h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7']))
+            h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
+            h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
         else:
-            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-            h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7']))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))    
+            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
+            h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))    
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])
@@ -511,24 +511,24 @@ def get_search_space_2(num_classes):
     h_sharer = hp.HyperparameterSharer()
     for i in xrange(C):
         h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+          'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
         h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
-        h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
-        h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
+          'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+        h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
+        h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
     for i in xrange(C):
         if i == 0:
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 's_sep3' 's_sep7']))
+            'min2', 'max2', 'max3', 's_sep3' 's_sep7'], name='Mutatable'))
             h_sharer.register('h_red_op2_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 's_sep3' 's_sep7']))
+            'min2', 'max2', 'max3', 's_sep3' 's_sep7'], name='Mutatable'))
         else:
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
+            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
             h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6']))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i)))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i)))
+            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])

@@ -15,6 +15,9 @@ class SearchSpaceFactory:
         inputs, outputs = ss.get_search_space_1(self.num_classes)
         return inputs, outputs, {}
 
+def mutatable(h):
+    return h.get_name().startswith('H.Mutatable')
+        
 def main():
     num_classes = 10
     num_samples = 10
@@ -23,10 +26,11 @@ def main():
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
-                    './temp', max_num_training_epochs=4, log_output_to_terminal=True)
+                    './temp', max_num_training_epochs=4, log_output_to_terminal=True, 
+                    test_dataset=test_dataset)
     search_space_factory = SearchSpaceFactory(num_classes)
 
-    searcher = se.RandomSearcher(search_space_factory.get_search_space)
+    searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
     for i in xrange(num_samples):
         inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
         val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']

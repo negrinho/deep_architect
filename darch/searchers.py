@@ -1,4 +1,6 @@
 from six.moves import xrange
+from collections import deque
+import random
 import numpy as np
 import darch.hyperparameters as hp
 import darch.core as co
@@ -38,6 +40,26 @@ def specify(output_lst, hyperp_lst, vs):
     for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
         h.set_val(vs[i])
 
+def mutate(output_lst, vs, mutatable):
+    mutate_candidates = []
+    new_vs = []
+    for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
+        if mutatable(h):
+            mutate_candidates.append((i, h))
+        h.set_val(vs[i])
+        new_vs.append(vs[i])
+    # mutate a random hyperparameter
+    m_ind, m_h = mutate_candidates[random.randint(0, len(mutate_candidates) - 1)]
+    v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
+
+    # ensure that same value is not chosen again
+    while v == vs[m_ind]:
+        v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
+    m_h.set_val(v)
+    new_vs[m_ind] = v
+    return vs
+
+
 class Searcher:
     def sample(self):
         raise NotImplementedError
@@ -56,6 +78,63 @@ class RandomSearcher(Searcher):
 
     def update(self, val, cfg_d):
         pass
+
+class EvolutionSearcher(Searcher):
+    def __init__(self, search_space_fn, mutatable, P, S, regularized=False):
+        self.search_space_fn = search_space_fn
+        self.mutatable = mutatable
+        self.P = P
+        self.S = S
+        self.population = deque(maxlen=P)
+        self.regularized = regularized
+        self.initializing = True
+        
+    
+    def sample(self):
+        if self.initializing:
+            inputs, outputs, hs = self.search_space_fn()
+            vs = random_specify(outputs.values(), hs.values())
+            if len(self.population) < self.P - 1:
+                self.initializing = False
+            return inputs, outputs, hs, vs, {}
+        else:
+            sample_inds = sorted(random.sample(range(len(self.population)), self.S))
+            # delete weakest model
+            weak_ind = self.get_weakest_model_index(sample_inds)
+            del self.population[weak_ind]
+
+            # mutate strongest model
+            inputs, outputs, hs = self.search_space_fn()
+            vs, _ = self.population[self.get_strongest_model_index(sample_inds)]
+            new_vs = mutate(outputs, vs, self.mutatable)
+            return inputs, outputs, hs, new_vs, {'vs': new_vs}
+
+    
+    def update(self, val, cfg_d):
+        self.population.append((cfg_d['vs'], val))
+
+    def get_weakest_model_index(self, sample_inds):
+        if self.regularized:
+            return sample_inds[0]
+        else:
+            min_acc = 1.
+            min_acc_ind = -1
+            for i in range(len(sample_inds)):
+                _, acc = self.population[sample_inds[i]]
+                if acc < min_acc:
+                    min_acc = acc
+                    min_acc_ind = i
+            return sample_inds[min_acc_ind]
+    
+    def get_strongest_model_index(self, sample_inds):
+        max_acc = 0.
+        max_acc_ind = -1
+        for i in range(len(sample_inds)):
+            _, acc = self.population[sample_inds[i]]
+            if acc > max_acc:
+                max_acc = acc
+                max_acc_ind = i
+        return sample_inds[max_acc_ind]
 
 # keeps the statistics and knows how to update information related to a node.
 class MCTSTreeNode:
