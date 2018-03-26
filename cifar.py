@@ -4,6 +4,7 @@ from darch.contrib.datasets.dataset import InMemoryDataset
 #import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
 import darch.searchers as se
 import darch.search_space as ss
+import darch.search_logging as sl
 import darch.core as co
 
 class SearchSpaceFactory:
@@ -20,7 +21,7 @@ def mutatable(h):
         
 def main():
     num_classes = 10
-    num_samples = 10
+    num_samples = 200
     (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_cifar10('data/cifar10')
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)
@@ -31,11 +32,18 @@ def main():
     search_space_factory = SearchSpaceFactory(num_classes)
 
     searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
+    search_logger = sl.SearchLogger('./logs', 'test')
+
     for i in xrange(num_samples):
-        inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
-        val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
-        print('Sample %d: %f', (i, val_acc))
-        searcher.update(val_acc, searcher_eval_token)
+        evaluation_logger = search_logger.get_current_evaluation_logger()
+        inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
+        evaluation_logger.log_config(vs, searcher_eval_token)
+        evaluation_logger.log_features(inputs, outputs, hs)
+        results = evaluator.eval(inputs, outputs, hs)
+        results['epochs'] = 4
+        evaluation_logger.log_results(results)      
+        print('Sample %d: %f', (i, results['val_acc']))
+        searcher.update(results['val_acc'], searcher_eval_token)
 
 if __name__ == '__main__':
     main()
