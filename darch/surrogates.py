@@ -4,12 +4,14 @@ import scipy.sparse as sp
 import numpy as np
 from six import iteritems, itervalues
 
+
 class SurrogateModel:
     def eval(self, feats):
         raise NotImplementedError
 
     def update(self, val, feats):
         raise NotImplementedError
+
 
 class DummyModel(SurrogateModel):
     def eval(self, feats):
@@ -18,7 +20,11 @@ class DummyModel(SurrogateModel):
     def update(self, val, feats):
         pass
 
+
 class HashingSurrogate(SurrogateModel):
+    """
+    # FIXME add documentation
+    """
     def __init__(self, hash_size, refit_interval, weight_decay_coeff=1e-5):
         self.hash_size = hash_size
         self.refit_interval = refit_interval
@@ -59,8 +65,15 @@ class HashingSurrogate(SurrogateModel):
         y = np.array(self.vals)
         self.model.fit(X, y)
 
+
 # extract some simple features from the network. useful for smbo surrogate models.
 def extract_features(inputs, outputs, hs):
+    """
+    :type inputs: dict[str,darch.core.Input]
+    :type outputs: dict[str,darch.core.Output]
+    :type hs: dict[str,darch.core.Hyperparameter]
+    """
+    # FIXME inputs is not used anywhere; can it be removed?
     module_memo = co.OrderedSet()
 
     module_feats = []
