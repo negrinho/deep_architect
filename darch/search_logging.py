@@ -3,14 +3,17 @@ import os
 import shutil
 import darch.surrogates as su
 
+
 def read_jsonfile(filepath):
     with open(filepath, 'r') as f:
         d = json.load(f)
         return d
 
+
 def write_jsonfile(d, filepath, sort_keys=False):
     with open(filepath, 'w') as f:
         json.dump(d, f, indent=4, sort_keys=sort_keys)
+
 
 def read_textfile(filepath, strip=True):
     with open(filepath, 'r') as f:
@@ -18,6 +21,7 @@ def read_textfile(filepath, strip=True):
         if strip:
             lines = [line.strip() for line in lines]
         return lines
+
 
 def write_textfile(filepath, lines, append=False, with_newline=True):
     mode = 'a' if append else 'w'
@@ -27,20 +31,26 @@ def write_textfile(filepath, lines, append=False, with_newline=True):
             if with_newline:
                 f.write("\n")
 
+
 def path_prefix(path):
     return os.path.split(path)[0]
+
 
 def join_paths(paths):
     return os.path.join(*paths)
 
+
 def path_exists(path):
     return os.path.exists(path)
+
 
 def file_exists(path):
     return os.path.isfile(path)
 
+
 def folder_exists(path):
     return os.path.isdir(path)
+
 
 def create_folder(folderpath, abort_if_exists=True, create_parent_folders=False):
     assert not file_exists(folderpath)
@@ -50,6 +60,7 @@ def create_folder(folderpath, abort_if_exists=True, create_parent_folders=False)
     if not folder_exists(folderpath):
         os.makedirs(folderpath)
 
+
 def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
     assert folder_exists(folderpath) or (not abort_if_notexists)
 
@@ -58,6 +69,7 @@ def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
         shutil.rmtree(folderpath)
     else:
         assert not abort_if_notexists
+
 
 def list_paths(folderpath, 
         ignore_files=False, ignore_dirs=False, 
@@ -92,6 +104,7 @@ def list_paths(folderpath,
             break
     return path_list
 
+
 def list_files(folderpath, 
         ignore_hidden_folders=True, ignore_hidden_files=True, ignore_file_exts=None, 
         recursive=False, use_relative_paths=False):
@@ -100,6 +113,7 @@ def list_files(folderpath,
         ignore_hidden_folders=ignore_hidden_folders, 
         ignore_hidden_files=ignore_hidden_files, ignore_file_exts=ignore_file_exts, 
         recursive=recursive, use_relative_paths=use_relative_paths)
+
 
 class SearchLogger:
     def __init__(self, folderpath, search_name, 
@@ -141,12 +155,17 @@ class SearchLogger:
         # create_folder(self.code_folderpath)
 
     def get_current_evaluation_logger(self):
+        """
+        # FIXME something called `get_current_...` creates a new instance? What does this do? Is this a `get_next_...`?
+        """
         logger = EvaluationLogger(self.all_evaluations_folderpath, self.current_evaluation_id)
         self.current_evaluation_id += 1
         return logger
 
     def get_search_data_folderpath(self):
+        # FIXME unnecessary method
         return self.search_data_folderpath
+
 
 class EvaluationLogger:
     def __init__(self, all_evaluations_folderpath, evaluation_id):
@@ -162,6 +181,13 @@ class EvaluationLogger:
         self.results_filepath = join_paths([self.evaluation_folderpath, 'results.json'])
 
     def log_config(self, hyperp_value_lst, searcher_evaluation_token):
+        """
+        Saves run configuration to a file.
+        :param hyperp_value_lst: List of hyperparameters to try in the current run
+        :type hyperp_value_lst: list of darch.core.Hyperparameter
+        :param searcher_evaluation_token: # FIXME add documentation
+        :type searcher_evaluation_token: # FIXME add documentation
+        """
         assert not file_exists(self.config_filepath)
         config_d = {
             'hyperp_value_lst' : hyperp_value_lst, 
@@ -169,23 +195,52 @@ class EvaluationLogger:
         write_jsonfile(config_d, self.config_filepath)
 
     def log_features(self, inputs, outputs, hs):
+        """
+        # FIXME add documentation
+
+        :param inputs: # FIXME add documentation
+        :type inputs: list of darch.core.Input
+        :param outputs: # FIXME add documentation
+        :type outputs: list of darch.core.Output
+        :param hs: # FIXME add documentation
+        :type hs: # FIXME add documentation
+
+        .. seealso:: :func:`darch.surrogates.extract_features`
+        """
         assert not file_exists(self.features_filepath)
         feats = su.extract_features(inputs, outputs, hs)
         write_jsonfile(feats, self.features_filepath)
     
     def log_results(self, results):
-        assert (not file_exists(self.results_filepath)) 
+        """
+        # FIXME add documentation
+
+        :param results: # FIXME add documentation (where do these come from? shouldn't be from contrib!)
+        :type results: # FIXME add documetation
+        """
+        assert (not file_exists(self.results_filepath))
         assert file_exists(self.config_filepath) and file_exists(self.features_filepath)
         assert isinstance(results, dict)
         write_jsonfile(results, self.results_filepath)
 
     def get_evaluation_folderpath(self):
+        # FIXME unnecessary method
         return self.evaluation_folderpath
 
     def get_user_data_folderpath(self):
+        # FIXME unnecessary method
         return self.user_data_folderpath
 
+
 def read_evaluation_folder(evaluation_folderpath):
+    """
+    Read one evaluation file.
+
+    :type evaluation_folderpath: str
+    :rtype: dict[str,dict]
+
+    .. seealso:: :func:`read_search_folder`
+    """
     assert folder_exists(evaluation_folderpath)
 
     name_to_log = {}
@@ -194,7 +249,16 @@ def read_evaluation_folder(evaluation_folderpath):
         name_to_log[name] = read_jsonfile(log_filepath)
     return name_to_log
 
+
 def read_search_folder(search_folderpath):
+    """
+    Read the evaluations for all the runs.
+
+    :type search_folderpath: str
+    :rtype: list of dict[str,dict]
+
+    .. seealso:: :func:`read_evaluation_folder`
+    """
     all_evaluations_folderpath = join_paths([search_folderpath, 'evaluations'])
     eval_id = 0
     log_lst = []
