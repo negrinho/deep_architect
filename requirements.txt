@@ -1,0 +1,7 @@
+graphviz
+numpy
+scipy
+matplotlib
+six
+torch
+scikit_learn
