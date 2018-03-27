@@ -199,9 +199,9 @@ class EvaluationLogger:
         # FIXME add documentation
 
         :param inputs: # FIXME add documentation
-        :type inputs: list of darch.core.Input
+        :type inputs: dict[str,darch.core.Input]
         :param outputs: # FIXME add documentation
-        :type outputs: list of darch.core.Output
+        :type outputs: dict[str,darch.core.Output]
         :param hs: # FIXME add documentation
         :type hs: # FIXME add documentation
 
