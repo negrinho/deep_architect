@@ -28,9 +28,11 @@ class CLSTMSurrogateModel(torch.nn.Module):
         super(CLSTMSurrogateModel, self).__init__()
         # One embedding feeds 4 LSTMs
         self.embeddings = torch.nn.Embedding(len(character_list), embedding_size)
-        self.lstm_in = []
-        self.h0 = []
-        self.c0 = []
+        # Define ModuleList so modules are properly registered
+        self.lstm_in = torch.nn.ModuleList()
+        # Define ParameterList so parameters are properly registered
+        self.h0 = torch.nn.ParameterList()
+        self.c0 = torch.nn.ParameterList()
         for i in range(4):
             # One LSTM for each input feature
             self.lstm_in.append(torch.nn.LSTM(embedding_size, hidden_size, 1))
@@ -42,6 +44,7 @@ class CLSTMSurrogateModel(torch.nn.Module):
         self.h_out = torch.nn.Parameter(torch.randn(1, 1, hidden_size))
         self.c_out = torch.nn.Parameter(torch.randn(1, 1, hidden_size))
         self.fc_out = torch.nn.Linear(hidden_size, 1)
+
     def forward(self, feats):
         out_0 = self.embeddings(feats[0]).unsqueeze(1)
         out_1 = self.embeddings(feats[1]).unsqueeze(1)
@@ -72,7 +75,7 @@ class CLSTMSurrogate(su.SurrogateModel):
     embedding_size = 128
     hidden_size = 128
 
-    def __init__(self, max_batch_size=1024, refit_interval=1):
+    def __init__(self, max_batch_size=1024, refit_interval=1, use_cuda=True):
         self.model = CLSTMSurrogateModel(self.character_list, self.embedding_size, self.hidden_size)
         self.optimizer = torch.optim.Adam(self.model.parameters())
         self.loss_fn = torch.nn.MSELoss()
@@ -81,19 +84,27 @@ class CLSTMSurrogate(su.SurrogateModel):
         self.batch_size = 1
         self.max_batch_size = max_batch_size
         self.refit_interval = refit_interval
+        self.use_cuda = torch.cuda.is_available() and use_cuda
+
+        if self.use_cuda:
+            self.model.cuda()
 
     def preprocess(self, feats):
         # Feats is a dictionary where values are lists of strings. Need to convert this into a tensor
         # Convert strings to tensor by mapping the characters to indicies in the character_list
         # Final output is a list of 4 Long Tensors
-        output = []
+        outputs = []
         for i, feat in enumerate(feats.values()):
             vec_feat = []
             for obj in feat:
                 for char in obj:
                     vec_feat.append(self.char_to_index[char])
-            output.append(torch.autograd.Variable(torch.LongTensor(vec_feat)))
-        return output
+            output = torch.LongTensor(vec_feat)
+            if self.use_cuda:
+                output = output.cuda()
+            output = torch.autograd.Variable(output) # This will become a no-op in PyTorch 0.4
+            outputs.append(output)
+        return outputs
 
     def eval(self, feats):
         return self.model(self.preprocess(feats)).data[0, 0, 0]
@@ -112,7 +123,12 @@ class CLSTMSurrogate(su.SurrogateModel):
             self.optimizer.zero_grad()  # Zero out the gradient buffer
             out = self.model(feats) # Need to compute network output
             # Wrap true value in a Float Tensor Variable
-            loss = self.loss_fn(out, torch.autograd.Variable(torch.FloatTensor([[[val]]])))
+            val = torch.FloatTensor([[[val]]])
+            if self.use_cuda:
+                val = val.cuda()
+            val = torch.autograd.Variable(val) # This will become a no-op in PyTorch 0.4
+
+            loss = self.loss_fn(out, val)
             loss.backward()
             self.optimizer.step()
         # Increase the batch_size by a power of two
@@ -138,7 +154,7 @@ def test_clstm_surrogate():
     ## Params:
     dataset_size = 4096 # Initial dataset size
     val_size = dataset_size // 2
-    num_iters = 128
+    num_iters = 0
 
     ## TODO: Remove Tensorflow dependency so TF doesn't eat up all GPU memory
     ## TODO: Only use PyTorch in the benchmark?
@@ -215,11 +231,12 @@ def test_clstm_surrogate():
             total_squared_error_baseline = (baseline_sur.eval(feats) - results['val_acc'])**2
             total_squared_error_clstm = (clstm_sur.eval(feats) - results['val_acc'])**2
         return total_squared_error_baseline / len(val_data), total_squared_error_clstm / len(val_data)
+        
 
     # trains both surrogates on a list of data: (feat,val) tuples
-    def train_and_validate(train_data, val_data):
+    def train_and_validate(train_data, val_data, validate_interval=10):
         baseline_mse, clstm_mse = [], []
-        for eval_log in random.sample(train_data, len(train_data)):
+        for i, eval_log in enumerate(random.sample(train_data, len(train_data))):
             feats = eval_log['features']
             results = eval_log['results']
             # Take a backward step for both surrogate models (gradient step)
@@ -227,8 +244,9 @@ def test_clstm_surrogate():
             clstm_sur.update(results['val_acc'], feats)
             # Validate data
             # TODO: Validate every x iterations
-            if val_data is not None:
+            if val_data is not None and i % validate_interval == 0:
                 baseline_val, clstm_val = validate(val_data)
+                print('Iteration {:4d}/{} \t|\t Baseline MSE:{}\t CLSTM MSE:{}'.format(i, len(train_data), baseline_val, clstm_val))
                 baseline_mse.append(baseline_val)
                 clstm_mse.append(clstm_val)
         return baseline_mse, clstm_mse
