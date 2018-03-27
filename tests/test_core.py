@@ -15,11 +15,15 @@ def test_ordered_set():
 
 
 def test_scope():
-    from darch.core import Scope
+    from darch.core import Scope, Addressable
 
     scope = Scope()
-    e1 = {'name': 'test-name', 'elem': 'arbitrary-val'}
-    e2 = {'name': 'test-name2', 'elem': 'arbitrary-val2'}
+    scope1 = Scope()
+    scope2 = Scope()
+    e1 = {'name': 'test-name'}
+    e1['elem'] = Addressable(scope1, e1['name'])
+    e2 = {'name': 'test-name2'}
+    e2['elem'] = Addressable(scope2, e2['name'])
     scope.register(e1['name'], e1['elem'])
     scope.register(name=e2['name'], elem=e2['elem'])
 
