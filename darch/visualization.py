@@ -4,12 +4,24 @@ from six import itervalues, iteritems
 import darch.core as co
 import numpy as np
 
+
 def running_max(vs):
     return np.maximum.accumulate(vs)
+
 
 def draw_graph(output_lst, draw_hyperparameters=False,
         draw_io_labels=False, graph_name='graph', out_folderpath=None,
         print_to_screen=True):
+    """
+    Draws a graph of the model with the given outputs.
+
+    :type output_lst: collections.Iterable[darch.core.Output]
+    :type draw_hyperparameters: bool
+    :type draw_io_labels: bool
+    :type graph_name: str
+    :type out_folderpath: str | None
+    :type print_to_screen: bool
+    """
     assert print_to_screen or out_folderpath is not None
 
     g = graphviz.Digraph()
@@ -19,6 +31,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
 
     nodes = set()
     hs = set()
+
     def fn(m):
         nodes.add(m.get_name())
         for ix_localname, ix in iteritems(m.inputs):
@@ -27,10 +40,12 @@ def draw_graph(output_lst, draw_hyperparameters=False,
                 if not draw_io_labels:
                     label = ''
                 else:
+                    ox_localname = None
                     for ox_iter_localname, ox_iter in iteritems(ox.get_module().outputs):
                         if ox_iter == ox:
                             ox_localname = ox_iter_localname
                             break
+                    assert ox_localname is not None
                     label = ix_localname + ':' + ox_localname
 
                 g.edge(
@@ -80,7 +95,11 @@ def draw_graph(output_lst, draw_hyperparameters=False,
 
     g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
+
 class LinePlot:
+    """
+    # FIXME add documentation
+    """
     def __init__(self, title=None, xlabel=None, ylabel=None):
         self.data = []
         self.title = title
@@ -88,10 +107,10 @@ class LinePlot:
         self.ylabel = ylabel
 
     def add_line(self, xs, ys, label=None, err=None):
-        d = {"xs" : xs,
-             "ys" : ys,
-             "label" : label,
-             "err" : err}
+        d = {"xs": xs,
+             "ys": ys,
+             "label": label,
+             "err": err}
         self.data.append(d)
 
     def plot(self, show=True, fpath=None):
@@ -109,7 +128,7 @@ class LinePlot:
         if any([d['label'] is not None for d in self.data]):
             plt.legend(loc='best')
 
-        if fpath != None:
+        if fpath is not None:
             f.savefig(fpath, bbox_inches='tight')
         if show:
             plt.show()
