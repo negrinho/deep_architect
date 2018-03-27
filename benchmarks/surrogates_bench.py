@@ -228,8 +228,8 @@ def test_clstm_surrogate():
         for eval_log in val_data:
             feats = eval_log['features']
             results = eval_log['results']
-            total_squared_error_baseline = (baseline_sur.eval(feats) - results['val_acc'])**2
-            total_squared_error_clstm = (clstm_sur.eval(feats) - results['val_acc'])**2
+            total_squared_error_baseline += (baseline_sur.eval(feats) - results['val_acc'])**2
+            total_squared_error_clstm += (clstm_sur.eval(feats) - results['val_acc'])**2
         return total_squared_error_baseline / len(val_data), total_squared_error_clstm / len(val_data)
         
 
