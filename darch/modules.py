@@ -126,7 +126,7 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     The Or module. Chooses exactly one of the possible choices.
 
     :param fn_lst: List of possible functions.
-    :type fn_lst: list of types.FunctionType
+    :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
     :param h_or: # FIXME add documentation
     :type h_or: # FIXME add documentation
     :param input_names: List of names of inputs
@@ -150,9 +150,10 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
     # FIXME add documentation
 
     :param fn_first: # FIXME add documentation
-    :type fn_first: types.FunctionType
+    :type fn_first: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param fn_iter: # FIXME add documentation
-    :type fn_iter: types.FunctionType
+    :type fn_iter: (dict[str,darch.core.Input], dict[str,darch.core.Output]) ->
+                   (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param h_num_repeats: Hyperparameter with number of repetitions
     :type h_num_repeats: darch.core.Hyperparameter
     :param input_names: List of names of inputs
@@ -178,9 +179,10 @@ def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     # FIXME add documentation
 
     :param fn_first: # FIXME add documentation
-    :type fn_first: types.FunctionType
+    :type fn_first: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param fn_iter: # FIXME add documentation
-    :type fn_iter: types.FunctionType
+    :type fn_iter: (dict[str,darch.core.Input], dict[str,darch.core.Output]) ->
+                   (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param h_num_repeats: Hyperparameter with number of repetitions
     :type h_num_repeats: darch.core.Hyperparameter
     """
@@ -195,7 +197,7 @@ def siso_or(fn_lst, h_or, scope=None, name=None):
     The (single input, single output) Or module. Chooses exactly one of the possible choices.
 
     :param fn_lst: List of possible functions.
-    :type fn_lst: list of types.FunctionType
+    :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
     :param h_or: # FIXME add documentation
     :type h_or: # FIXME add documentation
     """
@@ -211,7 +213,7 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
     Repeat a module a variable number of times.
 
     :param fn: Function to repeat.
-    :type fn: types.FunctionType
+    :type fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param h_num_repeats: Hyperparameter of number of times to repeat.
     :type h_num_repeats: darch.core.Hyperparameter
     """
@@ -242,7 +244,7 @@ def siso_optional(fn, h_opt, scope=None, name=None):
     Equivalent of using the Or module with the :class:`Empty` module.
 
     :param fn: Function to use.
-    :type fn: types.FunctionType
+    :type fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param h_opt: # FIXME add documentation
     :type h_opt: darch.core.Hyperparameter
     """
@@ -261,7 +263,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     Tries permutations of the given modules.
 
     :param fn_lst: List of module functions.
-    :type fn_lst: list of types.FunctionType
+    :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
     :param h_perm: # FIXME add documentation
     :type h_perm: darch.core.Hyperparameter
     """
@@ -297,9 +299,9 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     # FIXME add documentation
 
     :param fn: # FIXME add documentation
-    :type fn: types.FunctionType
+    :type fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param combine_fn: # FIXME add documentation
-    :type fn: types.FunctionType
+    :type combine_fn: (int) -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param h_num_splits: Hyperparameter with number of splits.
     :type h_num_splits: darch.core.Hyperparameter
     """
@@ -324,11 +326,11 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     # FIXME add documentation
 
     :param main_fn: # FIXME add documentation
-    :type main_fn: types.FunctionType
+    :type main_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param residual_fn: # FIXME add documentation
-    :type residual_fn: types.FunctionType
+    :type residual_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :param combine_fn: # FIXME add documentation
-    :type combine_fn: types.FunctionType
+    :type combine_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
     :rtype: (dict[str,darch.core.Input], dict[str,darch.core.Output])
     """
     (m_inputs, m_outputs) = main_fn()
