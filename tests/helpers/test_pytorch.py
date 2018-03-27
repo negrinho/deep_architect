@@ -10,14 +10,14 @@ class EmptyNet(nn.Module):
 
 
 def get_empty_cfn():
-    def cfn(input_name_to_cal, hyperp_name_to_val):
+    def cfn(_, __):
         net = EmptyNet()
         return lambda inp_dict: {'Out': net(inp_dict['In'])}, [net]
     return cfn
 
 
 def test_pytmodule():
-    from darch.helpers.pytorch import PyTModule, PyTNetContainer
+    from darch.helpers.pytorch import PyTModule
 
     cfn = get_empty_cfn()
     mod = PyTModule(name='test',
@@ -27,8 +27,8 @@ def test_pytmodule():
                     output_names=['Out'],
                     scope=None)
 
-    arbitray_value = 'arbitrary value'
-    mod.inputs['In'].val = arbitray_value
+    arbitrary_value = 'arbitrary value'
+    mod.inputs['In'].val = arbitrary_value
 
     assert not mod._is_compiled
     mod.forward()
