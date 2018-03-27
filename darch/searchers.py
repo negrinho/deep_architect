@@ -101,12 +101,13 @@ class EvolutionSearcher(Searcher):
             sample_inds = sorted(random.sample(range(len(self.population)), self.S))
             # delete weakest model
             weak_ind = self.get_weakest_model_index(sample_inds)
-            del self.population[weak_ind]
-
+            
             # mutate strongest model
             inputs, outputs, hs = self.search_space_fn()
             vs, _ = self.population[self.get_strongest_model_index(sample_inds)]
             new_vs = mutate(outputs, vs, self.mutatable)
+
+            del self.population[weak_ind]
             return inputs, outputs, hs, new_vs, {'vs': new_vs}
 
     
