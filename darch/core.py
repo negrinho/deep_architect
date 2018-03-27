@@ -359,7 +359,7 @@ class Module(Addressable):
 
     def get_hyperps(self):
         """
-        :rtype: list of Hyperparameter
+        :rtype: dict[str,Hyperparameter]
         """
         return self.hyperps
 
