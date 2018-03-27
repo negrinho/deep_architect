@@ -94,9 +94,9 @@ class EvolutionSearcher(Searcher):
         if self.initializing:
             inputs, outputs, hs = self.search_space_fn()
             vs = random_specify(outputs.values(), hs.values())
-            if len(self.population) < self.P - 1:
+            if len(self.population) >= self.P - 1:
                 self.initializing = False
-            return inputs, outputs, hs, vs, {}
+            return inputs, outputs, hs, vs, {'vs': vs}
         else:
             sample_inds = sorted(random.sample(range(len(self.population)), self.S))
             # delete weakest model
