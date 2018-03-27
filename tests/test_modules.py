@@ -12,7 +12,7 @@ def test_empty():
     assert empty.inputs['In'].get_module() == empty
 
     # try putting a value in input
-    arbitray_value = 'arbitrary value'
-    empty.inputs['In'].val = arbitray_value
+    arbitrary_value = 'arbitrary value'
+    empty.inputs['In'].val = arbitrary_value
     empty.forward()
-    assert empty.outputs['Out'].val == arbitray_value
+    assert empty.outputs['Out'].val == arbitrary_value
