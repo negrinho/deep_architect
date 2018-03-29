@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 import random
 import time
+import gc
 
 # TODO: Change the below imports when using PyTorch
 import darch.contrib.search_spaces.tensorflow.dnn as search_dnn
@@ -21,6 +22,7 @@ from darch.contrib.datasets.loaders import load_mnist
 # 1. They should be fast to evaluate (justification)
 # 2. They should be accurate (replacement)
 
+
 class CLSTMSurrogateModel(torch.nn.Module):
     """ The actual CLSTM model
     """
@@ -33,7 +35,7 @@ class CLSTMSurrogateModel(torch.nn.Module):
         # Define ParameterList so parameters are properly registered
         self.h0 = torch.nn.ParameterList()
         self.c0 = torch.nn.ParameterList()
-        for i in range(4):
+        for _ in range(4):
             # One LSTM for each input feature
             self.lstm_in.append(torch.nn.LSTM(embedding_size, hidden_size, 1, batch_first=True))
             # Learnable initial hidden states and cell states
@@ -45,13 +47,10 @@ class CLSTMSurrogateModel(torch.nn.Module):
         self.c_out = torch.nn.Parameter(torch.randn(1, 1, hidden_size))
         self.fc_out = torch.nn.Linear(hidden_size, 1)
 
-        self.length_base = torch.nn.Parameter(torch.LongTensor(1))
-
     def pack(self, ins, lengths):
-        lengths = self.length_base.data.new(lengths)
         lengths, indicies = torch.sort(lengths, dim=0, descending=True)
-        indicies = torch.autograd.Variable(indicies) # this will become a no-op in torch v0.4
-        packed = torch.nn.utils.rnn.pack_padded_sequence(ins[indicies], lengths.tolist(), batch_first=True)
+        # TODO: When pytorch 0.4 comes out, change lengths.data.tolist() to just lengths
+        packed = torch.nn.utils.rnn.pack_padded_sequence(ins[indicies], lengths.data.tolist(), batch_first=True)
         return packed, indicies
 
     def unsort(self, outs, indicies, batch_dim=0):
@@ -67,55 +66,17 @@ class CLSTMSurrogateModel(torch.nn.Module):
     def forward(self, feats):
         # Expects feats to be a list of 4 (tensor, seq_lengths) tuples
         batch_size = feats[0][0].size(0)
-        print(batch_size)
         outs = []
         for i in range(4): # 4 features in input, hardcoded for now
             out = self.embeddings(feats[i][0])
             packed, indicies = self.pack(out, feats[i][1])
-            _, (out, _) = self.lstm_in[i](out, (self.h0[i].repeat(1, batch_size, 1), self.c0[i].repeat(1, batch_size, 1)))
+            _, (out, _) = self.lstm_in[i](packed, (self.h0[i].repeat(1, batch_size, 1), self.c0[i].repeat(1, batch_size, 1)))
             out = self.unsort(out, indicies, batch_dim=1) # Torch docs say batch_dim is dim 1
             outs.append(out)
         out = torch.cat(outs, dim=2)
         _, (out, _) = self.lstm_out(out, (self.h_out.repeat(1, batch_size, 1), self.c_out.repeat(1, batch_size, 1)))
         out = self.fc_out(out[-1]) # Only care about the last layer in event LSTM is stacked
         return out
-
-def batch(inputs, outputs):
-    # inputs is a list of a list of 4 (2D Long Tensor, seq_len) tuples
-    # output batch_feats is a list of 4 (padded tensor, lengths) tuples
-    # where tensor is a 2D padded tensor and lengths
-    # are the lengths of the non-padded sequences
-    batch_feats, outs = [([], [])] * 4, None
-
-    for i, feat in enumerate(zip(*inputs)):
-        seqs, seq_lengths = map(list, zip(*feat))
-        max_length = max(seq_lengths)
-        for k, seq in enumerate(seqs):
-            seqs[k] = torch.nn.functional.pad(seq, (0, max_length - seq.size(1), 0, 0))
-        batch_feats[i] = (torch.cat(seqs, dim=0), seq_lengths)
-
-    if outputs is not None:
-        outs = torch.cat(outputs, dim=0)
-
-    return batch_feats, outs
-
-def mini_batch(feats, vals, batch_size, num_batches, shuffle=True):
-    # feats and vals are the raw feats from extract_features and a list of vals
-    # Yields num_batches many mini batches of size batch_size
-    indicies = np.arange(len(feats))
-    if shuffle:
-        np.random.shuffle(indicies)
-
-    for i, start in enumerate(range(0, len(feats) - batch_size + 1, batch_size)):
-        if i >= num_batches:
-            return
-        subset_indicies = indicies[start: start + batch_size]
-        if vals is not None:
-            yield batch([feats[i] for i in subset_indicies], [vals[i] for i in subset_indicies])
-            # yield batch(feats[subset_indicies], vals[subset_indicies])
-        else:
-            yield batch([feats[i] for i in subset_indicies], [vals[i] for i in subset_indicies])
-            # yield batch(feats[subset_indicies], None)
 
 class CLSTMSurrogate(su.SurrogateModel):
     """ The CLSTM Surrogate Function
@@ -141,21 +102,17 @@ class CLSTMSurrogate(su.SurrogateModel):
         self.refit_interval = refit_interval
         self.use_cuda = torch.cuda.is_available() and use_cuda
 
-        self.feats, self.vals, self.feats_val, self.vals_val = [], [], [], []
+        self.feats, self.vals, self.feats_val, self.vals_val= [], [], [], []
 
         if self.use_cuda:
             self.model.cuda()
-
-        # Val data that will eventually be used to determine how many gradient steps to take
-        if val_data is not None:
-            self.set_validation_data(val_data)
 
     def preprocess(self, feats):
         # Feats is a dictionary where values are lists of strings. Need to convert this into a tensor
         # Convert strings to tensor by mapping the characters to indicies in the character_list
         # Final output is a list of 4 (Long Tensors, seq_len) tuples
         outputs = []
-        for i, feat in enumerate(feats.values()):
+        for feat in feats.values():
             vec_feat = []
             for obj in feat:
                 for char in obj:
@@ -163,29 +120,78 @@ class CLSTMSurrogate(su.SurrogateModel):
             output = torch.LongTensor(vec_feat).unsqueeze(0) # Make into row vector for batching later on
             if self.use_cuda:
                 output = output.cuda()
-            output = torch.autograd.Variable(output) # This will become a no-op in PyTorch 0.4
             outputs.append((output, output.size(1)))
         return outputs
 
+    def batch(self, feats_batch, val_batch, inference=False):
+        # feats_batch is the raw list feats from extract_features, vals is a list of raw metrics from the logger
+        # batch preprocesses the feats -> pads them -> batches them into one tensor
+
+        # Preprocess
+        for i, feats in enumerate(feats_batch):
+            feats_batch[i] = self.preprocess(feats)
+        # Pad and batch
+        for i, feat in enumerate(zip(*feats_batch)):
+            seqs, seq_lengths = map(list, zip(*feat))
+            max_length = max(seq_lengths)
+            for k, seq in enumerate(seqs):
+                seqs[k] = torch.nn.functional.pad(seq, (0, max_length - seq.size(1), 0, 0)).data # Possibly incorrect use of F.pad
+            feat = torch.cat(seqs, dim=0)
+            seq_lengths = feat.new(seq_lengths) # Way to create a cuda.LongTensor if we're using gpu
+            feat, seq_lengths = torch.autograd.Variable(feat, volatile=inference), torch.autograd.Variable(seq_lengths, volatile=inference) # no-op in torch v0.4
+            feats_batch[i] = feat, seq_lengths
+
+        # Batch vals_batch if included
+        if val_batch is not None:
+            for i, val in enumerate(val_batch):
+                val = torch.FloatTensor([[val]])
+                if self.use_cuda:
+                    val = val.cuda()
+                val_batch[i] = val
+
+            val_batch = torch.cat(val_batch, dim=0)
+            val_batch = torch.autograd.Variable(val_batch, volatile=inference) # no-op in torch v0.4
+        return feats_batch, val_batch
+
+    def mini_batch(self, feats, vals, batch_size, num_batches, inference=False):
+        # feats and vals are the raw feats from extract_features and a list of vals
+        # Yields num_batches many mini batches of size batch_size
+        indicies = np.arange(len(feats))
+        if not inference:
+            np.random.shuffle(indicies)
+
+        for i, start in enumerate(range(0, len(feats) - batch_size + 1, batch_size)):
+            if i > num_batches:
+                break
+            subset_indicies = indicies[start: start + batch_size]
+            if vals is not None:
+                yield self.batch([feats[i] for i in subset_indicies], [vals[i] for i in subset_indicies], inference=inference)
+                # yield batch(feats[subset_indicies], vals[subset_indicies])
+            else:
+                yield self.batch([feats[i] for i in subset_indicies], [vals[i] for i in subset_indicies], inference=inference)
+                # yield batch(feats[subset_indicies], None)
+
     def eval(self, feats):
-        return self.model(self.preprocess(feats)).data[0, 0]
+        self.model.eval()
+        feats = self.preprocess(feats)
+        # Need to wrap tensors in autograd.Variable (no-op in torch v0.4)
+        for i, feat in enumerate(feats):
+            seq, seq_len = feat
+            feats[i] = (torch.autograd.Variable(seq, volatile=True), torch.autograd.Variable(seq_len, volatile=True))
+        return self.model(feats).data[0, 0]
 
     def update(self, val, feats):
-        # Add datapoint to memory (Tensor)
-        self.feats.append(self.preprocess(feats))
-        val = torch.FloatTensor([[val]])
-        if self.use_cuda:
-            val = val.cuda()
-        val = torch.autograd.Variable(val) # This will become a no-op in PyTorch 0.4
+        # Add datapoint to memory
+        self.feats.append(feats)
         self.vals.append(val)
-
         # Refit only after seing refit_interval many new points
-        if len(self.vals) % self.refit_interval == 0:
+        if len(self.vals) % self.refit_interval == 0 and len(self.feats) > self.batch_size:
             self._refit()
         
     def _refit(self):
         # Sample batch_size many points from memory to train from
-        for feats, vals in mini_batch(self.feats, self.vals, self.batch_size, self.num_batches):
+        self.model.train()
+        for feats, vals in self.mini_batch(self.feats, self.vals, self.batch_size, self.num_batches):
             self.optimizer.zero_grad()  # Zero out the gradient buffer
             outs = self.model(feats) # Need to compute network output
             loss = self.loss_fn(outs, vals)
@@ -193,28 +199,23 @@ class CLSTMSurrogate(su.SurrogateModel):
             self.optimizer.step()
         
         # Increase the number of batches by 1 (up to a max of max_batches)
-        self.num_batches = min(self.num_batches + 1, self.max_batches)
+        self.num_batches = min(min(self.num_batches + 1, self.max_batches), len(self.feats) // self.batch_size)
 
     def set_validation_data(self, val_data):
         for eval_log in val_data:
-            self.feats_val.append(self.preprocess(eval_log['features']))
-            val = torch.FloatTensor([[eval_log['results']['val_acc']]])
-            if self.use_cuda:
-                val = val.cuda()
-            val = torch.autograd.Variable(val) # This will become a no-op in PyTorch 0.4
-            self.vals_val.append(val)
+            self.feats_val.append(eval_log['features'])
+            self.vals_val.append(eval_log['results']['val_acc'])
 
     def validate(self):
         if len(self.feats_val) == 0:
             return None
-
+        self.model.eval()
         total_loss = 0.0
-        for feats, vals in mini_batch(self.feats_val, self.vals_val, self.batch_size, np.inf, shuffle=False):
+        for feats, vals in self.mini_batch(self.feats_val, self.vals_val, self.batch_size, np.inf, inference=True):
             outs = self.model(feats)
-            total_loss += torch.nn.MSELoss(size_average=False, reduce=True)(outs, vals)
+            total_loss += torch.nn.MSELoss(size_average=False, reduce=True)(outs, vals).data[0]
+        
         return total_loss / len(self.feats_val)
-
-            
 
 
 class SearchSpaceFactory:
@@ -319,20 +320,24 @@ def test_clstm_surrogate():
     # trains both surrogates on a list of data: (feat,val) tuples
     def train_and_validate(train_data, val_data, validate_interval=10):
         baseline_mse, clstm_mse = [], []
+        avg_time = 0
         for i, eval_log in enumerate(random.sample(train_data, len(train_data))):
             feats = eval_log['features']
             results = eval_log['results']
             # Take a backward step for both surrogate models (gradient step)
             baseline_sur.update(results['val_acc'], feats)
+            t0 = time.time()
             clstm_sur.update(results['val_acc'], feats)
-            # Validate data
-            # TODO: Validate every x iterations
+            avg_time += time.time() - t0
+            # Validate
             if val_data is not None and i % validate_interval == 0:
                 t0 = time.time()
                 baseline_val, clstm_val = validate(val_data)
-                print('Iteration {:4d}/{} | Baseline MSE:{}\t CLSTM MSE:{}, val time: {:.2f} ms'.format(i, len(train_data), baseline_val, clstm_val, (time.time() - t0) * 1000))
+                print('Iteration {:4d}/{} | num batches: {} | Baseline MSE:{:.4f} | CLSTM MSE:{:.4f} | avg update time: {:.2f} ms | val time: {:.2f} ms'\
+                    .format(i, len(train_data), clstm_sur.num_batches, baseline_val, clstm_val, avg_time * 1000 / validate_interval, (time.time() - t0) * 1000))
                 baseline_mse.append(baseline_val)
                 clstm_mse.append(clstm_val)
+                avg_time = 0
         return baseline_mse, clstm_mse
                 
 

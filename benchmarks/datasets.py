@@ -213,3 +213,31 @@ class CANCER(data.Dataset):
         fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
         fmt_str += '    Root Location: {}\n'.format(self.root)
         return fmt_str
+
+class MODEL_EVAL_LOGS(data.Dataset):
+    """ Model Evaluation Log Dataset: A torch dataset based on logged evaluations from darch.search_logger
+    Unfinished
+    """
+    def __init__(self, root):
+        from darch import search_logging as sl
+        self.root = os.path.expanduser(root)
+        self.raw_data = sl.read_search_folder(self.root)
+    
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            tuple: (features, target) where target is index of the target class.
+        """
+        eval_log = self.raw_data[index]
+        return eval_log['features'], eval_log['results']
+
+    def __len__(self):
+        return len(self.raw_data)
+
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    Number of datapoints: {}\n'.format(self.__len__())
+        fmt_str += '    Root Location: {}\n'.format(self.root)
+        return fmt_str
