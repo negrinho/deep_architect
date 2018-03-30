@@ -40,3 +40,9 @@ venv.bak/
 # IDEs
 .idea/
 .vscode/
+
+# temp and log files
+.temp/
+logs/
+checkpoint
+temp.*
