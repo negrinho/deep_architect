@@ -108,7 +108,21 @@ class SimpleClassifierEvaluator:
             save_counter = save_patience
             timer_manager = sl.TimerManager()
             timer_manager.create_timer('eval')
-            time_start = time.time()
+
+            # getting the gpu_id based on the environment.
+            if gpu_utils.is_environment_variable_defined('CUDA_VISIBLE_DEVICES'):
+                s = gpu_utils.get_environment_variable('CUDA_VISIBLE_DEVICES')
+                s_lst = s.split(',')
+                if len(s_lst) == 1 and len(s_lst[0]) > 0:
+                    gpu_id = int(s_lst[0])
+                else:
+                    gpu_id = None
+            else:
+                gpus = gpu_utils.get_gpu_information()
+                if len(gpus) == 1:
+                    gpu_id = 0
+                else:
+                    gpu_id = None
 
             lr = learning_rate_init
             num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
@@ -132,7 +146,7 @@ class SimpleClassifierEvaluator:
 
                 # Display logs per epoch step
                 if self.log_output_to_terminal and epoch % self.display_step == 0:
-                    print("time:", "%7.1f" % (time.time() - time_start),
+                    print("time:", "%7.1f" % timer_manager.get_time_since_event('eval', 'start'),
                           "epoch:", '%04d' % (epoch + 1),
                           "loss:", "{:.9f}".format(avg_loss),
                           "validation_accuracy:", "%.5f" % val_acc,
@@ -145,12 +159,12 @@ class SimpleClassifierEvaluator:
                     'learning_rate' : lr,
                     'time_in_minutes' : timer_manager.get_time_since_event('eval', 'start', units='minutes'),
                 }
-                gpus = gpu_utils.get_gpu_information()
-                print(gpus)
-                if len(gpus) == 1:
+                # adding information about gpu utilization if available.
+                if gpu_id is not None:
+                    gpus = gpu_utils.get_gpu_information()
                     d.update({
-                        'gpu_utilization_in_percent' : gpus[0]['gpu_utilization_in_percent'],
-                        'gpu_memory_utlization_in_gigabytes' : gpus[0]['gpu_memory_utlization_in_gigabytes']
+                        'gpu_utilization_in_percent' : gpus[gpu_id]['gpu_utilization_in_percent'],
+                        'gpu_memory_utilization_in_gigabytes' : gpus[gpu_id]['gpu_memory_utilization_in_gigabytes']
                     })
                 seqs.append(d)
 
@@ -211,7 +225,7 @@ class SimpleClassifierEvaluator:
                 seqs_dict['average_gpu_utilization_in_percent'] = np.mean(
                     seqs_dict['gpu_utilization_in_percent']),
                 seqs_dict['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
-                    seqs_dict['average_gpu_memory_utilization_in_gigabytes']),
+                    seqs_dict['gpu_memory_utilization_in_gigabytes']),
 
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,

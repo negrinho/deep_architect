@@ -36,7 +36,7 @@ if use_gpu:
     print "Using GPU %d" % gpu_id
     assert gpu_id is not None
     gpu_utils.set_visible_gpus([gpu_id])
-    assert gpu_utils.get_total_num_gpus() == 1
+    # assert gpu_utils.get_total_num_gpus() == 1
 
 from darch.contrib.datasets.loaders import load_mnist
 from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
@@ -100,15 +100,15 @@ def main():
 
     name_to_search_space_fn = {
         'dnn' : SSF0(num_classes).get_search_space,
-        # 'conv' : SSF1(num_classes).get_search_space,
+        'conv' : SSF1(num_classes).get_search_space,
     }
 
     name_to_get_searcher_fn = {
         'random' : lambda ssf: se.RandomSearcher(ssf),
         'smbo_rand_256' : lambda ssf: se.SMBOSearcher(ssf, su.HashingSurrogate(2048, 1), 256, 0.1),
-        # 'smbo_rand_512' : lambda ssf: se.SMBOSearcher(ssf, su.HashingSurrogate(2048, 1), 512, 0.1),
+        'smbo_rand_512' : lambda ssf: se.SMBOSearcher(ssf, su.HashingSurrogate(2048, 1), 512, 0.1),
         'smbo_mcts_256' : lambda ssf: se.SMBOSearcherWithMCTSOptimizer(ssf, su.HashingSurrogate(2048, 1), 256, 0.1, 1),
-        # 'smbo_mcts_512' : lambda ssf: se.SMBOSearcherWithMCTSOptimizer(ssf, su.HashingSurrogate(2048, 1), 512, 0.1, 1)
+        'smbo_mcts_512' : lambda ssf: se.SMBOSearcherWithMCTSOptimizer(ssf, su.HashingSurrogate(2048, 1), 512, 0.1, 1)
     }
     ### this may not be necessary
     name_to_get_evaluator_fn = {
@@ -119,10 +119,12 @@ def main():
     }
 
     # basic benchmark based on MNIST.
-    searcher_name_lst = ['random', 'smbo_rand_256', 'smbo_rand_512',
-        'smbo_mcts_256', 'smbo_mcts_512']
-    search_space_name_lst = ['dnn', 'conv']
-
+    searcher_name_lst = ['random', 'smbo_rand_256', 'smbo_mcts_256',
+        # 'smbo_rand_512', 'smbo_mcts_512'
+        ]
+    search_space_name_lst = ['dnn',
+    # 'conv'
+    ]
     for rep_i in xrange(cfg['num_repetitions']):
         for search_space_name in search_space_name_lst:
             for searcher_name in searcher_name_lst:
@@ -130,7 +132,7 @@ def main():
                     evaluator_name = "ev%0.2f" % max_eval_time
                     folderpath = sl.join_paths(['logs', cfg['search_name'],
                         search_space_name, searcher_name, evaluator_name])
-                    print cfg
+
                     search_logger = sl.SearchLogger(folderpath, 'rep%d' % rep_i,
                         create_parent_folders=True, delete_if_exists=cfg['delete_if_exists'])
 
