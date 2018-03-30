@@ -1,7 +1,6 @@
 import darch.core as co
 from six import itervalues, iteritems
-from six.moves import xrange
-import copy
+from six.moves import range
 import itertools
 
 class Empty(co.Module):
@@ -13,10 +12,33 @@ class Empty(co.Module):
     def forward(self):
         self.outputs['Out'].val = self.inputs['In'].val
 
+    def _update(self):
+        pass
+
+    def _compile(self):
+        pass
+
+    def _forward(self):
+        pass
+
 # NOTE: perhaps refactor to capture similarities between modules.
 class SubstitutionModule(co.Module):
     def __init__(self, name, name_to_hyperp, sub_fn,
-            input_names, output_names, scope=None):
+                 input_names, output_names, scope=None):
+        """
+        # FIXME add documentation
+
+        :param name: Name of module
+        :type name: str
+        :param name_to_hyperp: Dictionary of names to hyperparameters
+        :type name_to_hyperp: dict[str,darch.core.Hyperparameter]
+        :param sub_fn: # FIXME add documentation
+        :type sub_fn: types.FunctionType
+        :param input_names: List of names of inputs
+        :type input_names: collections.Iterable of str
+        :param output_names: List of names of outputs
+        :type output_names: collections.Iterable of str
+        """
         co.Module.__init__(self, scope, name)
 
         self._register(input_names, output_names, name_to_hyperp)
@@ -39,9 +61,6 @@ class SubstitutionModule(co.Module):
             assert frozenset(new_inputs.keys()) == frozenset(self.inputs.keys())
             assert frozenset(new_outputs.keys()) == frozenset(self.outputs.keys())
 
-            self.old_inputs = copy.copy(self.inputs)
-            self.old_outputs = copy.copy(self.outputs)
-
             for name, new_ix in iteritems(new_inputs):
                 old_ix = self.inputs[name]
                 if old_ix.is_connected():
@@ -56,26 +75,85 @@ class SubstitutionModule(co.Module):
 
             self._is_done = True
 
+    def _compile(self):
+        pass
+
+    def _forward(self):
+        pass
+
 def empty():
     return Empty().get_io()
 
 def substitution_module(name, name_to_hyperp, sub_fn,
-        input_names, output_names, scope):
-    return SubstitutionModule(name,
-        name_to_hyperp, sub_fn, input_names, output_names, scope).get_io()
+                        input_names, output_names, scope):
+    """
+    # FIXME add documentation
+
+    :param name: Name of module.
+    :type name: str
+    :param name_to_hyperp: Dictionary of names to hyperparameters.
+    :type name_to_hyperp: dict[str,darch.core.Hyperparameter]
+    :param sub_fn: # FIXME add documentation
+    :type sub_fn: types.FunctionType
+    :param input_names: List of names of inputs.
+    :type input_names: collections.Iterable of str
+    :param output_names: List of names of outputs.
+    :type output_names: collections.Iterable of str
+    :param scope: Scope for the module.
+    :type scope: darch.core.Scope
+    """
+    return SubstitutionModule(
+        name, name_to_hyperp, sub_fn,
+        input_names, output_names, scope
+    ).get_io()
 
 def _get_name(name, default_name):
+    """
+    :type name: str or None
+    :type default_name: str
+    :rtype: str
+    """
     return name if name is not None else default_name
 
 def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
+    """
+    The Or module. Chooses exactly one of the possible choices.
+
+    :param fn_lst: List of possible functions.
+    :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
+    :param h_or: # FIXME add documentation
+    :type h_or: # FIXME add documentation
+    :param input_names: List of names of inputs
+    :type input_names: collections.Iterable of str
+    :param output_names: List of names of outputs
+    :type output_names: collections.Iterable of str
+    """
     def sub_fn(idx):
         return fn_lst[idx]()
 
-    return substitution_module(_get_name(name, "Or"),
-        {'idx' : h_or}, sub_fn, input_names, output_names, scope)
+    return substitution_module(
+        _get_name(name, "Or"), {'idx': h_or},
+        sub_fn, input_names, output_names, scope
+    )
 
 def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
-        input_names, output_names, scope=None, name=None):
+                       input_names, output_names,
+                       scope=None, name=None):
+    """
+    # FIXME add documentation
+
+    :param fn_first: # FIXME add documentation
+    :type fn_first: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param fn_iter: # FIXME add documentation
+    :type fn_iter: (dict[str,darch.core.Input], dict[str,darch.core.Output]) ->
+                   (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param h_num_repeats: Hyperparameter with number of repetitions
+    :type h_num_repeats: darch.core.Hyperparameter
+    :param input_names: List of names of inputs
+    :type input_names: collections.Iterable of str
+    :param output_names: List of names of outputs
+    :type output_names: collections.Iterable of str
+    """
     def sub_fn(num_reps):
         assert num_reps > 0
         inputs, outputs = fn_first()
@@ -83,19 +161,52 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
-    return substitution_module(_get_name(name, "NestedRepeat"),
-        {'num_reps' : h_num_repeats}, sub_fn, input_names, output_names, scope)
+    return substitution_module(
+        _get_name(name, "NestedRepeat"), {'num_reps': h_num_repeats},
+        sub_fn, input_names, output_names, scope
+    )
 
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
-    return mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, ['In'], ['Out'],
-        scope=scope, name=_get_name(name, "SISONestedRepeat"))
+    """
+    # FIXME add documentation
+
+    :param fn_first: # FIXME add documentation
+    :type fn_first: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param fn_iter: # FIXME add documentation
+    :type fn_iter: (dict[str,darch.core.Input], dict[str,darch.core.Output]) ->
+                   (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param h_num_repeats: Hyperparameter with number of repetitions
+    :type h_num_repeats: darch.core.Hyperparameter
+    """
+    return mimo_nested_repeat(
+        fn_first, fn_iter, h_num_repeats, ['In'], ['Out'],
+        scope=scope, name=_get_name(name, "SISONestedRepeat")
+    )
 
 def siso_or(fn_lst, h_or, scope=None, name=None):
-    return mimo_or(fn_lst, h_or, ['In'], ['Out'],
-        scope=scope, name=_get_name(name, "SISOOr"))
+    """
+    The (single input, single output) Or module. Chooses exactly one of the possible choices.
+
+    :param fn_lst: List of possible functions.
+    :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
+    :param h_or: # FIXME add documentation
+    :type h_or: # FIXME add documentation
+    """
+    return mimo_or(
+        fn_lst, h_or, ['In'], ['Out'],
+        scope=scope, name=_get_name(name, "SISOOr")
+    )
 
 # NOTE: how to do repeat in the general mimo case.
 def siso_repeat(fn, h_num_repeats, scope=None, name=None):
+    """
+    Repeat a module a variable number of times.
+
+    :param fn: Function to repeat.
+    :type fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param h_num_repeats: Hyperparameter of number of times to repeat.
+    :type h_num_repeats: darch.core.Hyperparameter
+    """
     def sub_fn(num_reps):
         assert num_reps > 0
         inputs_lst = []
@@ -109,20 +220,41 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
             next_inputs['In'].connect(prev_outputs['Out'])
-        return (inputs_lst[0], outputs_lst[-1])
+        return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISORepeat"),
-        {'num_reps' : h_num_repeats}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISORepeat"),
+        {'num_reps': h_num_repeats}, sub_fn, ['In'], ['Out'], scope
+    )
 
 def siso_optional(fn, h_opt, scope=None, name=None):
+    """
+    Optionally uses the given module.
+    Equivalent of using the Or module with the :class:`Empty` module.
+
+    :param fn: Function to use.
+    :type fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param h_opt: # FIXME add documentation
+    :type h_opt: darch.core.Hyperparameter
+    """
     def sub_fn(opt):
         return fn() if opt else empty()
 
-    return substitution_module(_get_name(name, "SISOOptional"),
-        {'opt' : h_opt}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOOptional"),
+        {'opt': h_opt}, sub_fn, ['In'], ['Out'], scope
+    )
 
 # TODO: improve by not enumerating permutations
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
+    """
+    Tries permutations of the given modules.
+
+    :param fn_lst: List of module functions.
+    :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
+    :param h_perm: # FIXME add documentation
+    :type h_perm: darch.core.Hyperparameter
+    """
     def sub_fn(perm_idx):
         g = itertools.permutations(xrange(len(fn_lst)))
         for _ in xrange(perm_idx + 1):
@@ -141,26 +273,51 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
 
             # NOTE: to extend this, think about the connection structure.
             next_inputs['In'].connect(prev_outputs['Out'])
-        return (inputs_lst[0], outputs_lst[-1])
+        return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISOPermutation"),
-        {'perm_idx' : h_perm}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOPermutation"),
+        {'perm_idx': h_perm}, sub_fn, ['In'], ['Out'], scope
+    )
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
+    """
+    # FIXME add documentation
+
+    :param fn: # FIXME add documentation
+    :type fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param combine_fn: # FIXME add documentation
+    :type combine_fn: (int) -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param h_num_splits: Hyperparameter with number of splits.
+    :type h_num_splits: darch.core.Hyperparameter
+    """
     def sub_fn(num_splits):
-        inputs_lst, outputs_lst = zip(*[fn() for _ in xrange(num_splits)])
+        inputs_lst, outputs_lst = zip(*[fn() for _ in range(num_splits)])
         c_inputs, c_outputs = combine_fn(num_splits)
 
         i_inputs, i_outputs = empty()
-        for i in xrange(num_splits):
+        for i in range(num_splits):
             i_outputs['Out'].connect(inputs_lst[i]['In'])
             c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
-        return (i_inputs, c_outputs)
+        return i_inputs, c_outputs
 
-    return substitution_module(_get_name(name, "SISOSplitCombine"),
-        {'num_splits' : h_num_splits}, sub_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOSplitCombine"),
+        {'num_splits': h_num_splits}, sub_fn, ['In'], ['Out'], scope
+    )
 
 def siso_residual(main_fn, residual_fn, combine_fn):
+    """
+    # FIXME add documentation
+
+    :param main_fn: # FIXME add documentation
+    :type main_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param residual_fn: # FIXME add documentation
+    :type residual_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :param combine_fn: # FIXME add documentation
+    :type combine_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    :rtype: (dict[str,darch.core.Input], dict[str,darch.core.Output])
+    """
     (m_inputs, m_outputs) = main_fn()
     (r_inputs, r_outputs) = residual_fn()
     (c_inputs, c_outputs) = combine_fn()
@@ -172,9 +329,16 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     m_outputs['Out'].connect(c_inputs['In0'])
     r_outputs['Out'].connect(c_inputs['In1'])
 
-    return (i_inputs, c_outputs)
+    return i_inputs, c_outputs
+
 
 def siso_sequential(io_lst):
+    """
+    Makes a sequence of the input modules.
+
+    :param io_lst: List of module input/output pairs.
+    :type io_lst: list[(dict[str,darch.core.Input], dict[str,darch.core.Output])]
+    """
     assert len(io_lst) > 0
 
     prev_outputs = io_lst[0][1]

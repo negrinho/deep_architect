@@ -1,4 +1,4 @@
-from six.moves import xrange
+from six.moves import range
 import numpy as np
 import darch.hyperparameters as hp
 import darch.core as co
@@ -39,16 +39,34 @@ def specify(output_lst, hyperp_lst, vs):
         h.set_val(vs[i])
 
 class Searcher:
+    """
+    Base searcher class. This should not be used, use instead one of the classes that inherit from this.
+    """
+    def __init__(self, search_space_fn):
+        """
+        :type search_space_fn: () -> (dict[str,darch.core.Input], dict[str,darch.core.Output],
+                                      dict[str,darch.core.Hyperparameter])
+        """
+        self.search_space_fn = search_space_fn
+
     def sample(self):
+        """
+        Gets one model from the searcher.
+
+        :return: Inputs, outputs, hyperparameters, chosen values for hyperparameters, # FIXME what is the last return?
+        :rtype: (dict[str,darch.core.Input], dict[str,darch.core.Output], dict[str,darch.core.Hyperparameter],
+                Any, Any)
+        # FIXME what are the types of the last 2 returns?
+        """
         raise NotImplementedError
 
     def update(self, val, cfg_d):
         raise NotImplementedError
 
 class RandomSearcher(Searcher):
-    def __init__(self, search_space_fn):
-        self.search_space_fn = search_space_fn
-
+    """
+    Random searcher. Tries random uninformed decisions on the given search space.
+    """
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
         vs = random_specify(outputs.values(), hs.values())
@@ -59,6 +77,7 @@ class RandomSearcher(Searcher):
 
 # keeps the statistics and knows how to update information related to a node.
 class MCTSTreeNode:
+    """Auxiliary class for :class:`MCTSearcher`."""
     def __init__(self, parent_node):
         self.num_trials = 0
         self.sum_scores = 0.0
@@ -80,6 +99,8 @@ class MCTSTreeNode:
         # if two nodes have the same score.
         best_inds = None
         best_score = -np.inf
+
+        best_child = best_i = None
 
         parent_log_nt = np.log(self.num_trials)
         for (i, node) in enumerate(self.children):
@@ -106,15 +127,19 @@ class MCTSTreeNode:
             best_i = np.random.choice(best_inds)
             best_child = self.children[best_i]
 
+        assert best_child is not None and best_i is not None
         return (best_child, best_i)
 
     # expands a node creating all the placeholders for the children.
     def expand(self, num_children):
-        self.children = [MCTSTreeNode(self) for _ in xrange(num_children)]
+        self.children = [MCTSTreeNode(self) for _ in range(num_children)]
 
 class MCTSearcher(Searcher):
+    """
+    Monte Carlo Tree searcher.  # FIXME add documentation (short description? reference for MCT search?)
+    """
     def __init__(self, search_space_fn, exploration_bonus=1.0):
-        self.search_space_fn = search_space_fn
+        Searcher.__init__(self, search_space_fn)
         self.exploration_bonus = exploration_bonus
         self.mcts_root_node = MCTSTreeNode(None)
 
@@ -185,8 +210,11 @@ class MCTSearcher(Searcher):
         return hist, vs
 
 class SMBOSearcher(Searcher):
+    """
+    # FIXME add documentation
+    """
     def __init__(self, search_space_fn, surrogate_model, num_samples, eps_prob):
-        self.search_space_fn = search_space_fn
+        Searcher.__init__(self, search_space_fn)
         self.surr_model = surrogate_model
         self.num_samples = num_samples
         self.eps_prob = eps_prob
@@ -200,7 +228,7 @@ class SMBOSearcher(Searcher):
             best_model = None
             best_vs = None
             best_score = - np.inf
-            for _ in xrange(self.num_samples):
+            for _ in range(self.num_samples):
                 inputs, outputs, hs = self.search_space_fn()
                 vs = random_specify(outputs.values(), hs.values())
 
@@ -226,9 +254,12 @@ class SMBOSearcher(Searcher):
 # TODO: make sure that can keep the tree while the surrogate changes behind me.
 # TODO: I would just compute the std for the scores.
 class SMBOSearcherWithMCTSOptimizer(Searcher):
+    """
+    FIXME add documentation
+    """
     def __init__(self, search_space_fn, surrogate_model, num_samples,
         eps_prob, tree_refit_interval):
-        self.search_space_fn = search_space_fn
+        Searcher.__init__(self, search_space_fn)
         self.surr_model = surrogate_model
         self.mcts = MCTSearcher(self.search_space_fn)
         self.num_samples = num_samples
@@ -247,7 +278,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
             best_model = None
             best_vs = None
             best_score = - np.inf
-            for _ in xrange(self.num_samples):
+            for _ in range(self.num_samples):
                 (inputs, outputs, hs, vs, m_cfg_d) = self.mcts.sample()
                 feats = su.extract_features(inputs, outputs, hs)
                 score = self.surr_model.eval(feats)

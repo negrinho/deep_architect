@@ -236,11 +236,15 @@ class SearchLogger:
         # create_folder(self.code_folderpath)
 
     def get_current_evaluation_logger(self):
+        """
+        # FIXME something called `get_current_...` creates a new instance? What does this do? Is this a `get_next_...`?
+        """
         logger = EvaluationLogger(self.all_evaluations_folderpath, self.current_evaluation_id)
         self.current_evaluation_id += 1
         return logger
 
     def get_search_data_folderpath(self):
+        # FIXME unnecessary method
         return self.search_data_folderpath
 
 class EvaluationLogger:
@@ -257,6 +261,13 @@ class EvaluationLogger:
         self.results_filepath = join_paths([self.evaluation_folderpath, 'results.json'])
 
     def log_config(self, hyperp_value_lst, searcher_evaluation_token):
+        """
+        Saves run configuration to a file.
+        :param hyperp_value_lst: List of hyperparameters to try in the current run
+        :type hyperp_value_lst: list of darch.core.Hyperparameter
+        :param searcher_evaluation_token: # FIXME add documentation
+        :type searcher_evaluation_token: # FIXME add documentation
+        """
         assert not file_exists(self.config_filepath)
         config_d = {
             'hyperp_value_lst' : hyperp_value_lst,
@@ -264,23 +275,51 @@ class EvaluationLogger:
         write_jsonfile(config_d, self.config_filepath)
 
     def log_features(self, inputs, outputs, hs):
+        """
+        # FIXME add documentation
+
+        :param inputs: # FIXME add documentation
+        :type inputs: dict[str,darch.core.Input]
+        :param outputs: # FIXME add documentation
+        :type outputs: dict[str,darch.core.Output]
+        :param hs: # FIXME add documentation
+        :type hs: # FIXME add documentation
+
+        .. seealso:: :func:`darch.surrogates.extract_features`
+        """
         assert not file_exists(self.features_filepath)
         feats = su.extract_features(inputs, outputs, hs)
         write_jsonfile(feats, self.features_filepath)
 
     def log_results(self, results):
+        """
+        # FIXME add documentation
+
+        :param results: # FIXME add documentation (where do these come from? shouldn't be from contrib!)
+        :type results: # FIXME add documetation
+        """
         assert (not file_exists(self.results_filepath))
         assert file_exists(self.config_filepath) and file_exists(self.features_filepath)
         assert isinstance(results, dict)
         write_jsonfile(results, self.results_filepath)
 
     def get_evaluation_folderpath(self):
+        # FIXME unnecessary method
         return self.evaluation_folderpath
 
     def get_user_data_folderpath(self):
+        # FIXME unnecessary method
         return self.user_data_folderpath
 
 def read_evaluation_folder(evaluation_folderpath):
+    """
+    Read one evaluation file.
+
+    :type evaluation_folderpath: str
+    :rtype: dict[str,dict]
+
+    .. seealso:: :func:`read_search_folder`
+    """
     assert folder_exists(evaluation_folderpath)
 
     name_to_log = {}
@@ -290,6 +329,14 @@ def read_evaluation_folder(evaluation_folderpath):
     return name_to_log
 
 def read_search_folder(search_folderpath):
+    """
+    Read the evaluations for all the runs.
+
+    :type search_folderpath: str
+    :rtype: list of dict[str,dict]
+
+    .. seealso:: :func:`read_evaluation_folder`
+    """
     all_evaluations_folderpath = join_paths([search_folderpath, 'evaluations'])
     eval_id = 0
     log_lst = []

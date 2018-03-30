@@ -38,19 +38,29 @@ class DependentHyperparameter(co.Hyperparameter):
             return True
         else:
             if all(h.is_set() for h in itervalues(self._hs)):
-                kwargs = {name : h.get_val() for name, h in iteritems(self._hs)}
+                kwargs = {name: h.get_val() for name, h in iteritems(self._hs)}
                 self.set_val(self._fn(**kwargs))
 
             return self.set_done
 
     def get_unset_dependent_hyperparameter(self):
+        """
+        :rtype: darch.core.Hyperparameter
+        """
         assert not self.set_done
-        for h in itervalues(self._hs) :
+        for h in itervalues(self._hs):
             if not h.is_set():
                 return h
 
+    def _check_val(self, val):
+        pass
+
 class Discrete(co.Hyperparameter):
     def __init__(self, vs, scope=None, name=None):
+        """
+        :type vs: collections.Iterable
+        :param vs: List of possible parameter values.
+        """
         co.Hyperparameter.__init__(self, scope, name)
         self.vs = vs
 
@@ -63,8 +73,19 @@ class Bool(Discrete):
 
 class OneOfK(Discrete):
     def __init__(self, k, scope=None, name=None):
+        """
+        Equivalent to `Discrete(range(k))`.
+
+        :param k: Maximum value to try.
+        :type k: int
+        """
         Discrete.__init__(self, range(k), scope, name)
 
 class OneOfKFactorial(Discrete):
     def __init__(self, k, scope=None, name=None):
+        """
+        Equivalent to `Discrete(np.product(np.arange(1, k + 1)))`
+
+        :type k: int
+        """
         Discrete.__init__(self, np.product(np.arange(1, k + 1)), scope, name)
