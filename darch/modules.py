@@ -164,7 +164,7 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
     def sub_fn(num_reps):
         assert num_reps > 0
         inputs, outputs = fn_first()
-        for _ in range(1, num_reps):
+        for _ in xrange(1, num_reps):
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
@@ -221,12 +221,12 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
         assert num_reps > 0
         inputs_lst = []
         outputs_lst = []
-        for _ in range(num_reps):
+        for _ in xrange(num_reps):
             inputs, outputs = fn()
             inputs_lst.append(inputs)
             outputs_lst.append(outputs)
 
-        for i in range(1, num_reps):
+        for i in xrange(1, num_reps):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
             next_inputs['In'].connect(prev_outputs['Out'])
@@ -268,9 +268,8 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     :type h_perm: darch.core.Hyperparameter
     """
     def sub_fn(perm_idx):
-        g = itertools.permutations(range(len(fn_lst)))
-        idxs = []
-        for _ in range(perm_idx + 1):
+        g = itertools.permutations(xrange(len(fn_lst)))
+        for _ in xrange(perm_idx + 1):
             idxs = next(g)
 
         inputs_lst = []
@@ -280,7 +279,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             inputs_lst.append(inputs)
             outputs_lst.append(outputs)
 
-        for i in range(1, len(fn_lst)):
+        for i in xrange(1, len(fn_lst)):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
 
@@ -361,3 +360,36 @@ def siso_sequential(io_lst):
         prev_outputs['Out'].connect(next_inputs['In'])
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
+
+class SearchSpaceFactory:
+    """Helper used to provide a nicer interface to create new search spaces.
+
+    The user should inherit from this class and implement the _get_search_space
+    method. The function get_search_space should be given to the searcher
+    upon creation.
+    """
+    def __init__(self, reset_scope_upon_get=True):
+        self.reset_scope_upon_get = reset_scope_upon_get
+
+    def get_search_space(self):
+        if self.reset_scope_upon_get:
+            co.Scope.reset_default_scope()
+
+        (inputs, outputs, hs) = self._get_search_space()
+
+        buffered_inputs = {}
+        for name, ix in iteritems(inputs):
+            b_inputs, b_outputs = empty()
+            b_outputs['Out'].connect(ix)
+            buffered_inputs[name] = b_inputs['In']
+
+        buffered_outputs = {}
+        for name, ox in iteritems(outputs):
+            b_inputs, b_outputs = empty()
+            ox.connect(b_inputs['In'])
+            buffered_outputs[name] = b_outputs['Out']
+
+        return buffered_inputs, buffered_outputs, hs
+
+    def _get_search_space(self):
+        raise NotImplementedError

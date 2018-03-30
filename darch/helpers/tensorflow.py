@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 import darch.core as co
+import tensorflow as tf
+import numpy as np
 
 
 class TFModule(co.Module):
     """
     Tensorflow wrapper for darch modules.
     """
-    def __init__(self, name, name_to_hyperp, compile_fn, 
+    def __init__(self, name, name_to_hyperp, compile_fn,
             input_names, output_names, scope=None):
         """
         :type name: str
@@ -59,4 +61,7 @@ def get_feed_dicts(output_lst):
             eval_feed.update(x.eval_feed)
         return False
     co.traverse_backward(output_lst, fn)
-    return train_feed, eval_feed
+    return (train_feed, eval_feed)
+
+def get_num_trainable_parameters():
+    return np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])

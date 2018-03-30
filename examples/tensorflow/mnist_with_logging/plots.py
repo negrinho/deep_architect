@@ -9,6 +9,6 @@ if __name__ == '__main__':
     random.shuffle(log_lst)
     plotter = vi.LinePlot()
     eval_ids = xrange(1, len(log_lst) + 1)
-    val_accs = vi.running_max([name_to_log['results']['val_acc'] for name_to_log in log_lst])
+    val_accs = vi.running_max([name_to_log['results']['validation_accuracy'] for name_to_log in log_lst])
     plotter.add_line(eval_ids, val_accs)
     plotter.plot()

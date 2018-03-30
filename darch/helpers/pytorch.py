@@ -4,10 +4,7 @@ import torch.nn as nn
 
 
 class PyTModule(co.Module):
-    """
-    Pytorch wrapper for darch module.
-    """
-    def __init__(self, name, name_to_hyperp, compile_fn, 
+    def __init__(self, name, name_to_hyperp, compile_fn,
             input_names, output_names, scope=None):
         """
         :type name: str
@@ -34,8 +31,7 @@ class PyTModule(co.Module):
         output_name_to_val = self._fn(input_name_to_val)
         self._set_output_values(output_name_to_val)
 
-
-# NOTE: this is done for the case where all the PyTorch modules are created 
+# NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
 def _call_fn_on_pytorch_module(output_lst, fn):
     """
@@ -92,17 +88,17 @@ class PyTNetContainer(nn.Module):
         :type name_to_input: dict[str,darch.core.Input]
         :type name_to_output: dict[str,darch.core.Output]
         """
-        nn.Module.__init__(self)        
+        nn.Module.__init__(self)
 
         self.name_to_output = name_to_output
         self.name_to_input = name_to_input
         self._module_seq = None
         self._is_compiled = False
-    
+
     def __call__(self, input_to_val):
         return self.forward(input_to_val)
 
-    # TODO: needs additional error checking to make sure that the set of 
+    # TODO: needs additional error checking to make sure that the set of
     # outputs is correct.
     def forward(self, name_to_val):
         if self._module_seq is None:

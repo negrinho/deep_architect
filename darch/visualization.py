@@ -27,7 +27,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     g = graphviz.Digraph()
     edge_fs = '10'
     h_fs = '10'
-    penwidth = '3'
+    penwidth = '1'
 
     nodes = set()
     hs = set()
@@ -81,14 +81,14 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     # add the output terminals.
     for m in module_lst:
         for ox in itervalues(m.outputs):
-            g.node(ox.get_name(), shape='rectangle', penwidth=penwidth)
+            g.node(ox.get_name(), shape='house', penwidth=penwidth)
             g.edge(
                 ox.get_module().get_name(),
                 ox.get_name())
 
     # minor adjustments to attributes.
     for s in nodes:
-        g.node(s, shape='invtrapezium', penwidth=penwidth)
+        g.node(s, shape='rectangle', penwidth=penwidth)
 
     for s in hs:
         g.node(s, fontsize=h_fs)
