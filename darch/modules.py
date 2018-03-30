@@ -182,3 +182,36 @@ def siso_sequential(io_lst):
         prev_outputs['Out'].connect(next_inputs['In'])
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
+
+class SearchSpaceFactory:
+    """Helper used to provide a nicer interface to create new search spaces.
+
+    The user should inherit from this class and implement the _get_search_space
+    method. The function get_search_space should be given to the searcher
+    upon creation.
+    """
+    def __init__(self, reset_scope_upon_get=True):
+        self.reset_scope_upon_get = reset_scope_upon_get
+
+    def get_search_space(self):
+        if self.reset_scope_upon_get:
+            co.Scope.reset_default_scope()
+
+        (inputs, outputs, hs) = self._get_search_space()
+
+        buffered_inputs = {}
+        for name, ix in iteritems(inputs):
+            b_inputs, b_outputs = empty()
+            b_outputs['Out'].connect(ix)
+            buffered_inputs[name] = b_inputs['In']
+
+        buffered_outputs = {}
+        for name, ox in iteritems(outputs):
+            b_inputs, b_outputs = empty()
+            ox.connect(b_inputs['In'])
+            buffered_outputs[name] = b_outputs['Out']
+
+        return buffered_inputs, buffered_outputs, hs
+
+    def _get_search_space(self):
+        raise NotImplementedError

@@ -22,19 +22,19 @@ def main():
 
     Xtrain, Xval = Xtrain[:train_size], Xtrain[train_size:]
     ytrain, yval = ytrain[:train_size], ytrain[train_size:]
-    
+
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
-    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
+    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
         './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True,
         batch_size=256)
 
     searcher = se.RandomSearcher(ss1_fn)
     for _ in range(128):
         (inputs, outputs, hs, hyperp_value_hist, searcher_eval_token) = searcher.sample()
-        val_acc = evaluator.eval(inputs, outputs, hs)['val_acc']
-        print(hyperp_value_hist, val_acc, searcher_eval_token)
+        val_acc = evaluator.eval(inputs, outputs, hs)['validation_accuracy']
+        print hyperp_value_hist, val_acc, searcher_eval_token
         searcher.update(val_acc, searcher_eval_token)
 
 if __name__ == '__main__':

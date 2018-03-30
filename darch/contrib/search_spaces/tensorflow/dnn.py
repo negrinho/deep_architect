@@ -1,10 +1,8 @@
 
-import darch.core as co
 import darch.modules as mo
 import tensorflow as tf
 import numpy as np
 from darch.contrib.search_spaces.tensorflow.common import siso_tfm, D
-
 
 # initializers
 def constant_initializer(c):
@@ -17,17 +15,8 @@ def truncated_normal_initializer(stddev):
         return tf.truncated_normal(shape, stddev=stddev)
     return init_fn
 
-def kaiming2015delving_initializer_conv(gain=1.0):
-    def init_fn(shape):
-        n = np.product(shape)
-        stddev = gain * np.sqrt(2.0 / n)
-        init_vals = tf.random_normal(shape, 0.0, stddev)
-        return init_vals
-    return init_fn
-
 def xavier_initializer_affine(gain=1.0):
     def init_fn(shape):
-        print(shape)
         n, m = shape
 
         sc = gain * (np.sqrt(6.0) / np.sqrt(m + n))
@@ -121,7 +110,7 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]), 
-            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, 
-            D([0.25, 0.5, 0.75])), D([1, 2, 4, 8])),
+            D([64, 128, 256, 512, 1024]),
+            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
+            D([0.25, 0.5, 0.75])), D([1, 2])),
         affine_simplified(D([num_classes]))])
