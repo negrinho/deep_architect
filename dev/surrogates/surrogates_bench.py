@@ -1,5 +1,6 @@
 from darch import searchers as se, surrogates as su, core as co, search_logging as sl
-import benchmarks.datasets as datasets
+# import benchmarks.datasets as datasets
+import datasets
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -187,7 +188,7 @@ class CLSTMSurrogate(su.SurrogateModel):
         # Refit only after seing refit_interval many new points
         if len(self.vals) % self.refit_interval == 0 and len(self.feats) > self.batch_size:
             self._refit()
-        
+
     def _refit(self):
         # Sample batch_size many points from memory to train from
         self.model.train()
@@ -197,7 +198,7 @@ class CLSTMSurrogate(su.SurrogateModel):
             loss = self.loss_fn(outs, vals)
             loss.backward()
             self.optimizer.step()
-        
+
         # Increase the number of batches by 1 (up to a max of max_batches)
         self.num_batches = min(min(self.num_batches + 1, self.max_batches), len(self.feats) // self.batch_size)
 
@@ -214,14 +215,14 @@ class CLSTMSurrogate(su.SurrogateModel):
         for feats, vals in self.mini_batch(self.feats_val, self.vals_val, self.batch_size, np.inf, inference=True):
             outs = self.model(feats)
             total_loss += torch.nn.MSELoss(size_average=False, reduce=True)(outs, vals).data[0]
-        
+
         return total_loss / len(self.feats_val)
 
 
 class SearchSpaceFactory:
     def __init__(self, num_classes):
         self.num_classes = num_classes
-    
+
     def get_search_space(self):
         co.Scope.reset_default_scope()
         inputs, outputs = search_dnn.dnn_net(self.num_classes)
@@ -271,16 +272,16 @@ def test_clstm_surrogate():
 
 
     ## Declare the model evaluator
-    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
+    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
         './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True)
-    
+
     ## Define our search space
     search_space_fn = SearchSpaceFactory(num_classes).get_search_space
 
     ## Define our surrogate models
     clstm_sur = CLSTMSurrogate()
     baseline_sur = su.HashingSurrogate(1024, 1)
-    
+
     ## Choose our searching algorithm, using benchmarking surrogate model
     # We use a random searcher to populate our initial dataset
     # Assumes new model is better than benchmark, and better models -> better searcher
@@ -290,7 +291,7 @@ def test_clstm_surrogate():
     ## Define our Logger (Almost like Replay Memory)
     search_logger = sl.SearchLogger('./logs', 'train', resume_if_exists=True)
 
-    
+
     # Samples and evaluates a model from a searcher. Logs the result
     def sample_and_evaluate(searcher):
         # Sample from our searcher
@@ -315,7 +316,7 @@ def test_clstm_surrogate():
             total_squared_error_baseline += (baseline_sur.eval(feats) - results['val_acc'])**2
 
         return total_squared_error_baseline / len(val_data), mse_clstm
-        
+
 
     # trains both surrogates on a list of data: (feat,val) tuples
     def train_and_validate(train_data, val_data, validate_interval=10):
@@ -339,7 +340,7 @@ def test_clstm_surrogate():
                 clstm_mse.append(clstm_val)
                 avg_time = 0
         return baseline_mse, clstm_mse
-                
+
 
     ## Training loop
     # We train two surrogate models with one searcher based on the non-baseline model
@@ -370,7 +371,7 @@ def test_clstm_surrogate():
         baseline_mse_next, clstm_mse_next = train_and_validate([eval_log], val_data)
         baseline_mse += baseline_mse_next
         clstm_mse += clstm_mse_next
-    
+
     # Plot the MSEs
     plt.plot(np.arange(len(baseline_mse)), baseline_mse)
     plt.plot(np.arange(len(clstm_mse)), clstm_mse)

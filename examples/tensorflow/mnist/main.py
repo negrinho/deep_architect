@@ -27,7 +27,7 @@ def main():
     search_space_factory = SSF0(num_classes)
 
     searcher = se.RandomSearcher(search_space_factory.get_search_space)
-    for _ in range(num_samples):
+    for _ in xrange(num_samples):
         inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
         val_acc = evaluator.eval(inputs, outputs, hs)['validation_accuracy']
         searcher.update(val_acc, searcher_eval_token)

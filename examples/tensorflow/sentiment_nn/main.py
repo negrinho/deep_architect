@@ -31,7 +31,7 @@ def main():
         batch_size=256)
 
     searcher = se.RandomSearcher(ss1_fn)
-    for _ in range(128):
+    for _ in xrange(128):
         (inputs, outputs, hs, hyperp_value_hist, searcher_eval_token) = searcher.sample()
         val_acc = evaluator.eval(inputs, outputs, hs)['validation_accuracy']
         print hyperp_value_hist, val_acc, searcher_eval_token

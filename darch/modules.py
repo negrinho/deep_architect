@@ -79,7 +79,7 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
     def sub_fn(num_reps):
         assert num_reps > 0
         inputs, outputs = fn_first()
-        for _ in range(1, num_reps):
+        for _ in xrange(1, num_reps):
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
@@ -100,12 +100,12 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
         assert num_reps > 0
         inputs_lst = []
         outputs_lst = []
-        for _ in range(num_reps):
+        for _ in xrange(num_reps):
             inputs, outputs = fn()
             inputs_lst.append(inputs)
             outputs_lst.append(outputs)
 
-        for i in range(1, num_reps):
+        for i in xrange(1, num_reps):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
             next_inputs['In'].connect(prev_outputs['Out'])
@@ -124,8 +124,8 @@ def siso_optional(fn, h_opt, scope=None, name=None):
 # TODO: improve by not enumerating permutations
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     def sub_fn(perm_idx):
-        g = itertools.permutations(range(len(fn_lst)))
-        for _ in range(perm_idx + 1):
+        g = itertools.permutations(xrange(len(fn_lst)))
+        for _ in xrange(perm_idx + 1):
             idxs = next(g)
 
         inputs_lst = []
@@ -135,7 +135,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             inputs_lst.append(inputs)
             outputs_lst.append(outputs)
 
-        for i in range(1, len(fn_lst)):
+        for i in xrange(1, len(fn_lst)):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
 
