@@ -4,7 +4,6 @@ import darch.hyperparameters as hp
 import darch.core as co
 import darch.surrogates as su
 
-
 # TODO: perhaps change to not have to work until everything is specified.
 def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
     if hyperp_lst is not None:
@@ -18,7 +17,6 @@ def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
             if not h.is_set():
                 yield h
 
-
 def random_specify_hyperparameter(hyperp):
     assert not hyperp.is_set()
 
@@ -29,7 +27,6 @@ def random_specify_hyperparameter(hyperp):
         raise ValueError
     return v
 
-
 def random_specify(output_lst, hyperp_lst=None):
     vs = []
     for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
@@ -37,11 +34,9 @@ def random_specify(output_lst, hyperp_lst=None):
         vs.append(v)
     return vs
 
-
 def specify(output_lst, hyperp_lst, vs):
     for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
         h.set_val(vs[i])
-
 
 class Searcher:
     """
@@ -68,7 +63,6 @@ class Searcher:
     def update(self, val, cfg_d):
         raise NotImplementedError
 
-
 class RandomSearcher(Searcher):
     """
     Random searcher. Tries random uninformed decisions on the given search space.
@@ -80,7 +74,6 @@ class RandomSearcher(Searcher):
 
     def update(self, val, cfg_d):
         pass
-
 
 # keeps the statistics and knows how to update information related to a node.
 class MCTSTreeNode:
@@ -140,7 +133,6 @@ class MCTSTreeNode:
     # expands a node creating all the placeholders for the children.
     def expand(self, num_children):
         self.children = [MCTSTreeNode(self) for _ in range(num_children)]
-
 
 class MCTSearcher(Searcher):
     """
@@ -217,7 +209,6 @@ class MCTSearcher(Searcher):
                 raise ValueError
         return hist, vs
 
-
 class SMBOSearcher(Searcher):
     """
     # FIXME add documentation
@@ -258,7 +249,6 @@ class SMBOSearcher(Searcher):
         specify(outputs.values(), hs.values(), cfg_d['vs'])
         feats = su.extract_features(inputs, outputs, hs)
         self.surr_model.update(val, feats)
-
 
 # surrogate with MCTS optimization.
 # TODO: make sure that can keep the tree while the surrogate changes behind me.

@@ -2,7 +2,6 @@ from six import iteritems
 import darch.core as co
 import torch.nn as nn
 
-
 class PyTModule(co.Module):
     def __init__(self, name, name_to_hyperp, compile_fn,
             input_names, output_names, scope=None):
@@ -44,32 +43,26 @@ def _call_fn_on_pytorch_module(output_lst, fn):
         return False
     co.traverse_backward(output_lst, fn_iter)
 
-
 def get_pytorch_modules(output_lst):
     all_modules = set()
     _call_fn_on_pytorch_module(output_lst, all_modules.add)
     return all_modules
 
-
 def train(output_lst):
     """Applies :meth:`nn.Module.train` to all modules needed to compute the given outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.train())
-
 
 def eval(output_lst):
     """Applies :meth:`nn.Module.eval` to all modules needed to compute the given outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.eval())
 
-
 def cuda(output_lst):
     """Applies :meth:`nn.Module.cuda` to all modules needed to compute the given outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cuda())
 
-
 def cpu(output_lst):
     """Applies :meth:`nn.Module.cpu` to all modules needed to compute the given outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cpu())
-
 
 def parameters(output_lst):
     pyth_modules = get_pytorch_modules(output_lst)
@@ -77,7 +70,6 @@ def parameters(output_lst):
     for pyth_m in pyth_modules:
         ps.update(pyth_m.parameters())
     return ps
-
 
 class PyTNetContainer(nn.Module):
     """

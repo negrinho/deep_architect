@@ -3,7 +3,6 @@ import darch.core as co
 import tensorflow as tf
 import numpy as np
 
-
 class TFModule(co.Module):
     """
     Tensorflow wrapper for darch modules.
@@ -42,9 +41,8 @@ class TFModule(co.Module):
         output_name_to_val = self._fn(input_name_to_val)
         self._set_output_values(output_name_to_val)
 
-    def update(self):
+    def _update(self):
         pass
-
 
 def get_feed_dicts(output_lst):
     """

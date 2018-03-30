@@ -3,7 +3,6 @@ import numpy as np
 from collections import OrderedDict
 import darch.core as co
 
-
 class HyperparameterSharer:
     """Used to implement different sharing patterns of hyperparameters.
 
@@ -25,7 +24,6 @@ class HyperparameterSharer:
         if hyperp_name not in self.name_to_h:
             self.name_to_h[hyperp_name] = self.name_to_h_fn[hyperp_name]()
         return self.name_to_h[hyperp_name]
-
 
 class DependentHyperparameter(co.Hyperparameter):
 
@@ -57,7 +55,6 @@ class DependentHyperparameter(co.Hyperparameter):
     def _check_val(self, val):
         pass
 
-
 class Discrete(co.Hyperparameter):
     def __init__(self, vs, scope=None, name=None):
         """
@@ -70,11 +67,9 @@ class Discrete(co.Hyperparameter):
     def _check_val(self, val):
         assert val in self.vs
 
-
 class Bool(Discrete):
     def __init__(self, scope=None, name=None):
         Discrete.__init__(self, [0, 1], scope, name)
-
 
 class OneOfK(Discrete):
     def __init__(self, k, scope=None, name=None):
@@ -85,7 +80,6 @@ class OneOfK(Discrete):
         :type k: int
         """
         Discrete.__init__(self, range(k), scope, name)
-
 
 class OneOfKFactorial(Discrete):
     def __init__(self, k, scope=None, name=None):

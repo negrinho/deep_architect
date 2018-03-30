@@ -4,10 +4,8 @@ from six import itervalues, iteritems
 import darch.core as co
 import numpy as np
 
-
 def running_max(vs):
     return np.maximum.accumulate(vs)
-
 
 def draw_graph(output_lst, draw_hyperparameters=False,
         draw_io_labels=False, graph_name='graph', out_folderpath=None,
@@ -94,7 +92,6 @@ def draw_graph(output_lst, draw_hyperparameters=False,
         g.node(s, fontsize=h_fs)
 
     g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
-
 
 class LinePlot:
     """

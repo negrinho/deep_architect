@@ -4,17 +4,14 @@ import shutil
 import time
 import darch.surrogates as su
 
-
 def read_jsonfile(filepath):
     with open(filepath, 'r') as f:
         d = json.load(f)
         return d
 
-
 def write_jsonfile(d, filepath, sort_keys=False):
     with open(filepath, 'w') as f:
         json.dump(d, f, indent=4, sort_keys=sort_keys)
-
 
 def read_textfile(filepath, strip=True):
     with open(filepath, 'r') as f:
@@ -22,7 +19,6 @@ def read_textfile(filepath, strip=True):
         if strip:
             lines = [line.strip() for line in lines]
         return lines
-
 
 def write_textfile(filepath, lines, append=False, with_newline=True):
     mode = 'a' if append else 'w'
@@ -32,26 +28,20 @@ def write_textfile(filepath, lines, append=False, with_newline=True):
             if with_newline:
                 f.write("\n")
 
-
 def path_prefix(path):
     return os.path.split(path)[0]
-
 
 def join_paths(paths):
     return os.path.join(*paths)
 
-
 def path_exists(path):
     return os.path.exists(path)
-
 
 def file_exists(path):
     return os.path.isfile(path)
 
-
 def folder_exists(path):
     return os.path.isdir(path)
-
 
 def create_folder(folderpath, abort_if_exists=True, create_parent_folders=False):
     assert not file_exists(folderpath)
@@ -60,7 +50,6 @@ def create_folder(folderpath, abort_if_exists=True, create_parent_folders=False)
 
     if not folder_exists(folderpath):
         os.makedirs(folderpath)
-
 
 def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
     assert folder_exists(folderpath) or (not abort_if_notexists)
@@ -258,7 +247,6 @@ class SearchLogger:
         # FIXME unnecessary method
         return self.search_data_folderpath
 
-
 class EvaluationLogger:
     def __init__(self, all_evaluations_folderpath, evaluation_id):
         self.evaluation_folderpath = join_paths([
@@ -323,7 +311,6 @@ class EvaluationLogger:
         # FIXME unnecessary method
         return self.user_data_folderpath
 
-
 def read_evaluation_folder(evaluation_folderpath):
     """
     Read one evaluation file.
@@ -340,7 +327,6 @@ def read_evaluation_folder(evaluation_folderpath):
         log_filepath = join_paths([evaluation_folderpath, name + '.json'])
         name_to_log[name] = read_jsonfile(log_filepath)
     return name_to_log
-
 
 def read_search_folder(search_folderpath):
     """

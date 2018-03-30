@@ -3,7 +3,6 @@ from six import itervalues, iteritems
 from six.moves import range
 import itertools
 
-
 class Empty(co.Module):
     def __init__(self, scope=None, name=None):
         co.Module.__init__(self, scope, name)
@@ -13,7 +12,7 @@ class Empty(co.Module):
     def forward(self):
         self.outputs['Out'].val = self.inputs['In'].val
 
-    def update(self):
+    def _update(self):
         pass
 
     def _compile(self):
@@ -21,7 +20,6 @@ class Empty(co.Module):
 
     def _forward(self):
         pass
-
 
 # NOTE: perhaps refactor to capture similarities between modules.
 class SubstitutionModule(co.Module):
@@ -46,9 +44,9 @@ class SubstitutionModule(co.Module):
         self._register(input_names, output_names, name_to_hyperp)
         self._sub_fn = sub_fn
         self._is_done = False
-        self.update()
+        self._update()
 
-    def update(self):
+    def _update(self):
         if (not self._is_done) and all(h.is_set() for h in itervalues(self.hyperps)):
             argnames = self._sub_fn.__code__.co_varnames
 
@@ -83,10 +81,8 @@ class SubstitutionModule(co.Module):
     def _forward(self):
         pass
 
-
 def empty():
     return Empty().get_io()
-
 
 def substitution_module(name, name_to_hyperp, sub_fn,
                         input_names, output_names, scope):
@@ -111,7 +107,6 @@ def substitution_module(name, name_to_hyperp, sub_fn,
         input_names, output_names, scope
     ).get_io()
 
-
 def _get_name(name, default_name):
     """
     :type name: str or None
@@ -119,7 +114,6 @@ def _get_name(name, default_name):
     :rtype: str
     """
     return name if name is not None else default_name
-
 
 def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     """
@@ -141,7 +135,6 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
         _get_name(name, "Or"), {'idx': h_or},
         sub_fn, input_names, output_names, scope
     )
-
 
 def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
                        input_names, output_names,
@@ -173,7 +166,6 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats,
         sub_fn, input_names, output_names, scope
     )
 
-
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     """
     # FIXME add documentation
@@ -191,7 +183,6 @@ def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
         scope=scope, name=_get_name(name, "SISONestedRepeat")
     )
 
-
 def siso_or(fn_lst, h_or, scope=None, name=None):
     """
     The (single input, single output) Or module. Chooses exactly one of the possible choices.
@@ -205,7 +196,6 @@ def siso_or(fn_lst, h_or, scope=None, name=None):
         fn_lst, h_or, ['In'], ['Out'],
         scope=scope, name=_get_name(name, "SISOOr")
     )
-
 
 # NOTE: how to do repeat in the general mimo case.
 def siso_repeat(fn, h_num_repeats, scope=None, name=None):
@@ -237,7 +227,6 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
         {'num_reps': h_num_repeats}, sub_fn, ['In'], ['Out'], scope
     )
 
-
 def siso_optional(fn, h_opt, scope=None, name=None):
     """
     Optionally uses the given module.
@@ -255,7 +244,6 @@ def siso_optional(fn, h_opt, scope=None, name=None):
         _get_name(name, "SISOOptional"),
         {'opt': h_opt}, sub_fn, ['In'], ['Out'], scope
     )
-
 
 # TODO: improve by not enumerating permutations
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
@@ -292,7 +280,6 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
         {'perm_idx': h_perm}, sub_fn, ['In'], ['Out'], scope
     )
 
-
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     """
     # FIXME add documentation
@@ -318,7 +305,6 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
         _get_name(name, "SISOSplitCombine"),
         {'num_splits': h_num_splits}, sub_fn, ['In'], ['Out'], scope
     )
-
 
 def siso_residual(main_fn, residual_fn, combine_fn):
     """

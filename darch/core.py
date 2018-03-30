@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
 
-
 class OrderedSet:
     def __init__(self):
         self.d = OrderedDict()
@@ -24,7 +23,6 @@ class OrderedSet:
 
     def __contains__(self, item):
         return item in self.d
-
 
 class Scope:
     """A scope keeps references to modules, hyperparameters, inputs, and outputs.
@@ -86,7 +84,6 @@ class Scope:
 
 Scope.default_scope = Scope()
 
-
 class Addressable:
     """Base class for classes whose objects have to be registered in a scope.
 
@@ -113,7 +110,6 @@ class Addressable:
         :rtype: str
         """
         return self.__class__.__name__
-
 
 class Hyperparameter(Addressable):
     """Base hyperparameter class.
@@ -149,13 +145,13 @@ class Hyperparameter(Addressable):
         self.val = val
 
         for m in self.modules:
-            m.update()
+            m._update()
 
     def get_val(self):
         assert self.set_done
         return self.val
 
-    def register_module(self, module):
+    def _register_module(self, module):
         """
         :type module: Module
         """
@@ -163,7 +159,6 @@ class Hyperparameter(Addressable):
 
     def _check_val(self, val):
         raise NotImplementedError
-
 
 class Input(Addressable):
     """An input is potentially connected to an output.
@@ -223,7 +218,6 @@ class Input(Addressable):
         self.disconnect()
         old_ox.connect(to_input)
 
-
 class Output(Addressable):
     """An output is potentially connected to multiple inputs
 
@@ -276,7 +270,6 @@ class Output(Addressable):
             ix.disconnect()
             ix.connect(from_output)
 
-
 class Module(Addressable):
     """A module has inputs, outputs, and hyperparameters.
     """
@@ -297,7 +290,7 @@ class Module(Addressable):
 
     def _register_input(self, name):
         """Creates a new input with the chosen local name.
-        
+
         :type name: str
         """
         assert name not in self.inputs
@@ -305,7 +298,7 @@ class Module(Addressable):
 
     def _register_output(self, name):
         """Creates a new output with the chosen local name.
-        
+
         :type name: str
         """
         assert name not in self.outputs
@@ -318,7 +311,7 @@ class Module(Addressable):
         """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
         self.hyperps[name] = h
-        h.register_module(self)
+        h._register_module(self)
 
     def _register(self, input_names, output_names, name_to_hyperp):
         """
@@ -363,7 +356,7 @@ class Module(Addressable):
         """
         return self.hyperps
 
-    def update(self):
+    def _update(self):
         """Called when an hyperparameter that the module depends on is set."""
         raise NotImplementedError
 
@@ -398,7 +391,6 @@ def extract_unique_modules(input_or_output_lst):
         ms.add(x.get_module())
     return list(ms)
 
-
 # assumes that the inputs provided are sufficient to evaluate all the network.
 def determine_module_eval_seq(input_lst):
     """Computes the module forward evaluation sequence necessary to evaluate
@@ -430,7 +422,6 @@ def determine_module_eval_seq(input_lst):
                 ms.extend(m_lst)
     return module_seq
 
-
 def traverse_backward(output_lst, fn):
     """Traverses the graph going backward, from outputs to inputs. The
     provided function is applied once to each module reached this way.
@@ -455,7 +446,6 @@ def traverse_backward(output_lst, fn):
                     if m_prev not in memo:
                         memo.add(m_prev)
                         ms.append(m_prev)
-
 
 def traverse_forward(input_lst, fn):
     """Traverses the graph going forward, from inputs to outputs. The
@@ -483,7 +473,6 @@ def traverse_forward(input_lst, fn):
                             memo.add(m_next)
                             ms.append(m_next)
 
-
 def is_specified(output_lst):
     """Checks if all the hyperparameters reachable by traversing backward from
     the outputs have been set.
@@ -503,7 +492,6 @@ def is_specified(output_lst):
         return False
     traverse_backward(output_lst, fn)
     return is_spec[0]
-
 
 def get_unset_hyperparameters(output_lst):
     """Gets all the hyperparameters that are not set yet.
@@ -526,7 +514,6 @@ def get_unset_hyperparameters(output_lst):
         return False
     traverse_backward(output_lst, fn)
     return hs
-
 
 def forward(input_to_val, _module_seq=None):
     """Forward pass starting from the inputs.
@@ -551,7 +538,6 @@ def forward(input_to_val, _module_seq=None):
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
 
-
 def get_unconnected_inputs(output_lst):
     """
     :type output_lst: collections.Iterable of Output
@@ -567,7 +553,6 @@ def get_unconnected_inputs(output_lst):
         return False
     traverse_backward(output_lst, fn)
     return ix_lst
-
 
 def get_unconnected_outputs(input_lst):
     """
