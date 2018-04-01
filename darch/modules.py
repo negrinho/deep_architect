@@ -370,7 +370,6 @@ def siso_sequential(io_lst):
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
 
-<<<<<<< HEAD
 def simo_split(num_split):
     i_inputs, i_outputs = empty()
     o_inputs, o_outputs = empty(num_split)
@@ -378,7 +377,6 @@ def simo_split(num_split):
         i_outputs['Out'].connect(o_inputs['In' + str(i)])
     return (i_inputs, o_outputs)
 
-=======
 class SearchSpaceFactory:
     """Helper used to provide a nicer interface to create new search spaces.
 
@@ -411,4 +409,3 @@ class SearchSpaceFactory:
 
     def _get_search_space(self):
         raise NotImplementedError
->>>>>>> 7a93c0baddd4f63f4d00e3fd7ae7cbbd1581cad8

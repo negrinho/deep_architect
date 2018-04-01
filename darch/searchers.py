@@ -145,8 +145,6 @@ class EvolutionSearcher(Searcher):
 
     def get_searcher_state_token(self):
         return {
-            "search_space_fn": self.search_space_fn,
-            "mutatable": self.mutatable,
             "P": self.P,
             "S": self.S,
             "population": self.population,
@@ -158,14 +156,12 @@ class EvolutionSearcher(Searcher):
         state = self.get_searcher_state_token()
         write_jsonfile(state, join_paths([folder_name, 'searcher_state.json']))
 
-    @staticmethod
-    def load(state):
-        searcher = EvolutionSearcher(
-            state['search_space_fn'], state['mutable'], state['P'],
-            state['S'], regularized=state['regularized'])
-        searcher.population = state['population']
-        searcher.initializing = state['initializing']
-        return searcher
+    def load(self, state):
+        self.P = state["P"]
+        self.S = state["S"]
+        self.regularized = state['regularized']
+        self.population = state['population']
+        self.initializing = state['initializing']
     
     def update(self, val, cfg_d):
         self.population.append((cfg_d['vs'], val))

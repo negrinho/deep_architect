@@ -31,15 +31,15 @@ def main():
                     test_dataset=test_dataset)
 
     search_logger = sl.SearchLogger('./logs', 'test')
-    search_data_path = sl.join_paths[search_logger.search_data_folderpath, "searcher_state.json"]
+    search_data_path = sl.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])
 
+    search_space_factory = SearchSpaceFactory(num_classes)
+    searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
+    
     if sl.file_exists(search_data_path):
         state = sl.read_jsonfile(search_data_path)
-        searcher = se.EvolutionSearcher.load(state)
-    else:
-        search_space_factory = SearchSpaceFactory(num_classes)
-        searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
-
+        searcher.load(state)
+    
     for i in xrange(num_samples):
         evaluation_logger = search_logger.get_current_evaluation_logger()
         inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
