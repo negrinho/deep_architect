@@ -63,9 +63,9 @@ def mutate(output_lst, vs, mutatable):
     # ensure that same value is not chosen again
     while v == vs[m_ind]:
         v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
-    m_h.set_val(v)
+    m_h.val = v
     new_vs[m_ind] = v
-    return vs
+    return new_vs
 
 
 class Searcher:
@@ -138,7 +138,7 @@ class EvolutionSearcher(Searcher):
             inputs, outputs, hs = self.search_space_fn()
             vs, _ = self.population[self.get_strongest_model_index(
                 sample_inds)]
-            new_vs = mutate(outputs, vs, self.mutatable)
+            new_vs = mutate(outputs.values(), vs, self.mutatable)
 
             del self.population[weak_ind]
             return inputs, outputs, hs, new_vs, {'vs': new_vs}
