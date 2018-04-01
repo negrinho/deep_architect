@@ -5,8 +5,11 @@ import numpy as np
 import darch.hyperparameters as hp
 import darch.core as co
 import darch.surrogates as su
+from darch.search_logging import join_paths, write_jsonfile
 
 # TODO: perhaps change to not have to work until everything is specified.
+
+
 def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
     if hyperp_lst is not None:
         for h in hyperp_lst:
@@ -19,6 +22,7 @@ def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
             if not h.is_set():
                 yield h
 
+
 def random_specify_hyperparameter(hyperp):
     assert not hyperp.is_set()
 
@@ -29,6 +33,7 @@ def random_specify_hyperparameter(hyperp):
         raise ValueError
     return v
 
+
 def random_specify(output_lst, hyperp_lst=None):
     vs = []
     for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
@@ -36,9 +41,11 @@ def random_specify(output_lst, hyperp_lst=None):
         vs.append(v)
     return vs
 
+
 def specify(output_lst, hyperp_lst, vs):
     for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
         h.set_val(vs[i])
+
 
 def mutate(output_lst, vs, mutatable):
     mutate_candidates = []
@@ -49,7 +56,8 @@ def mutate(output_lst, vs, mutatable):
         h.set_val(vs[i])
         new_vs.append(vs[i])
     # mutate a random hyperparameter
-    m_ind, m_h = mutate_candidates[random.randint(0, len(mutate_candidates) - 1)]
+    m_ind, m_h = mutate_candidates[random.randint(
+        0, len(mutate_candidates) - 1)]
     v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
 
     # ensure that same value is not chosen again
@@ -85,6 +93,7 @@ class Searcher:
     def update(self, val, cfg_d):
         raise NotImplementedError
 
+
 class RandomSearcher(Searcher):
     """
     Random searcher. Tries random uninformed decisions on the given search space.
@@ -97,17 +106,21 @@ class RandomSearcher(Searcher):
     def update(self, val, cfg_d):
         pass
 
+
 class EvolutionSearcher(Searcher):
     def __init__(self, search_space_fn, mutatable, P, S, regularized=False):
-        self.search_space_fn = search_space_fn
-        self.mutatable = mutatable
+        Searcher.__init__(self, search_space_fn)
+        
+        # Population size
         self.P = P
+        # Sample size
         self.S = S
+
         self.population = deque(maxlen=P)
         self.regularized = regularized
         self.initializing = True
-        
-    
+        self.mutatable = mutatable
+
     def sample(self):
         if self.initializing:
             inputs, outputs, hs = self.search_space_fn()
@@ -116,18 +129,42 @@ class EvolutionSearcher(Searcher):
                 self.initializing = False
             return inputs, outputs, hs, vs, {'vs': vs}
         else:
-            sample_inds = sorted(random.sample(range(len(self.population)), self.S))
+            sample_inds = sorted(random.sample(
+                range(len(self.population)), self.S))
             # delete weakest model
             weak_ind = self.get_weakest_model_index(sample_inds)
-            
+
             # mutate strongest model
             inputs, outputs, hs = self.search_space_fn()
-            vs, _ = self.population[self.get_strongest_model_index(sample_inds)]
+            vs, _ = self.population[self.get_strongest_model_index(
+                sample_inds)]
             new_vs = mutate(outputs, vs, self.mutatable)
 
             del self.population[weak_ind]
             return inputs, outputs, hs, new_vs, {'vs': new_vs}
 
+    def get_searcher_state_token(self):
+        return {
+            "search_space_fn": self.search_space_fn,
+            "mutatable": self.mutatable,
+            "P": self.P,
+            "S": self.S,
+            "population": self.population,
+            "regularized": self.regularized,
+            "initializing": self.initializing,
+        }
+    
+    def save_state(self, folder_name):
+        state = self.get_searcher_state_token()
+        write_jsonfile(state, join_paths([folder_name, 'searcher_state.json']))
+
+    @staticmethod
+    def load(state):
+        searcher = EvolutionSearcher(
+            state['search_space_fn'], state['mutable'], state['P'],
+            state['S'], regularized=state['regularized'])
+        searcher.population = state['population']
+        searcher.initializing = state['initializing']
     
     def update(self, val, cfg_d):
         self.population.append((cfg_d['vs'], val))
@@ -144,7 +181,7 @@ class EvolutionSearcher(Searcher):
                     min_acc = acc
                     min_acc_ind = i
             return sample_inds[min_acc_ind]
-    
+
     def get_strongest_model_index(self, sample_inds):
         max_acc = 0.
         max_acc_ind = -1
@@ -156,6 +193,8 @@ class EvolutionSearcher(Searcher):
         return sample_inds[max_acc_ind]
 
 # keeps the statistics and knows how to update information related to a node.
+
+
 class MCTSTreeNode:
     """Auxiliary class for :class:`MCTSearcher`."""
     def __init__(self, parent_node):
@@ -191,8 +230,8 @@ class MCTSTreeNode:
             # think about how to extend this.
             if node.num_trials > 0:
                 score = (node.sum_scores / node.num_trials +
-                            exploration_bonus * np.sqrt(
-                                2.0 * parent_log_nt / node.num_trials))
+                         exploration_bonus * np.sqrt(
+                             2.0 * parent_log_nt / node.num_trials))
             else:
                 score = np.inf
 
@@ -214,6 +253,7 @@ class MCTSTreeNode:
     def expand(self, num_children):
         self.children = [MCTSTreeNode(self) for _ in range(num_children)]
 
+
 class MCTSearcher(Searcher):
     """
     Monte Carlo Tree searcher.  # FIXME add documentation (short description? reference for MCT search?)
@@ -231,7 +271,7 @@ class MCTSearcher(Searcher):
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
-        cfg_d = {'tree_hist' : tree_hist, 'rollout_hist' : rollout_hist}
+        cfg_d = {'tree_hist': tree_hist, 'rollout_hist': rollout_hist}
 
         return inputs, outputs, hs, vs, cfg_d
 
@@ -289,6 +329,7 @@ class MCTSearcher(Searcher):
                 raise ValueError
         return hist, vs
 
+
 class SMBOSearcher(Searcher):
     """
     # FIXME add documentation
@@ -321,7 +362,7 @@ class SMBOSearcher(Searcher):
 
             inputs, outputs, hs = best_model
 
-        cfg_d = {'vs' : best_vs}
+        cfg_d = {'vs': best_vs}
         return inputs, outputs, hs, best_vs, cfg_d
 
     def update(self, val, cfg_d):
@@ -333,6 +374,8 @@ class SMBOSearcher(Searcher):
 # surrogate with MCTS optimization.
 # TODO: make sure that can keep the tree while the surrogate changes behind me.
 # TODO: I would just compute the std for the scores.
+
+
 class SMBOSearcherWithMCTSOptimizer(Searcher):
     """
     FIXME add documentation
@@ -370,7 +413,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
                 self.mcts.update(score, m_cfg_d)
             inputs, outputs, hs = best_model
 
-        cfg_d = {'vs' : best_vs}
+        cfg_d = {'vs': best_vs}
         return inputs, outputs, hs, best_vs, cfg_d
 
     def update(self, val, cfg_d):

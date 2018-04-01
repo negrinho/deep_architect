@@ -44,6 +44,7 @@ def main():
         evaluation_logger.log_results(results)      
         print('Sample %d: %f', (i, results['val_acc']))
         searcher.update(results['val_acc'], searcher_eval_token)
+        searcher.save_state(search_logger.search_data_folderpath)
 
 if __name__ == '__main__':
     main()
