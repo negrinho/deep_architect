@@ -11,7 +11,7 @@ import darch.visualization as vi
 class SearchSpaceFactory:
     def __init__(self, num_classes):
         self.num_classes = num_classes
-    
+
     def get_search_space(self):
         co.Scope.reset_default_scope()
         inputs, outputs = css_dnn.dnn_net(self.num_classes)
@@ -24,7 +24,7 @@ def main():
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
-    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
+    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
         './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True)
     search_space_factory = SearchSpaceFactory(num_classes)
 
@@ -36,10 +36,10 @@ def main():
         evaluation_logger.log_config(hyperp_value_lst, searcher_eval_token)
         evaluation_logger.log_features(inputs, outputs, hs)
         results = evaluator.eval(inputs, outputs, hs)
-        evaluation_logger.log_results(results)      
+        evaluation_logger.log_results(results)
         vi.draw_graph(outputs.values(), True, True, print_to_screen=False,
             out_folderpath=evaluation_logger.get_user_data_folderpath())
-        searcher.update(results['val_acc'], searcher_eval_token)
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
 
 if __name__ == '__main__':
     main()
