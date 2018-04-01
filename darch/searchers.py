@@ -165,6 +165,7 @@ class EvolutionSearcher(Searcher):
             state['S'], regularized=state['regularized'])
         searcher.population = state['population']
         searcher.initializing = state['initializing']
+        return searcher
     
     def update(self, val, cfg_d):
         self.population.append((cfg_d['vs'], val))

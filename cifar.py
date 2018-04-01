@@ -29,10 +29,16 @@ def main():
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
                     './temp', max_num_training_epochs=4, log_output_to_terminal=True, 
                     test_dataset=test_dataset)
-    search_space_factory = SearchSpaceFactory(num_classes)
 
-    searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
     search_logger = sl.SearchLogger('./logs', 'test')
+    search_data_path = sl.join_paths[search_logger.search_data_folderpath, "searcher_state.json"]
+
+    if sl.file_exists(search_data_path):
+        state = sl.read_jsonfile(search_data_path)
+        searcher = se.EvolutionSearcher.load(state)
+    else:
+        search_space_factory = SearchSpaceFactory(num_classes)
+        searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
 
     for i in xrange(num_samples):
         evaluation_logger = search_logger.get_current_evaluation_logger()
