@@ -1,8 +1,7 @@
-import darch.ptb_evaluator as ev
+import darch.contrib.evaluators.tensorflow.ptb_evaluator as ev
 import darch.searchers as se
-import darch.lstm_search_space as ss
-import darch.reader as reader
-from IPython import embed
+import darch.contrib.search_spaces.tensorflow.lstm_search_space as ss
+import darch.contrib.datasets.ptb_reader as reader
 
 if __name__ == '__main__':
     train_data, valid_data, test_data, vocab = reader.ptb_raw_data('darch/data/simple-examples/data')

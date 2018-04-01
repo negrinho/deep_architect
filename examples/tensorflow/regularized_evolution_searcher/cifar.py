@@ -3,7 +3,7 @@ from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierE
 from darch.contrib.datasets.dataset import InMemoryDataset
 #import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
 import darch.searchers as se
-import darch.search_space as ss
+import darch.contrib.search_spaces.tensorflow.evolution_search_space as ss
 import darch.search_logging as sl
 import darch.core as co
 
