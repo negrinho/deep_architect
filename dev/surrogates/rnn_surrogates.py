@@ -240,18 +240,32 @@ class RNNModel(nn.Module):
         return out
 
 class RNNSurrogate(su.SurrogateModel):
-    def __init__(self, embedding_size, hidden_size):
+    def __init__(self, embedding_size, hidden_size,
+            validation_frac=0.25, refit_interval=1,
+            use_surrogate_after_num_samples=16,
+            max_num_updates_per_refit=1024, patience=2,
+            compute_validation_every_num_updates=128):
+
+        assert int(1.0 / validation_frac) <= use_surrogate_after_num_samples
+
         self.ch_lst = [chr(i) for i in range(ord('A'), ord('Z'))] + [
             chr(i) for i in range(ord('a'), ord('z') + 1)] + [
             chr(i) for i in range(ord('0'), ord('9') + 1)] + [
                 '.', ':', '-', '_', '<', '>', '/', '=', '*', ' ', '|']
         self.ch2idx = {ch : idx for (idx, ch) in enumerate(self.ch_lst)}
+
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
+        self.validation_frac = validation_frac
+        self.use_surrogate_after_num_samples = use_surrogate_after_num_samples
+        self.max_num_updates_per_refit = max_num_updates_per_refit
+        self.patience = patience
+        self.compute_validation_every_num_updates = compute_validation_every_num_updates
+        self.refit_interval = refit_interval
 
         self.model = RNNModel(len(self.ch_lst), self.embedding_size, self.hidden_size)
-        self.optimizer =  opt.Adam(self.model.parameters(), 1e-2)
-        self.mse = nn.MSELoss()
+        self.optimizer = opt.Adam(self.model.parameters(), 1e-2)
+        self.loss_fn = nn.MSELoss()
         self.feats_lst = []
         self.val_lst = []
         self.vec_lst = []
@@ -264,22 +278,73 @@ class RNNSurrogate(su.SurrogateModel):
         vec = torch.LongTensor(idxs_lst).t()
         self.vec_lst.append(vec)
 
+        n = len(self.feats_lst)
+        if (n == self.use_surrogate_after_num_samples) or (
+            n > self.use_surrogate_after_num_samples and n % self.refit_interval == 0):
+            self._refit()
+
     def eval(self, feats):
-        idxs_lst = process_feats_for_charlstm(self.ch2idx, feats)
-        vec = Variable(torch.LongTensor(idxs_lst).t())
-        pred_val = self.model(vec).data[0]
+        if len(self.feats_lst) >= self.use_surrogate_after_num_samples:
+            idxs_lst = process_feats_for_charlstm(self.ch2idx, feats)
+            vec = Variable(torch.LongTensor(idxs_lst).t())
+            pred_val = self.model(vec).data[0, 0]
+        else:
+            pred_val = np.mean(self.val_lst) if len(self.val_lst) > 0 else 0.0
         return pred_val
 
     def _refit(self):
         n = len(self.feats_lst)
         for _ in xrange(16):
             i = np.random.randint(n)
-            true_val = Variable(torch.FloatTensor([[self.val_lst[i]]]))
+            true_val = Variable(torch.FloatTensor([self.val_lst[i]]))
             vec = Variable(self.vec_lst[i])
             pred_val = self.model(vec)
-            loss = self.mse(pred_val, true_val)
+            loss = self.loss_fn(pred_val, true_val)
 
             self.optimizer.zero_grad()
             loss.backward()
             # torch.nn.utils.clip_grad_norm(self.model.parameters(), 1.0)
             self.optimizer.step()
+
+# NOTE: do the loss fn or something like that. loss_fn.
+# that is the only thing that needs to be done. as long as it improves
+# in the training set, it works.
+
+# NOTE: this tries to sort the models correctly rather than predict performance.
+class RankingRNNSurrogate(RNNSurrogate):
+    def __init__(self, embedding_size, hidden_size):
+        RNNSurrogate.__init__(self, embedding_size, hidden_size)
+        self.bce = nn.BCEWithLogitsLoss()
+
+    def _refit(self):
+        n = len(self.feats_lst)
+        if n > 1:
+            for _ in xrange(64):
+                i = np.random.randint(n)
+                while True:
+                    i_other = np.random.randint(n)
+                    if i_other != i:
+                        break
+
+                vec = Variable(self.vec_lst[i])
+                score = self.model(vec)
+                vec_other = Variable(self.vec_lst[i_other])
+                score_other = self.model(vec_other)
+                # print score.size(), score_other.size()
+
+                label = float(self.val_lst[i] >= self.val_lst[i_other])
+                label = Variable(torch.FloatTensor([[label]]))
+
+                # s = score.data[0, 0]
+                # s_other = score_other.data[0, 0]
+                # lab = label.data[0, 0]
+                # print s, s_other, lab, self.val_lst[i], self.val_lst[i_other], ((s > s_other) and lab == 0.0) or ((s < s_other) and lab == 1.0)
+
+                self.optimizer.zero_grad()
+                loss = self.bce(score - score_other, label)
+                loss.backward()
+                # torch.nn.utils.clip_grad_norm(self.model.parameters(), 1.0)
+                self.optimizer.step()
+
+# TODO: add a random pair function
+# essentially the same with a different training scheme.

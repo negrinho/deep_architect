@@ -66,6 +66,8 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Add guidelines on how to setup Visual Studio Code on how to contribute for the project (e.g., formatter, linter, ...).
 * Profile the code to find bottlenecks (e.g., in the surrogate function computation).
 * Check why the surrogate models are not overfitting to the data.
+* Perhaps a good way of handling varying dimensions in images is to map all images to the same dimensions.
+* Go through torchvision to get some inspiration to develop search spaces.
 
 * Common metrics to maintain in logging:
     * Training loss
