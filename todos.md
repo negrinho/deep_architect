@@ -1,4 +1,19 @@
 
+Evaluation per day on a single GPU per evaluation length
+* 1 model per day is equiv. 1440 min per model (24 hours per model)
+* 2 models per day is equiv. 720 min per model (12 hours per model)
+* 4 models per day is equiv. 360 min per model (6 hours per model)
+* 8 models per day is equiv. 180 min per model (3 hours per model)
+* 16 models per day is equiv. 90 min per model
+* 32 models per day is equiv. 45 min per model
+* 64 models per day is equiv. 22.5 min per model
+* 128 models per day is equiv. 11.25 min per model
+* 256 models per day is equiv. ~5.5 min per model
+* 512 models per day is equiv. ~2.75 min per model
+* 1024 models per day is equiv. ~1.38 min per model
+* 2048 models per day is equiv. ~45 secs per model
+* 4096 models per day is equiv. ~22.5 secs per model
+* 8192 models per day is equiv. ~11.25 secs per model
 
 ## Search spaces
 * Spatial pooling that
@@ -68,6 +83,20 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Check why the surrogate models are not overfitting to the data.
 * Perhaps a good way of handling varying dimensions in images is to map all images to the same dimensions.
 * Go through torchvision to get some inspiration to develop search spaces.
+* Add a build script that downloads a bunch of useful information.
+* Make the SimpleClassifierEvaluator more generic.
+* Figure out how to keep it sane with the different modules when building the image. The image out not be built very frequently.
+* Think about how to tie the image to a specific commit.
+* Think more about wrapping more of the logging and search functionality in some high level functions.
+* Probably the recursive read needs some more information on getting it done.
+* TODO: write error messages for the loggers, e.g., asserts.
+* add some error checking or options to the read_log
+* maybe move some of this file system manipulation to their own folder.
+* integrate better the use of list files and list folders.
+* check how to better integrate with the other models.
+* add more user_data and functionality to load then.
+* add the ability to have a function that is applied to each file type.
+* Make it easy to read multiple folders simultaneously.
 
 * Common metrics to maintain in logging:
     * Training loss

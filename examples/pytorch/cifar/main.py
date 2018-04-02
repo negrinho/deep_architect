@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 Trains a ResNeXt Model on Cifar10 and Cifar 100. Implementation as defined in:
 
-Xie, S., Girshick, R., Dollár, P., Tu, Z., & He, K. (2016). 
-Aggregated residual transformations for deep neural networks. 
+Xie, S., Girshick, R., Dollár, P., Tu, Z., & He, K. (2016).
+Aggregated residual transformations for deep neural networks.
 arXiv preprint arXiv:1611.05431.
 
 Created by Pau Rodriguez (https://github.com/prlz77/ResNeXt.pytorch)
@@ -38,10 +38,10 @@ from __future__ import division
 
 import argparse
 import darch.searchers as se
+import darch.search_logging as sl
 import darch.helpers.pytorch as hpt
 from evaluator import get_eval_fn
 import search_space as ss
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Trains ResNeXt on CIFAR',
@@ -83,12 +83,18 @@ if __name__ == '__main__':
         search_space_fn = ss.get_ss_fn(10)
     else:
         search_space_fn = ss.get_ss_fn(100)
-    searcher = se.MCTSearcher(search_space_fn)
+    searcher = se.RandomSearcher(search_space_fn)
+    search_logger = sl.SearchLogger('./logs', 'pytorch_cifar')
 
     eval_fn = get_eval_fn()
-    for _ in range(10):
-        (inputs, outputs, hs, vs, cfg_d) = searcher.sample()
+    for _ in range(16):
+        (inputs, outputs, hs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
         d['net'] = hpt.PyTNetContainer(inputs, outputs)
         d['darch'] = {'inputs' : inputs, 'outputs' : outputs, 'hs' : hs}
         eval_fn(d)
-        print(d['train_loss'], d['test_loss'], d['test_accuracy'])
+
+        evaluation_logger = search_logger.get_current_evaluation_logger()
+        evaluation_logger.log_config(hyperp_value_lst, searcher_eval_token)
+        evaluation_logger.log_features(inputs, outputs, hs)
+        results = {k : d[k] for k in ['train_loss', 'test_loss', 'test_accuracy']}
+        evaluation_logger.log_results(results)

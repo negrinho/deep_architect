@@ -16,41 +16,53 @@ def start_fn(d):
     mean = [x / 255 for x in [125.3, 123.0, 113.9]]
     std = [x / 255 for x in [63.0, 62.1, 66.7]]
 
-    train_transform = transforms.Compose(
-        [transforms.RandomHorizontalFlip(), transforms.RandomCrop(32, padding=4), transforms.ToTensor(),
-         transforms.Normalize(mean, std)])
-    test_transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize(mean, std)])
+    train_transform = transforms.Compose([
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(32, padding=4),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)])
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)])
+
     if d['args'].dataset == 'cifar10':
-        train_data = dset.CIFAR10(d['args'].data_path, train=True, transform=train_transform, download=True)
-        test_data = dset.CIFAR10(d['args'].data_path, train=False, transform=test_transform, download=True)
+        train_data = dset.CIFAR10(d['args'].data_path, train=True,
+            transform=train_transform, download=True)
+        test_data = dset.CIFAR10(d['args'].data_path, train=False,
+            transform=test_transform, download=True)
     else:
-        train_data = dset.CIFAR100(d['args'].data_path, train=True, transform=train_transform, download=True)
-        test_data = dset.CIFAR100(d['args'].data_path, train=False, transform=test_transform, download=True)
-    d['train_loader'] = torch.utils.data.DataLoader(train_data, batch_size=d['args'].batch_size, shuffle=True,
-                                                    num_workers=d['args'].prefetch, pin_memory=True if d['args'].ngpu
-                                                                                                       > 0 else False)
-    d['test_loader'] = torch.utils.data.DataLoader(test_data, batch_size=d['args'].test_bs, shuffle=False,
-                                                   num_workers=d['args'].prefetch, pin_memory=True if d['args'].ngpu
-                                                                                                       > 0 else False)
+        train_data = dset.CIFAR100(d['args'].data_path, train=True,
+            transform=train_transform, download=True)
+        test_data = dset.CIFAR100(d['args'].data_path, train=False,
+            transform=test_transform, download=True)
+    d['train_loader'] = torch.utils.data.DataLoader(train_data,
+        batch_size=d['args'].batch_size, shuffle=True,
+        num_workers=d['args'].prefetch,
+        pin_memory=True if d['args'].ngpu > 0 else False)
+    d['test_loader'] = torch.utils.data.DataLoader(test_data,
+        batch_size=d['args'].test_bs, shuffle=False,
+        num_workers=d['args'].prefetch,
+        pin_memory=True if d['args'].ngpu > 0 else False)
 
     # Init checkpoints
     if not os.path.isdir(d['args'].save):
         os.makedirs(d['args'].save)
 
+    # make a preemptive forward pass to initialize things
     data, _ = next(iter(d['train_loader']))
-    d['net']({ 'In': torch.autograd.Variable(data) })  # make a preemptive forward pass to initialize things
+    d['net']({'In': torch.autograd.Variable(data)})
 
     if d['args'].ngpu > 1:
-        d['net'] = torch.nn.DataParallel(d['net'], device_ids=list(range(d['args'].ngpu)))
+        d['net'] = torch.nn.DataParallel(d['net'],
+            device_ids=list(range(d['args'].ngpu)))
         hpt.cuda(list(outputs.values()))
-        # TODO make darch-compatible for multi-gpu
 
     elif d['args'].ngpu > 0:
         hpt.cuda(list(outputs.values()))
 
-    optimizer = torch.optim.SGD(hpt.parameters(outputs.values()), d['learning_rate'], momentum=d['momentum'],
-                                weight_decay=d['decay'], nesterov=True)
+    optimizer = torch.optim.SGD(hpt.parameters(outputs.values()),
+        d['learning_rate'], momentum=d['momentum'],
+        weight_decay=d['decay'], nesterov=True)
     d['optimizer'] = optimizer
 
 
@@ -61,12 +73,14 @@ def train_fn(d):
     loss_avg = 0.0
     for batch_idx, (data, target) in enumerate(d['train_loader']):
         if d['args'].ngpu > 0:
-            data, target = torch.autograd.Variable(data.cuda()), torch.autograd.Variable(target.cuda())
+            data = torch.autograd.Variable(data.cuda())
+            target = torch.autograd.Variable(target.cuda())
         else:
-            data, target = torch.autograd.Variable(data), torch.autograd.Variable(target)
+            data = torch.autograd.Variable(data)
+            target = torch.autograd.Variable(target)
 
         # forward
-        output = net({ 'In': data })
+        output = net({'In': data})
 
         # backward
         d['optimizer'].zero_grad()
@@ -94,12 +108,14 @@ def end_fn(d):
     correct = 0
     for batch_idx, (data, target) in enumerate(d['test_loader']):
         if d['args'].ngpu > 0:
-            data, target = torch.autograd.Variable(data.cuda()), torch.autograd.Variable(target.cuda())
+            data = torch.autograd.Variable(data.cuda())
+            target = torch.autograd.Variable(target.cuda())
         else:
-            data, target = torch.autograd.Variable(data), torch.autograd.Variable(target)
+            data = torch.autograd.Variable(data)
+            target = torch.autograd.Variable(target)
 
         # forward
-        output = net({ 'In': data })
+        output = net({'In': data})
         loss = F.cross_entropy(output['Out'], target)
 
         # accuracy
