@@ -335,7 +335,7 @@ class Module(Addressable):
         """
         :rtype: dict[str,Any]
         """
-        return {name: h.val for name, h in iteritems(self.hyperps)}
+        return {name: h.get_val() for name, h in iteritems(self.hyperps)}
 
     def _set_output_values(self, output_name_to_val):
         """

@@ -56,6 +56,16 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Keep some of the information that we are not thinking about optimizing over in a different place, i.e., don't return it in results. Perhaps just save it in
 * Add a way of adding scopes to have a nicer representation for the model.]
 * The representation of the level interface computation can be done through JSON files. This can be done to describe both the data and the computation that we need to apply to it. First focus on serial computation, then think about how to construct arbitrary DAGs. This can be both for machine learning computation, as for
+* Add a script for the shortest route to run models in our application. This implies installing VirtualBox, Vagrant, getting the image that has singularity installed, and getting our containers to run the software. On the server, it is only a matter of making that it has singularity installed.
+* Make the documentation more minimal. Reduce the amount of obvious comments.
+* Change the documentation to the same format at Pytorch and Tensorflow.
+* Finish adding the containers and make sure that people can use them easily.
+* Add some restrictions in terms of the naming to make sure that we can do splits on characters easily.
+* Change the API of the surrogate models to work with lists that allow us to be more efficient when evaluating the surrogate function for multiple examples.
+* Add an automatic formatter for the project.
+* Add guidelines on how to setup Visual Studio Code on how to contribute for the project (e.g., formatter, linter, ...).
+* Profile the code to find bottlenecks (e.g., in the surrogate function computation).
+* Check why the surrogate models are not overfitting to the data.
 
 * Common metrics to maintain in logging:
     * Training loss

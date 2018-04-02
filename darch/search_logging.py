@@ -274,7 +274,7 @@ class EvaluationLogger:
             'searcher_evaluation_token' : searcher_evaluation_token}
         write_jsonfile(config_d, self.config_filepath)
 
-    def log_features(self, inputs, outputs, hs):
+    def log_features(self, inputs, outputs, hyperps):
         """
         # FIXME add documentation
 
@@ -282,13 +282,13 @@ class EvaluationLogger:
         :type inputs: dict[str,darch.core.Input]
         :param outputs: # FIXME add documentation
         :type outputs: dict[str,darch.core.Output]
-        :param hs: # FIXME add documentation
-        :type hs: # FIXME add documentation
+        :param hyperps: # FIXME add documentation
+        :type hyperps: # FIXME add documentation
 
         .. seealso:: :func:`darch.surrogates.extract_features`
         """
         assert not file_exists(self.features_filepath)
-        feats = su.extract_features(inputs, outputs, hs)
+        feats = su.extract_features(inputs, outputs, hyperps)
         write_jsonfile(feats, self.features_filepath)
 
     def log_results(self, results):
@@ -313,7 +313,7 @@ class EvaluationLogger:
 
 def read_evaluation_folder(evaluation_folderpath):
     """
-    Read one evaluation file.
+    Read one evaluation folder.
 
     :type evaluation_folderpath: str
     :rtype: dict[str,dict]
@@ -337,6 +337,7 @@ def read_search_folder(search_folderpath):
 
     .. seealso:: :func:`read_evaluation_folder`
     """
+    assert folder_exists(search_folderpath)
     all_evaluations_folderpath = join_paths([search_folderpath, 'evaluations'])
     eval_id = 0
     log_lst = []

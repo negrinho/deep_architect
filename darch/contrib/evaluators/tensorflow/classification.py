@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
-import time
 import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl

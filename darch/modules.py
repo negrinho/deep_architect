@@ -248,8 +248,6 @@ def siso_optional(fn, h_opt, scope=None, name=None):
 # TODO: improve by not enumerating permutations
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     """
-    Tries permutations of the given modules.
-
     :param fn_lst: List of module functions.
     :type fn_lst: list[() -> (dict[str,darch.core.Input], dict[str,darch.core.Output])]
     :param h_perm: # FIXME add documentation

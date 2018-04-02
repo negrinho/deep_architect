@@ -64,7 +64,7 @@ def draw_graph(output_lst, draw_hyperparameters=False,
                 if not h.is_set():
                     label = h_localname
                 else:
-                    label = h_localname + '=' + str(h.val)
+                    label = h_localname + '=' + str(h.get_val())
 
                 g.edge(
                     h.get_name(),

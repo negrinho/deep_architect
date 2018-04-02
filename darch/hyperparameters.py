@@ -26,31 +26,32 @@ class HyperparameterSharer:
         return self.name_to_h[hyperp_name]
 
 class DependentHyperparameter(co.Hyperparameter):
-
-    def __init__(self, fn, hs, scope=None, name=None):
+    # TODO: for now, dependent hyperparameter do not work well with the searchers.
+    def __init__(self, fn, hyperps, scope=None, name=None):
         co.Hyperparameter.__init__(self, scope, name)
-
-        self._hs = hs
+        assert all(not isinstance(x, DependentHyperparameter) for x in itervalues(hyperps))
+        self._hyperps = hyperps
         self._fn = fn
+        self._update()
 
     def is_set(self):
-        if self.set_done:
-            return True
-        else:
-            if all(h.is_set() for h in itervalues(self._hs)):
-                kwargs = {name: h.get_val() for name, h in iteritems(self._hs)}
-                self.set_val(self._fn(**kwargs))
-
-            return self.set_done
+        if not self.set_done:
+            self._update()
+        return self.set_done
 
     def get_unset_dependent_hyperparameter(self):
         """
         :rtype: darch.core.Hyperparameter
         """
         assert not self.set_done
-        for h in itervalues(self._hs):
+        for h in itervalues(self._hyperps):
             if not h.is_set():
                 return h
+
+    def _update(self):
+        if all(h.is_set() for h in itervalues(self._hyperps)):
+            kwargs = {name: h.get_val() for name, h in iteritems(self._hyperps)}
+            self.set_val(self._fn(**kwargs))
 
     def _check_val(self, val):
         pass
@@ -84,8 +85,9 @@ class OneOfK(Discrete):
 class OneOfKFactorial(Discrete):
     def __init__(self, k, scope=None, name=None):
         """
-        Equivalent to `Discrete(np.product(np.arange(1, k + 1)))`
+        Equivalent to `Discrete(range(np.product(np.arange(1, k + 1))))`
 
         :type k: int
         """
-        Discrete.__init__(self, np.product(np.arange(1, k + 1)), scope, name)
+        Discrete.__init__(self, range(np.product(np.arange(1, k + 1))), scope, name)
+
