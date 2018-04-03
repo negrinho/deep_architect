@@ -1,6 +1,5 @@
 import darch.core as co
 import darch.hyperparameters as hp
-import darch.utils as ut
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
 import tensorflow as tf

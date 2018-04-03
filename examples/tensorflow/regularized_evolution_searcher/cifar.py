@@ -30,7 +30,7 @@ def main():
                     './temp', max_num_training_epochs=4, log_output_to_terminal=True, 
                     test_dataset=test_dataset)
 
-    search_logger = sl.SearchLogger('./logs', 'test')
+    search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=True)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])
 
     search_space_factory = SearchSpaceFactory(num_classes)
@@ -40,7 +40,8 @@ def main():
         state = sl.read_jsonfile(search_data_path)
         searcher.load(state)
     
-    for i in xrange(num_samples):
+
+    for i in xrange(search_logger.current_evaluation_id, num_samples):
         evaluation_logger = search_logger.get_current_evaluation_logger()
         inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
         evaluation_logger.log_config(vs, searcher_eval_token)
@@ -48,7 +49,7 @@ def main():
         results = evaluator.eval(inputs, outputs, hs)
         results['epochs'] = 4
         evaluation_logger.log_results(results)      
-        print('Sample %d: %f', (i, results['val_acc']))
+        print('Sample %d: %f' % (i, results['val_acc']))
         searcher.update(results['val_acc'], searcher_eval_token)
         searcher.save_state(search_logger.search_data_folderpath)
 
