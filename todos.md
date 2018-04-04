@@ -102,6 +102,9 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Refactor some of the Tensorflow code to pull some functional chunks.
 * Make the classifier evaluator code to be more general, making it easy to run with different types of loss functions.
 * List the contrib folders last.
+* Fix the documentation to make more extensive use of cross-referencing.
+* Revisit the documentation for all but core.py.
+* Add CMU logo and Petuum logo.
 
 * Common metrics to maintain in logging:
     * Training loss
@@ -111,3 +114,16 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
     * Learning rate (seq)
     * Total training time (seq)
     * Example training images predicted by the model.
+
+
+Guidelines for documentation:
+* Do not use Sphinx directives in the first line of the comment.
+* Keep comments short.
+* Do not comment the obvious.
+* At a minimal add a docstring for the class.
+* Replicate the comment format that is used in the rest of the classes.
+* Some directives to use are :func: (for functions), .. seealso::
+(to point to some other parts that are important.), :meth: (for a method).
+Check this reference: http://www.sphinx-doc.org/en/stable/markup/inline.html#inline-markup
+This one is more relevant: http://www.sphinx-doc.org/en/stable/domains.html#python-roles
+* Be more careful in the way that we define hyperparameters and

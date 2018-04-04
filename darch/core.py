@@ -25,31 +25,36 @@ class OrderedSet:
         return item in self.d
 
 class Scope:
-    """A scope keeps references to modules, hyperparameters, inputs, and outputs.
+    """A scope is used to help assign unique readable names to addressable objects.
 
-    A scope is used to help assign unique readable names to addressable objects.
+    A scope keeps references to modules, hyperparameters, inputs, and outputs.
     """
     def __init__(self):
         self.name_to_elem = OrderedDict()
         self.elem_to_name = OrderedDict()
 
     def register(self, name, elem):
-        """
-        :type name: str
-        :type elem: Addressable
-        :param name: Name of addressable to register
-        :param elem: An addressable object
+        """Registers an addressable object with the desired name.
+
+        The name has to be unique, otherwise asserts to False.
+
+        Args:
+            name (str): Unique name.
+            elem (Addressable): Addressable object to register.
         """
         assert name not in self.name_to_elem
+        assert isinstance(elem, Addressable)
         self.name_to_elem[name] = elem
         self.elem_to_name[elem] = name
 
     def get_unused_name(self, prefix):
-        """
-        :type prefix: str
-        :param prefix: Prefix to use
-        :return: An unused name that starts with prefix
-        :rtype: str
+        """Creates a unique name by adding a numbered suffix to the prefix.
+
+        Args:
+            prefix (str): Prefix of the desired name.
+
+        Returns:
+            str: Unique name in the current scope object.
         """
         i = 0
         while True:
@@ -60,27 +65,35 @@ class Scope:
         return name
 
     def get_name(self, elem):
-        """
-        :type elem: Addressable
-        :param elem: An addressable
-        :return: Name of requested addressable
-        :rtype: str
+        """Get the name of the addressable object registered in the scope.
+
+        The object must exist in the scope.
+
+        Args:
+            elem (Addressable): Addressable object registerd in the scope.
+
+        Returns:
+            str: Name with which the object was registered in the scope.
         """
         return self.elem_to_name[elem]
 
     def get_elem(self, name):
-        """
-        :type name: str
-        :param name: Name to look for
-        :return: An addressable corresponding to name
-        :rtype: Addressable
+        """Get the object that is registered in the scope with the desired name.
+
+        The name must exist in the scope.
+
+        Args:
+            name (str): Name of the addressable object registered in the scope.
+
+        Returns:
+            str: Addressable object with the corresponding name.
         """
         return self.name_to_elem[name]
 
     @staticmethod
     def reset_default_scope():
+        """Replaces the old scope with a new empty scope."""
         Scope.default_scope = Scope()
-
 
 Scope.default_scope = Scope()
 
@@ -88,14 +101,12 @@ class Addressable:
     """Base class for classes whose objects have to be registered in a scope.
 
     Provides functionality to register objects in a scope object.
+
+    Args:
+        scope (Scope): Scope object where the addressable object will be registered.
+        name (str): Unique name used to register the addressable object.
     """
     def __init__(self, scope, name):
-        """
-        :type name: str
-        :type scope: Scope
-        :param scope: Scope in which the addressable should be registered
-        :param name: Name of to use for the addressable
-        """
         scope.register(name, self)
         self.scope = scope
 
@@ -103,25 +114,43 @@ class Addressable:
         return self.get_name()
 
     def get_name(self):
+        """Get the name with which the object was registered in the scope.
+
+        Returns:
+            str: Unique name used to register the object.
+        """
         return self.scope.get_name(self)
 
     def _get_base_name(self):
-        """
-        :rtype: str
+        """Get the class name.
+
+        Useful to create unique names for an addressable object.
+
+        Returns:
+            str: Class name.
         """
         return self.__class__.__name__
 
 class Hyperparameter(Addressable):
     """Base hyperparameter class.
 
-    Specific hyperparameter types are created by extending this base class.
+    Specific hyperparameter types are created by inheriting from this class.
     Hyperparameters keep references to the modules that are dependent on them.
+    Hyperparameters are associated to modules.
+
+    .. note::
+        Hyperparameters with easily serializable values are preferred due to the
+        interaction with search logging and the multi-GPU functionality.
+        Typical types are integers, floats, strings and lists of these types.
+
+    Args:
+        scope (Scope, optional): Scope object in which the hyperparameter will be
+            registered. If none is given, uses the default scope object.
+        name (str, optional): Name used to derived an unique name for the
+            hyperparameter. If none is given, uses the class name to derive
+            the name.
     """
     def __init__(self, scope=None, name=None):
-        """
-        :type scope: Scope or None
-        :type name: str or None
-        """
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
             ['H', (name if name is not None else self._get_base_name()) + '-']))
@@ -133,44 +162,74 @@ class Hyperparameter(Addressable):
         self.val = None
 
     def is_set(self):
-        """
-        :rtype: bool
+        """Checks if the hyperparameter has been assigned a value.
+
+        Returns:
+            bool: ``True`` if the hyperparameter has been assigned a value.
         """
         return self.set_done
 
     def set_val(self, val):
+        """Assigns a value to the hyperparameter.
+
+        The hyperparameter value must be valid for the hyperparameter in question.
+        The hyperaparameter becomes set after if the set operation is successful.
+
+        Args:
+            val (object): Value to assign to the hyperparameter.
+        """
         assert not self.set_done
         self._check_val(val)
         self.set_done = True
         self.val = val
 
+        # calls update on the dependent modules to signal that this hyperparameter
+        # has been set.
         for m in self.modules:
             m._update()
 
     def get_val(self):
+        """Get the value assigned to the hyperparameter.
+
+        The hyperparameter must already be assigned a value, otherwise it
+        asserts to ``False``.
+
+        Returns:
+            object: Value assigned to the hyperparameter.
+        """
         assert self.set_done
         return self.val
 
     def _register_module(self, module):
-        """
-        :type module: Module
+        """Registers a module as being dependent of this hyperparameter.
+
+        Args:
+            module (Module): Module dependent of this hyperparameter.
         """
         self.modules.add(module)
 
     def _check_val(self, val):
+        """Checks if the value is valid for the hyperparameter.
+
+        When ``set_val`` is called, this function is called to verify the
+        validity of ``val``. This function is useful for error checking.
+        """
         raise NotImplementedError
 
 class Input(Addressable):
-    """An input is potentially connected to an output.
+    """Manages input connections.
 
-    Also check Output. Inputs and outputs are used to connect modules. Inputs
-    are registered in the scope.
+    Inputs may be connected to a single output. Inputs and outputs are associated
+    to a single module.
+
+    See also: :class:`Output` and :class`Module`.
+
+    Args:
+        module (Module): Module with which the input object is associated to.
+        scope (Scope): Scope object where the input is going to be registered in.
+        name (str): Unique name with which to register the input object.
     """
     def __init__(self, module, scope, name):
-        """
-        :param module: Module to which the input belongs
-        :type module: Module
-        """
         name = '.'.join([module.get_name(), 'I', name])
         Addressable.__init__(self, scope, name)
 
@@ -178,23 +237,37 @@ class Input(Addressable):
         self.from_output = None
 
     def is_connected(self):
+        """Checks if the input is connected.
+
+        Returns:
+            bool: ``True`` if the input is connected.
+        """
         return self.from_output is not None
 
     def get_connected_output(self):
-        """
-        :rtype: Output
+        """Get the output to which is the input is connected.
+
+        Returns:
+            Output: Output object to which the input is connected.
         """
         return self.from_output
 
     def get_module(self):
+        """Get the module object with which the input is associated with.
+
+        Returns:
+            Module: Module object with which the input is associated with.
+        """
         return self.module
 
     def connect(self, from_output):
-        """
-        Connects an output to this input.
+        """Connect an output to this input.
 
-        :param from_output: Output from which this input comes from.
-        :type from_output: Output
+        Changes the state of both the input and the output. Assert ``False`` if
+        the input is already connected.
+
+        Args:
+            from_output (Output): Output to connect to this input.
         """
         assert isinstance(from_output, Output)
         assert self.from_output is None
@@ -202,33 +275,46 @@ class Input(Addressable):
         from_output.to_inputs.append(self)
 
     def disconnect(self):
+        """Disconnects the input from the output it is connected to.
+
+        Changes the state of both the input and the output. Assert ``False`` if
+        the input is not connected.
+        """
         assert self.from_output is not None
         self.from_output.to_inputs.remove(self)
         self.from_output = None
 
     def reroute_connected_output(self, to_input):
-        """
-        Disconnects the output from this input, and reconnects it to the given input
+        """Disconnects the input from the output it is connected to and connects
+        the output to a new input, leaving this input in a disconnected state.
 
-        :param to_input: New input to which the output should be connected to.
-        :type to_input: Input
+        Changes the state of both this input, the other input, and the output
+        to which this input is connected.
+
+        Args:
+            to_input (Input): Input to which the output that is connected to
+                this input is going to be connected to.
         """
         assert isinstance(to_input, Input)
         old_ox = self.from_output
         self.disconnect()
         old_ox.connect(to_input)
 
+### TODO: more documentation needs to be added from here.
 class Output(Addressable):
-    """An output is potentially connected to multiple inputs
+    """Manages output connections.
 
-    Also check Input. Inputs and outputs are used to connect modules. Outputs
-    are registered in the scope.
+    Outputs may be connected to multiple inputs. Inputs and outputs are associated
+    to a single module.
+
+    See also: :class:`Input` and :class`Module`.
+
+    Args:
+        module (Module): Module with which the output object is associated to.
+        scope (Scope): Scope object where the output is going to be registered in.
+        name (str): Unique name with which to register the output object.
     """
     def __init__(self, module, scope, name):
-        """
-        :param module: Module to which the input belongs
-        :type module: Module
-        """
         name = '.'.join([module.get_name(), 'O', name])
         Addressable.__init__(self, scope, name)
 
@@ -239,9 +325,6 @@ class Output(Addressable):
         return len(self.to_inputs) > 0
 
     def get_connected_inputs(self):
-        """
-        :rtype: list of Input
-        """
         return self.to_inputs
 
     def get_module(self):
