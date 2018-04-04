@@ -82,7 +82,7 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Profile the code to find bottlenecks (e.g., in the surrogate function computation).
 * Check why the surrogate models are not overfitting to the data.
 * Perhaps a good way of handling varying dimensions in images is to map all images to the same dimensions.
-* Go through torchvision to get some inspiration to develop search spaces.
+* Go through torchvision to get some inspiration to develop search spaces for convolutional spaces.
 * Add a build script that downloads a bunch of useful information.
 * Make the SimpleClassifierEvaluator more generic.
 * Figure out how to keep it sane with the different modules when building the image. The image out not be built very frequently.
@@ -97,6 +97,11 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * add more user_data and functionality to load then.
 * add the ability to have a function that is applied to each file type.
 * Make it easy to read multiple folders simultaneously.
+* Check http://www.sphinx-doc.org/en/stable/tutorial.html for notes on how to write documentation in Sphinx.
+* Add the flop count to the Tensorflow simple evaluator.
+* Refactor some of the Tensorflow code to pull some functional chunks.
+* Make the classifier evaluator code to be more general, making it easy to run with different types of loss functions.
+* List the contrib folders last.
 
 * Common metrics to maintain in logging:
     * Training loss
