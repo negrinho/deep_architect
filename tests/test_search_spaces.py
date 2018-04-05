@@ -26,7 +26,7 @@ def test_search_space():
     for idx in xrange(3):
         inputs, outputs, hyperps, _, _ = searcher.sample()
         vi.draw_graph(outputs.values(), True, True, graph_name='graph%d' % idx,
-            print_to_screen=False, out_folderpath='./')
+            print_to_screen=False, out_folderpath='./temp')
 
         x = tf.placeholder(tf.float32, [None, 32, 32, 3])
         co.forward({inputs['In'] : x})

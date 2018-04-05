@@ -1,16 +1,17 @@
-.. DArch documentation master file, created by
-   sphinx-quickstart on Fri Mar 23 16:31:10 2018.
+.. darch documentation master file, created by
+   sphinx-quickstart on Mon Apr  2 19:15:37 2018.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to DArch's documentation!
+:github_url: https://github.com/negrinho/darch
+
+Welcome to darch's documentation!
 =================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: darch reference:
 
-   api/darch
+   _build/source/modules
 
 Indices and tables
 ==================

@@ -102,6 +102,13 @@ def list_files(folderpath,
         ignore_hidden_files=ignore_hidden_files, ignore_file_exts=ignore_file_exts,
         recursive=recursive, use_relative_paths=use_relative_paths)
 
+def list_folders(folderpath, ignore_hidden_folders=True,
+        recursive=False, use_relative_paths=False):
+
+    return list_paths(folderpath, ignore_files=True,
+        ignore_hidden_folders=ignore_hidden_folders,
+        recursive=recursive, use_relative_paths=use_relative_paths)
+
 def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
     d = {}
     d['seconds'] = 1.0
@@ -274,7 +281,7 @@ class EvaluationLogger:
             'searcher_evaluation_token' : searcher_evaluation_token}
         write_jsonfile(config_d, self.config_filepath)
 
-    def log_features(self, inputs, outputs, hs):
+    def log_features(self, inputs, outputs, hyperps):
         """
         # FIXME add documentation
 
@@ -282,13 +289,13 @@ class EvaluationLogger:
         :type inputs: dict[str,darch.core.Input]
         :param outputs: # FIXME add documentation
         :type outputs: dict[str,darch.core.Output]
-        :param hs: # FIXME add documentation
-        :type hs: # FIXME add documentation
+        :param hyperps: # FIXME add documentation
+        :type hyperps: # FIXME add documentation
 
         .. seealso:: :func:`darch.surrogates.extract_features`
         """
         assert not file_exists(self.features_filepath)
-        feats = su.extract_features(inputs, outputs, hs)
+        feats = su.extract_features(inputs, outputs, hyperps)
         write_jsonfile(feats, self.features_filepath)
 
     def log_results(self, results):
@@ -313,7 +320,7 @@ class EvaluationLogger:
 
 def read_evaluation_folder(evaluation_folderpath):
     """
-    Read one evaluation file.
+    Read one evaluation folder.
 
     :type evaluation_folderpath: str
     :rtype: dict[str,dict]
@@ -337,6 +344,7 @@ def read_search_folder(search_folderpath):
 
     .. seealso:: :func:`read_evaluation_folder`
     """
+    assert folder_exists(search_folderpath)
     all_evaluations_folderpath = join_paths([search_folderpath, 'evaluations'])
     eval_id = 0
     log_lst = []
@@ -350,14 +358,25 @@ def read_search_folder(search_folderpath):
             break
     return log_lst
 
-# TODO: write error messages for the loggers, e.g., asserts.
-# TODO: add some error checking or options to the read_log
-# TODO: the traversal of the logging folders can be done better, e.g., some
-# additional features.
-# TODO: maybe move some of this file system manipulation to their own folder.
-# TODO: integrate better the use of list files and list folders.
-# TODO: check how to better integrate with the other models.
-# TODO: add more user_data and functionality to load then.
-# TODO: add the ability to have a function that is applied to each file type.
-# TODO: read_evaluation_folder can be done in a more complicated manner
-# that allows for some configs to not be present.
+def is_search_log_folder(folderpath):
+    return folder_exists(join_paths([folderpath, 'evaluations', 'x0']))
+
+def recursive_list_log_folders(folderpath):
+    def _iter(p, lst):
+        if is_search_log_folder(p):
+            lst.append(p)
+        else:
+            for p_child in list_folders(p):
+                _iter(p_child, lst)
+
+    log_folderpath_lst = []
+    _iter(folderpath, log_folderpath_lst)
+    return log_folderpath_lst
+
+def recursive_read_search_folders(folderpath):
+    all_log_lst = []
+    for p in recursive_list_log_folders(folderpath):
+        d = {'search_folderpath' : p, 'log_lst' : read_search_folder(p)}
+        d['num_logs'] = len(d['log_lst'])
+        all_log_lst.append(d)
+    return all_log_lst

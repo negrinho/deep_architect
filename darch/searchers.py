@@ -60,7 +60,7 @@ class Searcher:
         """
         raise NotImplementedError
 
-    def update(self, val, cfg_d):
+    def update(self, val, searcher_eval_token):
         raise NotImplementedError
 
 class RandomSearcher(Searcher):
@@ -72,7 +72,7 @@ class RandomSearcher(Searcher):
         vs = random_specify(outputs.values(), hs.values())
         return inputs, outputs, hs, vs, {}
 
-    def update(self, val, cfg_d):
+    def update(self, val, searcher_eval_token):
         pass
 
 # keeps the statistics and knows how to update information related to a node.
@@ -145,21 +145,21 @@ class MCTSearcher(Searcher):
 
     # NOTE: this operation changes the state of the tree.
     def sample(self):
-        inputs, outputs, hs = self.search_space_fn()
+        inputs, outputs, hyperps = self.search_space_fn()
 
-        h_it = unset_hyperparameter_iterator(outputs.values(), hs.values())
+        h_it = unset_hyperparameter_iterator(outputs.values(), hyperps.values())
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
-        cfg_d = {'tree_hist' : tree_hist, 'rollout_hist' : rollout_hist}
+        searcher_eval_token = {'tree_hist' : tree_hist, 'rollout_hist' : rollout_hist}
 
-        return inputs, outputs, hs, vs, cfg_d
+        return inputs, outputs, hyperps, vs, searcher_eval_token
 
-    def update(self, val, cfg_d):
+    def update(self, val, searcher_eval_token):
         node = self.mcts_root_node
         node.update_stats(val)
 
-        for i in cfg_d['tree_hist']:
+        for i in searcher_eval_token['tree_hist']:
             node = node.children[i]
             node.update_stats(val)
 
@@ -221,33 +221,32 @@ class SMBOSearcher(Searcher):
 
     def sample(self):
         if np.random.rand() < self.eps_prob:
-            inputs, outputs, hs = self.search_space_fn()
-
-            best_vs = random_specify(outputs.values(), hs.values())
+            inputs, outputs, hyperps = self.search_space_fn()
+            best_vs = random_specify(outputs.values(), hyperps.values())
         else:
             best_model = None
             best_vs = None
             best_score = - np.inf
             for _ in range(self.num_samples):
-                inputs, outputs, hs = self.search_space_fn()
-                vs = random_specify(outputs.values(), hs.values())
+                inputs, outputs, hyperps = self.search_space_fn()
+                vs = random_specify(outputs.values(), hyperps.values())
 
-                feats = su.extract_features(inputs, outputs, hs)
+                feats = su.extract_features(inputs, outputs, hyperps)
                 score = self.surr_model.eval(feats)
                 if score > best_score:
-                    best_model = (inputs, outputs, hs)
+                    best_model = (inputs, outputs, hyperps)
                     best_vs = vs
                     best_score = score
 
-            inputs, outputs, hs = best_model
+            inputs, outputs, hyperps = best_model
 
-        cfg_d = {'vs' : best_vs}
-        return inputs, outputs, hs, best_vs, cfg_d
+        searcher_eval_token = {'vs' : best_vs}
+        return inputs, outputs, hyperps, best_vs, searcher_eval_token
 
-    def update(self, val, cfg_d):
-        (inputs, outputs, hs) = self.search_space_fn()
-        specify(outputs.values(), hs.values(), cfg_d['vs'])
-        feats = su.extract_features(inputs, outputs, hs)
+    def update(self, val, searcher_eval_token):
+        (inputs, outputs, hyperps) = self.search_space_fn()
+        specify(outputs.values(), hyperps.values(), searcher_eval_token['vs'])
+        feats = su.extract_features(inputs, outputs, hyperps)
         self.surr_model.update(val, feats)
 
 # surrogate with MCTS optimization.
@@ -269,9 +268,8 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
 
     def sample(self):
         if np.random.rand() < self.eps_prob:
-            inputs, outputs, hs = self.search_space_fn()
-
-            best_vs = random_specify(outputs.values(), hs.values())
+            inputs, outputs, hyperps = self.search_space_fn()
+            best_vs = random_specify(outputs.values(), hyperps.values())
         # TODO: ignoring the size of the model here.
         # TODO: needs to add the exploration bonus.
         else:
@@ -279,24 +277,24 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
             best_vs = None
             best_score = - np.inf
             for _ in range(self.num_samples):
-                (inputs, outputs, hs, vs, m_cfg_d) = self.mcts.sample()
-                feats = su.extract_features(inputs, outputs, hs)
+                (inputs, outputs, hyperps, vs, m_cfg_d) = self.mcts.sample()
+                feats = su.extract_features(inputs, outputs, hyperps)
                 score = self.surr_model.eval(feats)
                 if score > best_score:
-                    best_model = (inputs, outputs, hs)
+                    best_model = (inputs, outputs, hyperps)
                     best_vs = vs
                     best_score = score
 
                 self.mcts.update(score, m_cfg_d)
-            inputs, outputs, hs = best_model
+            inputs, outputs, hyperps = best_model
 
-        cfg_d = {'vs' : best_vs}
-        return inputs, outputs, hs, best_vs, cfg_d
+        searcher_eval_token = {'vs' : best_vs}
+        return inputs, outputs, hyperps, best_vs, searcher_eval_token
 
-    def update(self, val, cfg_d):
-        (inputs, outputs, hs) = self.search_space_fn()
-        specify(outputs.values(), hs.values(), cfg_d['vs'])
-        feats = su.extract_features(inputs, outputs, hs)
+    def update(self, val, searcher_eval_token):
+        (inputs, outputs, hyperps) = self.search_space_fn()
+        specify(outputs.values(), hyperps.values(), searcher_eval_token['vs'])
+        feats = su.extract_features(inputs, outputs, hyperps)
         self.surr_model.update(val, feats)
 
         self.cnt += 1
