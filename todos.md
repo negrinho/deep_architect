@@ -104,7 +104,16 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * List the contrib folders last.
 * Fix the documentation to make more extensive use of cross-referencing.
 * Revisit the documentation for all but core.py.
-* Add CMU logo and Petuum logo.
+* Add CMU logo and Petuum logos.
+* Potentially change all names to qualified names.
+* It is possible to change the inputs and outputs to have get_val and set_val
+functions, rather than accessing the fields directly.
+* Add a way of showing the documentation for the private methods for some aspects
+of the code base, e.g., some of the private functions of the modules.
+* Define debug modes for the models in the graph.
+* Be more consistent in the application of see also in the documentation.
+* While the visualization functionality is not fully finished, add some simple functionality to draw plots from search folders easily.
+* Perhaps remove the type redundancy in the documentation.
 
 * Common metrics to maintain in logging:
     * Training loss
