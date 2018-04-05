@@ -47,10 +47,9 @@ def main():
         evaluation_logger.log_config(vs, searcher_eval_token)
         evaluation_logger.log_features(inputs, outputs, hs)
         results = evaluator.eval(inputs, outputs, hs)
-        results['epochs'] = 4
         evaluation_logger.log_results(results)      
-        print('Sample %d: %f' % (i, results['val_acc']))
-        searcher.update(results['val_acc'], searcher_eval_token)
+        print('Sample %d: %f' % (i, results['validation_accuracy']))
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
         searcher.save_state(search_logger.search_data_folderpath)
 
 if __name__ == '__main__':
