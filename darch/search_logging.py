@@ -4,6 +4,8 @@ import shutil
 import time
 import darch.surrogates as su
 
+from six import iteritems, itervalues
+
 def read_jsonfile(filepath):
     with open(filepath, 'r') as f:
         d = json.load(f)
@@ -133,14 +135,14 @@ class SequenceTracker:
         self.d = {}
 
     def append(self, d):
-        for k, v in d.iteritems():
+        for k, v in iteritems(d):
             assert type(k) == str and len(k) > 0
             if k not in self.d:
                 self.d[k] = []
             self.d[k].append(v)
 
         if self.abort_if_different_lengths:
-            assert len(set([len(v) for v in self.d.itervalues()])) <= 1
+            assert len(set([len(v) for v in itervalues(self.d)])) <= 1
 
     def get_dict(self):
         return dict(self.d)
@@ -218,6 +220,7 @@ class SearchLogger:
         # self.code_folderpath = join_paths([self.search_folderpath, 'code'])
 
         if folder_exists(self.search_folderpath):
+            self.current_evaluation_id = 0
             if resume_if_exists:
                 eval_id = 0
                 while True:

@@ -7,7 +7,7 @@ import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl
 import darch.contrib.gpu_utils as gpu_utils
-from six.moves import xrange
+from six.moves import range
 
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
@@ -129,9 +129,9 @@ class SimpleClassifierEvaluator:
 
             lr = learning_rate_init
             num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
-            for epoch in xrange(self.max_num_training_epochs):
+            for epoch in range(self.max_num_training_epochs):
                 avg_loss = 0.
-                for _ in xrange(num_batches):
+                for _ in range(num_batches):
                     X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
                     train_feed.update({X_pl: X_batch, y_pl: y_batch, lr_pl: lr})
 
@@ -219,7 +219,7 @@ class SimpleClassifierEvaluator:
             print("Validation accuracy: %f" % val_acc)
             seqs_dict = seqs.get_dict()
             results = {'validation_accuracy' : val_acc,
-                       'num_parameters' : htf.get_num_trainable_parameters(),
+                       'num_parameters' : float(htf.get_num_trainable_parameters()),
                        'inference_time_per_example_in_miliseconds' : t_infer,
                        'num_training_epochs' : seqs_dict['epoch_number'],
                        'sequences' : seqs_dict

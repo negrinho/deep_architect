@@ -59,6 +59,7 @@ def main():
     search_logger = sl.SearchLogger('./logs',
         'benchmark_surrogates.%s.mnist' % cfg_name)
 
+    print(search_logger.current_evaluation_id)
     # We want to populate our dataset with some initial configurations and evaluations
     if search_logger.current_evaluation_id < dataset_size:
         print('Not enough data found, training models.')
