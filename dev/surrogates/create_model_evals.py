@@ -6,6 +6,7 @@ from darch.contrib.search_spaces.tensorflow.common import D
 from darch.contrib.datasets.dataset import InMemoryDataset
 from darch.contrib.datasets.loaders import load_mnist
 import dev.surrogates.datasets as datasets
+import torchvision
 
 import sys
 
@@ -24,7 +25,6 @@ def sample_and_evaluate(searcher, evaluator, search_logger):
     (inputs, outputs, hs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
         # Get the true score by training the model sampled and log them
     results = evaluator.eval(inputs, outputs, hs)
-    print(results)
     # Get the logger for this iteration and log configurations, features, and results
     eval_logger = search_logger.get_current_evaluation_logger()
     eval_logger.log_config(hyperp_value_lst, searcher_eval_token)
@@ -68,9 +68,20 @@ config = {
         'TRAIN': datasets.IRIS('temp/', train=True),
         'TEST': datasets.IRIS('temp/', train=False),
         'CLASSES': 3,
-    }
+    },
 }
 
+# Not Tested Yet: Need to find out if its one-hot encoded already
+config_CIFAR = {
+    'CIFAR': {
+        'TRAIN': torchvision.datasets.CIFAR10('temp/', download=True, train=True),
+        'TEST': torchvision.datasets.CIFAR10('temp/', download=True, train=False),
+        'CLASSES': 10,
+    },
+}
+
+
+config
 
 def main(args):
     for name, info in config.items():
