@@ -19,13 +19,13 @@ name_to_cfg = {
         'use_gpu' : True
     },
     'cifar_short' : {
-        'max_eval_time_in_minutes' : 10.0,
-        'num_samples' : 64,
+        'max_eval_time_in_minutes' : 20.0,
+        'num_samples' : 128,
         'search_name' : 'cifar10_short',
         'use_gpu' : True
     }
 }
-cfg_name = 'cifar_medium'
+cfg_name = 'cifar_short'
 cfg = name_to_cfg[cfg_name]
 
 # Make sure that only one GPU is visible.

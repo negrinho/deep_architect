@@ -1,14 +1,8 @@
-import darch.helpers.pytorch as htorch
+import darch.helpers.pytorch as hpt
 import darch.hyperparameters as hp
 
-# Alias discrete hyperparameters for some reason?
+# Alias discrete hyperparameters for brevity. s
 D = hp.Discrete
 
-def siso_torchm(name, compile_fn, name_to_h, scope=None):
-    """
-    Name:
-    comile_fn:
-    name_to_h:
-    scope (default=None):
-    """
-    return htorch.PyTModule(name, name_to_h, ['In'], ['Out'], scope).get_io()
+def siso_torchm(name, compile_fn, name_to_hyperp, scope=None):
+    return hpt.PyTModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()

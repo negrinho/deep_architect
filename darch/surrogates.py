@@ -11,21 +11,38 @@ class SurrogateModel:
     def update(self, val, feats):
         raise NotImplementedError
 
-class DummyModel(SurrogateModel):
+class DummySurrogate(SurrogateModel):
+    def __init__(self):
+        self.val_lst = []
+
     def eval(self, feats):
-        return 0.0
+        if len(self.val_lst) == 0:
+            return 0.0
+        else:
+            return np.mean(self.val_lst)
 
     def update(self, val, feats):
-        pass
+        self.val_lst.append(val)
 
 class HashingSurrogate(SurrogateModel):
-    def __init__(self, hash_size, refit_interval, weight_decay_coeff=1e-5):
+    """
+    # FIXME add documentation
+    """
+    def __init__(self, hash_size, refit_interval, weight_decay_coeff=1e-5,
+            use_module_feats=True, use_connection_feats=True,
+            use_module_hyperp_feats=True, use_other_hyperp_feats=True):
         self.hash_size = hash_size
         self.refit_interval = refit_interval
-        self.vecs = []
-        self.vals = []
-        # NOTE: using scikit learn for now.
         self.weight_decay_coeff = weight_decay_coeff
+        self.feats_name_to_use_flag = {
+            'connection_feats' : use_connection_feats,
+            'module_hyperp_feats' : use_module_hyperp_feats,
+            'module_feats' : use_module_feats,
+            'other_hyperp_feats' : use_other_hyperp_feats}
+        assert any(itervalues(self.feats_name_to_use_flag))
+        self.vecs_lst = []
+        self.vals_lst = []
+        # NOTE: using scikit learn for now.
         self.model = None
 
     def eval(self, feats):
@@ -37,30 +54,36 @@ class HashingSurrogate(SurrogateModel):
 
     def update(self, val, feats):
         vec = self._feats2vec(feats)
-        self.vecs.append(vec)
-        self.vals.append(val)
-
-        if len(self.vals) % self.refit_interval == 0:
+        self.vecs_lst.append(vec)
+        self.vals_lst.append(val)
+        if len(self.vals_lst) % self.refit_interval == 0:
             self._refit()
 
     def _feats2vec(self, feats):
         vec = sp.dok_matrix((1, self.hash_size), dtype='float')
-        for fs in itervalues(feats):
-            for f in fs:
-                idx = hash(f) % self.hash_size
-                vec[0, idx] += 1.0
+        for name, fs in iteritems(feats):
+            if self.feats_name_to_use_flag[name]:
+                for f in fs:
+                    idx = hash(f) % self.hash_size
+                    vec[0, idx] += 1.0
         return vec.tocsr()
 
     def _refit(self):
         if self.model == None:
-            self.model = lm.Ridge(self.weight_decay_coeff)
+            self.model = lm.Ridge(alpha=self.weight_decay_coeff)
 
-        X = sp.vstack(self.vecs, format='csr')
-        y = np.array(self.vals)
+        X = sp.vstack(self.vecs_lst, format='csr')
+        y = np.array(self.vals_lst)
         self.model.fit(X, y)
 
 # extract some simple features from the network. useful for smbo surrogate models.
 def extract_features(inputs, outputs, hs):
+    """
+    :type inputs: dict[str,darch.core.Input]
+    :type outputs: dict[str,darch.core.Output]
+    :type hs: dict[str,darch.core.Hyperparameter]
+    """
+    # FIXME inputs is not used anywhere; can it be removed?
     module_memo = co.OrderedSet()
 
     module_feats = []
@@ -90,15 +113,15 @@ def extract_features(inputs, outputs, hs):
         # module hyperparameters
         for h_localname, h in iteritems(m.hyperps):
             mh_feats = "%s/%s : %s = %s" % (
-                m.get_name(), h_localname, h.get_name(), h.val)
+                m.get_name(), h_localname, h.get_name(), h.get_val())
             module_hyperp_feats.append(mh_feats)
 
     # other features
     for h_localname, h in iteritems(hs):
-        oh_feats = "%s : %s = %s" % (h_localname, h.get_name(), h.val)
+        oh_feats = "%s : %s = %s" % (h_localname, h.get_name(), h.get_val())
         other_hyperps_feats.append(oh_feats)
 
-    return {'module_feats' : module_feats, 
-            'connection_feats' : connection_feats, 
-            'module_hyperp_feats' : module_hyperp_feats, 
+    return {'module_feats' : module_feats,
+            'connection_feats' : connection_feats,
+            'module_hyperp_feats' : module_hyperp_feats,
             'other_hyperp_feats' : other_hyperps_feats }

@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
-import time
 import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl
@@ -226,9 +225,9 @@ class SimpleClassifierEvaluator:
                        'sequences' : seqs_dict
                        }
             if 'gpu_utilization_in_percent' in seqs_dict:
-                seqs_dict['average_gpu_utilization_in_percent'] = np.mean(
+                results['average_gpu_utilization_in_percent'] = np.mean(
                     seqs_dict['gpu_utilization_in_percent']),
-                seqs_dict['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
+                results['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
                     seqs_dict['gpu_memory_utilization_in_gigabytes']),
 
             if self.test_dataset != None:

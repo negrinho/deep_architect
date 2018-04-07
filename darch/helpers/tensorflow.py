@@ -4,8 +4,23 @@ import tensorflow as tf
 import numpy as np
 
 class TFModule(co.Module):
+    """
+    Tensorflow wrapper for darch modules.
+    """
     def __init__(self, name, name_to_hyperp, compile_fn,
             input_names, output_names, scope=None):
+        """
+        :type name: str
+        :type name_to_hyperp: dict[str,darch.core.Hyperparameter]
+        :type compile_fn: (dict[str,darch.core.Input], dict[str,darch.core.Hyperparameter]) -> (
+                          ((dict[str,darch.core.Input]) -> dict[str,darch.core.Output],
+                           dict[tensorflow.python.framework.ops.Tensor,Any],
+                           dict[tensorflow.python.framework.ops.Tensor,Any]) |
+                          (dict[str,darch.core.Input]) -> dict[str,darch.core.Output])
+        :type input_names: list[str]
+        :type output_names: list[str]
+        :type scope: darch.core.Scope | None
+        """
         co.Module.__init__(self, scope, name)
 
         self._register(input_names, output_names, name_to_hyperp)
@@ -30,8 +45,13 @@ class TFModule(co.Module):
         pass
 
 def get_feed_dicts(output_lst):
+    """
+    :type output_lst: collections.Iterable[darch.core.Output]
+    :rtype: (dict[tensorflow.python.framework.ops.Tensor,Any], dict[tensorflow.python.framework.ops.Tensor,Any])
+    """
     train_feed = {}
     eval_feed = {}
+
     def fn(x):
         if hasattr(x, 'train_feed'):
             train_feed.update(x.train_feed)

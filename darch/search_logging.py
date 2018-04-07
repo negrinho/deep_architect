@@ -102,6 +102,13 @@ def list_files(folderpath,
         ignore_hidden_files=ignore_hidden_files, ignore_file_exts=ignore_file_exts,
         recursive=recursive, use_relative_paths=use_relative_paths)
 
+def list_folders(folderpath, ignore_hidden_folders=True,
+        recursive=False, use_relative_paths=False):
+
+    return list_paths(folderpath, ignore_files=True,
+        ignore_hidden_folders=ignore_hidden_folders,
+        recursive=recursive, use_relative_paths=use_relative_paths)
+
 def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
     d = {}
     d['seconds'] = 1.0
@@ -236,11 +243,15 @@ class SearchLogger:
         # create_folder(self.code_folderpath)
 
     def get_current_evaluation_logger(self):
+        """
+        # FIXME something called `get_current_...` creates a new instance? What does this do? Is this a `get_next_...`?
+        """
         logger = EvaluationLogger(self.all_evaluations_folderpath, self.current_evaluation_id)
         self.current_evaluation_id += 1
         return logger
 
     def get_search_data_folderpath(self):
+        # FIXME unnecessary method
         return self.search_data_folderpath
 
 class EvaluationLogger:
@@ -257,30 +268,65 @@ class EvaluationLogger:
         self.results_filepath = join_paths([self.evaluation_folderpath, 'results.json'])
 
     def log_config(self, hyperp_value_lst, searcher_evaluation_token):
+        """
+        Saves run configuration to a file.
+        :param hyperp_value_lst: List of hyperparameters to try in the current run
+        :type hyperp_value_lst: list of darch.core.Hyperparameter
+        :param searcher_evaluation_token: # FIXME add documentation
+        :type searcher_evaluation_token: # FIXME add documentation
+        """
         assert not file_exists(self.config_filepath)
         config_d = {
             'hyperp_value_lst' : hyperp_value_lst,
             'searcher_evaluation_token' : searcher_evaluation_token}
         write_jsonfile(config_d, self.config_filepath)
 
-    def log_features(self, inputs, outputs, hs):
+    def log_features(self, inputs, outputs, hyperps):
+        """
+        # FIXME add documentation
+
+        :param inputs: # FIXME add documentation
+        :type inputs: dict[str,darch.core.Input]
+        :param outputs: # FIXME add documentation
+        :type outputs: dict[str,darch.core.Output]
+        :param hyperps: # FIXME add documentation
+        :type hyperps: # FIXME add documentation
+
+        .. seealso:: :func:`darch.surrogates.extract_features`
+        """
         assert not file_exists(self.features_filepath)
-        feats = su.extract_features(inputs, outputs, hs)
+        feats = su.extract_features(inputs, outputs, hyperps)
         write_jsonfile(feats, self.features_filepath)
 
     def log_results(self, results):
+        """
+        # FIXME add documentation
+
+        :param results: # FIXME add documentation (where do these come from? shouldn't be from contrib!)
+        :type results: # FIXME add documetation
+        """
         assert (not file_exists(self.results_filepath))
         assert file_exists(self.config_filepath) and file_exists(self.features_filepath)
         assert isinstance(results, dict)
         write_jsonfile(results, self.results_filepath)
 
     def get_evaluation_folderpath(self):
+        # FIXME unnecessary method
         return self.evaluation_folderpath
 
     def get_user_data_folderpath(self):
+        # FIXME unnecessary method
         return self.user_data_folderpath
 
 def read_evaluation_folder(evaluation_folderpath):
+    """
+    Read one evaluation folder.
+
+    :type evaluation_folderpath: str
+    :rtype: dict[str,dict]
+
+    .. seealso:: :func:`read_search_folder`
+    """
     assert folder_exists(evaluation_folderpath)
 
     name_to_log = {}
@@ -290,6 +336,15 @@ def read_evaluation_folder(evaluation_folderpath):
     return name_to_log
 
 def read_search_folder(search_folderpath):
+    """
+    Read the evaluations for all the runs.
+
+    :type search_folderpath: str
+    :rtype: list of dict[str,dict]
+
+    .. seealso:: :func:`read_evaluation_folder`
+    """
+    assert folder_exists(search_folderpath)
     all_evaluations_folderpath = join_paths([search_folderpath, 'evaluations'])
     eval_id = 0
     log_lst = []
@@ -303,14 +358,25 @@ def read_search_folder(search_folderpath):
             break
     return log_lst
 
-# TODO: write error messages for the loggers, e.g., asserts.
-# TODO: add some error checking or options to the read_log
-# TODO: the traversal of the logging folders can be done better, e.g., some
-# additional features.
-# TODO: maybe move some of this file system manipulation to their own folder.
-# TODO: integrate better the use of list files and list folders.
-# TODO: check how to better integrate with the other models.
-# TODO: add more user_data and functionality to load then.
-# TODO: add the ability to have a function that is applied to each file type.
-# TODO: read_evaluation_folder can be done in a more complicated manner
-# that allows for some configs to not be present.
+def is_search_log_folder(folderpath):
+    return folder_exists(join_paths([folderpath, 'evaluations', 'x0']))
+
+def recursive_list_log_folders(folderpath):
+    def _iter(p, lst):
+        if is_search_log_folder(p):
+            lst.append(p)
+        else:
+            for p_child in list_folders(p):
+                _iter(p_child, lst)
+
+    log_folderpath_lst = []
+    _iter(folderpath, log_folderpath_lst)
+    return log_folderpath_lst
+
+def recursive_read_search_folders(folderpath):
+    all_log_lst = []
+    for p in recursive_list_log_folders(folderpath):
+        d = {'search_folderpath' : p, 'log_lst' : read_search_folder(p)}
+        d['num_logs'] = len(d['log_lst'])
+        all_log_lst.append(d)
+    return all_log_lst

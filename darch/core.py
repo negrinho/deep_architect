@@ -21,24 +21,41 @@ class OrderedSet:
         for x in iterkeys(self.d):
             yield x
 
-    def __in__(self, x):
-        return x in self.d
+    def __contains__(self, item):
+        return item in self.d
 
 class Scope:
-    """A scope keeps references to modules, hyperparameters, inputs, and outputs.
+    """A scope is used to help assign unique readable names to addressable objects.
 
-    A scope is used to help assign unique readable names to addressable objects.
+    A scope keeps references to modules, hyperparameters, inputs, and outputs.
     """
     def __init__(self):
         self.name_to_elem = OrderedDict()
         self.elem_to_name = OrderedDict()
 
     def register(self, name, elem):
+        """Registers an addressable object with the desired name.
+
+        The name has to be unique, otherwise asserts to False.
+
+        Args:
+            name (str): Unique name.
+            elem (Addressable): Addressable object to register.
+        """
         assert name not in self.name_to_elem
+        assert isinstance(elem, Addressable)
         self.name_to_elem[name] = elem
         self.elem_to_name[elem] = name
 
     def get_unused_name(self, prefix):
+        """Creates a unique name by adding a numbered suffix to the prefix.
+
+        Args:
+            prefix (str): Prefix of the desired name.
+
+        Returns:
+            str: Unique name in the current scope object.
+        """
         i = 0
         while True:
             name = prefix + str(i)
@@ -48,13 +65,34 @@ class Scope:
         return name
 
     def get_name(self, elem):
+        """Get the name of the addressable object registered in the scope.
+
+        The object must exist in the scope.
+
+        Args:
+            elem (Addressable): Addressable object registerd in the scope.
+
+        Returns:
+            str: Name with which the object was registered in the scope.
+        """
         return self.elem_to_name[elem]
 
     def get_elem(self, name):
+        """Get the object that is registered in the scope with the desired name.
+
+        The name must exist in the scope.
+
+        Args:
+            name (str): Name of the addressable object registered in the scope.
+
+        Returns:
+            str: Addressable object with the corresponding name.
+        """
         return self.name_to_elem[name]
 
     @staticmethod
     def reset_default_scope():
+        """Replaces the current default scope with a new empty scope."""
         Scope.default_scope = Scope()
 
 Scope.default_scope = Scope()
@@ -63,6 +101,10 @@ class Addressable:
     """Base class for classes whose objects have to be registered in a scope.
 
     Provides functionality to register objects in a scope object.
+
+    Args:
+        scope (Scope): Scope object where the addressable object will be registered.
+        name (str): Unique name used to register the addressable object.
     """
     def __init__(self, scope, name):
         scope.register(name, self)
@@ -72,16 +114,41 @@ class Addressable:
         return self.get_name()
 
     def get_name(self):
+        """Get the name with which the object was registered in the scope.
+
+        Returns:
+            str: Unique name used to register the object.
+        """
         return self.scope.get_name(self)
 
     def _get_base_name(self):
+        """Get the class name.
+
+        Useful to create unique names for an addressable object.
+
+        Returns:
+            str: Class name.
+        """
         return self.__class__.__name__
 
 class Hyperparameter(Addressable):
     """Base hyperparameter class.
 
-    Specific hyperparameter types are created by extending this base class.
+    Specific hyperparameter types are created by inheriting from this class.
     Hyperparameters keep references to the modules that are dependent on them.
+    Hyperparameters are associated to modules.
+
+    .. note::
+        Hyperparameters with easily serializable values are preferred due to the
+        interaction with search logging and the multi-GPU functionality.
+        Typical types are integers, floats, strings and lists of these types.
+
+    Args:
+        scope (Scope, optional): Scope object in which the hyperparameter will be
+            registered. If none is given, uses the default scope object.
+        name (str, optional): Name used to derived an unique name for the
+            hyperparameter. If none is given, uses the class name to derive
+            the name.
     """
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
@@ -92,33 +159,75 @@ class Hyperparameter(Addressable):
         self.set_done = False
         self.modules = OrderedSet()
 
+        self.val = None
+
     def is_set(self):
+        """Checks if the hyperparameter has been assigned a value.
+
+        Returns:
+            bool: ``True`` if the hyperparameter has been assigned a value.
+        """
         return self.set_done
 
     def set_val(self, val):
+        """Assigns a value to the hyperparameter.
+
+        The hyperparameter value must be valid for the hyperparameter in question.
+        The hyperaparameter becomes set after if the set operation is successful.
+
+        Args:
+            val (object): Value to assign to the hyperparameter.
+        """
         assert not self.set_done
         self._check_val(val)
         self.set_done = True
         self.val = val
 
+        # calls update on the dependent modules to signal that this hyperparameter
+        # has been set.
         for m in self.modules:
             m._update()
 
     def get_val(self):
+        """Get the value assigned to the hyperparameter.
+
+        The hyperparameter must already be assigned a value, otherwise it
+        asserts to ``False``.
+
+        Returns:
+            object: Value assigned to the hyperparameter.
+        """
         assert self.set_done
         return self.val
 
     def _register_module(self, module):
+        """Registers a module as being dependent of this hyperparameter.
+
+        Args:
+            module (Module): Module dependent of this hyperparameter.
+        """
         self.modules.add(module)
 
     def _check_val(self, val):
+        """Checks if the value is valid for the hyperparameter.
+
+        When ``set_val`` is called, this function is called to verify the
+        validity of ``val``. This function is useful for error checking.
+        """
         raise NotImplementedError
 
 class Input(Addressable):
-    """An input is potentially connected to an output.
+    """Manages input connections.
 
-    Also check Output. Inputs and outputs are used to connect modules. Inputs
-    are registered in the scope.
+    Inputs may be connected to a single output. Inputs and outputs are associated
+    to a single module.
+
+    See also: :class:`Output` and :class:`Module`.
+
+    Args:
+        module (Module): Module with which the input object is associated to.
+        scope (Scope): Scope object where the input is going to be registered in.
+        name (str): Unique name with which to register the input object.
     """
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'I', name])
@@ -128,36 +237,87 @@ class Input(Addressable):
         self.from_output = None
 
     def is_connected(self):
+        """Checks if the input is connected.
+
+        Returns:
+            bool: ``True`` if the input is connected.
+        """
         return self.from_output is not None
 
     def get_connected_output(self):
+        """Get the output to which is the input is connected.
+
+        Returns:
+            Output: Output object to which the input is connected.
+        """
         return self.from_output
 
     def get_module(self):
+        """Get the module object with which the input is associated with.
+
+        Returns:
+            Module: Module object with which the input is associated with.
+        """
         return self.module
 
     def connect(self, from_output):
+        """Connect an output to this input.
+
+        Changes the state of both the input and the output. Asserts ``False`` if
+        the input is already connected.
+
+        Args:
+            from_output (Output): Output to connect to this input.
+        """
         assert isinstance(from_output, Output)
         assert self.from_output is None
         self.from_output = from_output
         from_output.to_inputs.append(self)
 
     def disconnect(self):
+        """Disconnects the input from the output it is connected to.
+
+        Changes the state of both the input and the output. Asserts ``False`` if
+        the input is not connected.
+        """
         assert self.from_output is not None
         self.from_output.to_inputs.remove(self)
         self.from_output = None
 
     def reroute_connected_output(self, to_input):
+        """Disconnects the input from the output it is connected to and connects
+        the output to a new input, leaving this input in a disconnected state.
+
+        Changes the state of both this input, the other input, and the output
+        to which this input is connected.
+
+        .. note::
+            Rerouting operations are widely used in
+            :class:`darch.modules.SubstitutionModule`. See also:
+            :meth:`Output.reroute_all_connected_inputs`.
+
+        Args:
+            to_input (Input): Input to which the output that is connected to
+                this input is going to be connected to.
+        """
         assert isinstance(to_input, Input)
         old_ox = self.from_output
         self.disconnect()
         old_ox.connect(to_input)
 
+### TODO: more documentation needs to be added from here.x
 class Output(Addressable):
-    """An output is potentially connected to multiple inputs
+    """Manages output connections.
 
-    Also check Input. Inputs and outputs are used to connect modules. Outputs
-    are registered in the scope.
+    Outputs may be connected to multiple inputs. Inputs and outputs are associated
+    to a single module.
+
+    See also: :class:`Input` and :class`Module`.
+
+    Args:
+        module (Module): Module with which the output object is associated to.
+        scope (Scope): Scope object where the output is going to be registered in.
+        name (str): Unique name with which to register the output object.
     """
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'O', name])
@@ -167,29 +327,80 @@ class Output(Addressable):
         self.to_inputs = []
 
     def is_connected(self):
+        """Checks if the output is connected.
+
+        Returns:
+            bool: ``True`` if the output is connected.
+        """
         return len(self.to_inputs) > 0
 
     def get_connected_inputs(self):
+        """Get the list of inputs to which is the output is connected to.
+
+        Returns:
+            list[Input]: List of the inputs to which the output is connect to.
+        """
         return self.to_inputs
 
     def get_module(self):
+        """Get the module object with which the output is associated with.
+
+        Returns:
+            Module: Module object with which the output is associated with.
+        """
         return self.module
 
     def connect(self, to_input):
+        """Connect an additional input to this output.
+
+        Changes the state of both the input and the output.
+
+        Args:
+            to_input (Input): Input to connect to this output.
+        """
         to_input.connect(self)
 
     def disconnect_all(self):
+        """Disconnects all the inputs connect to this output.
+
+        Changes the state of the output and all the connected inputs to it.
+        """
         for ix in self.to_inputs:
             ix.disconnect()
 
-    # NOTE: the inputs that self connects to are rerouted to a different output.
     def reroute_all_connected_inputs(self, from_output):
+        """Reroutes all the inputs to which the output is connected to to a
+        different output.
+
+        .. note::
+            Rerouting operations are widely used in
+            :class:`darch.modules.SubstitutionModule`. See also:
+            :meth:`Input.reroute_connected_output`.
+
+        Args:
+            from_output (Output): Output to which the connected inputs are
+                going to be rerouted to.
+        """
         for ix in self.to_inputs:
             ix.disconnect()
             ix.connect(from_output)
 
 class Module(Addressable):
-    """A module has inputs, outputs, and hyperparameters.
+    """Modules inputs and outputs, and depend on hyperparameters.
+
+    Modules are some of the main components used to define search spaces.
+    The inputs, outputs, and hyperparameters have names local to the module.
+    These names are different than the ones used in the scope object in which
+    these objects are registered.
+
+    Search spaces based on modules are very general. They can be used
+    across deep learning frameworks, and even for purposes that do not involve
+    deep learning, e.g., searching over scikit-learn pipelines. The main
+    operations to understand are compile and forward.
+
+    Args:
+        scope (Scope): Scope object where the module is going to be registered in.
+        name (str): Unique name with which to register the module.
     """
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
@@ -203,22 +414,46 @@ class Module(Addressable):
         self._is_compiled = False
 
     def _register_input(self, name):
-        """Creates a new input with the chosen local name."""
+        """Creates a new input with the chosen local name.
+
+        Args:
+            name (str): Local name given to the input.
+        """
         assert name not in self.inputs
         self.inputs[name] = Input(self, self.scope, name)
 
     def _register_output(self, name):
-        """Creates a new output with the chosen local name."""
+        """Creates a new output with the chosen local name.
+
+        Args:
+            name (str): Local name given to the output.
+        """
         assert name not in self.outputs
         self.outputs[name] = Output(self, self.scope, name)
 
     def _register_hyperparameter(self, h, name):
-        """Registers an hyperparameter that the module depends on it."""
+        """Registers an hyperparameter that the module depends on.
+
+        Args:
+            h (Hyperparameter): Hyperparameter that the module depends on.
+            name (str): Local name to give to the hyperparameter.
+        """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
         self.hyperps[name] = h
         h._register_module(self)
 
     def _register(self, input_names, output_names, name_to_hyperp):
+        """Registers inputs, outputs, and hyperparameters locally for the module.
+
+        This function is convenient to avoid code repetition when registering
+        multiple inputs, outputs, and hyperparameters.
+
+        Args:
+            input_names (list[str]): List of inputs names of the module.
+            output_names (list[str]): List of the output names of the module.
+            name_to_hyperp (dict[str, Hyperparameter]):
+                Dictionary of names of hyperparameters to hyperparameters.
+        """
         for name in input_names:
             self._register_input(name)
         for name in output_names:
@@ -227,19 +462,57 @@ class Module(Addressable):
             self._register_hyperparameter(h, name)
 
     def _get_input_values(self):
-        return {name : ix.val for name, ix in iteritems(self.inputs)}
+        """Get the values associated to the inputs of the module.
 
+        This function is used to implement forward. See also:
+        :meth:`_set_output_values` and :func:`forward`.
+
+        Returns:
+            dict[str, object]:
+                Dictionary of local input names to their corresponding values.
+        """
+        return {name: ix.val for name, ix in iteritems(self.inputs)}
+
+    # TODO: refactor this function to _get_hyperparameter_values.
     def _get_hyperp_values(self):
-        return {name : h.val for name, h in iteritems(self.hyperps)}
+        """Get the values of the hyperparameters.
+
+        Returns:
+            dict[str, object]:
+                Dictionary of local hyperparameter names to their corresponding values.
+        """
+        return {name: h.get_val() for name, h in iteritems(self.hyperps)}
 
     def _set_output_values(self, output_name_to_val):
+        """Set the values of the outputs of the module.
+
+        This function is used to implement forward. See also:
+        :meth:`_get_input_values` and :func:`forward`.
+
+        Args:
+            output_name_to_val (dict[str, object]): Dictionary of local output
+                names to the corresponding values to assign to those outputs.
+        """
         for name, val in iteritems(output_name_to_val):
             self.outputs[name].val = val
 
     def get_io(self):
-        return (self.inputs, self.outputs)
+        """
+        Returns:
+            (dict[str,Input], dict[str,Output]):
+                Pair with dictionaries mapping
+                the local input and output names to their corresponding
+                input and output objects.
+        """
+        return self.inputs, self.outputs
 
     def get_hyperps(self):
+        """
+        Returns:
+            dict[str, Hyperparameter]:
+                Dictionary of local hyperparameter names to the corresponding
+                hyperparameter objects.
+        """
         return self.hyperps
 
     def _update(self):
@@ -247,16 +520,32 @@ class Module(Addressable):
         raise NotImplementedError
 
     def _compile(self):
+        """Compile operation for the module.
+
+        Called once when all the hyperparameters that the module depends on,
+        and the other hyperparameters of the search space are specified.
+        See also: :meth:`_forward`.
+        """
         raise NotImplementedError
 
     def _forward(self):
+        """Forward operation for the module.
+
+        Called once the compile operation has been called. See also: :meth:`_compile`.
+        """
         raise NotImplementedError
 
     def forward(self):
-        """Computation done by the module after being specified.
+        """The forward computation done by the module is decomposed into
+        :meth:`_compile` and :meth:`_forward`.
 
-        The first time forward is called, _compile is called to instantiate
-        any parameters. These functions change the state.
+        Compile can be thought as creating the parameters of the module (done
+        once). Forward can be thought as using the parameters of the module to
+        do the specific computation implemented by the module on some specific
+        data (done multiple times).
+
+        This function can only called after the module and the other modules in
+        the search space are fully specified. See also: :func:`forward`.
         """
         if not self._is_compiled:
             self._compile()
@@ -264,6 +553,18 @@ class Module(Addressable):
         self._forward()
 
 def extract_unique_modules(input_or_output_lst):
+    """Get the modules associated to the inputs and outputs in the list.
+
+    Each module appears appear only once in the resulting list of modules.
+
+    Args:
+        input_or_output_lst (list[Input or Output]): List of inputs or outputs
+            from which to extract the associated modules.
+
+    Returns:
+        list[Module]:
+            Unique modules to which the inputs and outputs in the list belong to.
+    """
     ms = OrderedSet()
     for x in input_or_output_lst:
         assert isinstance(x, (Input, Output))
@@ -271,12 +572,25 @@ def extract_unique_modules(input_or_output_lst):
     return list(ms)
 
 # assumes that the inputs provided are sufficient to evaluate all the network.
+# TODO: add the more general functionality that allows us to compute the sequence
+# of forward operations for a subgraph of the full computational graph.
 def determine_module_eval_seq(input_lst):
     """Computes the module forward evaluation sequence necessary to evaluate
-    the computation graph starting from the provided inputs.
+    the computational graph starting from the provided inputs.
 
-    In dynamic frameworks where forward is called multiple times, it is best
-    to precompute the module evaluation sequence. Also see forward.
+    The computational graph is a directed acyclic graph. This function sorts
+    the modules topologically based on their dependencies. It is assumed that
+    the inputs in the list provided are sufficient to compute forward for all
+    modules in the graph. See also: :func:`forward`.
+
+    Args:
+        input_lst (list[Input]): List of inputs sufficient to compute
+            the forward computation of the whole graph through propagation.
+
+    Returns:
+        list[Module]:
+            List of modules ordered according ordered in a way that
+            allows to call forward on the modules in that order.
     """
     module_seq = []
     module_memo = set()
@@ -295,10 +609,18 @@ def determine_module_eval_seq(input_lst):
     return module_seq
 
 def traverse_backward(output_lst, fn):
-    """Traverses the graph going backward, from outputs to inputs. The
-    provided function is applied once to each module reached this way.
+    """Backward traversal function through the graph.
 
-    Also see traverse_forward.
+    Traverses the graph going from outputs to inputs. The provided function is
+    applied once to each module reached this way. This function is used to
+    implement other functionality that requires traversing the graph. ``fn``
+    typically has side effects, e.g., see :func:`is_specified` and
+    :func:`get_unset_hyperparameters`. See also: :func:`traverse_forward`.
+
+    Args:
+        output_lst (list[Output]): List of outputs to start the traversal at.
+        fn (Module -> bool): Function to apply to each module. Returns ``True``
+            if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(output_lst)
@@ -315,10 +637,18 @@ def traverse_backward(output_lst, fn):
                         ms.append(m_prev)
 
 def traverse_forward(input_lst, fn):
-    """Traverses the graph going forward, from inputs to outputs. The
-    provided function is applied once to each module reached this way.
+    """Forward traversal function through the graph.
 
-    Also see traverse_backward.
+    Traverses the graph going from inputs to outputs. The provided function is
+    applied once to each module reached this way. This function is used to
+    implement other functionality that requires traversing the graph. ``fn``
+    typically has side effects, e.g., see :func:`get_unconnected_outputs`.
+    See also: :func:`traverse_backward`.
+
+    Args:
+        input_lst (list[Input]): List of inputs to start the traversal at.
+        fn (Module -> bool): Function to apply to each module. Returns ``True``
+            if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(input_lst)
@@ -338,6 +668,12 @@ def traverse_forward(input_lst, fn):
 def is_specified(output_lst):
     """Checks if all the hyperparameters reachable by traversing backward from
     the outputs have been set.
+
+    Args:
+        output_lst (list[Output]): List of outputs to start the traversal at.
+
+    Returns:
+        bool: ``True`` if all the hyperparameters have been set. ``False`` otherwise.
     """
     is_spec = [True]
     def fn(module):
@@ -350,13 +686,26 @@ def is_specified(output_lst):
     return is_spec[0]
 
 def get_unset_hyperparameters(output_lst):
-    """Gets all the hyperparameters that are not set yet.
+    """Going backward from the outputs provided, gets all the hyperparameters
+    that are not set yet.
 
-    Setting an hyperparameter may lead to the creation of more hyperparameters,
-    e.g., optional or repeat.
+    Setting an hyperparameter may lead to the creation of additional hyperparameters,
+    which will be most likely not set. Such behavior happens when dealing with,
+    for example, hyperparameters associated with substitutition
+    modules such as :func:`darch.modules.siso_optional`,
+    :func:`darch.modules.siso_or`, and :func:`darch.modules.siso_repeat`.
+
+    Args:
+        output_lst (list[Output]): List of outputs to start the traversal at.
+
+    Returns:
+        OrderedSet[Hyperparameter]:
+            Ordered set of hyperparameters that are currently present in the
+            graph and not have been assigned a value yet.
     """
     assert not is_specified(output_lst)
     hs = OrderedSet()
+
     def fn(module):
         for h in itervalues(module.hyperps):
             if not h.is_set():
@@ -366,11 +715,24 @@ def get_unset_hyperparameters(output_lst):
     return hs
 
 def forward(input_to_val, _module_seq=None):
-    """Forward pass starting from the inputs.
+    """Forward pass through the graph starting with the provided inputs.
 
-    The forward computation of each module is called in the turn. For efficiency,
-    in dynamic frameworks, the module evaluation sequence is best computed once
-    and reused in each forward call.
+    The starting inputs are given the values in the dictionary. The values for
+    the other inputs are obtained through propagation, i.e., through successive
+    calls to :meth:`Module.forward` of the appropriate modules.
+
+    .. note::
+        For efficiency, in dynamic frameworks, the module evaluation sequence
+        is best computed once and reused in each forward call. The module
+        evaluation sequence is computed with :func:`determine_module_eval_seq`.
+
+    Args:
+        input_to_val (dict[Input, object]: Dictionary of initial inputs to their
+            corresponding values.
+        _module_seq (optional(list[Module])): List of modules ordered in a way that
+            calling :meth:`Module.forward` on them starting from the values
+            given for the inputs is valid. If not provided, the module sequence
+            is computed.
     """
     if _module_seq is None:
         _module_seq = determine_module_eval_seq(input_to_val.keys())
@@ -385,7 +747,23 @@ def forward(input_to_val, _module_seq=None):
                 ix.val = ox.val
 
 def get_unconnected_inputs(output_lst):
+    """Get the inputs that are reachable going backward from the provided outputs,
+    but are not connected to any outputs.
+
+    Often, these inputs have to be provided with a value when calling
+    :func:`forward`.
+
+    Args:
+        output_lst (list[Output]): List of outputs to start the backward traversal
+            at.
+
+    Returns:
+        list[Input]:
+            Unconnected inputs reachable by traversing the graph backward starting
+            from the provided outputs.
+    """
     ix_lst = []
+
     def fn(x):
         for ix in itervalues(x.inputs):
             if not ix.is_connected():
@@ -395,7 +773,22 @@ def get_unconnected_inputs(output_lst):
     return ix_lst
 
 def get_unconnected_outputs(input_lst):
+    """Get the outputs that are reachable going forward from the provided inputs,
+    but are not connected to outputs.
+
+    Often, the final result of a forward pass through the network will be at
+    these outputs.
+
+    Args:
+        input_lst (list[Input]): List of input to start the forward traversal at.
+
+    Returns:
+        list[Output]:
+            Unconnected outputs reachable by traversing the graph forward starting
+            from the provided inputs.
+    """
     ox_lst = []
+
     def fn(x):
         for ox in itervalues(x.outputs):
             if not ox.is_connected():
