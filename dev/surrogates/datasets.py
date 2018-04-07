@@ -3,6 +3,7 @@ import os.path
 import numpy as np
 import sys
 
+import torch
 import torch.utils.data as data
 from torch.utils.data.sampler import SubsetRandomSampler
 from torchvision.datasets.utils import download_url, check_integrity
@@ -312,3 +313,15 @@ class TorchInMemoryDataset:
         if self.to_numpy:
             batch = (batch[0].numpy(), batch[1].numpy())
         return batch
+
+# TODO: Move this into an appropriate area
+
+class ToNumpy(object):
+    def __call__(self, image):
+        return np.asarray(image)
+
+class ToOneHot(object):
+    def __init__(self, num_classes):
+        self.eye = torch.eye(num_classes)
+    def __call__(self, label):
+        return self.eye[label]

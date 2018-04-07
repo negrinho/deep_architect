@@ -49,7 +49,7 @@ def create_eval_dataset(train_dataset, test_dataset, dataset_name, num_classes):
     ## Define our Logger
     search_logger = sl.SearchLogger('./logs', dataset_name, resume_if_exists=True)
 
-    while search_logger.current_evaluation_id < 10: #TODO: parameterize this
+    while search_logger.current_evaluation_id < 1: #TODO: parameterize this
             sample_and_evaluate(searcher_rand, evaluator, search_logger)
 
 
@@ -74,8 +74,8 @@ config = {
 # Not Tested Yet: Need to find out if its one-hot encoded already
 config_CIFAR = {
     'CIFAR': {
-        'TRAIN': torchvision.datasets.CIFAR10('temp/', download=True, train=True),
-        'TEST': torchvision.datasets.CIFAR10('temp/', download=True, train=False),
+        'TRAIN': torchvision.datasets.CIFAR10('temp/', download=True, train=True, transform=datasets.ToNumpy(), target_transform=datasets.ToOneHot(10)),
+        'TEST': torchvision.datasets.CIFAR10('temp/', download=True, train=False, transform=datasets.ToNumpy(), target_transform=datasets.ToOneHot(10)),
         'CLASSES': 10,
     },
 }
@@ -84,7 +84,7 @@ config_CIFAR = {
 config
 
 def main(args):
-    for name, info in config.items():
+    for name, info in config_CIFAR.items():
         create_eval_dataset(info['TRAIN'], info['TEST'], name, info['CLASSES'])
 
     
