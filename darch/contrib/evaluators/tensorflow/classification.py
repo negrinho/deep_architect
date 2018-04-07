@@ -8,6 +8,7 @@ import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl
 import darch.contrib.gpu_utils as gpu_utils
+from six.moves import xrange
 
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
