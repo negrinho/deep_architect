@@ -197,6 +197,20 @@ class TimerManager:
         return convert_between_time_units(delta, dst_units=units)
 
 class SearchLogger:
+    """Class managing the logging of a search experiment.
+
+    Logging is based on the creation of folders. Each search experiment has
+    a folder with the sequence of evaluations that were done by the model \
+    and a folder with some information specific to the search.
+
+    Args:
+        folderpath (str): Path to the folder where the search folder for the
+            search experiment is to be placed (or found, if resuming the
+            experiment).
+        search_name (str): Name to give to the search experiment. The folder
+            will have that name.
+        resume_if_exists (bool): Resumes the experiment from
+    """
     def __init__(self, folderpath, search_name,
             resume_if_exists=False, delete_if_exists=False,
             make_search_name_unique_by_numbering=False, create_parent_folders=False):
@@ -251,7 +265,6 @@ class SearchLogger:
         return logger
 
     def get_search_data_folderpath(self):
-        # FIXME unnecessary method
         return self.search_data_folderpath
 
 class EvaluationLogger:
@@ -311,11 +324,9 @@ class EvaluationLogger:
         write_jsonfile(results, self.results_filepath)
 
     def get_evaluation_folderpath(self):
-        # FIXME unnecessary method
         return self.evaluation_folderpath
 
     def get_user_data_folderpath(self):
-        # FIXME unnecessary method
         return self.user_data_folderpath
 
 def read_evaluation_folder(evaluation_folderpath):
