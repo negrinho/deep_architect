@@ -47,7 +47,7 @@ def specify(output_lst, hyperp_lst, vs):
         h.set_val(vs[i])
 
 
-def mutate(output_lst, vs, mutatable):
+def mutate(output_lst, vs, mutatable, search_space_fn):
     mutate_candidates = []
     new_vs = []
     for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
@@ -63,9 +63,12 @@ def mutate(output_lst, vs, mutatable):
     # ensure that same value is not chosen again
     while v == vs[m_ind]:
         v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
-    m_h.val = v
-    new_vs[m_ind] = v
-    return new_vs
+    
+    inputs, outputs, hs = search_space_fn()
+    output_lst = outputs.values()
+    for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
+        h.set_val(new_vs[i])
+    return inputs, outputs, hs, new_vs
 
 
 class Searcher:
@@ -130,7 +133,7 @@ class EvolutionSearcher(Searcher):
             return inputs, outputs, hs, vs, {'vs': vs}
         else:
             sample_inds = sorted(random.sample(
-                range(len(self.population)), self.S))
+                range(len(self.population)), min(self.S, len(self.population))))
             # delete weakest model
             weak_ind = self.get_weakest_model_index(sample_inds)
 
@@ -138,7 +141,7 @@ class EvolutionSearcher(Searcher):
             inputs, outputs, hs = self.search_space_fn()
             vs, _ = self.population[self.get_strongest_model_index(
                 sample_inds)]
-            new_vs = mutate(outputs.values(), vs, self.mutatable)
+            inputs, outputs, hs, new_vs = mutate(outputs.values(), vs, self.mutatable, self.search_space_fn)
 
             del self.population[weak_ind]
             return inputs, outputs, hs, new_vs, {'vs': new_vs}
