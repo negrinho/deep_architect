@@ -141,8 +141,8 @@ class Hyperparameter(Addressable):
     .. note::
         Hyperparameters with easily serializable values are preferred due to the
         interaction with the search logging and multi-GPU functionalities.
-        Typical valid serializable types are integers, floats, strings. Lists of
-        serializable types are also valid.
+        Typical valid serializable types are integers, floats, strings. Lists
+        and dictionaries of serializable types are also valid.
 
     Args:
         scope (darch.core.Scope, optional): Scope in which the hyperparameter
@@ -192,8 +192,8 @@ class Hyperparameter(Addressable):
     def get_val(self):
         """Get the value assigned to the hyperparameter.
 
-        The hyperparameter must already be assigned a value, otherwise it
-        asserts to ``False``.
+        The hyperparameter must have already been assigned a value, otherwise
+        asserts ``False``.
 
         Returns:
             object: Value assigned to the hyperparameter.
@@ -363,7 +363,7 @@ class Output(Addressable):
         to_input.connect(self)
 
     def disconnect_all(self):
-        """Disconnects all the inputs connect to this output.
+        """Disconnects all the inputs connected to this output.
 
         Changes the state of the output and all the inputs connected to it.
         """
@@ -520,7 +520,8 @@ class Module(Addressable):
 
     def _update(self):
         """Called when an hyperparameter that the module depends on is set."""
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
 
     def _compile(self):
         """Compile operation for the module.
@@ -592,8 +593,8 @@ def determine_module_eval_seq(input_lst):
 
     Returns:
         list[darch.core.Module]:
-            List of modules ordered according ordered in a way that
-            allows to call forward on the modules in that order.
+            List of modules ordered in a way that allows to call forward on the
+            modules in that order.
     """
     module_seq = []
     module_memo = set()
@@ -734,8 +735,8 @@ def forward(input_to_val, _module_seq=None):
             inputs to their corresponding values.
         _module_seq (list[darch.core.Module], optional): List of modules ordered
             in a way that calling :meth:`darch.core.Module.forward` on them
-            starting from the values given for the inputs is valid. If not provided,
-            the module sequence is computed.
+            starting from the values given for the inputs is valid. If it is
+            not provided, the module sequence is computed.
     """
     if _module_seq is None:
         _module_seq = determine_module_eval_seq(input_to_val.keys())

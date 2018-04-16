@@ -40,7 +40,7 @@ class SubstitutionModule(co.Module):
     The main component of a substitution module is the substitution function.
     When called, this function returns a dictionary of inputs and a dictionary
     of outputs. These outputs and inputs are used in the place the substitution
-    module currently is. The substitution module effectively disappears from the
+    module is in. The substitution module effectively disappears from the
     network after the substitution operation is done.
     Substitution modules are used to implement many other modules,
     e.g., :func:`mimo_or`, :func:`siso_optional`, and :func:`siso_repeat`.
@@ -563,7 +563,7 @@ def siso_sequential(io_lst):
 # there is probably a better way of doing this, as _get_search_space versus
 # get_search_space is confusing.
 class SearchSpaceFactory:
-    """Helper used to provide a nicer interface to create new search spaces.
+    """Helper used to provide a nicer interface to create search spaces.
 
     The user should inherit from this class and implement :meth:`_get_search_space`.
     The function get_search_space should be given to the searcher upon creation

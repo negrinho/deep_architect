@@ -4,7 +4,7 @@ from collections import OrderedDict
 import darch.core as co
 
 class HyperparameterSharer:
-    """Dictionary hyperparameters used to help share hyperparameters between
+    """Dictionary of hyperparameters used to help share hyperparameters between
     modules.
 
     Used to implement different sharing patterns of hyperparameters.

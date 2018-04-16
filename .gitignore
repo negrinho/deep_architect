@@ -1,5 +1,7 @@
 logs/
 data/
+docs/_build
+temp/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files

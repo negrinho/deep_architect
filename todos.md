@@ -101,7 +101,7 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Add the flop count to the Tensorflow simple evaluator.
 * Refactor some of the Tensorflow code to pull some functional chunks.
 * Make the classifier evaluator code to be more general, making it easy to run with different types of loss functions.
-* List the contrib folders last.
+* List the contrib folders last in the documentation.
 * Fix the documentation to make more extensive use of cross-referencing.
 * Revisit the documentation for all but core.py.
 * Add CMU logo and Petuum logos.
@@ -114,6 +114,55 @@ of the code base, e.g., some of the private functions of the modules.
 * Be more consistent in the application of see also in the documentation.
 * While the visualization functionality is not fully finished, add some simple functionality to draw plots from search folders easily.
 * Perhaps remove the type redundancy in the documentation.
+* Write down some hyperparameter optimization vignettes comparing hyperopt and darch.
+* Make this a lot cleaner.
+* Add a test for dependent hyperparameters that involves making a chain of dependent hyperparameters.
+* Make a test for dependent hyperparameters with a loop (should result in problems); needs loop detection.
+* Test for dependent hyperp. that makes it depend on two other hyperparameters simultaneously.
+* Add a lot more tests to core.
+* Add continuous valued hyperparameters.
+* It may be possible to define the operations to use based on some dictionary that works across many different frameworks. This would help define new search spaces across different frameworks.
+* Refactor the substitution modules to take a dictionary of hyperparameters and a dictionary of inputs to make it more consistent with the other one.
+* To make certain calls more uniform, prefer functions that work over dictionaries to prevent packing and unpacking of results.
+* Implement get_search_space as a wrapper around an unbuffered search space.
+* Think more about the substitution module. Perhaps it should not depend on the inputs.
+* Make type referencing more consistent. Right now, in some places we use absolute names while in other places, we use relative names.
+* Configure the formatting and linting error checking level to make sure that it is appropriate for the people that will come in.
+* Adding readme.md files in different folders may help the understanding of the project.
+* Write a few examples by adapting the examples in the keras page.
+* Implement a dataloader based on PyTorch.
+* Add a few issues to the github to get the mechanism for contribution started.
+* Put some of the issues on github to jump start contribution.
+* Setting up a discourse channel for the platform. This can be hosted locally in my home page.
+* Set a few tasks for the viewer.
+* The comparison with hyperopt can be done through the same code.
+* Make clear what is the most common workflow that this library will support. loading the data, setting the evaluator, creating the search space, instantiating the searcher, creating the logger, running the search process, visualize the results of the process.
+* Show how to take an existing model and map it to something in our framework.
+* Talk about how this can be hidden behind some high-level API.
+* API should teach them
+* siso_repeat can be refactored with siso_sequential.
+* Make documentation more consistent (this has low priority for now).
+* Transfer automatically the documentation to my website upon building it.
+* Make sure I can copy the code easily while maintaining consistency with respect to the different models.
+* Check that I'm consistently working with the correct functionality.
+* Think of a few sections for the discourse page.
+* Change the search spaces to be generic across frameworks.
+* Improve error messages by checking cases where the current message is cryptic and add a better message that alludes to the likely cause of the problem.
+* Needs to add error messages to the assert messages.
+* change get_current_evaluation_logger to get_next_evaluation_logger.
+* Check the logs for corrections.
+* The MCTSearcher is misspelled. Should MCTSSearcher.
+* Compile the code.
+* Write down about the directly structure of the code. This is important to be explicit about the structure of the folder and what is container in each of them.
+* Decide on the capitalization, i.e., DArch vs Darch vs darch
+
+Visualization:
+* Make sure that an exception is never thrown.
+* Handle invalid keys properly, by just keeping the previous state or some decent defaults.
+* Remove row functionality.
+* Copy row functionality.
+* Save visualization functionality.
+*
 
 * Common metrics to maintain in logging:
     * Training loss
@@ -130,6 +179,7 @@ Guidelines for documentation:
 * Keep comments short.
 * Do not comment the obvious.
 * At a minimal add a docstring for the class.
+* Complex functionality that is widely used in the rest of the library should be widely commented.
 * Replicate the comment format that is used in the rest of the classes.
 * Some directives to use are :func: (for functions), .. seealso::
 (to point to some other parts that are important.), :meth: (for a method).
