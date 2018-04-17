@@ -1,0 +1,37 @@
+
+Currently, we use the Docker images from [deepo](https://github.com/ufoym/deepo).
+We convert these Docker images to Singularity images.
+See [here](https://github.com/ufoym/deepo#tags) for the available
+tags.
+We use the four images resulting from the possible choices of CPU/GPU and
+Python 2.7/Python 3.6.
+The corresponding tags are `all-py27`, `all-py27-cpu`, `all-py36`, `all-py36-cpu`.
+
+To build the Singularity images, it is necessary to install Singularity, which
+requires an Ubuntu operating system.
+* Install instructions for [Ubuntu](http://singularity.lbl.gov/install-linux).
+* Install instructions for [Windows](http://singularity.lbl.gov/install-windows).
+* Install instructions for [Mac](http://singularity.lbl.gov/install-mac).
+
+The easiest way to build images in systems other than Ubuntu is through a
+virtual machine.
+See [here](http://singularity.lbl.gov/install-mac#option-1-singularityware-vagrant-box)
+for how to get a virtual image for Singularity on Mac.
+The suggested approach uses Vagrant to setup the image.
+See [here](https://www.vagrantup.com/docs/installation/)
+for the instructions on how to install Vagrant.
+
+To build, for example, the GPU Python 2.7 container, do
+`sudo singularity build py27-cpu.img docker://ufoym/deepo:all-py27`.
+Similar commands can be used for the other combinations by substituting the
+appropriate tags.
+
+I have built two Singularity images for darch: for the
+[CPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-cpu.img)
+ and for the
+[GPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-gpu.img).
+
+To run the container with GPU support, use the `--nv` flag, e.g.,
+`singularity shell --nv py27-gpu.img`.
+Check the documentation for [Singularity](http://singularity.lbl.gov/docs-usage)
+for more information on how to run and use containers.
