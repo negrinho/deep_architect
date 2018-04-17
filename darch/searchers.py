@@ -150,7 +150,7 @@ class EvolutionSearcher(Searcher):
         return {
             "P": self.P,
             "S": self.S,
-            "population": self.population,
+            "population": list(self.population),
             "regularized": self.regularized,
             "initializing": self.initializing,
         }
@@ -163,7 +163,7 @@ class EvolutionSearcher(Searcher):
         self.P = state["P"]
         self.S = state["S"]
         self.regularized = state['regularized']
-        self.population = state['population']
+        self.population = deque(state['population'])
         self.initializing = state['initializing']
     
     def update(self, val, cfg_d):
