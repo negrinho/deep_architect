@@ -59,7 +59,8 @@ def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
             if not h.is_set():
                 yield h
 
-def start_searcher(comm, num_workers, num_samples, search_space_factory, searcher, resume_if_exists, searcher_load_path):
+def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists, 
+    searcher_load_path):
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
     
@@ -181,7 +182,7 @@ def main():
             'evolution': lambda: se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, options.evolution_p, options.evolution_s, regularized=options.evolution_reg)
         }
         searcher = searchers[options.searcher]()
-        start_searcher(comm, comm.Get_size() - 1, options.num_samples, search_space_factory, searcher, options.resume, options.searcher_load_path)
+        start_searcher(comm, comm.Get_size() - 1, options.num_samples, searcher, options.resume, options.searcher_load_path)
     else:
 
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
@@ -189,11 +190,11 @@ def main():
         test_dataset = InMemoryDataset(Xtest, ytest, False)
 
         evaluators = {
-            'simple_classification': SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
+            'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                         './temp' + str(rank), max_num_training_epochs=options.num_epochs, log_output_to_terminal=options.display_output, 
                         test_dataset=test_dataset)
         }
-        evaluator = evaluators[options.evaluator]
+        evaluator = evaluators[options.evaluator]()
 
         start_worker(comm, rank, evaluator, search_space_factory)
 
