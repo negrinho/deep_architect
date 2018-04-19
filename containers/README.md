@@ -21,17 +21,18 @@ The suggested approach uses Vagrant to setup the image.
 See [here](https://www.vagrantup.com/docs/installation/)
 for the instructions on how to install Vagrant.
 
-To build, for example, the GPU Python 2.7 container, do
-`sudo singularity build py27-cpu.img docker://ufoym/deepo:all-py27`.
-Similar commands can be used for the other combinations by substituting the
-appropriate tags.
+We created a Singularity and Docker recipe file generator to create the different
+containers. Run `python containers/main.py` to create the folders with the recipes
+for the containers. To build the desired container run its corresponding `build.sh`
+script that lies in the same folder as the recipe. All commands should
+be ran from root folder of the project, i.e., same as it is done for running examples.
 
 I have built two Singularity images for darch: for the
 [CPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-cpu.img)
  and for the
 [GPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-gpu.img).
 
-To run the container with GPU support, use the `--nv` flag, e.g.,
+To run a Singularity container with GPU support, use the `--nv` flag, e.g.,
 `singularity shell --nv py27-gpu.img`.
-Check the documentation for [Singularity](http://singularity.lbl.gov/docs-usage)
-for more information on how to run and use containers.
+Check the documentation of [Singularity](http://singularity.lbl.gov/docs-usage)
+for more information on how to run and use Singularity containers.
