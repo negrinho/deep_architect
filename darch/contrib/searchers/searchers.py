@@ -1,75 +1,15 @@
-from six.moves import xrange
-from collections import deque
+"""
+Contains searchers
+"""
 import random
+from collections import deque
 import numpy as np
 import darch.hyperparameters as hp
-import darch.core as co
 import darch.surrogates as su
 from darch.search_logging import join_paths, write_jsonfile
+import darch.contrib.searchers.searcher_utils as sut
 
 # TODO: perhaps change to not have to work until everything is specified.
-
-
-def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
-    if hyperp_lst is not None:
-        for h in hyperp_lst:
-            if not h.is_set():
-                yield h
-
-    while not co.is_specified(output_lst):
-        hs = co.get_unset_hyperparameters(output_lst)
-        for h in hs:
-            if not h.is_set():
-                yield h
-
-
-def random_specify_hyperparameter(hyperp):
-    assert not hyperp.is_set()
-
-    if isinstance(hyperp, hp.Discrete):
-        v = hyperp.vs[np.random.randint(len(hyperp.vs))]
-        hyperp.set_val(v)
-    else:
-        raise ValueError
-    return v
-
-
-def random_specify(output_lst, hyperp_lst=None):
-    vs = []
-    for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
-        v = random_specify_hyperparameter(h)
-        vs.append(v)
-    return vs
-
-
-def specify(output_lst, hyperp_lst, vs):
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
-        h.set_val(vs[i])
-
-
-def mutate(output_lst, vs, mutatable, search_space_fn):
-    mutate_candidates = []
-    new_vs = []
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
-        if mutatable(h):
-            mutate_candidates.append((i, h))
-        h.set_val(vs[i])
-        new_vs.append(vs[i])
-    # mutate a random hyperparameter
-    m_ind, m_h = mutate_candidates[random.randint(
-        0, len(mutate_candidates) - 1)]
-    v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
-
-    # ensure that same value is not chosen again
-    while v == vs[m_ind]:
-        v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
-    
-    inputs, outputs, hs = search_space_fn()
-    output_lst = outputs.values()
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
-        h.set_val(new_vs[i])
-    return inputs, outputs, hs, new_vs
-
 
 class Searcher:
     """
@@ -103,15 +43,40 @@ class RandomSearcher(Searcher):
     """
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
-        vs = random_specify(outputs.values(), hs.values())
+        vs = sut.random_specify(outputs.values(), hs.values())
         return inputs, outputs, hs, vs, {}
 
     def update(self, val, cfg_d):
         pass
 
+def mutatable(h):
+    return h.get_name().startswith('H.Mutatable')
+
+def mutate(output_lst, vs, mutatable_fn, search_space_fn):
+    mutate_candidates = []
+    new_vs = []
+    for i, h in enumerate(sut.unset_hyperparameter_iterator(output_lst)):
+        if mutatable_fn(h):
+            mutate_candidates.append((i, h))
+        h.set_val(vs[i])
+        new_vs.append(vs[i])
+    # mutate a random hyperparameter
+    m_ind, m_h = mutate_candidates[random.randint(
+        0, len(mutate_candidates) - 1)]
+    v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
+
+    # ensure that same value is not chosen again
+    while v == vs[m_ind]:
+        v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
+    
+    inputs, outputs, hs = search_space_fn()
+    output_lst = outputs.values()
+    for i, h in enumerate(sut.unset_hyperparameter_iterator(output_lst)):
+        h.set_val(new_vs[i])
+    return inputs, outputs, hs, new_vs
 
 class EvolutionSearcher(Searcher):
-    def __init__(self, search_space_fn, mutatable, P, S, regularized=False):
+    def __init__(self, search_space_fn, mutatable_fn, P, S, regularized=False):
         Searcher.__init__(self, search_space_fn)
         
         # Population size
@@ -122,12 +87,12 @@ class EvolutionSearcher(Searcher):
         self.population = deque(maxlen=P)
         self.regularized = regularized
         self.initializing = True
-        self.mutatable = mutatable
+        self.mutatable = mutatable_fn
 
     def sample(self):
         if self.initializing:
             inputs, outputs, hs = self.search_space_fn()
-            vs = random_specify(outputs.values(), hs.values())
+            vs = sut.random_specify(outputs.values(), hs.values())
             if len(self.population) >= self.P - 1:
                 self.initializing = False
             return inputs, outputs, hs, vs, {'vs': vs}
@@ -267,7 +232,7 @@ class MCTSearcher(Searcher):
     def sample(self):
         inputs, outputs, hs = self.search_space_fn()
 
-        h_it = unset_hyperparameter_iterator(outputs.values(), hs.values())
+        h_it = sut.unset_hyperparameter_iterator(outputs.values(), hs.values())
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
@@ -344,14 +309,14 @@ class SMBOSearcher(Searcher):
         if np.random.rand() < self.eps_prob:
             inputs, outputs, hs = self.search_space_fn()
 
-            best_vs = random_specify(outputs.values(), hs.values())
+            best_vs = sut.random_specify(outputs.values(), hs.values())
         else:
             best_model = None
             best_vs = None
             best_score = - np.inf
             for _ in range(self.num_samples):
                 inputs, outputs, hs = self.search_space_fn()
-                vs = random_specify(outputs.values(), hs.values())
+                vs = sut.random_specify(outputs.values(), hs.values())
 
                 feats = su.extract_features(inputs, outputs, hs)
                 score = self.surr_model.eval(feats)
@@ -367,7 +332,7 @@ class SMBOSearcher(Searcher):
 
     def update(self, val, cfg_d):
         (inputs, outputs, hs) = self.search_space_fn()
-        specify(outputs.values(), hs.values(), cfg_d['vs'])
+        sut.specify(outputs.values(), cfg_d['vs'], hs.values())
         feats = su.extract_features(inputs, outputs, hs)
         self.surr_model.update(val, feats)
 
@@ -394,7 +359,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
         if np.random.rand() < self.eps_prob:
             inputs, outputs, hs = self.search_space_fn()
 
-            best_vs = random_specify(outputs.values(), hs.values())
+            best_vs = sut.random_specify(outputs.values(), hs.values())
         # TODO: ignoring the size of the model here.
         # TODO: needs to add the exploration bonus.
         else:
@@ -418,7 +383,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
 
     def update(self, val, cfg_d):
         (inputs, outputs, hs) = self.search_space_fn()
-        specify(outputs.values(), hs.values(), cfg_d['vs'])
+        sut.specify(outputs.values(), cfg_d['vs'], hs.values())
         feats = su.extract_features(inputs, outputs, hs)
         self.surr_model.update(val, feats)
 

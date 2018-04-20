@@ -2,62 +2,21 @@
 MPI Run script
 """
 from time import sleep
+import argparse
 from mpi4py import MPI
 from darch.contrib.datasets.loaders import load_cifar10
 from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.datasets.dataset import InMemoryDataset
+from darch.contrib.search_spaces.tensorflow.search_space_factory import SearchSpaceFactory
 #import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
-import darch.searchers as se
-import darch.contrib.search_spaces.tensorflow.evolution_search_space as ss
+import darch.contrib.searchers.searchers as se
+import darch.contrib.searchers.searcher_utils as sut
 from darch.contrib import gpu_utils
 import darch.search_logging as sl
-import darch.core as co
-import random
-import argparse
 
 READY_REQ = 0
 MODEL_REQ = 1
 RESULTS_REQ = 2
-
-class SearchSpaceFactory:
-    def __init__(self, search_space, num_classes):
-        self.num_classes = num_classes
-        if search_space == 'sp1':
-            self.search_space_fn = ss.get_search_space_1
-        elif search_space == 'sp2':
-            self.search_space_fn = ss.get_search_space_2
-        elif search_space == 'sp3':
-            self.search_space_fn = ss.get_search_space_3
-    
-    def get_search_space(self):
-        co.Scope.reset_default_scope()
-        inputs, outputs = self.search_space_fn(self.num_classes)
-        return inputs, outputs, {}
-
-def mutatable(h):
-    return h.get_name().startswith('H.Mutatable')
-
-def specify(output_lst, vs):
-    try:
-        for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
-            h.set_val(vs[i])
-    except AssertionError as a:
-        print h.vs
-        print vs[i]
-    
-
-# should be moved to utils file
-def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
-    if hyperp_lst is not None:
-        for h in hyperp_lst:
-            if not h.is_set():
-                yield h
-
-    while not co.is_specified(output_lst):
-        hs = co.get_unset_hyperparameters(output_lst)
-        for h in hs:
-            if not h.is_set():
-                yield h
 
 def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists, 
     searcher_load_path):
@@ -122,7 +81,7 @@ def start_worker(comm, rank, evaluator, search_space_factory):
             break
         
         inputs, outputs, hs = search_space_factory.get_search_space()
-        specify(outputs.values(), vs)
+        sut.specify(outputs.values(), vs)
         
         results = evaluator.eval(inputs, outputs, hs)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
@@ -159,7 +118,7 @@ def main():
         if config['searcher'] == 'evolution':
             assert config['P'] >= config['S']
         searchers = {
-            'evolution': lambda: se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, config['P'], config['S'], regularized=config['regularized'])
+            'evolution': lambda: se.EvolutionSearcher(search_space_factory.get_search_space, se.mutatable, config['P'], config['S'], regularized=config['regularized'])
         }
         searcher = searchers[config['searcher']]()
         start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, options.searcher_file_name)
