@@ -128,61 +128,41 @@ def start_worker(comm, rank, evaluator, search_space_factory):
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
 def main():
+    configs = sl.read_jsonfile("experiment_config.json")
+    
     parser = argparse.ArgumentParser("MPI Job for architecture search")
-    
-    #searcher args
-    parser.add_argument('--searcher', '-s', action='store', dest='searcher', 
+    parser.add_argument('--config', '-c', action='store', dest='config_name', 
     default='evolution', choices=['evolution'])
-    parser.add_argument('--evolution-P', '-P', action='store', dest='evolution_p', 
-    type=int, default=20)
-    parser.add_argument('--evolution-S', '-S', action='store', dest='evolution_s', 
-    type=int, default=20)
-    parser.add_argument('--evolution-reg', '-R', action='store_true', dest='evolution_reg', 
-    default=False)
-
-    # dataset args
-    parser.add_argument('--dataset', '-d', action='store', dest='dataset',
-    default='cifar10', choices=['cifar10'])
-    
-    # search space args
-    parser.add_argument('--search-space', '-p', action='store', dest='search_space',
-    default='sp1', choices=['sp1', 'sp2', 'sp3'])
-    
-    # evaluator args
-    parser.add_argument('--evaluator', '-e', action='store', dest='evaluator',
-    default='simple_classification', choices=['simple_classification'])
-    parser.add_argument('--epochs', '-n', action='store', dest='num_epochs',
-    default=4, type=int)
-    parser.add_argument('--display-output', '-o', action='store_true', dest='display_output', 
-    default=False)
 
     # Other arguments
-    parser.add_argument('--samples', '-m', action='store', dest='num_samples',
-    default=100, type=int)
+    parser.add_argument('--display-output', '-o', action='store_true', dest='display_output', 
+                        default=False)
     parser.add_argument('--resume', '-r', action='store_true', dest='resume', 
-    default=False)
-    parser.add_argument('--load_searcher', '-l', action='store', dest='searcher_load_path',
-    default='searcher_state.json')
+                        default=False)
+    parser.add_argument('--load_searcher', '-l', action='store', dest='searcher_file_name',
+                        default='searcher_state.json')
 
     options = parser.parse_args()
+    config = configs[options.config_name]
         
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10'), 10)
     }
 
-    (Xtrain, ytrain, Xval, yval, Xtest, ytest), num_classes = datasets[options.dataset]()
-    search_space_factory = SearchSpaceFactory(options.search_space, num_classes)
+    (Xtrain, ytrain, Xval, yval, Xtest, ytest), num_classes = datasets[config['dataset']]()
+    search_space_factory = SearchSpaceFactory(config['search_space'], num_classes)
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
+
     if rank == 0:
-        if options.searcher == 'evolution':
-            assert options.evolution_p >= options.evolution_s
+        if config['searcher'] == 'evolution':
+            assert config['P'] >= config['S']
         searchers = {
-            'evolution': lambda: se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, options.evolution_p, options.evolution_s, regularized=options.evolution_reg)
+            'evolution': lambda: se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, config['P'], config['S'], regularized=config['regularized'])
         }
-        searcher = searchers[options.searcher]()
-        start_searcher(comm, comm.Get_size() - 1, options.num_samples, searcher, options.resume, options.searcher_load_path)
+        searcher = searchers[config['searcher']]()
+        start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, options.searcher_file_name)
     else:
 
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
@@ -191,10 +171,10 @@ def main():
 
         evaluators = {
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-                        './temp' + str(rank), max_num_training_epochs=options.num_epochs, log_output_to_terminal=options.display_output, 
+                        './temp' + str(rank), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output, 
                         test_dataset=test_dataset)
         }
-        evaluator = evaluators[options.evaluator]()
+        evaluator = evaluators[config['evaluator']]()
 
         start_worker(comm, rank, evaluator, search_space_factory)
 

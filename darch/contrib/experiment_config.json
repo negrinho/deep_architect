@@ -1,0 +1,16 @@
+{
+    "evolution_20": {
+      "searcher": "evolution",
+      "P": 20,
+      "S": 20,
+      "regularized": true,
+      "dataset": "cifar10",
+      "search_space": "sp1",
+      "evaluator": "simple_classification",
+      "epochs": 4,
+      "display_output": true,
+      "samples": 30,
+      "resume": true,
+      "searcher_file_name": "searcher_state.json"
+    }
+  }
