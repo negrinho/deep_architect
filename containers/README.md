@@ -31,6 +31,10 @@ I have built two Singularity images for darch: for the
 [CPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-cpu.img)
  and for the
 [GPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-gpu.img).
+These containers can be moved to your local machine and used to run a Python script
+(provided that you have Singularity installed)
+as `./$CONTAINER_PATH $SCRIPT_PATH`. To open a bash shell inside the container,
+do `singularity shell $CONTAINER_PATH`.
 
 To run a Singularity container with GPU support, use the `--nv` flag, e.g.,
 `singularity shell --nv py27-gpu.img`.

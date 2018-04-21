@@ -116,7 +116,7 @@ def create_singularity_container(config_d, out_folderpath):
 
     help_lines = [
         '%help',
-        'This container contains the development enviroment for darch.',
+        'This container contains the development environment for darch.',
         'You should be able to run all the examples, generate documentation,',
         'and generate visualizations with it.',
     ]
