@@ -3,6 +3,8 @@ data/
 docs/_build
 temp/
 .DS_Store
+containers/singularity/*
+containers/docker/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

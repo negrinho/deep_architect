@@ -120,6 +120,7 @@ of the code base, e.g., some of the private functions of the modules.
 * Make a test for dependent hyperparameters with a loop (should result in problems); needs loop detection.
 * Test for dependent hyperp. that makes it depend on two other hyperparameters simultaneously.
 * Add a lot more tests to core.
+* Go over the tests as they are very poor right now.
 * Add continuous valued hyperparameters.
 * It may be possible to define the operations to use based on some dictionary that works across many different frameworks. This would help define new search spaces across different frameworks.
 * Refactor the substitution modules to take a dictionary of hyperparameters and a dictionary of inputs to make it more consistent with the other one.
@@ -154,7 +155,14 @@ of the code base, e.g., some of the private functions of the modules.
 * The MCTSearcher is misspelled. Should MCTSSearcher.
 * Compile the code.
 * Write down about the directly structure of the code. This is important to be explicit about the structure of the folder and what is container in each of them.
-* Decide on the capitalization, i.e., DArch vs Darch vs darch
+* Decide on the capitalization, i.e., DArch vs Darch vs darch. I think that I prefer the first one.
+* Make consistent vs with hyperp_value_lst
+* Complete the documentation.
+* Create a file that emphasizes the most interesting classes.
+* Make sure that the appropriate helpers are in place.
+* To make life easier, it would be nice to take the comments in the file and just write down the tutorials based on them. It would make it easier and improve consistency.
+* Just say something about the log manager for plotting.
+* Be a bit more clear on the inputs of the model and such.
 
 Visualization:
 * Make sure that an exception is never thrown.
