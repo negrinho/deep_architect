@@ -32,5 +32,5 @@ def hyperparameters_fn():
 def get_ss_fn(nlabels):
     def fn():
         mod = get_net(nlabels)
-        return mod.inputs, mod.outputs, hyperparameters_fn()
+        return mod.inputs, mod.outputs, {}
     return fn
