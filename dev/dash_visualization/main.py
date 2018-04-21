@@ -10,19 +10,18 @@ import plotly.graph_objs as go
 import darch.search_logging as sl
 
 ### Loading the data.
-log_lst = sl.read_search_folder('logs/test_cifar10_short')
-
 def process_logs(log_lst):
     ds = []
     for i, log in enumerate(log_lst):
         d = log['results']
-        d.pop('sequences')
-        d['num_training_epochs'] = len(d['num_training_epochs'])
+        # d.pop('sequences')
+        # d['num_training_epochs'] = len(d['num_training_epochs'])
         d['evaluation_id'] = i
         ds.append(d)
     return ds
 
-path_lst = ['logs/test_cifar10_short', 'logs/test_cifar10_medium']
+# path_lst = ['logs/test_cifar10_short', 'logs/test_cifar10_medium', 'logs/test']
+path_lst = ['logs/test_cifar10_medium', 'logs/test_cifar10_short']
 path_to_log = {p : process_logs(sl.read_search_folder(p)) for p in path_lst}
 keys = path_to_log.values()[0][0].keys()
 print keys
@@ -41,6 +40,8 @@ class LogManager:
 
     def get_shared_keys(self, log_folderpath_lst):
         pass
+
+# the actual keys that may be available may be managed by the log manager.
 
 # this class helps interfacing with the logs, which makes it a lot easier to
 # retrieve the desired data, and apply the filters.
@@ -264,13 +265,13 @@ class Scatter2DControls(Component):
         self.notes = Notes(self.full_name, 'notes')
         self._register(
             full_column([
-                self.log_selector.get_layout(),
-                horizontal_separator(),
-                self.dimension_controls.get_layout(),
-                horizontal_separator(),
-                # self.filter_selector.get_layout(),
+                self.notes.get_layout(),
                 # horizontal_separator(),
-                self.notes.get_layout()
+                self.log_selector.get_layout(),
+                # horizontal_separator(),
+                self.dimension_controls.get_layout(),
+                # horizontal_separator(),
+                # self.filter_selector.get_layout(),
             ]))
 
     def get_update_figure_input_lst(self):
@@ -371,6 +372,11 @@ def scatter2d_update_callback(log_folderpath_lst, xkey, xscale, ykey, yscale):
 #         self.delete_button = Button(self.full_name, 'delete_button', 'Delete')
 #         self.delete_button = Button(self.full_name, 'delete_button', 'Delete')
 
+## TODO: add the remove button.
+# class RowButtonControls(Component):
+#     def __init__(self, parent_name, local_name):
+#         Component.__init__(self, parent_name, local_name)
+
 ### High-level dashboards made out of the more general components.
 class Header(Component):
     def __init__(self, parent_name, local_name):
@@ -416,7 +422,7 @@ class Visualization(Component):
         # create the page layout.
         lst = [
             self.header.get_layout(),
-            horizontal_separator(),
+            # horizontal_separator(),
             self.row_column.get_layout(),
             self.footer.get_layout()
             ]
@@ -430,14 +436,17 @@ class Visualization(Component):
         self._register(full_column(lst))
 
     def _add_row_callback(self, n_clicks, rows):
+        print self.used_row_id_lst, n_clicks
         if n_clicks > 0:
             for i in self.id_to_row:
                 if i not in self.used_row_id_lst:
                     self.used_row_id_lst.append(i)
                     new_row = self.id_to_row[i]
                     rows.append(new_row.get_layout())
-                    rows.append(horizontal_separator())
+                    # rows.append(horizontal_separator())
                     break
+        else:
+            self.used_row_id_lst = []
         return rows
 
     def _get_add_row_callback_config_lst(self):
@@ -453,6 +462,8 @@ class Visualization(Component):
         for row in self.id_to_row.itervalues():
             lst.extend(row.get_callback_config_lst())
         return lst
+
+# NOTE: undo redo is also not working properly and needs to be fixed.
 
 ## NOTE: what should the starting layout be? I think that this is probably not
 # quite correct.
@@ -535,7 +546,7 @@ class Visualization(Component):
 
 app = dash.Dash()
 
-vis = Visualization('', 'visualization', 3)
+vis = Visualization('', 'visualization', max_num_rows=10)
 app.layout = vis.get_layout()
 app.config['suppress_callback_exceptions'] = True
 
@@ -550,6 +561,9 @@ app.css.append_css({
 if __name__ == '__main__':
     app.run_server(debug=True)
 
+# NOTE: should never get none. only when all of them are filled.
+
+# useful for hover events.
 # Keyword arguments:
 #  |  - id (string; required)
 #  |  - clickData (dict; optional): Data from latest click event
@@ -561,3 +575,7 @@ if __name__ == '__main__':
 #  |  - selectedData (dict; optional): Data from latest select event
 #  |  - relayoutData (dict; optional): Data from latest relayout event which occurs
 #  |  when the user zooms or pans on the plot
+
+# NOTE: one possibility is having the choice of logs determine the keys that are
+# available. this means that there may exist interaction between the model]
+# and something else.
