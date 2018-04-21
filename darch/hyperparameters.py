@@ -4,8 +4,10 @@ from collections import OrderedDict
 import darch.core as co
 
 class HyperparameterSharer:
-    """Used to implement different sharing patterns of hyperparameters.
+    """Dictionary of hyperparameters used to help share hyperparameters between
+    modules.
 
+    Used to implement different sharing patterns of hyperparameters.
     Hyperparameters are registered with a name and a function that creates the
     hyperparameter and stores it in a dictionary. Once created, following calls
     get the hyperparameter from the dictionary.
@@ -15,10 +17,34 @@ class HyperparameterSharer:
         self.name_to_h = OrderedDict()
 
     def register(self, hyperp_name, hyperp_fn):
+        """Registers a function that can be called to create an hyperparameter
+        with a given name.
+
+        Delayed creation of the hyperparameter is implemented through a thunk.
+
+        Args:
+            hyperp_name (str): Hyperparameter name to associate with the function.
+                The hyperparameter name must be unique.
+            hyperp_fn (() -> (darch.core.Hyperparameter)): Function that returns
+                an hyperparameter when called.
+        """
         assert hyperp_name not in self.name_to_h_fn
         self.name_to_h_fn[hyperp_name] = hyperp_fn
 
     def get(self, hyperp_name):
+        """Gets the hyperparameter with the desired name.
+
+        If the hyperparameter has not been created yet, it calls the
+        function to create it, stores it in the dictionary, and returns it.
+        If the hyperparameter has already been created, it returns it from the
+        dictionary. Asserts ``False`` if the name is not registered in the sharer.
+
+        Args:
+            hyperp_name (str): Hyperparameter name.
+
+        Returns:
+            darch.core.Hyperparameter: Hyperparameter associated to ``hyperp_name``.
+        """
         assert hyperp_name in self.name_to_h_fn
 
         if hyperp_name not in self.name_to_h:
@@ -26,45 +52,92 @@ class HyperparameterSharer:
         return self.name_to_h[hyperp_name]
 
 class DependentHyperparameter(co.Hyperparameter):
+    """Hyperparameter that depends on other hyperparameters.
 
-    def __init__(self, fn, hs, scope=None, name=None):
+    The value of a dependent hyperparameter is set by calling a calling a function
+    using the values of the dependent hyperparameters as arguments.
+    This hyperparameter is convenient when we want to express search spaces where
+    the values of some hyperparameters are computed as a function of the
+    values of some other hyperparameters, rather than set independently.
+
+    Args:
+        fn ((...) -> (object)): Function used to compute the value of the
+            hyperparameter based on the values of the dependent hyperparameters.
+        hyperps (dict[str, darch.core.Hyperparameter]): Dictionary mapping
+            names to hyperparameters. The names used in the dictionary should
+            correspond to the names of the arguments of ``fn``.
+        scope (darch.core.Scope, optional): The scope in which to register the
+            hyperparameter in.
+        name (str, optional): Name from which the name of the hyperparameter
+            in the scope is derived.
+    """
+    # TODO: for now, dependent hyperparameters do not work well with the searchers.
+    def __init__(self, fn, hyperps, scope=None, name=None):
         co.Hyperparameter.__init__(self, scope, name)
-
-        self._hs = hs
+        assert all(not isinstance(x, DependentHyperparameter) for x in itervalues(hyperps))
+        self._hyperps = hyperps
         self._fn = fn
+        self._update()
 
     def is_set(self):
-        if self.set_done:
-            return True
-        else:
-            if all(h.is_set() for h in itervalues(self._hs)):
-                kwargs = {name: h.get_val() for name, h in iteritems(self._hs)}
-                self.set_val(self._fn(**kwargs))
+        """Checks if the hyperparameter has been assigned a value.
 
-            return self.set_done
+        Returns:
+            bool: ``True`` if the hyperparameter has been assigned a value.
+        """
+        if not self.set_done:
+            self._update()
+        return self.set_done
 
     def get_unset_dependent_hyperparameter(self):
-        """
-        :rtype: darch.core.Hyperparameter
+        """Get an hyperparameter that this hyperparameter depends on that has
+        not been set yet.
+
+        Asserts ``False`` if there are no unset dependant hyperparameters.
+
+        Returns:
+            darch.core.Hyperparameter:
+                Returns an hyperparameter that this hyperparameter depends on and
+                that has not been set yet.
         """
         assert not self.set_done
-        for h in itervalues(self._hs):
+        for h in itervalues(self._hyperps):
             if not h.is_set():
                 return h
+
+    def _update(self):
+        """Checks if the hyperparameter is ready to set, and set it if that is the
+        case.
+        """
+        if all(h.is_set() for h in itervalues(self._hyperps)):
+            kwargs = {name: h.get_val() for name, h in iteritems(self._hyperps)}
+            self.set_val(self._fn(**kwargs))
 
     def _check_val(self, val):
         pass
 
 class Discrete(co.Hyperparameter):
+    """List valued hyperparameter.
+
+    This type of hyperparameter has a finite number of possible values.
+
+    Args:
+        vs (list[object]): List of possible parameter values that the
+            hyperparameter can take.
+        scope (darch.core.Scope, optional): The scope in which to register the
+            hyperparameter in.
+        name (str, optional): Name from which the name of the hyperparameter
+            in the scope is derived.
+    """
     def __init__(self, vs, scope=None, name=None):
-        """
-        :type vs: collections.Iterable
-        :param vs: List of possible parameter values.
-        """
         co.Hyperparameter.__init__(self, scope, name)
         self.vs = vs
 
     def _check_val(self, val):
+        """Checks if the chosen values is in the list of valid values.
+
+        Asserts ``False`` if the value is not in the list.
+        """
         assert val in self.vs
 
 class Bool(Discrete):
@@ -73,19 +146,9 @@ class Bool(Discrete):
 
 class OneOfK(Discrete):
     def __init__(self, k, scope=None, name=None):
-        """
-        Equivalent to `Discrete(range(k))`.
-
-        :param k: Maximum value to try.
-        :type k: int
-        """
         Discrete.__init__(self, range(k), scope, name)
 
 class OneOfKFactorial(Discrete):
     def __init__(self, k, scope=None, name=None):
-        """
-        Equivalent to `Discrete(np.product(np.arange(1, k + 1)))`
+        Discrete.__init__(self, range(np.product(np.arange(1, k + 1))), scope, name)
 
-        :type k: int
-        """
-        Discrete.__init__(self, np.product(np.arange(1, k + 1)), scope, name)

@@ -1,4 +1,4 @@
 def test_dummy():
-    from darch.surrogates import DummyModel
+    from darch.surrogates import DummySurrogate
 
-    assert DummyModel().eval(feats=None) == 0.0
+    assert DummySurrogate().eval(feats=None) == 0.0

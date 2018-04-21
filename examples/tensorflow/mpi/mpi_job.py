@@ -10,7 +10,6 @@ from darch.contrib.datasets.dataset import InMemoryDataset
 from darch.contrib.search_spaces.tensorflow.search_space_factory import SearchSpaceFactory
 #import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
 import darch.contrib.searchers.searchers as se
-import darch.contrib.searchers.searcher_utils as sut
 from darch.contrib import gpu_utils
 import darch.search_logging as sl
 
@@ -18,11 +17,11 @@ READY_REQ = 0
 MODEL_REQ = 1
 RESULTS_REQ = 2
 
-def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists, 
+def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
     searcher_load_path):
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
-    
+
     if sl.file_exists(search_data_path):
         state = sl.read_jsonfile(search_data_path)
         searcher.load(state)
@@ -42,26 +41,26 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                 if models_evaluated < num_samples:
                     eval_loggers[idx] = search_logger.get_current_evaluation_logger()
                     inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
-                    
+
                     eval_loggers[idx].log_config(vs, searcher_eval_token)
                     eval_loggers[idx].log_features(inputs, outputs, hs)
-                    
+
                     comm.isend((vs, search_logger.current_evaluation_id, searcher_eval_token, False), dest=idx + 1, tag=MODEL_REQ)
                     ready_requests[idx] = comm.irecv(source=idx + 1, tag=READY_REQ)
-                    
+
                     models_evaluated += 1
                 elif not finished[idx]:
-                    comm.isend((None, None, None, True), 
+                    comm.isend((None, None, None, True),
                                 dest=idx + 1, tag=MODEL_REQ)
                     finished[idx] = True
-        
+
         # See which workers have finished evaluation
         for idx, req in enumerate(eval_requests):
             test, msg = req.test()
             if test:
                 results, model_id, searcher_eval_token = msg
                 evaluation_logger = eval_loggers[idx]
-                evaluation_logger.log_results(results)      
+                evaluation_logger.log_results(results)
                 print('Sample %d: %f' % (model_id, results['validation_accuracy']))
                 searcher.update(results['validation_accuracy'], searcher_eval_token)
                 searcher.save_state(search_logger.search_data_folderpath)
@@ -79,31 +78,31 @@ def start_worker(comm, rank, evaluator, search_space_factory):
         vs, evaluation_id, searcher_eval_token, kill = comm.recv(source=0, tag=MODEL_REQ)
         if kill:
             break
-        
+
         inputs, outputs, hs = search_space_factory.get_search_space()
-        sut.specify(outputs.values(), vs)
-        
+        se.specify(outputs.values(), vs)
+
         results = evaluator.eval(inputs, outputs, hs)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
 def main():
     configs = sl.read_jsonfile("experiment_config.json")
-    
+
     parser = argparse.ArgumentParser("MPI Job for architecture search")
-    parser.add_argument('--config', '-c', action='store', dest='config_name', 
+    parser.add_argument('--config', '-c', action='store', dest='config_name',
     default='evolution', choices=['evolution'])
 
     # Other arguments
-    parser.add_argument('--display-output', '-o', action='store_true', dest='display_output', 
+    parser.add_argument('--display-output', '-o', action='store_true', dest='display_output',
                         default=False)
-    parser.add_argument('--resume', '-r', action='store_true', dest='resume', 
+    parser.add_argument('--resume', '-r', action='store_true', dest='resume',
                         default=False)
     parser.add_argument('--load_searcher', '-l', action='store', dest='searcher_file_name',
                         default='searcher_state.json')
 
     options = parser.parse_args()
     config = configs[options.config_name]
-        
+
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10'), 10)
     }
@@ -130,7 +129,7 @@ def main():
 
         evaluators = {
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-                        './temp' + str(rank), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output, 
+                        './temp' + str(rank), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output,
                         test_dataset=test_dataset)
         }
         evaluator = evaluators[config['evaluator']]()

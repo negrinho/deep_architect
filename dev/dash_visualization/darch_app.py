@@ -93,6 +93,8 @@ cfg = {
 
 # line plots for now are just going to be about the search.
 
+# NOTE: another possibility is making sure that that the model
+
 # {table, scatter_plot, parallel_plot}
 ex = {
     'plots' : {
@@ -314,11 +316,12 @@ def linear_vs_log_radio_items():
                 {'label': 'log', 'value': 'log'},
             ],
             value='linear',
-            labelStyle={'display': 'inline-block'}
-        )
+            labelStyle={'display': 'inline-block'})
 
-def dropdown():
-    pass
+def dropdown(option_lst):
+    return dcc.Dropdown(
+            options=[{'label' : k, 'value' : k} for k in option_lst])
+
 
 #### layout = go.Layout(
 #     plot_bgcolor = '#E5E5E5',

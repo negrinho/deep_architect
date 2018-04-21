@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = DArch
+SPHINXPROJ    = darch
 SOURCEDIR     = .
 BUILDDIR      = _build
 
@@ -14,7 +14,12 @@ help:
 
 .PHONY: help Makefile
 
+clean:
+	# rm -r _build/source/
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
+%:
+	sphinx-apidoc -f -o _build/source/ ../darch
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

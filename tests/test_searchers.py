@@ -3,7 +3,6 @@ from six import iteritems
 from darch.core import Module, determine_module_eval_seq, forward
 from darch.hyperparameters import Discrete
 
-
 def multiply_search_space_fn():
     class Multiply(Module):
         def __init__(self, compile_fn, *args, **kwargs):
@@ -22,7 +21,7 @@ def multiply_search_space_fn():
             output_name_to_val = self._fn(input_name_to_val)
             self._set_output_values(output_name_to_val)
 
-        def update(self):
+        def _update(self):
             pass
 
     def multiply_cfn(_, dh):
@@ -33,7 +32,6 @@ def multiply_search_space_fn():
 
     inp, out = module.get_io()
     return inp, out, module.get_hyperps()
-
 
 class Tmp(object):
     def __init__(self, name_to_input, name_to_output):
@@ -54,15 +52,13 @@ class Tmp(object):
                               for name, ox in iteritems(self.name_to_output)}
         return output_name_to_val
 
-
 def test_random_searcher():
     from darch.searchers import RandomSearcher
 
     for _ in range(5):
         searcher = RandomSearcher(multiply_search_space_fn)
-        inputs, outputs, hp, vs, _ = searcher.sample()
-
-        multiplier = hp['multiplier'].get_val()
+        inputs, outputs, hyperps, _, _ = searcher.sample()
+        multiplier = hyperps['multiplier'].get_val()
 
         val = Tmp(inputs, outputs)
         for i in range(5):

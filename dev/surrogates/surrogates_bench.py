@@ -23,12 +23,11 @@ from darch.contrib.datasets.loaders import load_mnist
 # 1. They should be fast to evaluate (justification)
 # 2. They should be accurate (replacement)
 
-
-class CLSTMSurrogateModel(torch.nn.Module):
+class CharLSTMModel(torch.nn.Module):
     """ The actual CLSTM model
     """
     def __init__(self, character_list, hidden_size, embedding_size):
-        super(CLSTMSurrogateModel, self).__init__()
+        super(CharLSTMModel, self).__init__()
         # One embedding feeds 4 LSTMs
         self.embeddings = torch.nn.Embedding(len(character_list), embedding_size)
         # Define ModuleList so modules are properly registered
@@ -49,20 +48,20 @@ class CLSTMSurrogateModel(torch.nn.Module):
         self.fc_out = torch.nn.Linear(hidden_size, 1)
 
     def pack(self, ins, lengths):
-        lengths, indicies = torch.sort(lengths, dim=0, descending=True)
+        lengths, indices = torch.sort(lengths, dim=0, descending=True)
         # TODO: When pytorch 0.4 comes out, change lengths.data.tolist() to just lengths
-        packed = torch.nn.utils.rnn.pack_padded_sequence(ins[indicies], lengths.data.tolist(), batch_first=True)
-        return packed, indicies
+        packed = torch.nn.utils.rnn.pack_padded_sequence(ins[indices], lengths.data.tolist(), batch_first=True)
+        return packed, indices
 
-    def unsort(self, outs, indicies, batch_dim=0):
+    def unsort(self, outs, indices, batch_dim=0):
         unsorted = outs.clone()
-        unsorted.scatter_(batch_dim, indicies.view(-1, 1).expand_as(outs), outs)
+        unsorted.scatter_(batch_dim, indices.view(-1, 1).expand_as(outs), outs)
         return unsorted
 
     # not called for now, useful if we want to unpack the output of rnn (not hidden state)
-    def unpack(self, outs, indicies):
+    def unpack(self, outs, indices):
         unpacked, _ = torch.nn.utils.rnn.pad_packed_sequence(outs, batch_first=True)
-        return self.unsort(unpacked, indicies)
+        return self.unsort(unpacked, indices)
 
     def forward(self, feats):
         # Expects feats to be a list of 4 (tensor, seq_lengths) tuples
@@ -70,20 +69,20 @@ class CLSTMSurrogateModel(torch.nn.Module):
         outs = []
         for i in range(4): # 4 features in input, hardcoded for now
             out = self.embeddings(feats[i][0])
-            packed, indicies = self.pack(out, feats[i][1])
+            packed, indices = self.pack(out, feats[i][1])
             _, (out, _) = self.lstm_in[i](packed, (self.h0[i].repeat(1, batch_size, 1), self.c0[i].repeat(1, batch_size, 1)))
-            out = self.unsort(out, indicies, batch_dim=1) # Torch docs say batch_dim is dim 1
+            out = self.unsort(out, indices, batch_dim=1) # Torch docs say batch_dim is dim 1
             outs.append(out)
         out = torch.cat(outs, dim=2)
         _, (out, _) = self.lstm_out(out, (self.h_out.repeat(1, batch_size, 1), self.c_out.repeat(1, batch_size, 1)))
         out = self.fc_out(out[-1]) # Only care about the last layer in event LSTM is stacked
         return out
 
-class CLSTMSurrogate(su.SurrogateModel):
-    """ The CLSTM Surrogate Function
+class CharLSTMSurrogate(su.SurrogateModel):
+    """ The CharLSTM Surrogate Function
     """
     # Character LSTM: One LSTM for each feature vector,
-    # For a total of 3, then concat the outputs and learn
+    # For a total of 4, then concat the outputs and learn
     character_list = [chr(i) for i in range(ord('A'), ord('Z'))] + [
         chr(i) for i in range(ord('a'), ord('z') + 1)] + [
         chr(i) for i in range(ord('0'), ord('9') + 1)] + [
@@ -94,7 +93,7 @@ class CLSTMSurrogate(su.SurrogateModel):
     hidden_size = 128
 
     def __init__(self, batch_size=64, max_batches=16, refit_interval=1, use_cuda=True, val_data=None):
-        self.model = CLSTMSurrogateModel(self.character_list, self.embedding_size, self.hidden_size)
+        self.model = CharLSTMModel(self.character_list, self.embedding_size, self.hidden_size)
         self.optimizer = torch.optim.Adam(self.model.parameters())
         self.loss_fn = torch.nn.MSELoss()
         self.batch_size = batch_size
@@ -110,7 +109,7 @@ class CLSTMSurrogate(su.SurrogateModel):
 
     def preprocess(self, feats):
         # Feats is a dictionary where values are lists of strings. Need to convert this into a tensor
-        # Convert strings to tensor by mapping the characters to indicies in the character_list
+        # Convert strings to tensor by mapping the characters to indices in the character_list
         # Final output is a list of 4 (Long Tensors, seq_len) tuples
         outputs = []
         for feat in feats.values():
@@ -157,14 +156,14 @@ class CLSTMSurrogate(su.SurrogateModel):
     def mini_batch(self, feats, vals, batch_size, num_batches, inference=False):
         # feats and vals are the raw feats from extract_features and a list of vals
         # Yields num_batches many mini batches of size batch_size
-        indicies = np.arange(len(feats))
+        indices = np.arange(len(feats))
         if not inference:
-            np.random.shuffle(indicies)
+            np.random.shuffle(indices)
 
         for i, start in enumerate(range(0, len(feats) - batch_size + 1, batch_size)):
             if i > num_batches:
                 break
-            subset_indicies = indicies[start: start + batch_size]
+            subset_indicies = indices[start: start + batch_size]
             if vals is not None:
                 yield self.batch([feats[i] for i in subset_indicies], [vals[i] for i in subset_indicies], inference=inference)
                 # yield batch(feats[subset_indicies], vals[subset_indicies])
@@ -218,7 +217,6 @@ class CLSTMSurrogate(su.SurrogateModel):
 
         return total_loss / len(self.feats_val)
 
-
 class SearchSpaceFactory:
     def __init__(self, num_classes):
         self.num_classes = num_classes
@@ -228,15 +226,12 @@ class SearchSpaceFactory:
         inputs, outputs = search_dnn.dnn_net(self.num_classes)
         return inputs, outputs, {'learning_rate_init' : D([1e-2, 1e-3, 1e-4, 1e-5])}
 
-
 def savefig(filename):
     plt.savefig('{}.png'.format(filename), bbox_inches='tight')
 
-
-
 def test_clstm_surrogate():
     ## Params:
-    dataset_size = 4096 # Initial dataset size
+    dataset_size = 1024 # Initial dataset size
     val_size = dataset_size // 2
     num_iters = 0
 
@@ -259,7 +254,6 @@ def test_clstm_surrogate():
     # X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.33)
     # X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.50)
 
-
     # Steal MNIST Tensorflow example data:
     (X_train, y_train, X_valid, y_valid, X_test, y_test) = load_mnist('.temp/data/mnist')
     # Define datasets for contrib tensorflow evaluator
@@ -267,9 +261,7 @@ def test_clstm_surrogate():
     val_dataset = InMemoryDataset(X_valid, y_valid, False)
     test_dataset = InMemoryDataset(X_test, y_test, False)
 
-
     num_classes = 10 # Change this per dataset
-
 
     ## Declare the model evaluator
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
@@ -279,7 +271,7 @@ def test_clstm_surrogate():
     search_space_fn = SearchSpaceFactory(num_classes).get_search_space
 
     ## Define our surrogate models
-    clstm_sur = CLSTMSurrogate()
+    clstm_sur = CharLSTMSurrogate()
     baseline_sur = su.HashingSurrogate(1024, 1)
 
     ## Choose our searching algorithm, using benchmarking surrogate model
@@ -317,7 +309,6 @@ def test_clstm_surrogate():
 
         return total_squared_error_baseline / len(val_data), mse_clstm
 
-
     # trains both surrogates on a list of data: (feat,val) tuples
     def train_and_validate(train_data, val_data, validate_interval=10):
         baseline_mse, clstm_mse = [], []
@@ -340,7 +331,6 @@ def test_clstm_surrogate():
                 clstm_mse.append(clstm_val)
                 avg_time = 0
         return baseline_mse, clstm_mse
-
 
     ## Training loop
     # We train two surrogate models with one searcher based on the non-baseline model
@@ -375,7 +365,7 @@ def test_clstm_surrogate():
     # Plot the MSEs
     plt.plot(np.arange(len(baseline_mse)), baseline_mse)
     plt.plot(np.arange(len(clstm_mse)), clstm_mse)
-    plt.legend(['Baseline MSE', 'CSLTM MSE'], loc='lower right')
+    plt.legend(['Baseline MSE', 'CharSLTM MSE'], loc='lower right')
     plt.xlabel('Iteration')
     plt.ylabel('Mean Squared Error')
     savefig('surrogate_benchmark')
