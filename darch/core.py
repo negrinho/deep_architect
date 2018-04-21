@@ -36,11 +36,11 @@ class Scope:
     def register(self, name, elem):
         """Registers an addressable object with the desired name.
 
-        The name has to be unique, otherwise asserts to False.
+        The name cannot exist in the scope, otherwise asserts ``False``.
 
         Args:
             name (str): Unique name.
-            elem (Addressable): Addressable object to register.
+            elem (darch.core.Addressable): Addressable object to register.
         """
         assert name not in self.name_to_elem
         assert isinstance(elem, Addressable)
@@ -54,7 +54,7 @@ class Scope:
             prefix (str): Prefix of the desired name.
 
         Returns:
-            str: Unique name in the current scope object.
+            str: Unique name in the current scope.
         """
         i = 0
         while True:
@@ -70,7 +70,7 @@ class Scope:
         The object must exist in the scope.
 
         Args:
-            elem (Addressable): Addressable object registerd in the scope.
+            elem (darch.core.Addressable): Addressable object registered in the scope.
 
         Returns:
             str: Name with which the object was registered in the scope.
@@ -100,10 +100,11 @@ Scope.default_scope = Scope()
 class Addressable:
     """Base class for classes whose objects have to be registered in a scope.
 
-    Provides functionality to register objects in a scope object.
+    Provides functionality to register objects in a scope.
 
     Args:
-        scope (Scope): Scope object where the addressable object will be registered.
+        scope (darch.core.Scope): Scope object where the addressable object will
+            be registered.
         name (str): Unique name used to register the addressable object.
     """
     def __init__(self, scope, name):
@@ -136,17 +137,17 @@ class Hyperparameter(Addressable):
 
     Specific hyperparameter types are created by inheriting from this class.
     Hyperparameters keep references to the modules that are dependent on them.
-    Hyperparameters are associated to modules.
 
     .. note::
         Hyperparameters with easily serializable values are preferred due to the
-        interaction with search logging and the multi-GPU functionality.
-        Typical types are integers, floats, strings and lists of these types.
+        interaction with the search logging and multi-GPU functionalities.
+        Typical valid serializable types are integers, floats, strings. Lists
+        and dictionaries of serializable types are also valid.
 
     Args:
-        scope (Scope, optional): Scope object in which the hyperparameter will be
-            registered. If none is given, uses the default scope object.
-        name (str, optional): Name used to derived an unique name for the
+        scope (darch.core.Scope, optional): Scope in which the hyperparameter
+            will be registered. If none is given, uses the default scope.
+        name (str, optional): Name used to derive an unique name for the
             hyperparameter. If none is given, uses the class name to derive
             the name.
     """
@@ -173,7 +174,7 @@ class Hyperparameter(Addressable):
         """Assigns a value to the hyperparameter.
 
         The hyperparameter value must be valid for the hyperparameter in question.
-        The hyperaparameter becomes set after if the set operation is successful.
+        The hyperparameter becomes set if the call is successful.
 
         Args:
             val (object): Value to assign to the hyperparameter.
@@ -184,15 +185,15 @@ class Hyperparameter(Addressable):
         self.val = val
 
         # calls update on the dependent modules to signal that this hyperparameter
-        # has been set.
+        # has been set, and trigger any relevant local changes.
         for m in self.modules:
             m._update()
 
     def get_val(self):
         """Get the value assigned to the hyperparameter.
 
-        The hyperparameter must already be assigned a value, otherwise it
-        asserts to ``False``.
+        The hyperparameter must have already been assigned a value, otherwise
+        asserts ``False``.
 
         Returns:
             object: Value assigned to the hyperparameter.
@@ -204,7 +205,7 @@ class Hyperparameter(Addressable):
         """Registers a module as being dependent of this hyperparameter.
 
         Args:
-            module (Module): Module dependent of this hyperparameter.
+            module (darch.core.Module): Module dependent of this hyperparameter.
         """
         self.modules.add(module)
 
@@ -222,11 +223,12 @@ class Input(Addressable):
     Inputs may be connected to a single output. Inputs and outputs are associated
     to a single module.
 
-    See also: :class:`Output` and :class:`Module`.
+    See also: :class:`darch.core.Output` and :class:`darch.core.Module`.
 
     Args:
-        module (Module): Module with which the input object is associated to.
-        scope (Scope): Scope object where the input is going to be registered in.
+        module (darch.core.Module): Module with which the input object is associated to.
+        scope (darch.core.Scope): Scope object where the input is going to be
+            registered in.
         name (str): Unique name with which to register the input object.
     """
     def __init__(self, module, scope, name):
@@ -245,18 +247,18 @@ class Input(Addressable):
         return self.from_output is not None
 
     def get_connected_output(self):
-        """Get the output to which is the input is connected.
+        """Get the output to which the input is connected to.
 
         Returns:
-            Output: Output object to which the input is connected.
+            darch.core.Output: Output to which the input is connected to.
         """
         return self.from_output
 
     def get_module(self):
-        """Get the module object with which the input is associated with.
+        """Get the module with which the input is associated with.
 
         Returns:
-            Module: Module object with which the input is associated with.
+            darch.core.Module: Module with which the input is associated with.
         """
         return self.module
 
@@ -267,7 +269,7 @@ class Input(Addressable):
         the input is already connected.
 
         Args:
-            from_output (Output): Output to connect to this input.
+            from_output (darch.core.Output): Output to connect to this input.
         """
         assert isinstance(from_output, Output)
         assert self.from_output is None
@@ -289,34 +291,34 @@ class Input(Addressable):
         the output to a new input, leaving this input in a disconnected state.
 
         Changes the state of both this input, the other input, and the output
-        to which this input is connected.
+        to which this input is connected to.
 
         .. note::
             Rerouting operations are widely used in
             :class:`darch.modules.SubstitutionModule`. See also:
-            :meth:`Output.reroute_all_connected_inputs`.
+            :meth:`darch.core.Output.reroute_all_connected_inputs`.
 
         Args:
-            to_input (Input): Input to which the output that is connected to
-                this input is going to be connected to.
+            to_input (darch.core.Input): Input to which the output that is connected to
+                this input .is going to be connected to.
         """
         assert isinstance(to_input, Input)
         old_ox = self.from_output
         self.disconnect()
         old_ox.connect(to_input)
 
-### TODO: more documentation needs to be added from here.x
 class Output(Addressable):
     """Manages output connections.
 
     Outputs may be connected to multiple inputs. Inputs and outputs are associated
     to a single module.
 
-    See also: :class:`Input` and :class`Module`.
+    See also: :class:`darch.core.Input` and :class:`darch.core.Module`.
 
     Args:
-        module (Module): Module with which the output object is associated to.
-        scope (Scope): Scope object where the output is going to be registered in.
+        module (darch.core.Module): Module with which the output object is associated to.
+        scope (darch.core.Scope): Scope object where the output is going to be
+            registered in.
         name (str): Unique name with which to register the output object.
     """
     def __init__(self, module, scope, name):
@@ -338,7 +340,7 @@ class Output(Addressable):
         """Get the list of inputs to which is the output is connected to.
 
         Returns:
-            list[Input]: List of the inputs to which the output is connect to.
+            list[darch.core.Input]: List of the inputs to which the output is connect to.
         """
         return self.to_inputs
 
@@ -346,7 +348,7 @@ class Output(Addressable):
         """Get the module object with which the output is associated with.
 
         Returns:
-            Module: Module object with which the output is associated with.
+            darch.core.Module: Module object with which the output is associated with.
         """
         return self.module
 
@@ -356,29 +358,29 @@ class Output(Addressable):
         Changes the state of both the input and the output.
 
         Args:
-            to_input (Input): Input to connect to this output.
+            to_input (darch.core.Input): Input to connect to this output.
         """
         to_input.connect(self)
 
     def disconnect_all(self):
-        """Disconnects all the inputs connect to this output.
+        """Disconnects all the inputs connected to this output.
 
-        Changes the state of the output and all the connected inputs to it.
+        Changes the state of the output and all the inputs connected to it.
         """
         for ix in self.to_inputs:
             ix.disconnect()
 
     def reroute_all_connected_inputs(self, from_output):
-        """Reroutes all the inputs to which the output is connected to to a
+        """Reroutes all the inputs to which the output is connected to a
         different output.
 
         .. note::
             Rerouting operations are widely used in
             :class:`darch.modules.SubstitutionModule`. See also:
-            :meth:`Input.reroute_connected_output`.
+            :meth:`darch.core.Input.reroute_connected_output`.
 
         Args:
-            from_output (Output): Output to which the connected inputs are
+            from_output (darch.core.Output): Output to which the connected inputs are
                 going to be rerouted to.
         """
         for ix in self.to_inputs:
@@ -390,8 +392,8 @@ class Module(Addressable):
 
     Modules are some of the main components used to define search spaces.
     The inputs, outputs, and hyperparameters have names local to the module.
-    These names are different than the ones used in the scope object in which
-    these objects are registered.
+    These names are different than the ones used in the scope in which
+    these objects are registered in.
 
     Search spaces based on modules are very general. They can be used
     across deep learning frameworks, and even for purposes that do not involve
@@ -399,8 +401,9 @@ class Module(Addressable):
     operations to understand are compile and forward.
 
     Args:
-        scope (Scope): Scope object where the module is going to be registered in.
-        name (str): Unique name with which to register the module.
+        scope (darch.core.Scope, optional): Scope object where the module is going to be
+            registered in.
+        name (str, optional): Unique name with which to register the module.
     """
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
@@ -435,7 +438,7 @@ class Module(Addressable):
         """Registers an hyperparameter that the module depends on.
 
         Args:
-            h (Hyperparameter): Hyperparameter that the module depends on.
+            h (darch.core.Hyperparameter): Hyperparameter that the module depends on.
             name (str): Local name to give to the hyperparameter.
         """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
@@ -451,7 +454,7 @@ class Module(Addressable):
         Args:
             input_names (list[str]): List of inputs names of the module.
             output_names (list[str]): List of the output names of the module.
-            name_to_hyperp (dict[str, Hyperparameter]):
+            name_to_hyperp (dict[str, darch.core.Hyperparameter]):
                 Dictionary of names of hyperparameters to hyperparameters.
         """
         for name in input_names:
@@ -499,7 +502,7 @@ class Module(Addressable):
     def get_io(self):
         """
         Returns:
-            (dict[str,Input], dict[str,Output]):
+            (dict[str,darch.core.Input], dict[str,darch.core.Output]):
                 Pair with dictionaries mapping
                 the local input and output names to their corresponding
                 input and output objects.
@@ -509,7 +512,7 @@ class Module(Addressable):
     def get_hyperps(self):
         """
         Returns:
-            dict[str, Hyperparameter]:
+            dict[str, darch.core.Hyperparameter]:
                 Dictionary of local hyperparameter names to the corresponding
                 hyperparameter objects.
         """
@@ -517,7 +520,8 @@ class Module(Addressable):
 
     def _update(self):
         """Called when an hyperparameter that the module depends on is set."""
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
 
     def _compile(self):
         """Compile operation for the module.
@@ -558,11 +562,11 @@ def extract_unique_modules(input_or_output_lst):
     Each module appears appear only once in the resulting list of modules.
 
     Args:
-        input_or_output_lst (list[Input or Output]): List of inputs or outputs
-            from which to extract the associated modules.
+        input_or_output_lst (list[darch.core.Input or darch.core.Output]):
+            List of inputs or outputs from which to extract the associated modules.
 
     Returns:
-        list[Module]:
+        list[darch.core.Module]:
             Unique modules to which the inputs and outputs in the list belong to.
     """
     ms = OrderedSet()
@@ -584,13 +588,13 @@ def determine_module_eval_seq(input_lst):
     modules in the graph. See also: :func:`forward`.
 
     Args:
-        input_lst (list[Input]): List of inputs sufficient to compute
+        input_lst (list[darch.core.Input]): List of inputs sufficient to compute
             the forward computation of the whole graph through propagation.
 
     Returns:
-        list[Module]:
-            List of modules ordered according ordered in a way that
-            allows to call forward on the modules in that order.
+        list[darch.core.Module]:
+            List of modules ordered in a way that allows to call forward on the
+            modules in that order.
     """
     module_seq = []
     module_memo = set()
@@ -618,9 +622,9 @@ def traverse_backward(output_lst, fn):
     :func:`get_unset_hyperparameters`. See also: :func:`traverse_forward`.
 
     Args:
-        output_lst (list[Output]): List of outputs to start the traversal at.
-        fn (Module -> bool): Function to apply to each module. Returns ``True``
-            if the traversal is to be stopped.
+        output_lst (list[darch.core.Output]): List of outputs to start the traversal at.
+        fn ((darch.core.Module) -> (bool)): Function to apply to each module.
+            Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(output_lst)
@@ -646,9 +650,9 @@ def traverse_forward(input_lst, fn):
     See also: :func:`traverse_backward`.
 
     Args:
-        input_lst (list[Input]): List of inputs to start the traversal at.
-        fn (Module -> bool): Function to apply to each module. Returns ``True``
-            if the traversal is to be stopped.
+        input_lst (list[darch.core.Input]): List of inputs to start the traversal at.
+        fn ((darch.core.Module) -> (bool)): Function to apply to each module.
+            Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(input_lst)
@@ -670,7 +674,7 @@ def is_specified(output_lst):
     the outputs have been set.
 
     Args:
-        output_lst (list[Output]): List of outputs to start the traversal at.
+        output_lst (list[darch.core.Output]): List of outputs to start the traversal at.
 
     Returns:
         bool: ``True`` if all the hyperparameters have been set. ``False`` otherwise.
@@ -696,10 +700,10 @@ def get_unset_hyperparameters(output_lst):
     :func:`darch.modules.siso_or`, and :func:`darch.modules.siso_repeat`.
 
     Args:
-        output_lst (list[Output]): List of outputs to start the traversal at.
+        output_lst (list[darch.core.Output]): List of outputs to start the traversal at.
 
     Returns:
-        OrderedSet[Hyperparameter]:
+        OrderedSet[darch.core.Hyperparameter]:
             Ordered set of hyperparameters that are currently present in the
             graph and not have been assigned a value yet.
     """
@@ -719,7 +723,7 @@ def forward(input_to_val, _module_seq=None):
 
     The starting inputs are given the values in the dictionary. The values for
     the other inputs are obtained through propagation, i.e., through successive
-    calls to :meth:`Module.forward` of the appropriate modules.
+    calls to :meth:`darch.core.Module.forward` of the appropriate modules.
 
     .. note::
         For efficiency, in dynamic frameworks, the module evaluation sequence
@@ -727,12 +731,12 @@ def forward(input_to_val, _module_seq=None):
         evaluation sequence is computed with :func:`determine_module_eval_seq`.
 
     Args:
-        input_to_val (dict[Input, object]: Dictionary of initial inputs to their
-            corresponding values.
-        _module_seq (optional(list[Module])): List of modules ordered in a way that
-            calling :meth:`Module.forward` on them starting from the values
-            given for the inputs is valid. If not provided, the module sequence
-            is computed.
+        input_to_val (dict[darch.core.Input, object]): Dictionary of initial
+            inputs to their corresponding values.
+        _module_seq (list[darch.core.Module], optional): List of modules ordered
+            in a way that calling :meth:`darch.core.Module.forward` on them
+            starting from the values given for the inputs is valid. If it is
+            not provided, the module sequence is computed.
     """
     if _module_seq is None:
         _module_seq = determine_module_eval_seq(input_to_val.keys())
@@ -754,11 +758,11 @@ def get_unconnected_inputs(output_lst):
     :func:`forward`.
 
     Args:
-        output_lst (list[Output]): List of outputs to start the backward traversal
-            at.
+        output_lst (list[darch.core.Output]): List of outputs to start the
+            backward traversal at.
 
     Returns:
-        list[Input]:
+        list[darch.core.Input]:
             Unconnected inputs reachable by traversing the graph backward starting
             from the provided outputs.
     """
@@ -780,10 +784,10 @@ def get_unconnected_outputs(input_lst):
     these outputs.
 
     Args:
-        input_lst (list[Input]): List of input to start the forward traversal at.
+        input_lst (list[darch.core.Input]): List of input to start the forward traversal at.
 
     Returns:
-        list[Output]:
+        list[darch.core.Output]:
             Unconnected outputs reachable by traversing the graph forward starting
             from the provided inputs.
     """

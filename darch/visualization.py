@@ -11,14 +11,6 @@ def draw_graph(output_lst, draw_hyperparameters=False,
         draw_io_labels=False, graph_name='graph', out_folderpath=None,
         print_to_screen=True):
     """
-    Draws a graph of the model with the given outputs.
-
-    :type output_lst: collections.Iterable[darch.core.Output]
-    :type draw_hyperparameters: bool
-    :type draw_io_labels: bool
-    :type graph_name: str
-    :type out_folderpath: str | None
-    :type print_to_screen: bool
     """
     assert print_to_screen or out_folderpath is not None
 
@@ -94,9 +86,6 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
 class LinePlot:
-    """
-    # FIXME add documentation
-    """
     def __init__(self, title=None, xlabel=None, ylabel=None):
         self.data = []
         self.title = title
