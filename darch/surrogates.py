@@ -5,10 +5,25 @@ import numpy as np
 from six import iteritems, itervalues
 
 class SurrogateModel:
+    """Abstract class for a surrogate model.
+    """
     def eval(self, feats):
+        """ Returns a prediction of performance (or other relevant metrics),
+        given a feature representation of the architecture.
+        """
         raise NotImplementedError
 
     def update(self, val, feats):
+        """Updates the state of the surrogate function given the feature
+        representation for the architecture and the corresponding ground truth
+        performance metric.
+
+        .. note::
+            The data for the surrogate model may be kept internally. The update
+            of the state of the surrogate function can be done periodically, rather
+            than with each call to update. This can be done based on values for
+            the configuration of the surrogate model instance.
+        """
         raise NotImplementedError
 
 class DummySurrogate(SurrogateModel):
@@ -25,8 +40,10 @@ class DummySurrogate(SurrogateModel):
         self.val_lst.append(val)
 
 class HashingSurrogate(SurrogateModel):
-    """
-    # FIXME add documentation
+    """Simple hashing surrogate function that simply hashes the strings in the
+    feature representation of the architecture to buckets. See
+    :func:`darch.surrogates.extract_features` for the functions that is used to
+    extract string features for the architectures.
     """
     def __init__(self, hash_size, refit_interval, weight_decay_coeff=1e-5,
             use_module_feats=True, use_connection_feats=True,
@@ -78,12 +95,28 @@ class HashingSurrogate(SurrogateModel):
 
 # extract some simple features from the network. useful for smbo surrogate models.
 def extract_features(inputs, outputs, hs):
+    """Extract a feature representation of a model represented through inputs,
+    outputs, and hyperparameters.
+
+    This function has been mostly used for performance prediction on fully
+    specified models, i.e., after all the hyperparameters in the search space
+    have specified. After this, there is a single model for which we can compute
+    an appropriate feature representation containing information about the
+    connections that the model makes and the values of the hyperparameters.
+
+    Args:
+        inputs (dict[str, darch.core.Input]): Dictionary mapping names
+            to inputs of the architecture.
+        outputs (dict[str, darch.core.Output]): Dictionary mapping names to outputs
+            of the architecture.
+        hs (dict[str, darch.core.Hyperparameter]): Dictionary mappings names to
+            hyperparameters of the architecture.
+
+    Returns:
+        dict[str, list[str]]:
+            Representation of the architecture as a dictionary where each
+            key is associated to a list with different types of features.
     """
-    :type inputs: dict[str,darch.core.Input]
-    :type outputs: dict[str,darch.core.Output]
-    :type hs: dict[str,darch.core.Hyperparameter]
-    """
-    # FIXME inputs is not used anywhere; can it be removed?
     module_memo = co.OrderedSet()
 
     module_feats = []

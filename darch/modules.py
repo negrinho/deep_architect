@@ -577,8 +577,7 @@ class SearchSpaceFactory:
         self.reset_scope_upon_get = reset_scope_upon_get
 
     def get_search_space(self):
-        """Returns the buffered search space.
-        """
+        """Returns the buffered search space."""
         if self.reset_scope_upon_get:
             co.Scope.reset_default_scope()
 

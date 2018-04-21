@@ -615,7 +615,7 @@ def read_search_folder(search_folderpath):
     return log_lst
 
 # functionality below is useful to read search log folders that are nested.
-# flat folders are discouraged.
+# non-nested folders are preferred though.
 def is_search_log_folder(folderpath):
     return folder_exists(join_paths([folderpath, 'evaluations', 'x0']))
 
