@@ -1,9 +1,9 @@
 import darch.searchers as se
-import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
+import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 from create_sentiment_featuresets import create_feature_sets_and_labels
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-from darch.contrib.search_spaces.tensorflow.common import D
+from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from darch.contrib.useful.datasets.dataset import InMemoryDataset
+from darch.contrib.useful.search_spaces.tensorflow.common import D
 import darch.core as co
 import numpy as np
 

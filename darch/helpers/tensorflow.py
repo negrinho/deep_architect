@@ -4,23 +4,59 @@ import tensorflow as tf
 import numpy as np
 
 class TFModule(co.Module):
-    """
-    Tensorflow wrapper for darch modules.
+    """Class for taking Tensorflow code and wrapping it in a darch module.
+
+    This class subclasses :class:`darch.core.Module` as therefore inherits all
+    the functionality associated to it (e.g., keepign track of inputs, outputs,
+    and hyperparameters). It also enables to do the compile and forward
+    operations for these types of modules once a module is fully specified,
+    i.e., once all the hyperparameters have been chosen.
+
+    The compile operation in this case creates all the variables used for the
+    fragment of the computational graph associated to this module.
+    The forward operation takes the variables that were created in the compile
+    operation and constructs the actual computational graph fragment associated
+    to this module.
+
+    .. note::
+        This module is abstract, meaning that it does not actually implement
+        any particular Tensorflow computation. It simply wraps Tensorflow
+        functionality in a darch module. The instantation of the Tensorflow
+        variables is taken care by the `compile_fn` function that takes a two
+        dictionaries, one of inputs and another one of outputs, and
+        returns another function that takes a dictionary of inputs and creates
+        the computational graph. This functionality makes extensive use of closures.
+
+        The keys of the dictionaries that are passed to the compile
+        and forward function match the names of the inputs and hyperparameters
+        respectively. The dictionary returned by the forward function has keys
+        equal to the names of the outputs.
+
+    The usage of this class is best understood through examples.
+    Examples for how to instantiate objects of this class to implement
+    specific Tensorflow computation can be found in
+    :mod:`darch.search_spaces.tensorflow.conv2d`.
+
+    Args:
+        name (str): Name of the module
+        name_to_hyperp (dict[str,darch.core.Hyperparameter]): Dictionary of
+            hyperparameters that the model depends on. The keys are the local
+            names of the hyperparameters.
+        compile_fn ((dict[str,object], dict[str,object]) -> ((dict[str,object]) -> ((dict[str,object]) | (dict[str,object], dict[tensorflow.python.framework.ops.Tensor,object], dict[tensorflow.python.framework.ops.Tensor,object])))):
+            The first function takes two dictionaries with
+            keys corresponding to `input_names` and `output_names` and returns
+            a function that takes a dictionary with keys corresponding to
+            `input_names` and returns a dictionary with keys corresponding
+            to `output_names`. The first function may also return
+            two additional dictionaries mapping Tensorflow placeholders to the
+            values that they will take during training and test.
+        input_names (list[str]): List of names for the inputs.
+        output_names (list[str]): List of names for the outputs.
+        scope (darch.core.Scope, optional): Scope where the module will be
+            registered.
     """
     def __init__(self, name, name_to_hyperp, compile_fn,
             input_names, output_names, scope=None):
-        """
-        :type name: str
-        :type name_to_hyperp: dict[str,darch.core.Hyperparameter]
-        :type compile_fn: (dict[str,darch.core.Input], dict[str,darch.core.Hyperparameter]) -> (
-                          ((dict[str,darch.core.Input]) -> dict[str,darch.core.Output],
-                           dict[tensorflow.python.framework.ops.Tensor,Any],
-                           dict[tensorflow.python.framework.ops.Tensor,Any]) |
-                          (dict[str,darch.core.Input]) -> dict[str,darch.core.Output])
-        :type input_names: list[str]
-        :type output_names: list[str]
-        :type scope: darch.core.Scope | None
-        """
         co.Module.__init__(self, scope, name)
 
         self._register(input_names, output_names, name_to_hyperp)
@@ -45,9 +81,20 @@ class TFModule(co.Module):
         pass
 
 def get_feed_dicts(output_lst):
-    """
-    :type output_lst: collections.Iterable[darch.core.Output]
-    :rtype: (dict[tensorflow.python.framework.ops.Tensor,Any], dict[tensorflow.python.framework.ops.Tensor,Any])
+    """Get the training and evaluation dictionaries that map placeholders to the
+    values that they should take during training and evaluation, respectively
+    (e.g., used for dropout or batch normalization).
+
+    Args:
+        output_lst (list[darch.core.Output]): List of outputs of the model
+            (i.e., with no unspecified hyperparameters available) sampled
+            from the search space.
+
+    Returns:
+        (dict, dict):
+            Training and evaluation dictionaries where the keys are placeholders
+            and the values are the values the placeholders should take during
+            each of these stages.
     """
     train_feed = {}
     eval_feed = {}

@@ -1,5 +1,5 @@
-from darch.contrib.search_spaces.tensorflow.common import D, siso_tfm
-import darch.contrib.search_spaces.tensorflow.dnn as dnn
+from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+import darch.contrib.useful.search_spaces.tensorflow.dnn as dnn
 import darch.modules as mo
 import tensorflow as tf
 import numpy as np

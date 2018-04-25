@@ -2,7 +2,7 @@
 import darch.modules as mo
 import tensorflow as tf
 import numpy as np
-from darch.contrib.search_spaces.tensorflow.common import siso_tfm, D
+from darch.contrib.useful.search_spaces.tensorflow.common import siso_tfm, D
 
 # initializers
 def constant_initializer(c):

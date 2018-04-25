@@ -1,6 +1,6 @@
 
 import darch.core as co
-import darch.contrib.search_spaces.tensorflow.cnn2d as css_cnn2d
+import darch.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
 import darch.hyperparameters as hp
 import darch.modules as mo
 import darch.searchers as se

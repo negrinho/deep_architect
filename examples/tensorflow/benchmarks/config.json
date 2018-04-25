@@ -1,0 +1,38 @@
+{
+    "debug" : {
+        "max_eval_time_in_minutes" : 0.1,
+        "num_samples" : 3,
+        "num_repetitions" : 3,
+        "logs_folderpath" : "logs/benchmarks",
+        "search_name" : "debug",
+        "use_gpu" : 0,
+        "delete_if_exists" : 1,
+        "resume_if_exists" : 0,
+        "searcher_name_lst" : ["random", "smbo_rand_256", "smbo_mcts_256"],
+        "search_space_name_lst" : ["dnn"]
+    },
+    "server_debug" : {
+        "max_eval_time_in_minutes" : 0.5,
+        "num_samples" : 3,
+        "num_repetitions" : 3,
+        "logs_folderpath" : "logs/benchmarks",
+        "search_name" : "server_debug",
+        "use_gpu" : 0,
+        "delete_if_exists" : 1,
+        "resume_if_exists" : 0,
+        "searcher_name_lst" : ["random", "smbo_rand_256", "smbo_mcts_256"],
+        "search_space_name_lst" : ["dnn"]
+    },
+    "benchmark_full" : {
+        "max_eval_time_in_minutes" : 2.0,
+        "num_samples" : 256,
+        "num_repetitions" : 3,
+        "folderpath" : "logs/benchmarks",
+        "search_name" : "benchmark_full",
+        "use_gpu" : 1,
+        "delete_if_exists" : 0,
+        "resume_if_exists" : 1,
+        "searcher_name_lst" : ["random", "smbo_rand_256", "smbo_mcts_256"],
+        "search_space_name_lst" : ["dnn"]
+    }
+}

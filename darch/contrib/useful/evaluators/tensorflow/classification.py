@@ -6,7 +6,7 @@ import numpy as np
 import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl
-import darch.contrib.gpu_utils as gpu_utils
+import darch.contrib.useful.gpu_utils as gpu_utils
 from six.moves import range
 
 class SimpleClassifierEvaluator:
@@ -226,9 +226,9 @@ class SimpleClassifierEvaluator:
                        }
             if 'gpu_utilization_in_percent' in seqs_dict:
                 results['average_gpu_utilization_in_percent'] = np.mean(
-                    seqs_dict['gpu_utilization_in_percent']),
+                    seqs_dict['gpu_utilization_in_percent'])
                 results['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
-                    seqs_dict['gpu_memory_utilization_in_gigabytes']),
+                    seqs_dict['gpu_memory_utilization_in_gigabytes'])
 
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
