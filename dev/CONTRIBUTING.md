@@ -35,11 +35,41 @@ owners to maintain it, i.e., that it is not broken.
 If code in the `contrib` folder breaks and the code owner does not fix it
 by issuing a pull request in a timely manner, we reserve the right to move
 the code to the `dev` folder.
+The `dev` folder serves to store code that contains a sketch of some interesting
+functionality, but due to some reason, it is not fully functional yet or it
+has not been refactored well enough to be integrated as part of `contrib`.
+Unmaintained code will be moved to `dev` upon breakage.
 
 Code that is part of the contrib folder may eventually be refactored into code
 that is part of the darch folder.
+Similarly, code in the dev folder may be refactored in code that goes in the
+contrib folder.
 In case this happens, it is the responsibility of the developers of DeepArchitect
 to maintain it.
+To create a new contrib folder, it is best it is best to first discuss scope to
+make sure that contributions are done at a good level of detail.
+For the dev folder, we do not impose these restrictions.
+The `dev` folder should be used sparsely though.
+We will only accept incomplete contributions to the dev folder if it is determined
+that they showcase an important functionality and there is sufficient reason
+to include even without it being completed in functionality or scope.
+For cases where the functionality is indeed complete in terms of functionality
+or scope, we recommend the contributor to refactor its contribution in
+some thing that can be included in the contrib folder and reused by other
+users of DeepArchitect.
+
+Cross-pollination between `contrib` and `dev` folders is expected and encouraged.
+One example of when this would make sense would be if a few contrib folders already
+had some useful functionality, but a contributor wanted to extend it and
+encapsulate it in a more coherent contrib subfolder.
+This scheme allows DeepArchitect to evolve without committing to major
+refactoring decisions upfront.
+
+If the foreseen contribution is better seen as an extension or fix to an
+existing contrib folder, please check with the active contributors for how to
+
+
+
 
 <!-- only for the code that is derived from the model. -->
 
@@ -314,3 +344,8 @@ Keep your commits small and localized and
 Furthering progress on architecture search by
 
 How to concentrate stuff in your folder.
+
+Add some information about what remains to be done.
+This is nice and functions as a wish list going into the future.
+
+Documentation requirements.

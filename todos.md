@@ -169,6 +169,8 @@ of the code base, e.g., some of the private functions of the modules.
 * Add a table where markers can be added with numbers to keep track of what are the elements of the table that we care about.
 * Think about adding debugging configurations that can be mentioned by pointing to the right ones.
 * Remove sentiment_nn example as it is not very informative.
+* Have a script that allows to rename imports from the contrib folder to imports of the dev folder or something similar.
+* Have code to show the dependencies on folders in contrib and folders in dev.
 
 Visualization:
 * Make sure that an exception is never thrown.
