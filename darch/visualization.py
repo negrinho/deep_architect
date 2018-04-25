@@ -10,8 +10,6 @@ def running_max(vs):
 def draw_graph(output_lst, draw_hyperparameters=False,
         draw_io_labels=False, graph_name='graph', out_folderpath=None,
         print_to_screen=True):
-    """
-    """
     assert print_to_screen or out_folderpath is not None
 
     g = graphviz.Digraph()

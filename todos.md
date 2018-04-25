@@ -163,6 +163,12 @@ of the code base, e.g., some of the private functions of the modules.
 * To make life easier, it would be nice to take the comments in the file and just write down the tutorials based on them. It would make it easier and improve consistency.
 * Just say something about the log manager for plotting.
 * Be a bit more clear on the inputs of the model and such.
+* Change the Docker containers
+* Move the con
+* Change the deepo image to add the one with Jupyter.
+* Add a table where markers can be added with numbers to keep track of what are the elements of the table that we care about.
+* Think about adding debugging configurations that can be mentioned by pointing to the right ones.
+* Remove sentiment_nn example as it is not very informative.
 
 Visualization:
 * Make sure that an exception is never thrown.

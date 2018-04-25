@@ -4,6 +4,15 @@ from six.moves import range
 import itertools
 
 class Empty(co.Module):
+    """Module passes the input to the output without changes.
+    Args:
+        num_connections (int, optional): Number of input and outputs.
+        scope (darch.core.Scope, optional): Scope in which the module will be
+            registered. If none is given, uses the default scope.
+        name (str, optional): Name used to derive an unique name for the
+            module. If none is given, uses the class name to derive
+            the name.
+    """
     def __init__(self, num_connections=1, scope=None, name=None):
         co.Module.__init__(self, scope, name)
         self.num_connections = num_connections
@@ -15,14 +24,12 @@ class Empty(co.Module):
                 self._register_input("In" + str(i))
                 self._register_output("Out" + str(i))
 
-
     def forward(self):
         if self.num_connections == 1:
             self.outputs['Out'].val = self.inputs['In'].val
         else:
             for i in range(self.num_connections):
                 self.outputs['Out' + str(i)].val = self.inputs['In' + str(i)].val
-
 
     def _update(self):
         pass

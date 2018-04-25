@@ -379,6 +379,9 @@ class SearchLogger:
         create_folder(self.all_evaluations_folderpath)
         # create_folder(self.code_folderpath)
 
+    def get_current_evaluation_id(self):
+        return self.current_evaluation_id
+
     def get_current_evaluation_logger(self):
         """Gets the evaluation logger for the next evaluation.
 
@@ -558,7 +561,6 @@ class EvaluationLogger:
         Returns:
             str: Path to the folder where the evaluations logs are written to.
         """
-
         return self.user_data_folderpath
 
 def read_evaluation_folder(evaluation_folderpath):
@@ -638,3 +640,27 @@ def recursive_read_search_folders(folderpath):
         d['num_logs'] = len(d['log_lst'])
         all_log_lst.append(d)
     return all_log_lst
+
+import argparse
+class CommandLineArgs:
+    def __init__(self, argname_prefix=''):
+        self.parser = argparse.ArgumentParser()
+        self.argname_prefix = argname_prefix
+
+    def add(self, argname, argtype, default_value=None, optional=False, help=None,
+            valid_value_lst=None, list_valued=False):
+        valid_types = {'int' : int, 'str' : str, 'float' : float}
+        assert argtype in valid_types
+
+        nargs = None if not list_valued else '*'
+        argtype = valid_types[argtype]
+
+        self.parser.add_argument('--' + self.argname_prefix + argname,
+            required=not optional, default=default_value, nargs=nargs,
+            type=argtype, choices=valid_value_lst, help=help)
+
+    def parse(self):
+        return vars(self.parser.parse_args())
+
+    def get_parser(self):
+        return self.parser
