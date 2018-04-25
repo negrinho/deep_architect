@@ -6,13 +6,14 @@ import darch.searchers as se
 import evolution_search_space as ss
 import darch.search_logging as sl
 import darch.core as co
+import darch.modules as mo
 
-class SearchSpaceFactory:
+class SSF(mo.SearchSpaceFactory):
     def __init__(self, num_classes):
+        mo.SearchSpaceFactory.__init__(self)
         self.num_classes = num_classes
 
-    def get_search_space(self):
-        co.Scope.reset_default_scope()
+    def _get_search_space(self):
         inputs, outputs = ss.get_search_space_1(self.num_classes)
         return inputs, outputs, {}
 
@@ -33,7 +34,7 @@ def main():
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=True)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])
 
-    search_space_factory = SearchSpaceFactory(num_classes)
+    search_space_factory = SSF(num_classes)
     searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
 
     if sl.file_exists(search_data_path):

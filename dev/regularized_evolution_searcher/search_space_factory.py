@@ -1,4 +1,4 @@
-import darch.contrib.useful.search_spaces.tensorflow.evolution_search_space as ss
+import evolution_search_space as ss
 import darch.core as co
 
 class SearchSpaceFactory:
