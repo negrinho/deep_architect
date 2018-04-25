@@ -1,7 +1,7 @@
 import darch.helpers.pytorch as hpt
 import darch.hyperparameters as hp
 from model import CifarResNeXt
-from darch.contrib.search_spaces.pytorch.common import siso_torchm
+from darch.contrib.useful.search_spaces.pytorch.common import siso_torchm
 
 
 D = hp.Discrete

@@ -1,4 +1,4 @@
-import darch.contrib.search_spaces.tensorflow.evolution_search_space as ss
+import darch.contrib.useful.search_spaces.tensorflow.evolution_search_space as ss
 import darch.core as co
 
 class SearchSpaceFactory:
@@ -10,7 +10,7 @@ class SearchSpaceFactory:
             self.search_space_fn = ss.get_search_space_2
         elif search_space == 'sp3':
             self.search_space_fn = ss.get_search_space_3
-    
+
     def get_search_space(self):
         co.Scope.reset_default_scope()
         inputs, outputs = self.search_space_fn(self.num_classes)

@@ -1,7 +1,7 @@
-from darch.contrib.datasets.loaders import load_cifar10
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-#import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
+from darch.contrib.useful.datasets.loaders import load_cifar10
+from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from darch.contrib.useful.datasets.dataset import InMemoryDataset
+#import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 import darch.searchers as se
 import evolution_search_space as ss
 import darch.search_logging as sl
@@ -39,7 +39,6 @@ def main():
     if sl.file_exists(search_data_path):
         state = sl.read_jsonfile(search_data_path)
         searcher.load(state)
-
 
     for i in xrange(search_logger.current_evaluation_id, num_samples):
         evaluation_logger = search_logger.get_current_evaluation_logger()

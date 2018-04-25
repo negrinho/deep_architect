@@ -1,13 +1,13 @@
 from time import sleep
 import argparse
 from mpi4py import MPI
-from darch.contrib.datasets.loaders import load_cifar10
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-from darch.contrib.search_spaces.tensorflow.search_space_factory import SearchSpaceFactory
-#import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
+from darch.contrib.useful.datasets.loaders import load_cifar10
+from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from darch.contrib.useful.datasets.dataset import InMemoryDataset
+from darch.contrib.useful.search_spaces.tensorflow.search_space_factory import SearchSpaceFactory
+#import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 import darch.searchers as se
-from darch.contrib import gpu_utils
+from darch.contrib.useful import gpu_utils
 import darch.search_logging as sl
 
 READY_REQ = 0

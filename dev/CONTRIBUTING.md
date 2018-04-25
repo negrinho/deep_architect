@@ -293,7 +293,7 @@ evaluators.py
 searchers.py
 search_spaces.py
 
-import darch.contrib.
+import darch.contrib.useful.
 
 what happens if you depend on contrib functionality that is not being maintained.
 
@@ -312,3 +312,5 @@ which ones should have list there.
 Keep your commits small and localized and
 
 Furthering progress on architecture search by
+
+How to concentrate stuff in your folder.

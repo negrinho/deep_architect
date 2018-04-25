@@ -9,17 +9,17 @@ if __name__ == '__main__':
     cfg = sl.read_jsonfile(d_cmd['config_filepath'])[d_cmd['key']]
 
     if cfg['use_gpu']:
-        import darch.contrib.gpu_utils as gpu_utils
+        import darch.contrib.useful.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
         print "Using GPU %d" % gpu_id
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
-from darch.contrib.datasets.loaders import load_cifar10
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-import darch.contrib.search_spaces.tensorflow.cnn2d as css_cnn2d
-import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
+from darch.contrib.useful.datasets.loaders import load_cifar10
+from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from darch.contrib.useful.datasets.dataset import InMemoryDataset
+import darch.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
+import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 import darch.modules as mo
 import darch.searchers as se
 import darch.hyperparameters as hp

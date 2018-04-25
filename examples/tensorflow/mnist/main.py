@@ -1,8 +1,8 @@
 
-from darch.contrib.datasets.loaders import load_mnist
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
+from darch.contrib.useful.datasets.loaders import load_mnist
+from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from darch.contrib.useful.datasets.dataset import InMemoryDataset
+import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 import darch.modules as mo
 import darch.searchers as se
 

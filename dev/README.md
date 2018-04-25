@@ -29,7 +29,7 @@ Features:
 
 * darch: Most of the framework code lies in this folder.
     * darch.core: This file contains the main code regarding the implementation.
-* darch.contrib: The contrib folder is used to keep code that is potentially useful
+* darch.contrib.useful: The contrib folder is used to keep code that is potentially useful
     for the people using the framework, but for which we will not make a coherent
     effort to maintain it.
 *

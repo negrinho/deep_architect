@@ -1,10 +1,10 @@
 import numpy as np
 import os
 import sys
-import darch.contrib.datasets.augmentation as au
-if sys.version_info[0] == 2:		
-    import cPickle as pickle # pylint: disable=E0401	
-else:		
+import darch.contrib.useful.datasets.augmentation as au
+if sys.version_info[0] == 2:
+    import cPickle as pickle # pylint: disable=E0401
+else:
     import pickle
 
 def load_mnist(data_dir, flatten=False, one_hot=True, normalize_range=False):

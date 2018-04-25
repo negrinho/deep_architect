@@ -6,7 +6,7 @@ import numpy as np
 import darch.core as co
 import darch.helpers.tensorflow as htf
 import darch.search_logging as sl
-import darch.contrib.gpu_utils as gpu_utils
+import darch.contrib.useful.gpu_utils as gpu_utils
 
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
