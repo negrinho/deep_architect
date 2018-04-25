@@ -3,14 +3,14 @@ from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierE
 from darch.contrib.datasets.dataset import InMemoryDataset
 #import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
 import darch.searchers as se
-import darch.contrib.search_spaces.tensorflow.evolution_search_space as ss
+import evolution_search_space as ss
 import darch.search_logging as sl
 import darch.core as co
 
 class SearchSpaceFactory:
     def __init__(self, num_classes):
         self.num_classes = num_classes
-    
+
     def get_search_space(self):
         co.Scope.reset_default_scope()
         inputs, outputs = ss.get_search_space_1(self.num_classes)
@@ -18,16 +18,16 @@ class SearchSpaceFactory:
 
 def mutatable(h):
     return h.get_name().startswith('H.Mutatable')
-        
+
 def main():
     num_classes = 10
     num_samples = 200
-    (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_cifar10('data/cifar10')
+    (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_cifar10('data/cifar10/cifar-10-batches-py/')
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
-    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes, 
-                    './temp', max_num_training_epochs=4, log_output_to_terminal=True, 
+    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
+                    './temp', max_num_training_epochs=4, log_output_to_terminal=True,
                     test_dataset=test_dataset)
 
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=True)
@@ -35,11 +35,11 @@ def main():
 
     search_space_factory = SearchSpaceFactory(num_classes)
     searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
-    
+
     if sl.file_exists(search_data_path):
         state = sl.read_jsonfile(search_data_path)
         searcher.load(state)
-    
+
 
     for i in xrange(search_logger.current_evaluation_id, num_samples):
         evaluation_logger = search_logger.get_current_evaluation_logger()
@@ -47,7 +47,7 @@ def main():
         evaluation_logger.log_config(vs, searcher_eval_token)
         evaluation_logger.log_features(inputs, outputs, hs)
         results = evaluator.eval(inputs, outputs, hs)
-        evaluation_logger.log_results(results)      
+        evaluation_logger.log_results(results)
         print('Sample %d: %f' % (i, results['validation_accuracy']))
         searcher.update(results['validation_accuracy'], searcher_eval_token)
         searcher.save_state(search_logger.search_data_folderpath)

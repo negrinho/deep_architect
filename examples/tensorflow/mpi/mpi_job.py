@@ -1,6 +1,3 @@
-"""
-MPI Run script
-"""
 from time import sleep
 import argparse
 from mpi4py import MPI
@@ -9,7 +6,7 @@ from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierE
 from darch.contrib.datasets.dataset import InMemoryDataset
 from darch.contrib.search_spaces.tensorflow.search_space_factory import SearchSpaceFactory
 #import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
-import darch.contrib.searchers.searchers as se
+import darch.searchers as se
 from darch.contrib import gpu_utils
 import darch.search_logging as sl
 
@@ -19,7 +16,8 @@ RESULTS_REQ = 2
 
 def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
     searcher_load_path):
-    search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
+    search_logger = sl.SearchLogger('./logs', 'test',
+        resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
 
     if sl.file_exists(search_data_path):

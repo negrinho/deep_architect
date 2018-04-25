@@ -225,9 +225,9 @@ class SimpleClassifierEvaluator:
                        }
             if 'gpu_utilization_in_percent' in seqs_dict:
                 results['average_gpu_utilization_in_percent'] = np.mean(
-                    seqs_dict['gpu_utilization_in_percent']),
+                    seqs_dict['gpu_utilization_in_percent'])
                 results['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
-                    seqs_dict['gpu_memory_utilization_in_gigabytes']),
+                    seqs_dict['gpu_memory_utilization_in_gigabytes'])
 
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
