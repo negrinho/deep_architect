@@ -406,28 +406,58 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
 def mutatable(h):
     return h.get_name().startswith('H.Mutatable')
 
-def mutate(output_lst, vs, mutatable_fn, search_space_fn):
+def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
     mutate_candidates = []
-    new_vs = []
+    new_vs = list(user_vs)
+    print all_vs
     for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
         if mutatable_fn(h):
-            mutate_candidates.append((i, h))
-        h.set_val(vs[i])
-        new_vs.append(vs[i])
+            mutate_candidates.append(h)
+        h.set_val(all_vs[i])
+
     # mutate a random hyperparameter
-    m_ind, m_h = mutate_candidates[random.randint(
-        0, len(mutate_candidates) - 1)]
+    assert len(mutate_candidates) == len(user_vs)
+    m_ind = random.randint(0, len(mutate_candidates) - 1)
+    m_h = mutate_candidates[m_ind]
     v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
 
-    # ensure that same value is not chosen again
-    while v == vs[m_ind]:
-        v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
+    # m_ind, m_h = mutate_candidates[random.randint(
+    #     0, len(mutate_candidates) - 1)]
+    # v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
 
+    # ensure that same value is not chosen again
+    while v == user_vs[m_ind]:
+        v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
+    new_vs[m_ind] = v
+ 
     inputs, outputs, hs = search_space_fn()
     output_lst = outputs.values()
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
-        h.set_val(new_vs[i])
-    return inputs, outputs, hs, new_vs
+    all_vs = specify_evolution(output_lst, mutatable_fn, new_vs, hs)
+    print new_vs == user_vs
+    return inputs, outputs, hs, new_vs, all_vs
+
+def random_specify_evolution(output_lst, mutatable_fn, hyperp_lst=None):
+    user_vs = []
+    all_vs = []
+    for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
+        v = random_specify_hyperparameter(h)
+        if mutatable_fn(h):
+            user_vs.append(v)
+        all_vs.append(v)
+    return user_vs, all_vs
+
+def specify_evolution(output_lst, mutatable_fn, user_vs, hyperp_lst=None):
+    vs_idx = 0
+    vs = []
+    for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
+        if mutatable_fn(h):
+            h.set_val(user_vs[vs_idx])
+            vs.append(user_vs[vs_idx])
+            vs_idx += 1
+        else:
+            v = random_specify_hyperparameter(h)
+            vs.append(v)
+    return vs
 
 class EvolutionSearcher(Searcher):
     def __init__(self, search_space_fn, mutatable_fn, P, S, regularized=False):
@@ -446,10 +476,11 @@ class EvolutionSearcher(Searcher):
     def sample(self):
         if self.initializing:
             inputs, outputs, hs = self.search_space_fn()
-            vs = random_specify(outputs.values(), hs.values())
+            user_vs, all_vs = random_specify_evolution(
+                outputs.values(), self.mutatable, hs.values())
             if len(self.population) >= self.P - 1:
                 self.initializing = False
-            return inputs, outputs, hs, vs, {'vs': vs}
+            return inputs, outputs, hs, all_vs, {'user_vs': user_vs, 'all_vs': all_vs}
         else:
             sample_inds = sorted(random.sample(
                 range(len(self.population)), min(self.S, len(self.population))))
@@ -458,12 +489,14 @@ class EvolutionSearcher(Searcher):
 
             # mutate strongest model
             inputs, outputs, hs = self.search_space_fn()
-            vs, _ = self.population[self.get_strongest_model_index(
+            user_vs, all_vs, _ = self.population[self.get_strongest_model_index(
                 sample_inds)]
-            inputs, outputs, hs, new_vs = mutate(outputs.values(), vs, self.mutatable, self.search_space_fn)
+            inputs, outputs, hs, new_user_vs, new_all_vs = mutate(
+                outputs.values(), user_vs, all_vs, self.mutatable, 
+                self.search_space_fn)
 
             del self.population[weak_ind]
-            return inputs, outputs, hs, new_vs, {'vs': new_vs}
+            return inputs, outputs, hs, new_all_vs, {'user_vs': new_user_vs, 'all_vs': new_all_vs}
 
     def get_searcher_state_token(self):
         return {
@@ -485,8 +518,11 @@ class EvolutionSearcher(Searcher):
         self.population = deque(state['population'])
         self.initializing = state['initializing']
 
-    def update(self, val, cfg_d):
-        self.population.append((cfg_d['vs'], val))
+    def update(self, results, cfg_d):
+        self.population.append((
+            cfg_d['user_vs'], 
+            cfg_d['all_vs'], 
+            results['validation_accuracy']))
 
     def get_weakest_model_index(self, sample_inds):
         if self.regularized:
@@ -495,7 +531,7 @@ class EvolutionSearcher(Searcher):
             min_acc = 1.
             min_acc_ind = -1
             for i in range(len(sample_inds)):
-                _, acc = self.population[sample_inds[i]]
+                _, _, acc = self.population[sample_inds[i]]
                 if acc < min_acc:
                     min_acc = acc
                     min_acc_ind = i
@@ -505,7 +541,7 @@ class EvolutionSearcher(Searcher):
         max_acc = 0.
         max_acc_ind = -1
         for i in range(len(sample_inds)):
-            _, acc = self.population[sample_inds[i]]
+            _, _, acc = self.population[sample_inds[i]]
             if acc > max_acc:
                 max_acc = acc
                 max_acc_ind = i

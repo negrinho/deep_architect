@@ -43,7 +43,9 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                     eval_loggers[idx].log_config(vs, searcher_eval_token)
                     eval_loggers[idx].log_features(inputs, outputs, hs)
 
-                    comm.isend((vs, search_logger.current_evaluation_id, searcher_eval_token, False), dest=idx + 1, tag=MODEL_REQ)
+                    comm.isend(
+                        (vs, search_logger.current_evaluation_id, searcher_eval_token, False),
+                        dest=idx + 1, tag=MODEL_REQ)
                     ready_requests[idx] = comm.irecv(source=idx + 1, tag=READY_REQ)
 
                     models_evaluated += 1
@@ -60,7 +62,7 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                 evaluation_logger = eval_loggers[idx]
                 evaluation_logger.log_results(results)
                 print('Sample %d: %f' % (model_id, results['validation_accuracy']))
-                searcher.update(results['validation_accuracy'], searcher_eval_token)
+                searcher.update(results, searcher_eval_token)
                 searcher.save_state(search_logger.search_data_folderpath)
                 eval_requests[idx] = comm.irecv(source=idx + 1, tag=RESULTS_REQ)
         sleep(1)
