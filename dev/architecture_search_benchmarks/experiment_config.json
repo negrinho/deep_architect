@@ -1,11 +1,8 @@
 {
-    "evolution_20": {
-      "searcher": "evolution",
-      "P": 20,
-      "S": 20,
-      "regularized": true,
+    "normal": {
+      "searcher": "evolution_pop=20_samp=20_reg=t",
       "dataset": "cifar10",
-      "search_space": "sp1",
+      "search_space": "zoph_sp1",
       "evaluator": "simple_classification",
       "epochs": 4,
       "display_output": true,

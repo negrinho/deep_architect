@@ -2,44 +2,20 @@ import darch.core as co
 import darch.hyperparameters as hp
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
+import darch.contrib.useful.search_spaces.tensorflow.cnn2d as cnn2d
+from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
 import tensorflow as tf
 import numpy as np
-import random
 
 TFM = htf.TFModule
-D = hp.Discrete
-
-def siso_tfm(name, compile_fn, name_to_h={}, scope=None):
-    return htf.TFModule(name, name_to_h, compile_fn,
-            ['In'], ['Out'], scope).get_io()
-
-#trunc_normal_fn = lambda stddev: lambda shape: tf.truncated_normal(shape, stddev=stddev)
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
-
-def kaiming2015delving_initializer_conv(gain=1.0):
-    def init_fn(shape):
-        n = np.product(shape)
-        stddev = gain * np.sqrt( 2.0 / n )
-        init_vals = tf.random_normal(shape, 0.0, stddev)
-        return init_vals
-    return init_fn
-
-def xavier_initializer_affine(gain=1.0):
-    def init_fn(shape):
-        print shape
-        n, m = shape
-
-        sc = gain * ( np.sqrt(6.0) / np.sqrt(m + n) )
-        init_vals = tf.random_uniform([n, m], -sc, sc)
-        return init_vals
-    return init_fn
 
 def relu():
     def cfn(di, dh):
         def fn(di):
             return {'Out' : tf.nn.relu(di['In'])}
         return fn
-    return siso_tfm('ReLU', cfn)
+    return siso_tfm('ReLU', cfn, {})
 
 def pool_and_logits(num_classes):
     def cfn(di, dh):
@@ -57,39 +33,7 @@ def batch_normalization():
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var) }
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn)
-
-def Conv2D(h_num_filters, h_filter_size, h_stride, h_W_init_fn, h_b_init_fn):
-    def cfn(di, dh):
-        (_, height, width, channels) = di['In'].get_shape().as_list()
-        W_init_fn = dh['W_init_fn']
-        b_init_fn = dh['b_init_fn']
-
-        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['num_filters']] ) )
-        b = tf.Variable( b_init_fn( [dh['num_filters']] ) )
-        def fn(di):
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
-        return fn
-
-    return siso_tfm('Conv2D', cfn, {
-        'num_filters' : h_num_filters,
-        'filter_size' : h_filter_size,
-        'stride' : h_stride,
-        'W_init_fn' : h_W_init_fn,
-        'b_init_fn' : h_b_init_fn,
-        })
-
-def max_pool(h_kernel_size, h_stride):
-    def cfn(di, dh):
-        def fn(di):
-            return {'Out' : tf.nn.max_pool(di['In'],
-                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
-        return fn
-    return siso_tfm('MaxPool', cfn, {
-        'kernel_size' : h_kernel_size,
-        'stride' : h_stride,
-        })
+    return siso_tfm('BatchNormalization', cfn, {})
 
 def avg_pool(h_kernel_size, h_stride):
     def cfn(di, dh):
@@ -108,32 +52,13 @@ def add():
         lambda: lambda In0, In1: tf.add(In0, In1),
         ['In0', 'In1'], ['Out']).get_io()
 
-# Basic convolutional module with preselected initialization function
-def conv2D_simplified(h_num_filters, h_filter_size, h_stride):
-    def cfn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = kaiming2015delving_initializer_conv()
-        b_init_fn = const_fn(0.0)
-
-        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['num_filters']] ) )
-        b = tf.Variable( b_init_fn( [dh['num_filters']] ) )
-        def fn(di):
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
-        return fn
-
-    return siso_tfm('Conv2DSimplified', cfn, {
-        'num_filters' : h_num_filters,
-        'stride' : h_stride,
-        'filter_size' : h_filter_size})
-
 # Basic convolutional module that selects number of filters based on number of
 # input channels and the stride as in "Learning transferable architectures for scalable
 # image recognition" (Zoph et al, 2017)
 def conv2D(h_filter_size, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = kaiming2015delving_initializer_conv()
+        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
         num_filters = 2 * channels if dh['stride'] == 2 else channels
@@ -153,7 +78,7 @@ def conv2D(h_filter_size, h_stride):
 def conv_spatial_separable(h_filter_size, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = kaiming2015delving_initializer_conv()
+        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
         num_filters = 2 * channels if dh['stride'] == 2 else channels
@@ -178,7 +103,7 @@ def conv_spatial_separable(h_filter_size, h_stride):
 def conv2D_dilated(h_filter_size, h_dilation):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = kaiming2015delving_initializer_conv()
+        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
         W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, channels] ) )
@@ -198,7 +123,7 @@ def conv2D_dilated(h_filter_size, h_dilation):
 def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = kaiming2015delving_initializer_conv()
+        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
 
         num_filters = 2 * channels if dh['stride'] == 2 else channels
@@ -217,7 +142,7 @@ def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
         'stride' : h_stride})
 
 def conv1x1(h_num_filters):
-    return conv2D_simplified(h_num_filters, D([1]), D([1]))
+    return cnn2d.conv2d(h_num_filters, D([1]), D([1]), D([True]))
 
 # A module that wraps an io pair with relu at the before and batch norm after
 def wrap_relu_batch_norm(io_pair):
@@ -236,7 +161,7 @@ def sp1_operation(h_op_name, h_stride):
             'd_sep5': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([5]), D([1]), h_stride)),
             'd_sep7': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([7]), D([1]), h_stride)),
             'avg3': lambda: avg_pool(D([3]), h_stride),
-            'max3': lambda: max_pool(D([3]), h_stride),
+            'max3': lambda: cnn2d.max_pool2d(D([3]), h_stride),
             'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
             's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
             }, h_op_name)
@@ -275,7 +200,7 @@ def mi_add(num_terms):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
             min_channels = channels if channels < min_channels else min_channels
 
-        W_init_fn = kaiming2015delving_initializer_conv()
+        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
         b_init_fn = const_fn(0.0)
         w_dict = {}
         b_dict = {}
