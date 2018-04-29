@@ -34,7 +34,7 @@ def main():
         results = evaluator.eval(inputs, outputs, hs)
         evaluation_logger.log_results(results)
         print('Sample %d: %f' % (i, results['validation_accuracy']))
-        searcher.update(results, searcher_eval_token)
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
         searcher.save_state(search_logger.search_data_folderpath)
 
 if __name__ == '__main__':

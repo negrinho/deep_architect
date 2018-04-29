@@ -62,7 +62,7 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                 evaluation_logger = eval_loggers[idx]
                 evaluation_logger.log_results(results)
                 print('Sample %d: %f' % (model_id, results['validation_accuracy']))
-                searcher.update(results, searcher_eval_token)
+                searcher.update(results['validation_accuracy'], searcher_eval_token)
                 searcher.save_state(search_logger.search_data_folderpath)
                 eval_requests[idx] = comm.irecv(source=idx + 1, tag=RESULTS_REQ)
 

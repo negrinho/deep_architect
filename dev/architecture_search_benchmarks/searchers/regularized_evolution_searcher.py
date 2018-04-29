@@ -119,11 +119,11 @@ class EvolutionSearcher(Searcher):
         self.population = deque(state['population'])
         self.initializing = state['initializing']
 
-    def update(self, results, cfg_d):
+    def update(self, val, cfg_d):
         self.population.append((
             cfg_d['user_vs'], 
             cfg_d['all_vs'], 
-            results['validation_accuracy']))
+            val))
 
     def get_weakest_model_index(self, sample_inds):
         if self.regularized:
