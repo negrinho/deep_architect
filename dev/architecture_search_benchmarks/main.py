@@ -1,24 +1,9 @@
 from darch.contrib.useful.datasets.loaders import load_cifar10
 from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.useful.datasets.dataset import InMemoryDataset
-#import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import darch.searchers as se
-import evolution_search_space as ss
 import darch.search_logging as sl
-import darch.core as co
-import darch.modules as mo
-
-class SSF(mo.SearchSpaceFactory):
-    def __init__(self, num_classes):
-        mo.SearchSpaceFactory.__init__(self)
-        self.num_classes = num_classes
-
-    def _get_search_space(self):
-        inputs, outputs = ss.get_search_space_1(self.num_classes)
-        return inputs, outputs, {}
-
-def mutatable(h):
-    return h.get_name().startswith('H.Mutatable')
+import search_spaces.search_space_factory as ssf
+import searchers.searcher as se
 
 def main():
     num_classes = 10
@@ -34,8 +19,8 @@ def main():
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=True)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])
 
-    search_space_factory = SSF(num_classes)
-    searcher = se.EvolutionSearcher(search_space_factory.get_search_space, mutatable, 20, 20, regularized=True)
+    search_space_factory = ssf.name_to_search_space_factory_fn['zoph_sp1'](num_classes)
+    searcher = se.name_to_searcher_fn['evolution_pop=20_samp=20_reg=t'](search_space_factory.get_search_space)
 
     if sl.file_exists(search_data_path):
         state = sl.read_jsonfile(search_data_path)

@@ -1,14 +1,15 @@
 from time import sleep
 import argparse
 from mpi4py import MPI
+
 from darch.contrib.useful.datasets.loaders import load_cifar10
 from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.useful.datasets.dataset import InMemoryDataset
-from darch.contrib.useful.search_spaces.tensorflow.search_space_factory import SearchSpaceFactory
-#import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import darch.searchers as se
 from darch.contrib.useful import gpu_utils
 import darch.search_logging as sl
+
+from search_spaces.search_space_factory import name_to_search_space_factory_fn
+from searchers.searcher import name_to_searcher_fn
 
 READY_REQ = 0
 MODEL_REQ = 1
@@ -31,7 +32,6 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
     finished = [False] * num_workers
 
     while(not all(finished)):
-
         # See which workers are ready for a new model
         for idx, req in enumerate(ready_requests):
             test, msg = req.test()
@@ -43,7 +43,9 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                     eval_loggers[idx].log_config(vs, searcher_eval_token)
                     eval_loggers[idx].log_features(inputs, outputs, hs)
 
-                    comm.isend((vs, search_logger.current_evaluation_id, searcher_eval_token, False), dest=idx + 1, tag=MODEL_REQ)
+                    comm.isend(
+                        (vs, search_logger.current_evaluation_id, searcher_eval_token, False),
+                        dest=idx + 1, tag=MODEL_REQ)
                     ready_requests[idx] = comm.irecv(source=idx + 1, tag=READY_REQ)
 
                     models_evaluated += 1
@@ -63,7 +65,6 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                 searcher.update(results['validation_accuracy'], searcher_eval_token)
                 searcher.save_state(search_logger.search_data_folderpath)
                 eval_requests[idx] = comm.irecv(source=idx + 1, tag=RESULTS_REQ)
-        sleep(1)
 
 
 def start_worker(comm, rank, evaluator, search_space_factory):
@@ -78,17 +79,17 @@ def start_worker(comm, rank, evaluator, search_space_factory):
             break
 
         inputs, outputs, hs = search_space_factory.get_search_space()
-        se.specify(outputs.values(), vs)
+        se.specify(outputs.values(), hs, vs)
 
         results = evaluator.eval(inputs, outputs, hs)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
 def main():
-    configs = sl.read_jsonfile("experiment_config.json")
+    configs = sl.read_jsonfile("./dev/architecture_search_benchmarks/experiment_config.json")
 
     parser = argparse.ArgumentParser("MPI Job for architecture search")
     parser.add_argument('--config', '-c', action='store', dest='config_name',
-    default='evolution', choices=['evolution'])
+    default='normal')
 
     # Other arguments
     parser.add_argument('--display-output', '-o', action='store_true', dest='display_output',
@@ -102,25 +103,19 @@ def main():
     config = configs[options.config_name]
 
     datasets = {
-        'cifar10': lambda: (load_cifar10('data/cifar10'), 10)
+        'cifar10': lambda: (load_cifar10('data/cifar10/cifar-10-batches-py/'), 10)
     }
 
     (Xtrain, ytrain, Xval, yval, Xtest, ytest), num_classes = datasets[config['dataset']]()
-    search_space_factory = SearchSpaceFactory(config['search_space'], num_classes)
+    search_space_factory = name_to_search_space_factory_fn[config['search_space']](num_classes)
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
     if rank == 0:
-        if config['searcher'] == 'evolution':
-            assert config['P'] >= config['S']
-        searchers = {
-            'evolution': lambda: se.EvolutionSearcher(search_space_factory.get_search_space, se.mutatable, config['P'], config['S'], regularized=config['regularized'])
-        }
-        searcher = searchers[config['searcher']]()
-        start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, options.searcher_file_name)
+        searcher = name_to_searcher_fn[config['searcher']](search_space_factory.get_search_space)
+        start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, config['searcher_file_name'])
     else:
-
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
         val_dataset = InMemoryDataset(Xval, yval, False)
         test_dataset = InMemoryDataset(Xtest, ytest, False)
