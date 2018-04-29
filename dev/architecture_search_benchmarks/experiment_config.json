@@ -1,13 +1,21 @@
 {
-    "normal": {
+    "evolution_20": {
       "searcher": "evolution_pop=20_samp=20_reg=t",
       "dataset": "cifar10",
       "search_space": "zoph_sp1",
       "evaluator": "simple_classification",
       "epochs": 4,
-      "display_output": true,
-      "samples": 30,
-      "resume": true,
+      "samples": 100,
       "searcher_file_name": "searcher_state.json"
+    },
+    "random": {
+      "searcher": "random",
+      "dataset": "cifar10",
+      "search_space": "zoph_sp1",
+      "evaluator": "simple_classification",
+      "epochs": 4,
+      "samples": 100,
+      "searcher_file_name": "searcher_state.json"
+          
     }
   }

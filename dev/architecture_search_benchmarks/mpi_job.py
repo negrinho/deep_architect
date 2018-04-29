@@ -114,7 +114,7 @@ def main():
 
     if rank == 0:
         searcher = name_to_searcher_fn[config['searcher']](search_space_factory.get_search_space)
-        start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, options.searcher_file_name)
+        start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, config['searcher_file_name'])
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
         val_dataset = InMemoryDataset(Xval, yval, False)
