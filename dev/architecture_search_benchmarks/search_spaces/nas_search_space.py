@@ -1,15 +1,30 @@
-import darch.core as co
-import darch.hyperparameters as hp
+"""
+Search space from Neural Architecture Search with Reinforcement Learning (Zoph'17)
+"""
+import tensorflow as tf
+
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
-import darch.contrib.useful.search_spaces.tensorflow.cnn2d as cnn2d
 from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
-from common_ops import wrap_relu_batch_norm
-import tensorflow as tf
-import numpy as np
-from collections import OrderedDict
+from .common_ops import wrap_relu_batch_norm, pool_and_logits
+
 
 TFM = htf.TFModule
+
+def nas_space(h_num_layers, fn_first, fn_repeats, input_names, output_names, scope=None):
+    def sub_fn(num_layers):
+        assert num_layers > 0
+        inputs, outputs = fn_first()
+        for _ in range(1, num_layers):
+            inputs, outputs = fn_repeats(inputs, outputs)
+        outs = [outputs[out_name] for out_name in outputs if not outputs[out_name].is_connected()]
+        h_connects = [D([True]) for _ in outs]
+        skip_inputs, skip_outputs = concatenate_skip_layers(h_connects)
+        for i, output in enumerate(outs):
+            output.connect(skip_inputs['In' + str(i)])
+        return inputs, skip_outputs
+    return mo.substitution_module('NASModule', {'num_layers': h_num_layers}, 
+                                  sub_fn, input_names, output_names, scope)
 
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
 # to form skip connections
@@ -31,7 +46,7 @@ def concatenate_skip_layers(h_connects):
         return fn
     return TFM('SkipConcat', 
                {'select_' + str(i) : h_connects[i] for i in range(len(h_connects))},
-               cfn, ['In' + str(i) for i in len(h_connects)], ['Out']).get_io()
+               cfn, ['In' + str(i) for i in range(len(h_connects))], ['Out']).get_io()
 
 def conv2d_nas(h_num_filters, h_filter_height, h_filter_width, h_stride, h_use_bias):
     def cfn(di, dh):
@@ -66,4 +81,16 @@ def nas_repeat_fn(inputs, outputs):
 
 def get_nas_search_space(num_classes):
     h_N = D(range(6, 21))
-    mo.mimo_nested_repeat(mo.empty, nas_repeat_fn, h_N, ['In'], ['Out' + str(i) for ])
+    return mo.siso_sequential([mo.empty(),
+                               nas_space(h_N, mo.empty, nas_repeat_fn, ['In'], ['Out']),
+                               pool_and_logits(num_classes),
+                               mo.empty()])
+
+class SSFNasnet(mo.SearchSpaceFactory):
+    def __init__(self, num_classes):
+        mo.SearchSpaceFactory.__init__(self)
+        self.num_classes = num_classes
+
+    def _get_search_space(self):
+        inputs, outputs = get_nas_search_space(self.num_classes)
+        return inputs, outputs, {}
