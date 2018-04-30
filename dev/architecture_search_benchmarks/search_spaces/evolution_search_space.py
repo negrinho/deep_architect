@@ -3,54 +3,14 @@ import darch.hyperparameters as hp
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
 import darch.contrib.useful.search_spaces.tensorflow.cnn2d as cnn2d
+from common_ops import relu, add, pool_and_logits, batch_normalization, avg_pool, wrap_relu_batch_norm
 from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
 import tensorflow as tf
 import numpy as np
 
+
 TFM = htf.TFModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
-
-def relu():
-    def cfn(di, dh):
-        def fn(di):
-            return {'Out' : tf.nn.relu(di['In'])}
-        return fn
-    return siso_tfm('ReLU', cfn, {})
-
-def pool_and_logits(num_classes):
-    def cfn(di, dh):
-        (_, height, width, _) = di['In'].get_shape().as_list()
-        def fn(di):
-            logits = tf.squeeze(tf.layers.conv2d(di['In'], num_classes, (height, width)))
-            return {'Out': logits}
-        return fn
-    return TFM('Logits', {}, cfn, ['In'], ['Out']).get_io()
-
-# TODO: perhaps add hyperparameters.
-def batch_normalization():
-    def cfn(di, dh):
-        p_var = tf.placeholder(tf.bool)
-        def fn(di):
-            return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var) }
-        return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn, {})
-
-def avg_pool(h_kernel_size, h_stride):
-    def cfn(di, dh):
-        def fn(di):
-            return {'Out' : tf.nn.avg_pool(di['In'],
-                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
-        return fn
-    return siso_tfm('AvgPool', cfn, {
-        'kernel_size' : h_kernel_size,
-        'stride' : h_stride,
-        })
-
-# Add two inputs
-def add():
-    return htf.TFModule('Add', {},
-        lambda: lambda In0, In1: tf.add(In0, In1),
-        ['In0', 'In1'], ['Out']).get_io()
 
 # Basic convolutional module that selects number of filters based on number of
 # input channels and the stride as in "Learning transferable architectures for scalable
@@ -143,14 +103,6 @@ def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
 
 def conv1x1(h_num_filters):
     return cnn2d.conv2d(h_num_filters, D([1]), D([1]), D([True]))
-
-# A module that wraps an io pair with relu at the before and batch norm after
-def wrap_relu_batch_norm(io_pair):
-    r_inputs, r_outputs = relu()
-    b_inputs, b_outputs = batch_normalization()
-    r_outputs['Out'].connect(io_pair[0]['In'])
-    io_pair[1]['Out'].connect(b_inputs['In'])
-    return r_inputs, b_outputs
 
 # The operations used in search space 1 and search space 3 in Regularized Evolution for
 # Image Classifier Architecture Search (Real et al, 2018)
@@ -373,3 +325,19 @@ def get_search_space_2(num_classes):
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])
     return i_inputs, o_outputs
+
+class SSFZoph17(mo.SearchSpaceFactory):
+    def __init__(self, search_space, num_classes):
+        mo.SearchSpaceFactory.__init__(self)
+        self.num_classes = num_classes
+
+        if search_space == 'sp1':
+            self.search_space_fn = get_search_space_1
+        elif search_space == 'sp2':
+            self.search_space_fn = get_search_space_2
+        elif search_space == 'sp3':
+            self.search_space_fn = get_search_space_3
+
+    def _get_search_space(self):
+        inputs, outputs = self.search_space_fn(self.num_classes)
+        return inputs, outputs, {}

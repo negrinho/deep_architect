@@ -14,7 +14,7 @@ def main():
     test_dataset = InMemoryDataset(Xtest, ytest, False)
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                     './temp', max_num_training_epochs=4, log_output_to_terminal=True,
-                    test_dataset=test_dataset)
+                    test_dataset=test_dataset, max_eval_time_in_minutes=.1)
 
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=True)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])

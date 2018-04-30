@@ -202,3 +202,6 @@ Guidelines for documentation:
 Check this reference: http://www.sphinx-doc.org/en/stable/markup/inline.html#inline-markup
 This one is more relevant: http://www.sphinx-doc.org/en/stable/domains.html#python-roles
 * Be more careful in the way that we define hyperparameters and
+
+Darshan:
+* Figure out how to pass dictionary of results to update searcher
