@@ -2,14 +2,60 @@ import matplotlib.pyplot as plt
 import graphviz
 from six import itervalues, iteritems
 import darch.core as co
+import darch.search_logging as sl
+import darch.searchers as se
 import numpy as np
 
 def running_max(vs):
     return np.maximum.accumulate(vs)
 
-def draw_graph(output_lst, draw_hyperparameters=False,
-        draw_io_labels=False, graph_name='graph', out_folderpath=None,
-        print_to_screen=True):
+def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
+        draw_module_hyperparameter_info=True,
+        out_folderpath=None, graph_name='graph', print_to_screen=True):
+    """Draws a graph representation of the current state of the search space.
+
+    All edges are directed. An edge between two modules represents the output of
+    the first module going into the input of the second module. An edge between
+    a module and an hyperparameter represents the dependency of that module on
+    that hyperparameter.
+
+    This visualization functionality is useful to verify that the description of
+    the search space done through the domain-specific language encodes the
+    intended search space.
+
+    .. note::
+        All drawing options are set to `True` to give a sense of all the
+        information that can be displayed simultaneously. This can lead to
+        cluttered graphs and slow rendering. We recommend changing the defaults
+        according to the desired behavior.
+
+        For generating a representation for a fully specified model,
+        we recommend setting `draw_hyperparameters` to `False`, as if we are
+        only concerned with the resulting model, the sharing structure of
+        hyperparameters does not really matter. We recommend using
+        `draw_hyperparameters` set to `True` when the user wishes to visualize
+        the hyperparameter sharing pattern, e.g., to verify that it has been
+        implemented correctly.
+
+    Args:
+        output_lst (list[darch.core.Output]): List of outputs from which we
+            can reach all the modules in the search space by backwards traversal.
+        draw_hyperparameters (bool, optional): Draw hyperparameter nodes in the
+            graph, representing the dependencies between hyperparameters and
+            modules.
+        draw_io_labels (bool, optional): If `True`,
+            draw edge labels connecting different modules
+            with the local names of the input and output that are being connected.
+        draw_module_hyperparameter_info (bool, optional): If `True`,
+            draw the hyperparameters of a module alongside the module.
+        graph_name (str, optional): Name of the file used to store the
+            rendered graph. Only needs to be provided if we desire to output
+            the graph to a file, rather than just show it.
+        out_folderpath (str, optional): Folder to which to store the PDF file with
+            the rendered graph. If no path is provided, no file is created.
+        print_to_screen (bool, optional): Shows the result of rendering the
+            graph directly to screen.
+    """
     assert print_to_screen or out_folderpath is not None
 
     g = graphviz.Digraph()
@@ -17,71 +63,125 @@ def draw_graph(output_lst, draw_hyperparameters=False,
     h_fs = '10'
     penwidth = '1'
 
+    def _draw_connected_input(ix_localname, ix):
+        ox = ix.get_connected_output()
+        if not draw_io_labels:
+            label = ''
+        else:
+            ox_localname = None
+            for ox_iter_localname, ox_iter in iteritems(ox.get_module().outputs):
+                if ox_iter == ox:
+                    ox_localname = ox_iter_localname
+                    break
+            assert ox_localname is not None
+            label = ix_localname + ':' + ox_localname
+
+        g.edge(
+            ox.get_module().get_name(),
+            ix.get_module().get_name(),
+            label=label, fontsize=edge_fs)
+
+    def _draw_unconnected_input(ix_localname, ix):
+        g.node(ix.get_name(), shape='invhouse', penwidth=penwidth)
+        g.edge(
+            ix.get_name(),
+            ix.get_module().get_name())
+
+    def _draw_set_hyperparameter(m, h_localname, h):
+        g.edge(
+            h.get_name(),
+            m.get_name(),
+            label=h_localname + '=' + str(h.get_val()),
+            fontsize=edge_fs)
+
+    def _draw_module_hyperparameter_info(m):
+        g.node(
+            m.get_name(),
+            xlabel="<" + '<br align="right"/>'.join([
+                    '<FONT POINT-SIZE="%s">' % h_fs +
+                    h_localname + ('=' + str(h.get_val()) if h.is_set() else '') +
+                    "</FONT>"
+                    for h_localname, h in iteritems(m.hyperps)]) + ">")
+
+    def _draw_unset_hyperparameter(m, h_localname, h):
+        g.edge(
+            h.get_name(),
+            m.get_name(),
+            label=h_localname,
+            fontsize=edge_fs)
+
+    def _draw_output_terminal(ox_localname, ox):
+        g.node(ox.get_name(), shape='house', penwidth=penwidth)
+        g.edge(
+            ox.get_module().get_name(),
+            ox.get_name())
+
     nodes = set()
     hs = set()
-
     def fn(m):
+        """Adds the module information to the graph that is local to the module.
+        """
         nodes.add(m.get_name())
         for ix_localname, ix in iteritems(m.inputs):
             if ix.is_connected():
-                ox = ix.get_connected_output()
-                if not draw_io_labels:
-                    label = ''
-                else:
-                    ox_localname = None
-                    for ox_iter_localname, ox_iter in iteritems(ox.get_module().outputs):
-                        if ox_iter == ox:
-                            ox_localname = ox_iter_localname
-                            break
-                    assert ox_localname is not None
-                    label = ix_localname + ':' + ox_localname
-
-                g.edge(
-                    ox.get_module().get_name(),
-                    ix.get_module().get_name(),
-                    label=label, fontsize=edge_fs)
-
-            # unconnected output
+                _draw_connected_input(ix_localname, ix)
             else:
-                g.node(ix.get_name(), shape='invhouse', penwidth=penwidth)
-                g.edge(
-                    ix.get_name(),
-                    ix.get_module().get_name())
+                _draw_unconnected_input(ix_localname, ix)
 
         if draw_hyperparameters:
             for (h_localname, h) in iteritems(m.hyperps):
                 hs.add(h.get_name())
-                if not h.is_set():
-                    label = h_localname
+                if h.is_set():
+                    _draw_set_hyperparameter(m, h_localname, h)
                 else:
-                    label = h_localname + '=' + str(h.get_val())
-
-                g.edge(
-                    h.get_name(),
-                    m.get_name(),
-                    label=label, fontsize=edge_fs)
+                    _draw_unset_hyperparameter(m, h_localname, h)
+        if draw_module_hyperparameter_info:
+            _draw_module_hyperparameter_info(m)
         return False
 
     # generate most of the graph.
-    module_lst = co.extract_unique_modules(output_lst)
     co.traverse_backward(output_lst, fn)
 
     # add the output terminals.
-    for m in module_lst:
-        for ox in itervalues(m.outputs):
-            g.node(ox.get_name(), shape='house', penwidth=penwidth)
-            g.edge(
-                ox.get_module().get_name(),
-                ox.get_name())
+    for m in co.extract_unique_modules(output_lst):
+        for ox_localname, ox in iteritems(m.outputs):
+            _draw_output_terminal(ox_localname, ox)
 
     # minor adjustments to attributes.
     for s in nodes:
         g.node(s, shape='rectangle', penwidth=penwidth)
-
     for s in hs:
         g.node(s, fontsize=h_fs)
 
-    g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
+    if print_to_screen or out_folderpath is not None:
+        g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
+
+def draw_graph_evolution(output_lst, hyperp_value_lst, out_folderpath, graph_name='graph',
+        draw_hyperparameters=True, draw_io_labels=True, draw_module_hyperparameter_info=True):
+
+    draw_fn = lambda i: draw_graph(output_lst,
+            draw_hyperparameters=draw_hyperparameters,
+            draw_io_labels=draw_io_labels,
+            draw_module_hyperparameter_info=draw_module_hyperparameter_info,
+            out_folderpath=out_folderpath,
+            graph_name=graph_name + '-%d' % i,
+            print_to_screen=False)
+
+    draw_fn(0)
+    h_iter = se.unset_hyperparameter_iterator(output_lst)
+    for i, v in enumerate(hyperp_value_lst):
+        h = h_iter.next()
+        h.set_val(v)
+        draw_fn(i + 1)
+
+    in_filepath_expr = sl.join_paths([
+        out_folderpath, graph_name + '-{0..%d}.pdf' % len(hyperp_value_lst)])
+    out_filepath = sl.join_paths([out_folderpath, graph_name + '.pdf'])
+    sl.run_bash_command('pdftk %s cat output %s' % (in_filepath_expr, out_filepath))
+
+    for i in xrange(len(hyperp_value_lst) + 1):
+        filepath = sl.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
+        sl.delete_file(filepath)
 
 class LinePlot:
     def __init__(self, title=None, xlabel=None, ylabel=None):

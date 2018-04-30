@@ -2,9 +2,14 @@ import json
 import os
 import shutil
 import time
+import subprocess
 import darch.surrogates as su
 
 from six import iteritems, itervalues
+
+def run_bash_command(cmd):
+    str_output = subprocess.check_output(cmd, shell=True)
+    return str_output
 
 def read_jsonfile(filepath):
     with open(filepath, 'r') as f:
@@ -41,6 +46,11 @@ def path_exists(path):
 
 def file_exists(path):
     return os.path.isfile(path)
+
+def delete_file(filepath, abort_if_notexists=True):
+    assert file_exists(filepath) or (not abort_if_notexists)
+    if file_exists(filepath):
+        os.remove(filepath)
 
 def folder_exists(path):
     return os.path.isdir(path)
