@@ -205,3 +205,4 @@ This one is more relevant: http://www.sphinx-doc.org/en/stable/domains.html#pyth
 
 Darshan:
 * Figure out how to pass dictionary of results to update searcher
+* Darch controls Randomness 

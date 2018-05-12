@@ -6,6 +6,7 @@ from darch.contrib.useful.datasets.loaders import load_cifar10
 from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.useful.datasets.dataset import InMemoryDataset
 from darch.contrib.useful import gpu_utils
+from darch import searchers as se
 import darch.search_logging as sl
 
 from search_spaces.search_space_factory import name_to_search_space_factory_fn
