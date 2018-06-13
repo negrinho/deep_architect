@@ -21,10 +21,23 @@ def pool_and_logits(num_classes):
         return fn
     return TFM('Logits', {}, cfn, ['In'], ['Out']).get_io()
 
-# TODO: perhaps add hyperparameters.
-def batch_normalization():
+def global_pool_and_logits():
     def cfn(di, dh):
-        p_var = tf.placeholder(tf.bool)
+        (_, height, width, _) = di['In'].get_shape().as_list()
+        def fn(di):
+            logits = tf.layers.average_pooling2d(di['In'], (height, width), (1, 1))
+            return {'Out': logits}
+        return fn
+    return TFM('Logits', {}, cfn, ['In'], ['Out']).get_io()
+
+
+# TODO: perhaps add hyperparameters.
+def batch_normalization(weight_sharer=None):
+    def cfn(di, dh):
+        if weight_sharer:
+            p_var = weight_sharer.get('training_pl', lambda: tf.placeholder(tf.bool))
+        else:
+            p_var = tf.placeholder(tf.bool)
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var) }
         return fn, {p_var : 1}, {p_var : 0}
@@ -47,9 +60,9 @@ def add():
         lambda: lambda In0, In1: tf.add(In0, In1),
         ['In0', 'In1'], ['Out']).get_io()
 
-def wrap_relu_batch_norm(io_pair):
+def wrap_relu_batch_norm(io_pair, weight_sharer=None):
     r_inputs, r_outputs = relu()
-    b_inputs, b_outputs = batch_normalization()
+    b_inputs, b_outputs = batch_normalization(weight_sharer=weight_sharer)
     r_outputs['Out'].connect(io_pair[0]['In'])
     io_pair[1]['Out'].connect(b_inputs['In'])
     return r_inputs, b_outputs

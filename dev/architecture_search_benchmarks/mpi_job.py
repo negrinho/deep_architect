@@ -11,6 +11,7 @@ import darch.search_logging as sl
 
 from search_spaces.search_space_factory import name_to_search_space_factory_fn
 from searchers.searcher import name_to_searcher_fn
+from evaluators.enas_evaluator import ENASEvaluator
 
 READY_REQ = 0
 MODEL_REQ = 1
@@ -18,6 +19,7 @@ RESULTS_REQ = 2
 
 def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
     searcher_load_path):
+    print 'SEARCHER'
     search_logger = sl.SearchLogger('./logs', 'test',
         resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
@@ -70,6 +72,7 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
 
 def start_worker(comm, rank, evaluator, search_space_factory):
     # set the available gpu for process
+    print 'WORKER %d' % rank
     if len(gpu_utils.get_gpu_information()) != 0:
         gpu_utils.set_visible_gpus([rank % gpu_utils.get_total_num_gpus()])
 
@@ -81,7 +84,7 @@ def start_worker(comm, rank, evaluator, search_space_factory):
 
         inputs, outputs, hs = search_space_factory.get_search_space()
         se.specify(outputs.values(), hs, vs)
-
+        print(vs)
         results = evaluator.eval(inputs, outputs, hs)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
@@ -124,7 +127,8 @@ def main():
         evaluators = {
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                         './temp' + str(rank), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output,
-                        test_dataset=test_dataset)
+                        test_dataset=test_dataset),
+            'enas_evaluator': lambda: ENASEvaluator(train_dataset, val_dataset, num_classes)
         }
         evaluator = evaluators[config['evaluator']]()
 
