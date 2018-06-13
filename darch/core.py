@@ -367,7 +367,8 @@ class Output(Addressable):
 
         Changes the state of the output and all the inputs connected to it.
         """
-        for ix in self.to_inputs:
+        to_inputs = list(self.to_inputs)
+        for ix in to_inputs:
             ix.disconnect()
 
     def reroute_all_connected_inputs(self, from_output):
@@ -383,7 +384,8 @@ class Output(Addressable):
             from_output (darch.core.Output): Output to which the connected inputs are
                 going to be rerouted to.
         """
-        for ix in self.to_inputs:
+        to_inputs = list(self.to_inputs)
+        for ix in to_inputs:
             ix.disconnect()
             ix.connect(from_output)
 
