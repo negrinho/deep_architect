@@ -62,7 +62,7 @@ def add():
 
 def wrap_relu_batch_norm(io_pair, weight_sharer=None):
     r_inputs, r_outputs = relu()
-    b_inputs, b_outputs = batch_normalization(weight_sharer=weight_sharer)
+    b_inputs, b_outputs = batch_normalization(weight_sharer=None)
     r_outputs['Out'].connect(io_pair[0]['In'])
     io_pair[1]['Out'].connect(b_inputs['In'])
     return r_inputs, b_outputs

@@ -128,8 +128,11 @@ def main():
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                         './temp' + str(rank), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output,
                         test_dataset=test_dataset),
-            'enas_evaluator': lambda: ENASEvaluator(train_dataset, val_dataset, num_classes)
+            'enas_evaluator': lambda: ENASEvaluator(train_dataset, val_dataset, num_classes,
+            search_space_factory.weight_sharer)
         }
+
+        assert config['evaluator'] != 'enas_evaluator' or hasattr(search_space_factory, 'weight_sharer')
         evaluator = evaluators[config['evaluator']]()
 
         start_worker(comm, rank, evaluator, search_space_factory)

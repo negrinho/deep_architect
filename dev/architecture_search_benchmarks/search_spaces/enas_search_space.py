@@ -16,13 +16,23 @@ const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 class WeightSharer():
     def __init__(self):
         self.name_to_weight = OrderedDict()
+        self.weights_used = OrderedDict()
     
     def get(self, name, weight_fn):
         if name not in self.name_to_weight:
-            self.name_to_weight[name] = weight_fn()
+            weight = weight_fn()
             print name
-        return self.name_to_weight[name]
-        
+        else:
+            weight = tf.constant(self.name_to_weight[name])
+        self.weights_used[name] = weight
+        return weight
+    
+    def update(self, sess):
+        weights = sess.run(self.weights_used.values())
+        weights = zip(self.weights_used.keys(), weights)
+        for name, weight in weights:
+            self.name_to_weight[name] = weight
+        self.weights_used.clear()
 
 def conv2D(filter_size, name, weight_sharer):
     def cfn(di, dh):
@@ -84,7 +94,8 @@ def concatenate_skip_layers(h_connects, weight_sharer):
         # else:
         #     inputs = di.values()
         # with tf.variable_scope("training_flag", reuse=tf.AUTO_REUSE):
-        p_var = weight_sharer.get('training_pl', lambda: tf.placeholder(tf.bool))
+        # p_var = weight_sharer.get('training_pl', lambda: tf.placeholder(tf.bool))
+        p_var = tf.placeholder(tf.bool)
         (_, _, _, channels) = inputs[0].get_shape().as_list()
 
         def fn(di):
@@ -94,6 +105,7 @@ def concatenate_skip_layers(h_connects, weight_sharer):
             #     dim_red_op = tf.layers.Conv2D(channels, (channels, channels),
             #         (1, 1), use_bias=1, padding='SAME')
             #     stacked = dim_red_op(stacked)
+
             out = tf.layers.batch_normalization(out, training=p_var)
             return {'Out' : out}
             # else:
@@ -147,7 +159,7 @@ def fc_softmax(num_classes, weight_sharer):
     return siso_tfm('fc_softmax', cfn, {}) 
 
 def get_enas_search_space(num_classes, out_filters, weight_sharer):
-    h_N = D([5], name='num_layers')
+    h_N = D([12], name='num_layers')
     return mo.siso_sequential([
         enas_space(
             h_N, 
