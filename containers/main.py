@@ -54,21 +54,25 @@ def get_config(is_py27, is_gpu):
             'tag' : 'all-py27-cpu',
             'extra_py_packages' : [],
             'extra_apt_packages' : [],
+            'extra_bash_commands' : [],
             },
         ('py27', 'gpu') : {
             'tag' : 'all-py27',
             'extra_py_packages' : [],
             'extra_apt_packages' : [],
+            'extra_bash_commands' : [],
             },
         ('py36', 'cpu') : {
             'tag' : 'all-py36-cpu',
             'extra_py_packages' : [],
             'extra_apt_packages' : [],
+            'extra_bash_commands' : [],
             },
         ('py36', 'gpu') : {
             'tag' : 'all-py36',
             'extra_py_packages' : [],
             'extra_apt_packages' : [],
+            'extra_bash_commands' : [],
             }
         }
     key = ('py27' if is_py27 else 'py36', 'gpu' if is_gpu else 'cpu')
@@ -88,8 +92,20 @@ extra_py_packages = [
     'mpi4py',
 ]
 
+### NOTE: this is not fully tested
+extra_bash_commands = [
+    # for one of max's examples ; this is not fully tested.
+    '$PIP_INSTALL pathlib tqdm tables',
+    '$APT_INSTALL software-properties-common',
+    'add-apt-repository ppa:ubuntugis/ppa',
+    'apt-get update',
+    '$APT_INSTALL gdal-bin libgdal-dev',
+    '$PIP_INSTALL shapely[vectorized] rasterio',
+]
+
 extra_apt_packages = [
-    # 'python_tk',
+    'software-properties-common'
+    'python-tk',
 ]
 
 def create_singularity_container(config_d, out_folderpath):
@@ -109,8 +125,11 @@ def create_singularity_container(config_d, out_folderpath):
         '%post',
         '    PIP_INSTALL="python -m pip --no-cache-dir install --upgrade"',
         '    APT_INSTALL="apt-get install -y --no-install-recommends"',
+        '    apt-get update',
         '    echo > /bin/nvidia-smi', # necessary for the --nv flag in some cases.
     ]
+    for cmd in extra_bash_commands + config_d['extra_bash_commands']:
+        post_lines.append('    %s' % cmd)
     for pkg in extra_py_packages + config_d['extra_py_packages']:
         post_lines.append('    $PIP_INSTALL %s' % pkg)
     for pkg in extra_apt_packages + config_d['extra_apt_packages']:

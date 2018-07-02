@@ -48,7 +48,6 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Run the benchmark on the server.
 * Add a few PyTorch examples.
 * Write a better loader for CIFAR-10.
-* Fix GraphViz to draw the values of the hyperparameters right next to the model.
 * Develop the PyTorch functionality.
 * Write down documentation.
 * Merge some of the functionality as examples, or keep them in their own branches for now.
@@ -152,7 +151,7 @@ of the code base, e.g., some of the private functions of the modules.
 * Needs to add error messages to the assert messages.
 * change get_current_evaluation_logger to get_next_evaluation_logger.
 * Check the logs for corrections.
-* The MCTSearcher is misspelled. Should MCTSSearcher.
+* The MCTSearcher is misspelled. Should be MCTSSearcher.
 * Compile the code.
 * Write down about the directly structure of the code. This is important to be explicit about the structure of the folder and what is container in each of them.
 * Decide on the capitalization, i.e., DArch vs Darch vs darch. I think that I prefer the first one.
@@ -164,20 +163,49 @@ of the code base, e.g., some of the private functions of the modules.
 * Just say something about the log manager for plotting.
 * Be a bit more clear on the inputs of the model and such.
 * Change the Docker containers
-* Move the con
 * Change the deepo image to add the one with Jupyter.
 * Add a table where markers can be added with numbers to keep track of what are the elements of the table that we care about.
 * Think about adding debugging configurations that can be mentioned by pointing to the right ones.
 * Remove sentiment_nn example as it is not very informative.
 * Have a script that allows to rename imports from the contrib folder to imports of the dev folder or something similar.
 * Have code to show the dependencies on folders in contrib and folders in dev.
+* Better headers for the container recipe.
+* Write the preliminary readme file for the project.
+* Log visualization can be applied quite broadly. As long as the log manager knows how to expose a dictionary of information, we can do something about it.
+* Functionality to just keep user data for the best architectures according to some measure. This guarantees that memory does not blow up.
+* Managing different logs should be easy. This means that we can progressively add more data to an existing dataset. This will require the creation of tools to aggregate and manipulate log folders.
+* Add more tools to manipulate different log functions.
+* Work on including more tasks in the framework. This is useful to make sure that we can work with different models.
+* Add functionality to generate a representation of the specification process of the search space.
+* Visualization with better support to connect to assets that result from search.
+* Do the wrapping of the search space at the level of the searcher. There is some amount of boilerplate that happens at that level. Right now, solved via the search space factory.
+* Check if a multi input, multi output empty is necessary.
+* Move the filesystem utils somewhere else.
+* Use the term triage for the purpose of the contrib directory.
+* Change the links to the deep_architect repo once we have all the models.
+* Improve the way the padding of existing search spaces is done.
+* In some cases it would be convenient to have functions that take the specificed hyperparameters and create the desired artifacts, e.g., search spaces for data augmentation schemes and search spaces for learning rate schedules.
+* What are the current limitations in terms of models, i.e., what can be done
+* Evolution searcher with general mutation scheme that works for all search spaces.
+* A good way of reducing the effort of documenting the code is when finding something confusing, it is useful to document the code extensively then.
+
+Before release:
+* Add more links to the project.
+* Add some of the configuration defaults for VS Code to gua
+* Create some additional Slack channel for discussion.rantee that the development environment is the closest possible to our development environment.
+* Plan any breaking changes that you may have.
+* Add to contributing information about what needs to be kept track of.
+* Check code base vs codebase.
+* Add pointers more extensively to the code that is there.
+* Check that MCTS and SMBO work as well as we expect.
+* Think about the sharing case for the model, i.e., what would happen in the case
 
 Visualization:
 * Make sure that an exception is never thrown.
 * Handle invalid keys properly, by just keeping the previous state or some decent defaults.
 * Remove row functionality.
 * Copy row functionality.
-* Save visualization functionality.
+* Save visualization functionality for the plots. The maximum number of plots can also be done in the config.
 *
 
 * Common metrics to maintain in logging:
@@ -205,3 +233,6 @@ This one is more relevant: http://www.sphinx-doc.org/en/stable/domains.html#pyth
 
 Darshan:
 * Figure out how to pass dictionary of results to update searcher
+    * R: This requires telling the searcher which keys to look at. This is
+    makes sense for the case where the we are doing multi-objective optimization,
+    but it might be less interesting for the single metric case.
