@@ -389,6 +389,7 @@ the properties of an architecture that determine performance.
 We ask the contributor to explore different structures and validate their
 performance.
 Existing implementations of surrogate functions can be found at
+**Add link to the appropriate place**
 
 <!-- TODO: come back here. -->
 

@@ -190,17 +190,31 @@ class LinePlot:
         self.xlabel = xlabel
         self.ylabel = ylabel
 
-    def add_line(self, xs, ys, label=None, err=None):
+        self.color_to_str = {
+            'black' : 'k',
+            'red' : 'r'
+        }
+        self.line_type_to_str = {
+            'solid' : '-',
+            'dotted' : ':',
+            'dashed' : '--'
+        }
+
+    def add_line(self, xs, ys, label=None, err=None, color=None, line_type=None):
         d = {"xs": xs,
              "ys": ys,
              "label": label,
-             "err": err}
+             "err": err,
+             "color": color,
+             "line_type": line_type}
         self.data.append(d)
 
     def plot(self, show=True, fpath=None):
         f = plt.figure()
         for d in self.data:
-            plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'])
+            fmt = (self.color_to_str.get(d['color'], '') +
+                self.line_type_to_str.get(d['line_type'], ''))
+            plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'], fmt=fmt)
 
         if self.title is not None:
             plt.title(self.title)
