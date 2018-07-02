@@ -17,5 +17,21 @@
       "samples": 100,
       "searcher_file_name": "searcher_state.json"
           
+    },
+    "enas": {
+      "searcher": "enas_searcher",
+      "dataset": "cifar10",
+      "search_space": "enas",
+      "evaluator": "enas_evaluator",
+      "samples": 121210,
+      "searcher_file_name": "searcher_state.json"
+    },
+    "enas_eager": {
+      "searcher": "enas_searcher_eager",
+      "dataset": "cifar10",
+      "search_space": "enas_eager",
+      "evaluator": "enas_eager_evaluator",
+      "epochs": 310,
+      "searcher_file_name": "searcher_state.json"
     }
   }

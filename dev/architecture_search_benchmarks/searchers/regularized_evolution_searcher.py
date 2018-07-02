@@ -65,6 +65,7 @@ class EvolutionSearcher(Searcher):
 
         # Population size
         self.P = P
+        self.S = S
         # Sample size
 
         self.population = deque(maxlen=P)

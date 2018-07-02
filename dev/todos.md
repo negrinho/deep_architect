@@ -233,6 +233,11 @@ This one is more relevant: http://www.sphinx-doc.org/en/stable/domains.html#pyth
 
 Darshan:
 * Figure out how to pass dictionary of results to update searcher
+<<<<<<< HEAD
     * R: This requires telling the searcher which keys to look at. This is
     makes sense for the case where the we are doing multi-objective optimization,
     but it might be less interesting for the single metric case.
+=======
+* Darch controls Randomness 
+* Write test for core disconnect
+>>>>>>> 0fe7ac415973e0e3968cd5f73443d52047ed8905

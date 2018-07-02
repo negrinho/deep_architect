@@ -1,22 +1,28 @@
 from time import sleep
 import argparse
 from mpi4py import MPI
-
+import tensorflow as tf
 from darch.contrib.useful.datasets.loaders import load_cifar10
 from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from darch.contrib.useful.datasets.dataset import InMemoryDataset
 from darch.contrib.useful import gpu_utils
+from darch import searchers as se
 import darch.search_logging as sl
 
 from search_spaces.search_space_factory import name_to_search_space_factory_fn
 from searchers.searcher import name_to_searcher_fn
+from evaluators.enas_evaluator import ENASEvaluator
+from evaluators.enas_evaluator_eager import ENASEagerEvaluator
 
 READY_REQ = 0
 MODEL_REQ = 1
 RESULTS_REQ = 2
 
-def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
-    searcher_load_path):
+def start_searcher(comm, num_workers, searcher, resume_if_exists,
+    searcher_load_path, num_samples = -1, num_epochs= - 1):
+    assert num_samples != -1 or num_epochs != -1
+
+    print 'SEARCHER'
     search_logger = sl.SearchLogger('./logs', 'test',
         resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
@@ -29,6 +35,7 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
     eval_requests = [comm.irecv(source=i+1, tag=RESULTS_REQ) for i in range(num_workers)]
     eval_loggers = [None] * num_workers
     models_evaluated = search_logger.current_evaluation_id
+    epochs = 0
     finished = [False] * num_workers
 
     while(not all(finished)):
@@ -36,7 +43,9 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
         for idx, req in enumerate(ready_requests):
             test, msg = req.test()
             if test:
-                if models_evaluated < num_samples:
+                cont = num_samples == -1 or models_evaluated < num_samples
+                cont = cont and (num_epochs == -1 or epochs < num_epochs)
+                if cont:
                     eval_loggers[idx] = search_logger.get_current_evaluation_logger()
                     inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
 
@@ -62,6 +71,10 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
                 evaluation_logger = eval_loggers[idx]
                 evaluation_logger.log_results(results)
                 print('Sample %d: %f' % (model_id, results['validation_accuracy']))
+                
+                if 'epoch' in results:
+                    epochs = max(epochs, results['epoch'])
+
                 searcher.update(results['validation_accuracy'], searcher_eval_token)
                 searcher.save_state(search_logger.search_data_folderpath)
                 eval_requests[idx] = comm.irecv(source=idx + 1, tag=RESULTS_REQ)
@@ -69,7 +82,9 @@ def start_searcher(comm, num_workers, num_samples, searcher, resume_if_exists,
 
 def start_worker(comm, rank, evaluator, search_space_factory):
     # set the available gpu for process
+    print 'WORKER %d' % rank
     if len(gpu_utils.get_gpu_information()) != 0:
+        #https://github.com/tensorflow/tensorflow/issues/1888
         gpu_utils.set_visible_gpus([rank % gpu_utils.get_total_num_gpus()])
 
     while(True):
@@ -80,7 +95,7 @@ def start_worker(comm, rank, evaluator, search_space_factory):
 
         inputs, outputs, hs = search_space_factory.get_search_space()
         se.specify(outputs.values(), hs, vs)
-
+        print(vs)
         results = evaluator.eval(inputs, outputs, hs)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
@@ -98,9 +113,13 @@ def main():
                         default=False)
     parser.add_argument('--load_searcher', '-l', action='store', dest='searcher_file_name',
                         default='searcher_state.json')
+    parser.add_argument('--eager', '-e', action='store_true', dest='eager', default=False)
 
     options = parser.parse_args()
     config = configs[options.config_name]
+
+    if options.eager:
+        tf.enable_eager_execution()
 
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/cifar-10-batches-py/'), 10)
@@ -114,7 +133,12 @@ def main():
 
     if rank == 0:
         searcher = name_to_searcher_fn[config['searcher']](search_space_factory.get_search_space)
-        start_searcher(comm, comm.Get_size() - 1, config['samples'], searcher, options.resume, config['searcher_file_name'])
+        num_samples = -1 if 'samples' not in config else config['samples']
+        num_epochs = -1 if 'epochs' not in config else config['epochs']
+        start_searcher(
+            comm, comm.Get_size() - 1, searcher, options.resume, 
+            config['searcher_file_name'], num_samples=num_samples, 
+            num_epochs=num_epochs)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
         val_dataset = InMemoryDataset(Xval, yval, False)
@@ -123,8 +147,14 @@ def main():
         evaluators = {
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                         './temp' + str(rank), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output,
-                        test_dataset=test_dataset)
+                        test_dataset=test_dataset),
+            'enas_evaluator': lambda: ENASEvaluator(train_dataset, val_dataset, num_classes,
+                        search_space_factory.weight_sharer),
+            'enas_eager_evaluator': lambda: ENASEagerEvaluator(train_dataset, val_dataset, num_classes,
+                        search_space_factory.weight_sharer)
         }
+
+        assert not config['evaluator'].startswith('enas') or hasattr(search_space_factory, 'weight_sharer')
         evaluator = evaluators[config['evaluator']]()
 
         start_worker(comm, rank, evaluator, search_space_factory)
