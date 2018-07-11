@@ -13,6 +13,7 @@ from darch.searchers import (Searcher, unset_hyperparameter_iterator,
 class ENASSearcher(Searcher):
     def __init__(self,
                  search_space_fn,
+                 batch_size=1,
                  num_layers=12,
                  num_branches=6,
                  out_filters=48,
@@ -30,8 +31,9 @@ class ENASSearcher(Searcher):
                  **kwargs):
         Searcher.__init__(self, search_space_fn)
 
-        print "-" * 80
-        print "Building ConvController"
+        self.batch_size = batch_size
+        self.arcs = []
+        self.val_accs = []
 
         self.num_layers = num_layers
         self.num_branches = num_branches
@@ -84,6 +86,9 @@ class ENASSearcher(Searcher):
 
     def update(self, val, cfg_d):
         if val != -1:
+            self.val_accs.append[val]
+            self.arcs.append(cfg_d['arc'])
+        if len(self.val_accs) == self.batch_size:
             train_feed = {self.valid_acc: val,
                           self.prev_arc: np.array(cfg_d['arc'])}
             with self.graph.as_default():
@@ -93,6 +98,8 @@ class ENASSearcher(Searcher):
                     self.train_op], feed_dict=train_feed)
             if train_step % 1 == 0:
                 print "Step: %d,    Reward: %f,    Loss:%f" % (train_step, val, loss)
+            self.val_accs = []
+            self.arcs = []
             
 
     def save_state(self, folder_name):
@@ -187,8 +194,8 @@ class ENASSearcher(Searcher):
 
     def _build_trainer(self):
         with self.graph.as_default():
-            self.valid_acc = tf.placeholder(tf.float32, [])
-            self.prev_arc = tf.placeholder(tf.int32, [None])
+            self.valid_acc = tf.placeholder(tf.float32, [self.batch_size])
+            self.prev_arc = tf.placeholder(tf.int32, [self.batch_size, None])
             reward = self.valid_acc
             
             anchors = []
@@ -198,9 +205,9 @@ class ENASSearcher(Searcher):
             log_probs = []
             skip_penaltys = []
 
-            prev_c = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
+            prev_c = [tf.zeros([self.batch_size, self.lstm_size], tf.float32) for _ in
                     xrange(self.lstm_num_layers)]
-            prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
+            prev_h = [tf.zeros([self.batch_size, self.lstm_size], tf.float32) for _ in
                     xrange(self.lstm_num_layers)]
             inputs = self.g_emb
             skip_targets = tf.constant([1.0 - self.skip_target, self.skip_target],
@@ -213,16 +220,18 @@ class ENASSearcher(Searcher):
                 logit = tf.matmul(next_h[-1], self.w_soft)
                 if self.tanh_constant is not None:
                     logit = self.tanh_constant * tf.tanh(logit)
-                branch_id = self.prev_arc[idx]
+                branch_id = self.prev_arc[:, idx]
                 branch_id = tf.to_int32(branch_id)
-                branch_id = tf.reshape(branch_id, [1])
+                branch_id = tf.reshape(branch_id, [self.batch_size])
                 idx += 1
 
                 log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
                     logits=logit, labels=branch_id)
                 log_probs.append(log_prob)
+
                 entropy = tf.stop_gradient(log_prob * tf.exp(-log_prob))
                 entropys.append(entropy)
+                
                 inputs = tf.nn.embedding_lookup(self.w_emb, branch_id)
 
                 next_c, next_h = stack_lstm(inputs, prev_c, prev_h, self.w_lstm)
@@ -236,9 +245,9 @@ class ENASSearcher(Searcher):
                     if self.tanh_constant is not None:
                         logit = self.tanh_constant * tf.tanh(logit)
 
-                    skip = self.prev_arc[idx: idx + layer_id]
+                    skip = self.prev_arc[:, idx: idx + layer_id]
                     skip = tf.to_int32(skip)
-                    skip = tf.reshape(skip, [layer_id])
+                    skip = tf.reshape(skip, [self.batch_size, layer_id])
                     idx += layer_id
 
                     skip_prob = tf.sigmoid(logit)

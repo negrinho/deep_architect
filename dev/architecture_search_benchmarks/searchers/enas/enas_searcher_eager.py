@@ -267,7 +267,7 @@ class ENASEagerSearcher(Searcher):
             
             reward += self.entropy_weight * sample_entropy
             
-            self.baseline -= (1 - self.bl_dec) * (self.baseline - reward)
+            self.baseline.assign_sub((1 - self.bl_dec) * (self.baseline - reward))
 
             loss = sample_log_prob * (reward - self.baseline)
             loss += self.skip_weight * skip_penaltys
