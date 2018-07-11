@@ -1,147 +1,189 @@
+## Guidelines for contributing
+<!--  Contributions welcome.-->
 
-# Guidelines for contributing
+We strongly encourage contributions to DeepArchitect.
+If DeepArchitect has been useful to you in your work, show some appreciation by
+citing it and/or contributing to the codebase, e.g., by refactoring part of your
+code into something that can be generally useful to the community.
+Everyone benefits from open-source so please make an effort to contribute.
 
-We strongly encourage and welcome contributions to DeepArchitect.
-
-These contributions can result from your own research or
-be implementations of existing algorithms.
+<!-- Information that you will find in this document. -->
+Contributions can be a result of your own research or
+from implementations of existing algorithms.
 If you have developed a searcher, search space, evaluator,
 or any other component or functionality that would be useful to include
 in DeepArchitect, please make a pull request that follows the guidelines
 described in this document.
-After reading this document, make sure that you understand:
+After reading this document, you will understand:
 * what are the different types of contributions that we identify;
 * what is the folder structure for contributions;
 * what is required in terms of tests and documentation for different types of contributions;
 * what are the different levels of conformity that we require for different types of contributions.
 
-If you have a feature that you would like to add to DeepArchitect but you
-aren't sure if it should be included, open a
+<!-- How to decide exactly what to contribute. -->
+If you have a feature in mind that you would like to add to DeepArchitect but you
+aren't sure if it would be a good fit for inclusion, open a
 [GitHub issue](https://github.com/negrinho/darch/issues)
 to discuss its scope and suitability.
 This guarantees that your efforts are well-aligned with the project direction.
 The best way to start a discussion is with a code snippet or pseudo-code
-that illustrates the main use case of the feature that you want to implement.
+that illustrates an important use case for the feature that you want to implement.
 You can also check the evergrowing list of work items
 [here](https://github.com/negrinho/darch/blob/master/todos.md).
 
-# Types of contributions
-
-Most contributions will go into the `contrib` folder.
-The `contrib` folder is used for functionality that is likely useful, but for
+## Types of contributions
+<!-- The contrib and dev folders and their semantics. -->
+Most contributions will live in the contrib folder.
+The contrib folder is used for functionality that is likely useful, but for
 which we cannot necessarily guarantee that it will be maintained over time.
-While code lies in the `contrib` folder, it is the responsibility of the code
-owners to maintain it, i.e., that it is not broken.
-If code in the `contrib` folder breaks and the code owner does not fix it
+While code lies in the contrib folder, it is the responsibility of the code
+owners to maintain it, i.e., that it does not break over time.
+If code in the contrib folder breaks and the code owner does not fix it
 by issuing a pull request in a timely manner, we reserve the right to move
-the code to the `dev` folder.
-The `dev` folder serves to store code that contains a sketch of some interesting
-functionality, but due to some reason, it is not fully functional yet or it
-has not been refactored well enough to be integrated as part of `contrib`.
-Unmaintained code will be moved to `dev` upon breakage.
+the code to the dev folder.
+The dev folder serves to store code that contains a sketch of some interesting
+functionality, but due to some reason, it is not fully functional or it
+has not been refactored well enough to be integrated as part of contrib.
+Unmaintained code will be moved to dev upon breakage.
+Code on dev should not be used directly, but it can serve as inspiration
+for additional functionality.
 
+<!-- How code evolves between the different folders. -->
 Code that is part of the contrib folder may eventually be refactored into code
 that is part of the darch folder.
 Similarly, code in the dev folder may be refactored in code that goes in the
 contrib folder.
-In case this happens, it is the responsibility of the developers of DeepArchitect
-to maintain it.
-To create a new contrib folder, it is best it is best to first discuss scope to
-make sure that contributions are done at a good level of detail.
-For the dev folder, we do not impose these restrictions.
-The `dev` folder should be used sparsely though.
-We will only accept incomplete contributions to the dev folder if it is determined
-that they showcase an important functionality and there is sufficient reason
-to include even without it being completed in functionality or scope.
-For cases where the functionality is indeed complete in terms of functionality
-or scope, we recommend the contributor to refactor its contribution in
-some thing that can be included in the contrib folder and reused by other
-users of DeepArchitect.
+In the case the code becomes part of the main darch folder, it becomes the
+responsibility of the developers of DeepArchitect to maintain it.
+To create a new contrib folder, it is best to first discuss its scope to
+make sure that contributions implement functionality that we would like to have
+widely available in DeepArchitect.
+We do not impose these restrictions for the dev folder.
+The dev folder should be used lightly though.
+We will only accept contributions to the dev folder if it is determined
+that they showcase important functionality and there is sufficient reason
+to include them even without them being complete in functionality or scope.
+For cases where the functionality is indeed complete, we advise the
+contributor to refactor its contribution into the contrib folder.
+Including the contribution in the contrib folder can be done either by adding
+it to an existing contrib subfolder, or by creating a new well-scoped
+contrib subfolder.
 
-Cross-pollination between `contrib` and `dev` folders is expected and encouraged.
-One example of when this would make sense would be if a few contrib folders already
-had some useful functionality, but a contributor wanted to extend it and
+<!-- Contributions that are generated by extensively adapting existing code. -->
+Cross-pollination between contrib and dev folders is expected and encouraged.
+One example of when this would make sense would be if a few subcontrib folders already
+had useful functionality, but a contributor wanted to extend it and
 encapsulate it in a more coherent contrib subfolder.
 This scheme allows DeepArchitect to evolve without committing to major
 refactoring decisions upfront.
+If the foreseen contribution is better seen as an extension or a fix to an
+existing contrib folder, please open an issue or a pull request to discuss with
+the most active contributors on how to best incorporate the contribution in the
+existing files and folders.
+We are likely to ask for refactoring changes or additional tests if we think that
+they will be useful to improve consistency with the existing code.
+Make extensive use of mentions when writing issues and pull requests to make
+sure that the appropriate people look at it.
 
-If the foreseen contribution is better seen as an extension or fix to an
-existing contrib folder, please check with the active contributors for how to
+## Required documentation and tests
+<!-- Folder structure for contrib contributions. -->
+Your new library in contrib should be placed in `darch/contrib/$YOUR_LIBRARY_NAME`.
+New folders in contrib should include a `README.md` file providing
+information about the functionality that the library seeks to implement,
+the features that are implemented in the folder contributed, and
+an explanation about how the implementation is split between the different files
+and folders.
+Also include an explanation for when would it be natural to use the code in this
+library.
+This guarantees that a new user will quickly get a reasonable grasp of
+how to use the library and what files to look at for specific desired functionality.
+Comments for each major class and function are also recommended but not mandatory.
+Check the comments in `darch/core.py` to get a sense of the style and format used for
+comments.
+It is also convenient to include in `README.md`, a roadmap for
+missing functionality that would be nice to include in the future.
+This informs future contributors about where the contributed project is going
+and compels them to help, e.g., if they believe that the feature is important.
 
+<!-- README file and its Structure. -->
+A typical structure for `README.md` would be something like this:
+explanation of the problem that the contributed code tries to solve,
+some example code, a brief description of the high-level organization of the
+contributed library, and a roadmap for future work items and nice to haves
+and how other people can contribute to it, additional comments, GitHub handles
+of the code owners.
+If another contributor would like to extend an existing contributed library,
+it is best to reach out to the appropriate owner by writing an issue and
+mentioning the appropriate owner.
+The addition of significant new functionality requires adding more tests to
+exercise the newly developed code.
 
+<!-- Test and examples. -->
+In addition to `README.md`, it is convenient to add tests and examples.
+The tests should be placed in `tests/contrib/$YOUR_LIBRARY_NAME` and
+examples can be placed in `examples/contrib/$YOUR_LIBRARY_NAME`.
+Both `tests/contrib` and `examples/contrib` are meant to mostly reproduce the
+folder structure in `darch/contrib`.
+This guarantees that removing a contributed library can be done easily by
+removing the corresponding folders in `darch/contrib`, `tests/contrib`,
+and `examples/contrib`.
+While an example is not required, we do require a few tests to exercise the
+contributed code and have some guarantee that specific features remain correct
+as the contributed code or the development environment change.
 
-
-<!-- only for the code that is derived from the model. -->
-
-# Folder structure for contributions
-<!-- say something about how we used a contrib folder scheme to work on our
-contributions. -->
-
+## Folder structure for contributions
+<!-- Motivation for the design of the contrib folder structure,
+and more details about its structure. -->
 For minimizing coupling between contributions of different people, we adopt a
 design similar to the one used in
 [Tensorflow](https://github.com/tensorflow/tensorflow).
-Namely, we have a `contrib` folder where each new sufficiently
-different contribution gets assigned a subfolder.
-The name of the subfolder should be chosen to reflect the functionality that
+Namely, we have a contrib folder where each new sufficiently
+different well-scoped contribution gets assigned a folder in `darch/contrib`.
+The name of the folder should be chosen to reflect the functionality that
 lies within.
 All the library code contributed by the developer will be placed in this folder.
-Main files that are meant to be run should not be placed in `darch/contrib`,
-but rather in `examples/contrib`.
-The same name should be used for both the subfolder in `darch/contrib` and
+Main files that are meant to be run should be placed in `examples/contrib`
+rather than in `darch/contrib`.
+The same name should be used for both the folder in `darch/contrib` and
 in `examples/contrib`.
 The subfolder in `examples/contrib` is meant for runnable code related to
 or making extensive use of the library code in the `darch/contrib` subfolder.
 We recommend checking existing examples in the
 [repo](https://github.com/negrinho/darch) for determining how to
 structure and document a new example appropriately.
-Options to run the code should be placed in a JSON configuration file in the
-same subfolder as the other code.
+
+<!-- The config.json file for storing runnable configurations. -->
+Options to run the code should be placed in a JSON configuration file `config.json`
+in the same subfolder as the other code.
 This JSON configuration guarantees that the options that determine the behavior
 of running the code can be kept separated from the code.
+This is more manageable than having a command line interface.
+This guarantees that it is easy to maintain and store many different configurations,
+e.g., one configuration where the code is exercised with
+few resources and another configuration where the code is exercised in a
+longer run.
 This allows us to include multiple configurations in a single JSON file, e.g.,
-see [here](TODO).
+see [here](https://github.com/negrinho/darch/blob/merge_all/examples/tensorflow/benchmarks/config.json).
 Each key in the JSON configuration file corresponds to a different configuration.
-We suggest the inclusion of a `debug` key.
-The configuration in this key will be used to run a quick experiment to
+We suggest including a `debug` key.
+The configuration in the `debug` key will be used to run a quick experiment to
 validate the functionality of both the code under `contrib/examples` and
 `darch/contrib`.
+We recommend the inclusion of `config.json` for all, but the most trivial examples.
 
+<!-- Separating the contribution according to the different modular components
+identified in the framework. -->
+Whether contributing examples or libraries, we recommend identifying the
+search spaces, searchers, evaluators, and datasets and splitting them into
+different files.
+Having these components into multiple files makes the dependencies more
+explicit and improves the reusability of the components.
+The framework is developed around these modular components.
+We recommend creating the following files when appropriate: `evaluators.py`,
+`search_spaces.py`, `searchers.py`, `main.py`, and `config.json`.
 
-(i.e.,
-the configuration should be such that running can be done in five minutes at most)
-
-
-
-
-Code in contrib will be subject to more extensive code reviews.
-
-
-
-If a contribution
-
-The code owner file.
-Minimizing redundancy for the file.
-
-
-Naming for these files.
-
-Examples of contributions and rationale about where they fit.
-
-
-# Add
-
-
-Summary
-
-
-
-It is the responsibility of contributors to guarantee that their contributions
-are up-to-date.
-The
-
-
-# Recommended code editor
-
+## Development environment
+<!-- Visual Studio as the recommended code editor to use. -->
 The recommended code editor is [Visual Studio Code](https://code.visualstudio.com/)
 with recommended plugins `ms-python.python`, `donjayamanne.githistory`,
 `eamodio.gitlens`, `donjayamanne.jupyter`, `yzhang.markdown-all-in-one`,
@@ -150,202 +192,260 @@ command line (after Visual Studio Code has been installed) with
 `code --install-extension $EXTENSION_NAME` where `EXTENSION_NAME` should be
 replaced by the name of each of the extensions.
 
+<!-- Singularity containers for easy running. -->
+We provide Singularity containers (which should be easy to adapt to Docker containers)
+with the development environment.
+These can found in `containers` along with additional information on how to build
+them.
+
+<!-- Python 2 and Python 3 cross compatibility. -->
+We have attempted to maintain compatibility with both Python 2 and Python 3.
+There might exist places in the code base where this is not verified.
+If you find a place in the codebase that is not simultaneously Python 2 and
+Python 3 compatible, please issue a pull request fixing the problem.
+These fixes should be reasonably straightforward in most cases.
+
+## Code style
+<!-- Guidelines on the code style to use. -->
+All contributions should follow the code style used in most of the code base.
+When in doubt, mimic the code style used in `darch`.
+The code in `darch` is the one most carefully designed in the framework.
+Getting the general gist of the design decisions that went in writing this code
+will help you write code that fits well with the existing code.
+This guarantees that the focus stays on the functionality rather than
+in differences in code style.
+
+<!-- Naming guidelines for variables, functions, and files. -->
+Readable variable names are preferred for function names, function arguments,
+class names, object attributes, object attributes, and dictionary keys.
+Names for iterator variables or local variables with a short lifespan
+can be shorter and slightly less readable.
+`darch/core.py` (and the code in `darch` in general) is a good place to get
+the gist of how these decisions influenced the naming conventions of the code.
+Function signatures should be readable without much documentation.
+Use four spaces for indentation.
+Upon submission of a pull request, some of these aspects will be reviewed to
+make sure that the level of conformity is appropriate for the type of
+contribution.
+
+## Examples of contributions
+<!-- Identification of a number of general types of contributions. -->
+There is a large number of different types of contributions that we believe to
+be interesting for DeepArchitect.
+In this section, we identify the most natural ones to be included in DeepArchitect
+as more research is done on architecture search.
+These were identified to guarantee that DeepArchitect maintains an appropriate
+level of coverage of existing architecture search algorithms.
+Contributions beyond the ones covered here in detail here are very much encouraged.
+
+### Contributing a searcher
+<!-- What does a saercher do in the most widely applicable case. -->
+In most cases, searchers interact with the search space through a
+very simple interface: the searcher can ask if all the hyperparameters are
+specified (and therefore, if the specified search space can be compiled to a
+single model that can be evaluated);
+if the search space is not specified, the searcher can ask for
+a single unspecified hyperparameter and assign a value to it.
+When a value is assigned to an unspecified hyperparameter, the search space
+transitions, which sometimes gives rise to additional unspecified hyperparameters,
+e.g., after choosing the number of repetitions for a repetition substitution module.
+**TODO: Add the link**.
+
+<!-- General and specific searchers. -->
+The most general searchers rely solely on this simple interface.
+Good examples of general searchers implemented can be found in
+**TODO: Add the link**.
+In more specific cases, namely in reimplementations of searchers proposed in
+specific architecture search papers, there is some coupling between the search
+space and the searcher.
+In this case, the developed searcher expects the search space to have certain
+structure or properties.
+A specific example of a searcher that expects a more specific search space
+and how that is tackled in the implementation of the searcher.
+**TODO: Add the link**.
+<!-- Nonetheless, it is still relevant to keep in mind the decomposition of the
+architecture search problem in search space, searcher, and evaluator.
+Often, even if the architecture search configuration that the user wishes to
+develop cannot be broken neatly into these three components, it may require
+a minimal adaptation of these components (or their interaction) to implement it. -->
+
+<!-- Preferences about general versus specific models. -->
+Searchers that do not require a specific structure for the search space are
+preferred.
+Searchers that require some specific characteristics from the search space
+are also possible and often easily implemented in the framework.
+**TODO: Add the link to such a case**
+If the searcher requires some specific search space structure, please document
+this extensively, e.g., by including example search spaces that the searcher
+operates on, by discussing how do these differences compare with the most general
+case, and by discussing how are these differences implemented and supported by
+the DeepArchitect framework.
+All searchers should be accompanied by documentation, at the very least in the
+form of a docstring, and ideally both a docstring and an example exercising the
+searcher.
+
+<!-- Suggestion to benchmark new searchers. -->
+The code base contains code to benchmark searchers, so upon the
+introduction of a new searcher, we recommend that it is benchmarked alongside
+all the other existing searchers.
+Please adapt the current benchmark code to run your searcher.
+This allows us an appropriate comparison with existing searchers, namely,
+allowing us to get a sense of the improved performance with respect to
+existing searchers in whatever benchmark settings that the searcher
+intends to address.
+
+We recommend reading this paper and compare the new searcher under one of the
+benchmark settings that were identified there.
+**TODO: Add the link to the non-existing paper.**
+
+### Contributing a search space
+<!-- What is the goal of the search space. -->
+A search space encodes the set of architecture structures that
+will be under consideration by the searcher.
+Due to the compositionality properties of search spaces, e.g., through the use of
+substitution modules, or simply via the use of functions that allow us to
+create a larger search space from a number of smaller search spaces, new
+search spaces can be reused for defining yet other search spaces.
+A reasonable way of thinking about a search space is as an encoding for the
+set of architectures structures that the user finds reasonable to consider.
+Writing down a search space is a way of expressing our inductive bias over
+architecture structures for the problem that we are solving.
+
+<!-- Framework independent search spaces. -->
+For certain search spaces, it may make sense to develop them in a
+way that is independent of the framework.
+For example, all substitution modules are framework independent.
+Certain search space functionality that takes other smaller search spaces
+and put them together into a larger search space are also often framework
+independent.
+We have also started an attempt **Add link to the appropriate place**
+to develop a set of basic modules that are independent of the specific
+framework in which they are implemented in.
+These are motivated by the observation that often, simple modules in
+different frameworks.
+
+By this, we mean that the search spaces can be used with different frameworks
+(i.e., backends), not that different backends can be necessarily mixed together.
+Due to the flexibilty of the domain specific language in DeepArchitect,
+it is possible to have search spaces over structures different than deep
+architectures, e.g., it is possible to have search spaces over scikit-learn
+pipelines or arithmetic circuits.
+Due to the generic interface that the searchers use to interface with the
+search space, any existing general searchers can be directly applied to the
+problem at hand.
+
+The goal of introducing new search spaces may be to explore new interesting
+structures and to make them available to other people that want to use them.
+
+<!-- TODO: more detail necessary. -->
+<!-- can we say something else about the evaluator? what else can we do this? -->
+<!-- having some form of search space over the evaluator. -->
+
+### Contributing an evaluator
+<!-- equate the evaluator with training -->
+
+Evaluators are important in the sense that they determine the function that
+we are optimizing over the search space.
+If the evaluator does not do a good job identifying the models that we in fact
+care about, i.e., the models that achieve high performance when trained to
+convergence, then the purpose of running architecture search itself is undermined.
+
+It is worth to consider the introduction of new evaluators for specific tasks.
+For example, if people in the field have found that specific evaluators
+(i.e., specific ways of training the models) are necessary to achieve
+high-performance, then it is useful replicate these to some extend.
+There are some guidelines about making sure that the evaluator remains
+simple and straightforward.
+This is to make sure that we do not defeat the purpose of having architecture
+search in first place, namely, that the design process for architecture
+structures is complex, and therefore we want to relay it to an automatic
+algorithm to explore the search space.
+Similarly, designing a very complex evaluator should be restricted to cases
+where it is deemed strictly necessary, e.g., where we are trying to keep the
+complexity of the resulting search space to a minimum, focusing on a very
+small set of aspects to search over.
+
+### Contributing a surrogate model
+<!-- On the importance of surrogate models. -->
+Surrogate models are important components in DeepArchitect.
+Sequential model-based optimization (SMBO) searchers use them extensively.
+Given a surrogate function predicting a quantity related to performance, a SMBO
+searcher optimizes this function (often approximately) to pick the architecture
+to evaluate next.
+The quantity predicted by the surrogate model does not need to be
+the performance metric of interest, it can simply be a score that preserves
+the ordering of the models in the space according to the performance metric of
+interest.
+Surrogate models also extend naturally to the multi-objective optimization case,
+where we can use them in a similar way.
+
+The quality of a surrogate function can be determined both by the quality of the
+the search it induces, and by how effective it is in determining the relative
+ordering of models in the search space.
+A good surrogate functions should be able to embed the architecture to be
+evaluated and generate accurate predictions.
+It isn't obvious which surrogate model architectures are effective at capturing
+the properties of an architecture that determine performance.
+We ask the contributor to explore different structures and validate their
+performance.
+Existing implementations of surrogate functions can be found at
+**Add link to the appropriate place**
+
+<!-- TODO: come back here. -->
+
+
+### Contributing by working on work items
+
+**TODO:  check if this is in the README or not.**
+We maintain a list of work items in the `README.md`.
+These work items correspond to features or improvements that remain to be done
+either due to lack of time or lack of sufficiently .
+To work on the work items of either the main project or a contrib folder,
+we suggest that you first create an issue about the
+
+
+<!-- partition the work items into different categories.
+H.0, M.0, L.0; should this be a checklist, moved out of todos.
+Searcher.
+SearchSpace.
+-->
+
+<!-- NOTE: this discussion for the  -->
+<!-- contrib.useful.H1000 -->
+
+Numbering for the works items starts at zero for each priority level.
+Once assigned, the number is persistent, meaning that future work items will
+have different higher numbers assigned to them.
+
+
+
+<!-- check Github's issue tracker. This is important. -->
+
+
+
+Next work items:
+
+<!-- Definition of proxy tasks. Why does it make sense to define proxy tasks. -->
 
 
-
-Code style:
-In terms of naming convention and code style, we ask you to follow the naming
-naming conventions and general style used throughout the rest of the code base.
-
-Contributions will typically fit into some cases.
-
-examples.
-* Examples in new frameworks that are currently not covered in the toolbox.
-
-search spaces.
-* Complex
-
-searchers.
-* New searchers based on existing literature or
-
-
-* getting a more complete library of search spaces.
-Search spaces are compositional in our framework. The creation of new search
-spaces.
-
-Platform for research in architecture search.
-
-* adding features that
-
-
-TODO: come up with a way of managing the contrib folder.
-
-
-to guarantee reproducibility when running the code, we recommend that the
-correct git commit is used.
-
-(what happens if certain desired functionality is not available).
-
-If this tool has been useful to you, show some appreciation by contributing to
-it or getting your colleagues to use it too.
-Everyone benefits from open-source.
-
-
-TODO: for each of the different modes of contribution, make
-
-TODO: perhaps add a slack channel for contributing. First, show commitment by
-implementing some of this functionality.
-
-how to make things compatible without having too many dependencies.
-
-I would like to add a new architecture search task to the battery of tasks covered.
-
-New benchmark:
-
-
-
-main.py
-evaluator.py
-search_space.py
-searcher.py
-config.json
-
-if only a subset of these are used, then it is fine to just propose a benchmark
-where each of the of the models.
-
-easy to plug a new one.
-
-what is the difference between the benchmarks an something else, for example,
-if I want to substitute some components of the benchmark by something that I can
-control. What is the problem here.
-
-On writing tests.
-
-Each contribution has its own tests associated. separate the contributions by
-folder.
-
-darch ; should I create a stackoverflow for this, or actually create a forum
-for this. it is going to be very low volume.
-
-The recommended editor for contributing is VS Code. We make available
-
-structuring of the project. this is going to be important. the model is
-going to be important.
-
-# contributing guidelines:
-
-Contributing a searcher
-
-Contributing a search space
-
-Contributing an evaluator
-
-Other contributions
-
-
-The main aspects to strive for are consistency.
-The more standard the folder the code is placed in, the stricter the consistency standard.
-This means
-
-
-* folder.
-main.py
-evaluator.py
-search_space.py
-searcher.py
-
-* contrib_examples
-
-
-the standards for
-
-config.json for running code.
-accompanying tests.
-
-making sure that all this is automated.
-
-Talk about the importance of a config.json.
-
-NOTE: can we have comments in the config.json.
-
-
-the contrib folder is code that runs.
-
-should new results be posted as examples.
-
-We will make a consistent effort to make sure
-
-Three levels: darch, contrib, dev
-
-dev is used for functionality that is important
-
-
-
-Aspects that are important. It is important to compartamentalize the results of
-the model.
-This is important because it will allow us to
-
-A few guidelines for naming as for talking about the
-
-The contrib folder was designed such that each folder
-
-Readme file. config file.
-
-
-examples/contrib
-
-same name.
-
-addressing space.
-
-tests
- darch
- examples
-
-this is the correct think
-
-
-guideline
 
 what are the tests that are going to run.
 
 contrib is the library component of your contribution.
 don't commit data files. your library should not require any data files.
-if you main requires data files, then add a README.md
-
-
-add the research toolbox here.
-random_searcher.py
-
-framework code.
-
-evaluators.py
-searchers.py
-search_spaces.py
-
-import darch.contrib.useful.
-
-what happens if you depend on contrib functionality that is not being maintained.
-
-those will serve as documentation and other thing.
-
-**Important:** By submitting a pull request to this project, you agreeing to
-license your contribution under the MIT license.
+if you main requires data files, then add a README.md on how to download them.
 
 
 
-We follow the napoleon documentation and sphinx.
-for tests, we use something else... this is going to be painful.
+<!-- check that this is correct. -->
 
-which ones should have list there.
 
-Keep your commits small and localized and
-
-Furthering progress on architecture search by
-
-How to concentrate stuff in your folder.
-
-Add some information about what remains to be done.
-This is nice and functions as a wish list going into the future.
-
-Documentation requirements.
+## Conclusion
+<!-- What were the topics that were addressed in this document. -->
+This document outlines guidelines for contributing to DeepArchitect.
+Putting these guidelines in place guarantees that the focus is placed on the
+the functionality developed, rather than on the specific arbitrary decisions
+taken to implement it.
+Please make sure that you understand the main points of this document, e.g.,
+in terms of folder organization, documentation, code style, and test requirements,
+and different types of contributions.

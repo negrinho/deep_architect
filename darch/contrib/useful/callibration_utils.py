@@ -36,13 +36,13 @@ def apply_permutation(xs, idxs):
 def keep_top_k(ds, fn, k, maximizing=True):
     return sort(ds, [fn], increasing=not maximizing)[:k]
 
-def generate_indices(num_items, max_num_indices=32, increase_factor=2, multiplicative_increases=True):
-    assert not (multiplicative_increases and increase_factor == 1)
+def generate_indices(num_items, max_num_indices=32, increase_factor=2, use_multiplicative_increases=True):
+    assert not (use_multiplicative_increases and increase_factor == 1)
     idxs = []
     v = 0
     for i in xrange(max_num_indices):
         idxs.append(v)
-        if multiplicative_increases:
+        if use_multiplicative_increases:
             v = (v + 1) * increase_factor - 1
         else:
             v += increase_factor
@@ -60,11 +60,47 @@ def sort_sequences(sequence_lst_lst, value_lst, maximizing):
     sorted_sequence_lst = [apply_permutation(seq, idxs) for seq in sequence_lst_lst]
     return sorted_sequence_lst
 
-def callibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True,
-        max_num_plots=8, increase_factor=2, multiplicative_increases=True,
+def time_callibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True,
+        max_num_plots=8, increase_factor=2, use_multiplicative_increases=True,
         time_axis_label=None, value_axis_label=None, show=True, plot_filepath=None):
-    """Useful functionality to determine how much computation is reasoanble to
-    expend to do a good job identifying a good model.
+    """Given two lists encoding the evaluation performance across time of different models,
+    generates a graph showing the performance across time of models at different
+    ranks.
+
+    The time sequences in ``time_sequence_lst`` are paired with the
+    value sequences in ``value_sequence_lst`. Each curve is identified with the
+    best performance achieved across time, and the curves are ranked according
+    to the best performance achieved. The default arguments generate a plot
+    with a representative set of multiplicatively spaced ranks.
+
+    This plotting functionality is useful to determine how much time is reasonable to
+    spend on each evaluation to identify models that achieve high performance
+    when trained to completion. For example, for finding an answer to the
+    hypothesis that models that are best early in the evaluation remain
+    best later in the evaluation.
+
+    Args:
+        time_sequence_lst (list[list[float]]): List of lists, where each list in
+            the list is a sequence of time points (e.g., clock time or epochs).
+        value_sequence_lst (list[list[float]]): List of lists, where each list
+            in the list is a sequence of values.
+        maximizing (bool, optional): If ``True``, models with higher value are
+            better. Otherwise, models with lower value are better.
+        max_num_plots (int, optional): Maximum number of lines to show
+            in the plot. Fewer lines can be shown if the there are fewer sequences
+            overall.
+        increase_factor (int, optional): Increase factor used to generate the
+            sequence of ranks. Can be multiplicative or additive based on the
+            value of ``use_multiplicative_increases``.
+        use_multiplicative_increases (bool, optional): If ``True``, the ranks
+            of the models to display are multiplicatively spaced according to
+            ``increase_factor``. Otherwise, they are additively spaced.
+        time_axis_label (str, optional): Label for the time axis (i.e.,
+            horizontal axis).
+        value_axis_label (str, optional): Label for the value axis (i.e.,
+            vertical axis).
+
+
     """
     assert len(time_sequence_lst) == len(value_sequence_lst)
 
@@ -78,7 +114,7 @@ def callibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True,
 
     num_sequences = len(time_sequence_lst)
     indices = generate_indices(num_sequences, max_num_plots,
-        increase_factor, multiplicative_increases)
+        increase_factor, use_multiplicative_increases)
 
     plotter = vi.LinePlot(title='Total number of sequences: %d' % num_sequences,
         xlabel=time_axis_label, ylabel=value_axis_label)
@@ -187,3 +223,73 @@ def callibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
         sl.write_textfile(table_filepath, table_lines)
     if show:
         print "\n".join(table_lines)
+
+# TODO: write the documentation.
+# TODO: make the corresponding change in the other one.
+def budget_callibration_plot(reference_value_sequence, other_value_sequence_lst,
+        maximizing=True, reference_label=None, other_label_lst=None,
+        max_num_guidelines=8, increase_factor=2, use_multiplicative_increases=True,
+        value_axis_label=None, show=True, plot_filepath=None):
+    """In comparison to ``time_callibration_plot``, this function is helpful to
+    determine an appropriate resource budget to evaluate models, i.e., not just a
+    time budget. To do so, this function requires that the same models be
+    evaluated using different evaluators (i.e., evaluators with different budgets).
+    Intuitively, a good budget to do search is one that allows us to identify
+    the best models, but spending less computation per model.
+    The best models can then be evaluated more carefully under a larger resource
+    budget.
+    """
+
+    assert all(len(reference_value_sequence) == len(seq) for seq in other_value_sequence_lst)
+    assert other_label_lst is None or (len(other_value_sequence_lst) == len(other_label_lst))
+
+    argsort_fn = lambda seq: cut.argsort(seq, [lambda x: x], increasing=not maximizing)
+
+    num_evals = len(reference_value_sequence)
+    ref_sorting_idxs = argsort_fn(reference_value_sequence)
+    sorted_ref_seq = cut.apply_permutation(reference_value_sequence, ref_sorting_idxs)
+
+    # creating the initial values for the guidelines.
+    guideline_idxs = cut.generate_indices(num_evals, max_num_guidelines,
+        increase_factor, use_multiplicative_increases)
+    guideline_values_lst = [[sorted_ref_seq[idx]] for idx in guideline_idxs]
+    guideline_idxs_lst = [[idx] for idx in guideline_idxs]
+
+    # sorting the other sequences and computing the necessary information
+    # with respect to the baseline.
+    sorted_other_seq_lst = []
+    for seq in other_value_sequence_lst:
+        aux_seq = cut.apply_permutation(seq, ref_sorting_idxs)
+        sorting_idxs = argsort_fn(aux_seq)
+        sorted_seq = cut.apply_permutation(aux_seq, sorting_idxs)
+        sorted_other_seq_lst.append(sorted_seq)
+
+        # adding the guidelines for the corresponding sequence.
+        for guideline_idx, rank_idx in enumerate(guideline_idxs):
+            # the question that this code is answering is what is the position
+            # of evaluation at rank i in the current sequence, e.g., the
+            # best evaluation in the reference sequence may be third best in
+            # this sequence.
+            idx = sorting_idxs[rank_idx]
+            val = sorted_seq[idx]
+            guideline_idxs_lst[guideline_idx].append(idx)
+            guideline_values_lst[guideline_idx].append(val)
+
+    # it will be needed to be sorted by value to display correctly.
+
+    plotter = vi.LinePlot(xlabel='Rank', ylabel=value_axis_label)
+    # adding the value sequences.
+    xs = range(num_evals)
+    plotter.add_line(xs, sorted_ref_seq, label=reference_label)
+    for idx, ys in enumerate(sorted_other_seq_lst):
+        label = other_label_lst[idx] if other_label_lst is not None else None
+        plotter.add_line(xs, ys, label=label)
+
+    # adding the guidelines with respect to the best one.
+    for xs, ys in itertools.izip(guideline_idxs_lst, guideline_values_lst):
+        sorting_idxs = argsort_fn(ys)
+        xs = cut.apply_permutation(xs, sorting_idxs)
+        ys = cut.apply_permutation(ys, sorting_idxs)
+        plotter.add_line(xs, ys, color='black', line_type='dashed')
+
+    plotter.plot(show=show, fpath=plot_filepath)
