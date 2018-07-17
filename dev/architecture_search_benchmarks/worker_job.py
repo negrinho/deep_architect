@@ -35,8 +35,7 @@ def start_worker(rank, evaluator, search_space_factory,
 
         inputs, outputs, hs = search_space_factory.get_search_space()
         se.specify(outputs.values(), hs, vs)
-        # results = evaluator.eval(inputs, outputs, hs)
-        results = {'validation_accuracy': random.random()}
+        results = evaluator.eval(inputs, outputs, hs)
         write_file(
             worker_results_prefix + str(rank), 
             (results, evaluation_id, searcher_eval_token))

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import darch.modules as mo
-from helpers import tfeager as htfe
-from .common_eager import siso_tfem
+from dev.architecture_search_benchmarks.helpers import tfeager as htfe
+from dev.architecture_search_benchmarks.search_spaces.common_eager import siso_tfem
 
 TFEM = htfe.TFEModule
 

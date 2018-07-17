@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 tfe = tf.contrib.eager
 
-from .enas_common_ops import stack_lstm
+from dev.architecture_search_benchmarks.searchers.enas.enas_common_ops import stack_lstm
 
 from darch.searchers import (Searcher, unset_hyperparameter_iterator,
                              random_specify_hyperparameter)

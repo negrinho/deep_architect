@@ -4,9 +4,9 @@ from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 import darch.core as co
-from helpers import tfeager as htfe
 import darch.search_logging as sl
 import darch.contrib.useful.gpu_utils as gpu_utils
+from dev.architecture_search_benchmarks.helpers.tfeager import setTraining
 from six.moves import range
 
 class ENASEagerEvaluator:
@@ -70,6 +70,7 @@ class ENASEagerEvaluator:
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0
         num_left = dataset.get_num_examples()
+        setTraining(outputs.values(), False)
         while num_left > 0:
             X_batch, y_batch = dataset.next_batch(self.batch_size)
             X = tf.constant(X_batch)
@@ -123,6 +124,7 @@ class ENASEagerEvaluator:
 
         else:
             X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
+            setTraining(outputs.values(), True)
             self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch))
 
             epoch_end = self.train_dataset.iter_i == 0 or self.train_dataset.iter_i % 1 == 0

@@ -1,5 +1,5 @@
 import darch.hyperparameters as hp
-from helpers import tfeager as htfe
+from dev.architecture_search_benchmarks.helpers import tfeager as htfe
 
 D = hp.Discrete
 

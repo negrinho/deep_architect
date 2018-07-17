@@ -5,9 +5,9 @@ from collections import OrderedDict
 
 import tensorflow as tf
 
-from helpers import tfeager as htfe
-from .common_eager import D
-from .common_ops_eager import (
+from dev.architecture_search_benchmarks.helpers import tfeager as htfe
+from dev.architecture_search_benchmarks.search_spaces.common_eager import D
+from dev.architecture_search_benchmarks.search_spaces.common_ops_eager import (
     conv2D, conv2D_depth_separable, global_pool, dropout, fc_softmax, 
     wrap_batch_norm_relu, avg_pool, max_pool)
 import darch.modules as mo
@@ -29,11 +29,10 @@ class WeightSharer():
 # to form skip connections
 def concatenate_skip_layers(h_connects, weight_sharer):
     def cfn(di, dh):
-        inputs = [di['In' + str(i)] for i in range(len(dh)) if dh['select_' + str(i)]]
-        inputs.append(di['In' + str(len(dh))])
-
         bn = weight_sharer.get('skip_bn_' + str(len(dh)), tf.keras.layers.BatchNormalization)
         def fn(di, isTraining=True):
+            inputs = [di['In' + str(i)] for i in range(len(dh)) if dh['select_' + str(i)]]
+            inputs.append(di['In' + str(len(dh))])
             out = tf.add_n(inputs)
             return {'Out' : bn(out, training=isTraining)}
 
