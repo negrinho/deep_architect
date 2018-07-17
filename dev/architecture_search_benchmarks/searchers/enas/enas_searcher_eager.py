@@ -1,3 +1,9 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import sys
 import os
 import time
@@ -31,8 +37,8 @@ class ENASEagerSearcher(Searcher):
                  **kwargs):
         Searcher.__init__(self, search_space_fn)
 
-        print "-" * 80
-        print "Building ConvController"
+        print("-" * 80)
+        print("Building ConvController")
 
         self.num_layers = num_layers
         self.num_branches = num_branches
@@ -70,7 +76,7 @@ class ENASEagerSearcher(Searcher):
 
         inputs, outputs, hs = self.search_space_fn()
         vs = []
-        for i, h in enumerate(unset_hyperparameter_iterator(outputs.values(), hs.values())):
+        for i, h in enumerate(unset_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
                 h.set_val(v)
@@ -84,7 +90,7 @@ class ENASEagerSearcher(Searcher):
         if val != -1:
             loss = self._train(val, cfg_d['arc'])
             if self.train_step % 1 == 0:
-                print "Step: %d,    Reward: %f,    Loss:%f" % (self.train_step, val, loss.numpy())
+                print("Step: %d,    Reward: %f,    Loss:%f" % (self.train_step, val, loss.numpy()))
             
 
     def save_state(self, folder_name):
@@ -99,7 +105,7 @@ class ENASEagerSearcher(Searcher):
         with tf.variable_scope(self.name, reuse=tf.AUTO_REUSE):
             with tf.variable_scope("lstm"):
                 self.w_lstm = []
-                for layer_id in xrange(self.lstm_num_layers):
+                for layer_id in range(self.lstm_num_layers):
                     with tf.variable_scope("layer_{}".format(layer_id)):
                         w = tfe.Variable(initializer([2 * self.lstm_size, 4 * self.lstm_size]),
                             name="w")
@@ -128,19 +134,19 @@ class ENASEagerSearcher(Searcher):
 
     def _sample(self):
         """Build the sampler ops and the log_prob ops."""
-        print "-" * 80
-        print "Build controller sampler"
+        print("-" * 80)
+        print("Build controller sampler")
         anchors = []
         anchors_w_1 = []
 
         arc_seq = []
 
         prev_c = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                xrange(self.lstm_num_layers)]
+                range(self.lstm_num_layers)]
         prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                xrange(self.lstm_num_layers)]
+                range(self.lstm_num_layers)]
         inputs = self.g_emb
-        for layer_id in xrange(self.num_layers):
+        for layer_id in range(self.num_layers):
             next_c, next_h = stack_lstm(
                 inputs, prev_c, prev_h, self.w_lstm)
             prev_c, prev_h = next_c, next_h
@@ -195,14 +201,14 @@ class ENASEagerSearcher(Searcher):
             skip_penaltys = []
 
             prev_c = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                    xrange(self.lstm_num_layers)]
+                    range(self.lstm_num_layers)]
             prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                    xrange(self.lstm_num_layers)]
+                    range(self.lstm_num_layers)]
             inputs = self.g_emb
             skip_targets = tf.constant([1.0 - self.skip_target, self.skip_target],
                                     dtype=tf.float32)
             idx = 0
-            for layer_id in xrange(self.num_layers):
+            for layer_id in range(self.num_layers):
                 next_c, next_h = stack_lstm(
                     inputs, prev_c, prev_h, self.w_lstm)
                 prev_c, prev_h = next_c, next_h
@@ -238,7 +244,7 @@ class ENASEagerSearcher(Searcher):
                     idx += layer_id
 
                     skip_prob = tf.sigmoid(logit)
-                    kl = skip_prob * tf.log(skip_prob / skip_targets)
+                    kl = skip_prob * tf.log(old_div(skip_prob, skip_targets))
                     kl = tf.reduce_sum(kl)
                     skip_penaltys.append(kl)
 
@@ -273,5 +279,5 @@ class ENASEagerSearcher(Searcher):
             loss += self.skip_weight * skip_penaltys
 
         grads = tape.gradient(loss, self.variables)
-        self.opt.apply_gradients(zip(grads, self.variables), global_step=self.train_step)
+        self.opt.apply_gradients(list(zip(grads, self.variables)), global_step=self.train_step)
         return loss

@@ -1,6 +1,8 @@
 """
 Search space from Neural Architecture Search with Reinforcement Learning (Zoph'17)
 """
+from builtins import str
+from builtins import range
 import tensorflow as tf
 
 import darch.helpers.tensorflow as htf
@@ -80,7 +82,7 @@ def nas_repeat_fn(inputs, outputs):
     
 
 def get_nas_search_space(num_classes):
-    h_N = D(range(6, 21))
+    h_N = D(list(range(6, 21)))
     return mo.siso_sequential([mo.empty(),
                                nas_space(h_N, mo.empty, nas_repeat_fn, ['In'], ['Out']),
                                pool_and_logits(num_classes),

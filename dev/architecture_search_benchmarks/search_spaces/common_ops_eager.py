@@ -1,3 +1,4 @@
+from builtins import str
 import tensorflow as tf
 import darch.modules as mo
 from dev.architecture_search_benchmarks.helpers import tfeager as htfe

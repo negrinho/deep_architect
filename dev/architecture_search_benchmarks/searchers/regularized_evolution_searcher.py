@@ -1,7 +1,9 @@
 """
 Implementation of Regularized Evolution searcher from Zoph et al '18
 """
+from __future__ import print_function
 
+from builtins import range
 import random
 from collections import deque
 
@@ -32,7 +34,7 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
     new_vs[m_ind] = v
  
     inputs, outputs, hs = search_space_fn()
-    output_lst = outputs.values()
+    output_lst = list(outputs.values())
     all_vs = specify_evolution(output_lst, mutatable_fn, new_vs, hs)
     return inputs, outputs, hs, new_vs, all_vs
 
@@ -72,19 +74,19 @@ class EvolutionSearcher(Searcher):
         self.regularized = regularized
         self.initializing = True
         self.mutatable = mutatable_fn
-        print self.mutatable
+        print(self.mutatable)
 
     def sample(self):
         if self.initializing:
             inputs, outputs, hs = self.search_space_fn()
             user_vs, all_vs = random_specify_evolution(
-                outputs.values(), self.mutatable, hs.values())
+                list(outputs.values()), self.mutatable, list(hs.values()))
             if len(self.population) >= self.P - 1:
                 self.initializing = False
             return inputs, outputs, hs, all_vs, {'user_vs': user_vs, 'all_vs': all_vs}
         else:
             sample_inds = sorted(random.sample(
-                range(len(self.population)), min(self.S, len(self.population))))
+                list(range(len(self.population))), min(self.S, len(self.population))))
             # delete weakest model
             weak_ind = self.get_weakest_model_index(sample_inds)
 
@@ -93,7 +95,7 @@ class EvolutionSearcher(Searcher):
             user_vs, all_vs, _ = self.population[self.get_strongest_model_index(
                 sample_inds)]
             inputs, outputs, hs, new_user_vs, new_all_vs = mutate(
-                outputs.values(), user_vs, all_vs, self.mutatable, 
+                list(outputs.values()), user_vs, all_vs, self.mutatable, 
                 self.search_space_fn)
 
             del self.population[weak_ind]

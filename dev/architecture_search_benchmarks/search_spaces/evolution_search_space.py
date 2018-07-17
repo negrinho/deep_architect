@@ -1,9 +1,12 @@
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import darch.core as co
 import darch.hyperparameters as hp
 import darch.helpers.tensorflow as htf
 import darch.modules as mo
 import darch.contrib.useful.search_spaces.tensorflow.cnn2d as cnn2d
-from common_ops import relu, add, pool_and_logits, batch_normalization, avg_pool, wrap_relu_batch_norm
+from .common_ops import relu, add, pool_and_logits, batch_normalization, avg_pool, wrap_relu_batch_norm
 from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
 import tensorflow as tf
 import numpy as np
@@ -174,7 +177,7 @@ def mi_add(num_terms):
                 total_sum = tf.add(total_sum, trans[i])
             return {'Out' : total_sum}
         return fn
-    return TFM('MultiInputAdd', {}, cfn, ['In' + str(i) for i in xrange(num_terms)], ['Out']).get_io()
+    return TFM('MultiInputAdd', {}, cfn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
 
 # A module that applies a sp1_operation to two inputs, and adds them together
 def sp1_combine(h_op1_name, h_op2_name, h_stride):
@@ -190,15 +193,15 @@ def selector(h_selection, sel_fn, num_selections):
         def fn(di):
             return {'Out': di['In' + str(selection)]}
         return fn
-    return TFM('Selector', {'selection': h_selection}, cfn, ['In' + str(i) for i in xrange(num_selections)], ['Out']).get_io()
+    return TFM('Selector', {'selection': h_selection}, cfn, ['In' + str(i) for i in range(num_selections)], ['Out']).get_io()
 
 # A module that outlines the basic cell structure in Learning Transferable
 # Architectures for Scalable Image Recognition (Zoph et al, 2017)
 def basic_cell(h_sharer, C=5, normal=True):
     i_inputs, i_outputs = mo.empty(num_connections=2)
-    available = [i_outputs['Out' + str(i)] for i in xrange(len(i_outputs))]
+    available = [i_outputs['Out' + str(i)] for i in range(len(i_outputs))]
     unused = [False] * (C + 2)
-    for i in xrange(C):
+    for i in range(C):
         if normal:
             h_op1 = h_sharer.get('h_norm_op1_' + str(i))
             h_op2 = h_sharer.get('h_norm_op2_' + str(i))
@@ -216,7 +219,7 @@ def basic_cell(h_sharer, C=5, normal=True):
         sel0_inputs, sel0_outputs = selector(h_in0_pos, select, len(available))
         sel1_inputs, sel1_outputs = selector(h_in1_pos, select, len(available))
 
-        for o_idx in xrange(len(available)):
+        for o_idx in range(len(available)):
             available[o_idx].connect(sel0_inputs['In' + str(o_idx)])
             available[o_idx].connect(sel1_inputs['In' + str(o_idx)])
 
@@ -225,7 +228,7 @@ def basic_cell(h_sharer, C=5, normal=True):
         sel1_outputs['Out'].connect(comb_inputs['In1'])
         available.append(comb_outputs['Out'])
 
-    unused_outs = [available[i] for i in xrange(len(unused)) if not unused[i]]
+    unused_outs = [available[i] for i in range(len(unused)) if not unused[i]]
     s_inputs, s_outputs = mi_add(len(unused_outs))
     for i in range(len(unused_outs)):
         unused_outs[i].connect(s_inputs['In' + str(i)])
@@ -266,20 +269,20 @@ def get_search_space_small(num_classes, C):
     h_N = D([3])
     h_F = D([8])
     h_sharer = hp.HyperparameterSharer()
-    for i in xrange(C):
+    for i in range(C):
         h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
         h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
-        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
-        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
-    for i in xrange(C):
+        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+    for i in range(C):
         if i == 0:
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
             h_sharer.register('h_red_op2_' + str(i), lambda: D(['d_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
         else:
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
             h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])
@@ -301,14 +304,14 @@ def get_search_space_2(num_classes):
     h_N = D([3])
     h_F = D([8])
     h_sharer = hp.HyperparameterSharer()
-    for i in xrange(C):
+    for i in range(C):
         h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
           'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
         h_sharer.register('h_norm_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
           'min2', 'max2', 'manorm_x3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
-        h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
-        h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
-    for i in xrange(C):
+        h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+    for i in range(C):
         if i == 0:
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
             'min2', 'max2', 'max3', 's_sep3' 's_sep7'], name='Mutatable'))
@@ -319,8 +322,8 @@ def get_search_space_2(num_classes):
             'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
             h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
             'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(range(2 + i), name='Mutatable'))
+        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv1x1(h_F)
     o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])

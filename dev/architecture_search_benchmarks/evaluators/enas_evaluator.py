@@ -1,6 +1,9 @@
 
 from __future__ import print_function
+from __future__ import division
 
+from builtins import object
+from past.utils import old_div
 import tensorflow as tf
 import numpy as np
 import darch.core as co
@@ -9,7 +12,7 @@ import darch.search_logging as sl
 import darch.contrib.useful.gpu_utils as gpu_utils
 from six.moves import range
 
-class ENASEvaluator:
+class ENASEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
     that achieves the best validation performance, reduces the step size
@@ -45,7 +48,7 @@ class ENASEvaluator:
         self.log_output_to_terminal = log_output_to_terminal
         self.model_path = model_path
         self.test_dataset = test_dataset
-        self.num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
+        self.num_batches = int(old_div(self.train_dataset.get_num_examples(), self.batch_size))
         self.batch_counter = 0
         self.epoch = 0
 
@@ -77,7 +80,7 @@ class ENASEvaluator:
             # update the number of examples left.
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
-        acc = float(nc) / dataset.get_num_examples()
+        acc = old_div(float(nc), dataset.get_num_examples())
         return acc 
 
     def eval(self, inputs, outputs, hs):
@@ -88,7 +91,7 @@ class ENASEvaluator:
         with tf.variable_scope('image_model'):
             co.forward({inputs['In'] : X_pl})
         logits = outputs['Out'].val
-        train_feed, eval_feed = htf.get_feed_dicts(outputs.values())
+        train_feed, eval_feed = htf.get_feed_dicts(list(outputs.values()))
 
         # define loss and optimizer
         loss = tf.reduce_mean(

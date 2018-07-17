@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import sys
 import os
 import time
@@ -74,7 +79,7 @@ class ENASSearcher(Searcher):
 
         inputs, outputs, hs = self.search_space_fn()
         vs = []
-        for i, h in enumerate(unset_hyperparameter_iterator(outputs.values(), hs.values())):
+        for i, h in enumerate(unset_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
                 h.set_val(v)
@@ -97,7 +102,7 @@ class ENASSearcher(Searcher):
                     self.train_step, 
                     self.train_op], feed_dict=train_feed)
             if train_step % 1 == 0:
-                print "Step: %d,    Reward: %f,    Loss:%f" % (train_step, val, loss)
+                print("Step: %d,    Reward: %f,    Loss:%f" % (train_step, val, loss))
             self.val_accs = []
             self.arcs = []
             
@@ -114,7 +119,7 @@ class ENASSearcher(Searcher):
             with tf.variable_scope(self.name, reuse=tf.AUTO_REUSE, initializer=initializer):
                 with tf.variable_scope("lstm"):
                     self.w_lstm = []
-                    for layer_id in xrange(self.lstm_num_layers):
+                    for layer_id in range(self.lstm_num_layers):
                         with tf.variable_scope("layer_{}".format(layer_id)):
                             w = tf.get_variable(
                                 "w", [2 * self.lstm_size, 4 * self.lstm_size])
@@ -137,8 +142,8 @@ class ENASSearcher(Searcher):
 
     def _build_sampler(self):
         """Build the sampler ops and the log_prob ops."""
-        print "-" * 80
-        print "Build controller sampler"
+        print("-" * 80)
+        print("Build controller sampler")
         with self.graph.as_default():
             anchors = []
             anchors_w_1 = []
@@ -146,11 +151,11 @@ class ENASSearcher(Searcher):
             arc_seq = []
 
             prev_c = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                    xrange(self.lstm_num_layers)]
+                    range(self.lstm_num_layers)]
             prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                    xrange(self.lstm_num_layers)]
+                    range(self.lstm_num_layers)]
             inputs = self.g_emb
-            for layer_id in xrange(self.num_layers):
+            for layer_id in range(self.num_layers):
                 next_c, next_h = stack_lstm(
                     inputs, prev_c, prev_h, self.w_lstm)
                 prev_c, prev_h = next_c, next_h
@@ -206,14 +211,14 @@ class ENASSearcher(Searcher):
             skip_penaltys = []
 
             prev_c = [tf.zeros([self.batch_size, self.lstm_size], tf.float32) for _ in
-                    xrange(self.lstm_num_layers)]
+                    range(self.lstm_num_layers)]
             prev_h = [tf.zeros([self.batch_size, self.lstm_size], tf.float32) for _ in
-                    xrange(self.lstm_num_layers)]
+                    range(self.lstm_num_layers)]
             inputs = self.g_emb
             skip_targets = tf.constant([1.0 - self.skip_target, self.skip_target],
                                     dtype=tf.float32)
             idx = 0
-            for layer_id in xrange(self.num_layers):
+            for layer_id in range(self.num_layers):
                 next_c, next_h = stack_lstm(
                     inputs, prev_c, prev_h, self.w_lstm)
                 prev_c, prev_h = next_c, next_h
@@ -251,7 +256,7 @@ class ENASSearcher(Searcher):
                     idx += layer_id
 
                     skip_prob = tf.sigmoid(logit)
-                    kl = skip_prob * tf.log(skip_prob / skip_targets)
+                    kl = skip_prob * tf.log(old_div(skip_prob, skip_targets))
                     kl = tf.reduce_sum(kl)
                     skip_penaltys.append(kl)
 
@@ -294,9 +299,9 @@ class ENASSearcher(Searcher):
                 0, dtype=tf.int32, trainable=False, name="train_step")
             tf_variables = [var
                             for var in tf.trainable_variables() if var.name.startswith(self.name)]
-            print "-" * 80
+            print("-" * 80)
             for var in tf_variables:
-                print var
+                print(var)
 
             opt = tf.train.AdamOptimizer(self.learning_rate, beta1=0.0, epsilon=1e-3,
                                     use_locking=True)

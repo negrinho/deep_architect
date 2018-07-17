@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from .regularized_evolution_searcher import EvolutionSearcher, mutatable
-from enas.enas_searcher import ENASSearcher
-from enas.enas_searcher_eager import ENASEagerSearcher
+from .enas.enas_searcher import ENASSearcher
+from .enas.enas_searcher_eager import ENASEagerSearcher
 import darch.searchers as se
 import darch.surrogates as su
 

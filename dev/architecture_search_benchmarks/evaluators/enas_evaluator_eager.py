@@ -1,6 +1,9 @@
 
 from __future__ import print_function
+from __future__ import division
 
+from builtins import object
+from past.utils import old_div
 import tensorflow as tf
 import numpy as np
 import darch.core as co
@@ -9,7 +12,7 @@ import darch.contrib.useful.gpu_utils as gpu_utils
 from dev.architecture_search_benchmarks.helpers.tfeager import setTraining
 from six.moves import range
 
-class ENASEagerEvaluator:
+class ENASEagerEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
     that achieves the best validation performance, reduces the step size
@@ -45,7 +48,7 @@ class ENASEagerEvaluator:
         self.log_output_to_terminal = log_output_to_terminal
         self.model_path = model_path
         self.test_dataset = test_dataset
-        self.num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
+        self.num_batches = int(old_div(self.train_dataset.get_num_examples(), self.batch_size))
         self.batch_counter = 0
         self.epoch = 0
 
@@ -70,7 +73,7 @@ class ENASEagerEvaluator:
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0
         num_left = dataset.get_num_examples()
-        setTraining(outputs.values(), False)
+        setTraining(list(outputs.values()), False)
         while num_left > 0:
             X_batch, y_batch = dataset.next_batch(self.batch_size)
             X = tf.constant(X_batch)
@@ -85,7 +88,7 @@ class ENASEagerEvaluator:
             # update the number of examples left.
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
-        acc = float(nc) / dataset.get_num_examples()
+        acc = old_div(float(nc), dataset.get_num_examples())
         return acc 
 
     def _compute_loss(self, inputs, outputs, X, y, tf_variables=None):
@@ -124,7 +127,7 @@ class ENASEagerEvaluator:
 
         else:
             X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
-            setTraining(outputs.values(), True)
+            setTraining(list(outputs.values()), True)
             self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch))
 
             epoch_end = self.train_dataset.iter_i == 0 or self.train_dataset.iter_i % 1 == 0

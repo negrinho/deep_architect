@@ -1,6 +1,11 @@
 """
 Search space from Efficient Neural Architecture Search (Pham'17)
 """
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
 import tensorflow as tf
 from collections import OrderedDict
 
@@ -13,7 +18,7 @@ from darch.contrib.useful.search_spaces.tensorflow import cnn2d
 TFM = htf.TFModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
-class WeightSharer():
+class WeightSharer(object):
     def __init__(self):
         self.name_to_weight = OrderedDict()
         self.weights_used = OrderedDict()
@@ -21,15 +26,15 @@ class WeightSharer():
     def get(self, name, weight_fn):
         if name not in self.name_to_weight:
             weight = weight_fn()
-            print name
+            print(name)
         else:
             weight = tf.constant(self.name_to_weight[name])
         self.weights_used[name] = weight
         return weight
     
     def update(self, sess):
-        weights = sess.run(self.weights_used.values())
-        weights = zip(self.weights_used.keys(), weights)
+        weights = sess.run(list(self.weights_used.values()))
+        weights = list(zip(list(self.weights_used.keys()), weights))
         for name, weight in weights:
             self.name_to_weight[name] = weight
         self.weights_used.clear()
@@ -129,13 +134,13 @@ def enas_op(h_op_name, name, weight_sharer):
 def enas_repeat_fn(inputs, outputs, layer_id, weight_sharer):
     h_enas_op = D(['conv3', 'conv5', 'dsep_conv3', 'dsep_conv5', 'avg_pool', 'max_pool'], name='op_' + str(layer_id))
     op_inputs, op_outputs = enas_op(h_enas_op, 'op_' + str(layer_id), weight_sharer)
-    outputs[outputs.keys()[-1]].connect(op_inputs['In'])
+    outputs[list(outputs.keys())[-1]].connect(op_inputs['In'])
 
     h_connects = [D([True, False], name='skip_'+str(idx)+'_'+str(layer_id)) for idx in range(layer_id - 1)]
     skip_inputs, skip_outputs = concatenate_skip_layers(h_connects, weight_sharer)
 
     for i in range(len(h_connects)):
-        outputs[outputs.keys()[i]].connect(skip_inputs['In' + str(i)])
+        outputs[list(outputs.keys())[i]].connect(skip_inputs['In' + str(i)])
     # for i, out_name in enumerate(outputs):
     #     outputs[out_name].connect(skip_inputs['In' + str(i)])
     op_outputs['Out'].connect(skip_inputs['In' + str(len(h_connects))])
