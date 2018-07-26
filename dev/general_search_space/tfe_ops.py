@@ -51,7 +51,7 @@ def dropout(h_keep_prob):
         return fn
     return siso_tfem('Dropout', cfn, {'keep_prob' : h_keep_prob})
 
-def global_pool():
+def global_pool2d():
     def cfn(di, dh):
         def fn(di, isTraining=True):
             return {'Out' : tf.reduce_mean(di['In'], [1,2])}
@@ -72,6 +72,6 @@ func_dict = {
     'max_pool2d': max_pool2d,
     'batch_normalization': batch_normalization,
     'relu': relu,
-    'global_pool': global_pool,
+    'global_pool2d': global_pool2d,
     'fc_layer': fc_layer
 }

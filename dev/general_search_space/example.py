@@ -20,16 +20,19 @@ def get_search_space(num_classes):
         conv2d(D([32, 64]), D([3, 5]), D([1, 2]), D([True, False])),
         relu(),
         batch_normalization(),
-        global_pool(),
+        global_pool2d(),
         fc_layer(D([num_classes]))
     ])
 
 def main():
-    backend.set_backend(backend.PYTORCH)
+    backend.set_backend(backend.TENSORFLOW_EAGER)
     ins, outs = get_search_space(10)
     random_specify(outs.values())
     viz.draw_graph(outs.values())
-    _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/')
+    if backend.get_backend() < 2:
+        _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/')
+    else:
+        _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/', data_format='NCHW')
     dataset = InMemoryDataset(X, y, False)
     in_dim = list(dataset.next_batch(1)[0].shape[1:])
     X_batch, y_batch = dataset.next_batch(16)

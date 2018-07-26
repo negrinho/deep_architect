@@ -43,7 +43,7 @@ def batch_normalization():
 def relu():
     return siso_tfm('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
 
-def global_pool():
+def global_pool2d():
     def cfn(di, dh):
         def fn(di):
             return {'Out' : tf.reduce_mean(di['In'], [1,2])}
@@ -64,6 +64,6 @@ func_dict = {
     'max_pool2d': max_pool2d,
     'batch_normalization': batch_normalization,
     'relu': relu,
-    'global_pool': global_pool,
+    'global_pool2d': global_pool2d,
     'fc_layer': fc_layer
 }

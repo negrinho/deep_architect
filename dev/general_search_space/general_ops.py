@@ -20,11 +20,10 @@ def max_pool2d(h_kernel_size, h_stride):
     fn = get_func('max_pool2d')
     return fn(h_kernel_size, h_stride)
 
-def global_pool():
-    fn = get_func('global_pool')
+def global_pool2d():
+    fn = get_func('global_pool2d')
     return fn()
 
 def fc_layer(h_num_units):
     fn = get_func('fc_layer')
     return fn(h_num_units)
-    
