@@ -27,7 +27,7 @@ def load_mnist(data_dir, flatten=False, one_hot=True, normalize_range=False):
     return (Xtrain, ytrain, Xval, yval, Xtest, ytest)
 
 def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
-        whiten_pixels=True, border_pad_size=0):
+        whiten_pixels=True, border_pad_size=0, data_format='NHWC'):
     """Loads all of CIFAR-10 in a numpy array.
     Provides a few options for the output formats. For example,
     normalize_range returns the output images with pixel values in [0.0, 1.0].
@@ -51,7 +51,8 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
             num_images = X.shape[0]
             num_classes = 10
             X = X.reshape((num_images, 3, 32, 32))
-            X = X.transpose((0,2,3,1))
+            if data_format == 'NHWC':
+                X = X.transpose((0,2,3,1))
             X = X.astype('float32')
 
             # transformations based on the argument options.
