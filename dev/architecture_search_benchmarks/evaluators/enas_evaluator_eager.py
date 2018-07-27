@@ -130,7 +130,7 @@ class ENASEagerEvaluator(object):
             setTraining(list(outputs.values()), True)
             self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch))
 
-            epoch_end = self.train_dataset.iter_i == 0 or self.train_dataset.iter_i % 1 == 0
+            epoch_end = self.train_dataset.iter_i == 0
 
             results['validation_accuracy'] = -1
             if epoch_end:
@@ -140,4 +140,5 @@ class ENASEagerEvaluator(object):
                 results['epoch'] = self.epoch
                 print('Epoch %d: %f' % (self.epoch, val_acc))
                 print('Starting Controller Mode')
+        self.weight_sharer.reset()
         return results
