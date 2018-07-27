@@ -22,7 +22,7 @@ def start_searcher(comm, num_workers, searcher, resume_if_exists,
     searcher_load_path, num_samples = -1, num_epochs= - 1):
     assert num_samples != -1 or num_epochs != -1
 
-    print 'SEARCHER'
+    print('SEARCHER')
     search_logger = sl.SearchLogger('./logs', 'test',
         resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
     search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
@@ -82,7 +82,7 @@ def start_searcher(comm, num_workers, searcher, resume_if_exists,
 
 def start_worker(comm, rank, evaluator, search_space_factory):
     # set the available gpu for process
-    print 'WORKER %d' % rank
+    print('WORKER %d' % rank)
     if len(gpu_utils.get_gpu_information()) != 0:
         #https://github.com/tensorflow/tensorflow/issues/1888
         gpu_utils.set_visible_gpus([rank % gpu_utils.get_total_num_gpus()])
@@ -95,7 +95,6 @@ def start_worker(comm, rank, evaluator, search_space_factory):
 
         inputs, outputs, hs = search_space_factory.get_search_space()
         se.specify(outputs.values(), hs, vs)
-        print(vs)
         results = evaluator.eval(inputs, outputs, hs)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
@@ -119,7 +118,10 @@ def main():
     config = configs[options.config_name]
 
     if options.eager:
-        tf.enable_eager_execution()
+        tfconfig = tf.ConfigProto()
+        tfconfig.log_device_placement=True
+        tfconfig.gpu_options.allow_growth=True
+        tf.enable_eager_execution(tfconfig)
 
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/cifar-10-batches-py/'), 10)

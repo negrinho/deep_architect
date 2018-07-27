@@ -21,7 +21,7 @@ def get_gpu_information():
         out = subprocess.check_output([
             'nvidia-smi',
             '--query-gpu=utilization.gpu,memory.used,memory.total',
-            '--format=csv,noheader'])
+            '--format=csv,noheader']).decode('utf-8')
 
         gpu_s_lst = out.strip().split('\n')
         for i, s in enumerate(gpu_s_lst):
@@ -46,7 +46,7 @@ def get_available_gpu(memory_threshold_in_gigabytes, utilization_threshold_in_pe
 
 def get_total_num_gpus():
     try:
-        n = len(subprocess.check_output(['nvidia-smi', '-L']).strip().split('\n'))
+        n = len(subprocess.check_output(['nvidia-smi', '-L']).decode('utf-8').strip().split('\n'))
     except OSError:
         n = 0
     return n

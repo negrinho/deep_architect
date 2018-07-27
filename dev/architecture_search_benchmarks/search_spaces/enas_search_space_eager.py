@@ -21,14 +21,22 @@ TFEM = htfe.TFEModule
 class WeightSharer(object):
     def __init__(self):
         self.name_to_weight = OrderedDict()
+        self.weights_used = set()
     
     def get(self, name, weight_fn):
         if name not in self.name_to_weight:
             self.name_to_weight[name] = weight_fn()
             print(name)
+#        self.weights_used.add(name)
+#        self.name_to_weight[name].gpu()
         return self.name_to_weight[name]
-    
 
+    def reset(self):
+#        for name in self.weights_used:
+#            self.name_to_weight[name].cpu()
+#        self.weights_used.clear()
+        pass
+    
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
 # to form skip connections
 def concatenate_skip_layers(h_connects, weight_sharer):
