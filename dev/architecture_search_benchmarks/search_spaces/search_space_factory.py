@@ -9,5 +9,5 @@ name_to_search_space_factory_fn = {
     'zoph_sp3': lambda num_classes: SSFZoph17('sp3', num_classes),
     'nasnet': lambda num_classes: SSFNasnet(num_classes),
     'enas': lambda num_classes: SSFEnasnet(num_classes, 48),
-    'enas_eager': lambda num_classes: SSFEnasnetEager(num_classes, 2, 36)
+    'enas_eager': lambda num_classes: SSFEnasnetEager(num_classes, 12, 36)
 }

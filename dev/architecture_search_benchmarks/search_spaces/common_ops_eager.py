@@ -9,8 +9,9 @@ TFEM = htfe.TFEModule
 def avg_pool(h_kernel_size, h_stride):
     def cfn(di, dh):
         def fn(di, isTraining=True):
-            return {'Out' : tf.nn.avg_pool(di['In'],
-                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
+            with tf.device('/gpu:0'):
+                return {'Out' : tf.nn.avg_pool(di['In'],
+                    [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
     return siso_tfem('AvgPool', cfn, {
         'kernel_size' : h_kernel_size,
@@ -20,8 +21,9 @@ def avg_pool(h_kernel_size, h_stride):
 def max_pool(h_kernel_size, h_stride):
     def cfn(di, dh):
         def fn(di, isTraining=True):
-            return {'Out' : tf.nn.max_pool(di['In'],
-                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
+            with tf.device('/gpu:0'):
+                return {'Out' : tf.nn.max_pool(di['In'],
+                    [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
     return siso_tfem('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride,})
@@ -30,14 +32,16 @@ def keras_batch_normalization(name='default', weight_sharer=None):
     def cfn(di, dh):
         bn = weight_sharer.get(name + '_bn', tf.keras.layers.BatchNormalization)
         def fn(di, isTraining):
-            return {'Out' : bn(di['In'], training=isTraining) }
+            with tf.device('/gpu:0'):
+                return {'Out' : bn(di['In'], training=isTraining) }
         return fn
     return siso_tfem('BatchNormalization', cfn, {})
 
 def relu():
     def cfn(di, dh):
         def fn(di, isTraining=True):
-            return {'Out' : tf.nn.relu(di['In'])}
+            with tf.device('/gpu:0'):
+                return {'Out' : tf.nn.relu(di['In'])}
         return fn
     return siso_tfem('ReLU', cfn, {})
 
@@ -49,7 +53,8 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
         conv_fn = lambda: tf.keras.layers.Conv2D(channels, filter_size, padding='same')
         conv = weight_sharer.get(name + '_conv_' + str(filter_size), conv_fn)
         def fn(di, isTraining=True):
-            return {'Out' : conv(di['In'])}
+            with tf.device('/gpu:0'):
+                return {'Out' : conv(di['In'])}
         return fn
 
     return siso_tfem('Conv2D', cfn, {})
@@ -62,7 +67,8 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
         conv = weight_sharer.get(name + '_dsep_' + str(filter_size), conv_fn)
         
         def fn(di, isTraining=True):
-            return {'Out' : conv(di['In'])}
+            with tf.device('/gpu:0'):
+                return {'Out' : conv(di['In'])}
         return fn
 
     return siso_tfem('Conv2DSeparable', cfn, {})
@@ -70,7 +76,8 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
 def global_pool():
     def cfn(di, dh):
         def fn(di, isTraining):
-            return {'Out': tf.reduce_mean(di['In'], [1, 2])}
+            with tf.device('/gpu:0'):
+                return {'Out': tf.reduce_mean(di['In'], [1, 2])}
         return fn
     return TFEM('GlobalPool', {}, cfn, ['In'], ['Out']).get_io()
 
@@ -78,7 +85,8 @@ def dropout(keep_prob):
     def cfn(di, dh):
         def fn(di, isTraining=True):
             if isTraining:
-                out = tf.nn.dropout(di['In'], keep_prob)
+                with tf.device('/gpu:0'):
+                    out = tf.nn.dropout(di['In'], keep_prob)
             else:
                 out = di['In']
             return {'Out': out}
@@ -89,7 +97,8 @@ def fc_softmax(num_classes, weight_sharer):
     def cfn(di, dh):
         fc = weight_sharer.get('softmax', lambda: tf.keras.layers.Dense(num_classes))
         def fn(di, isTraining=True):
-            return {'Out' : fc(di['In'])}
+            with tf.device('/gpu:0'):
+                return {'Out' : fc(di['In'])}
         return fn
     return siso_tfem('fc_softmax', cfn, {}) 
 

@@ -2,6 +2,7 @@
 from __future__ import print_function
 from __future__ import division
 
+import gc
 from builtins import object
 from past.utils import old_div
 import tensorflow as tf
@@ -92,7 +93,8 @@ class ENASEagerEvaluator(object):
         return acc 
 
     def _compute_loss(self, inputs, outputs, X, y, tf_variables=None):
-        X = tf.constant(X)
+        X = tf.constant(X).gpu()
+        y = tf.constant(y).gpu()
         co.forward({inputs['In']: X})
         logits = outputs['Out'].val
         loss = tf.reduce_mean(
@@ -128,7 +130,8 @@ class ENASEagerEvaluator(object):
         else:
             X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
             setTraining(list(outputs.values()), True)
-            self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch))
+            with tf.device('/gpu:0'):
+                self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch))
 
             epoch_end = self.train_dataset.iter_i == 0
 
@@ -140,5 +143,5 @@ class ENASEagerEvaluator(object):
                 results['epoch'] = self.epoch
                 print('Epoch %d: %f' % (self.epoch, val_acc))
                 print('Starting Controller Mode')
-        self.weight_sharer.reset()
+        gc.collect()
         return results

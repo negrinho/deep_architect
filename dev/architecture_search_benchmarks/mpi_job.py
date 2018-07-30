@@ -119,9 +119,8 @@ def main():
 
     if options.eager:
         tfconfig = tf.ConfigProto()
-        tfconfig.log_device_placement=True
         tfconfig.gpu_options.allow_growth=True
-        tf.enable_eager_execution(tfconfig)
+        tf.enable_eager_execution(tfconfig, device_policy=tf.contrib.eager.DEVICE_PLACEMENT_SILENT)
 
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/cifar-10-batches-py/'), 10)
