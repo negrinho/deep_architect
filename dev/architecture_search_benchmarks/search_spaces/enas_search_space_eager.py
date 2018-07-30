@@ -25,7 +25,8 @@ class WeightSharer(object):
     
     def get(self, name, weight_fn):
         if name not in self.name_to_weight:
-            self.name_to_weight[name] = weight_fn()
+            with tf.device('/gpu:0'):
+                self.name_to_weight[name] = weight_fn()
             print(name)
 #        self.weights_used.add(name)
 #        self.name_to_weight[name].gpu()
@@ -45,8 +46,9 @@ def concatenate_skip_layers(h_connects, weight_sharer):
         def fn(di, isTraining=True):
             inputs = [di['In' + str(i)] for i in range(len(dh)) if dh['select_' + str(i)]]
             inputs.append(di['In' + str(len(dh))])
-            out = tf.add_n(inputs)
-            return {'Out' : bn(out, training=isTraining)}
+            with tf.device('/gpu:0'):
+                out = tf.add_n(inputs)
+                return {'Out' : bn(out, training=isTraining)}
 
         return fn
     return TFEM('SkipConcat', 
@@ -73,6 +75,7 @@ def enas_op(h_op_name, out_filters, name, weight_sharer):
 
 def enas_repeat_fn(inputs, outputs, layer_id, out_filters, weight_sharer):
     h_enas_op = D(['conv3', 'conv5', 'dsep_conv3', 'dsep_conv5', 'avg_pool', 'max_pool'], name='op_' + str(layer_id))
+    #h_enas_op = D(['max_pool'], name='op_' + str(layer_id))
     op_inputs, op_outputs = enas_op(h_enas_op, out_filters, 'op_' + str(layer_id), weight_sharer)
     outputs[list(outputs.keys())[-1]].connect(op_inputs['In'])
 
@@ -102,6 +105,7 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
     return mo.siso_sequential([
         enas_space(
             h_N, out_filters,
+            #mo.empty,
             lambda: wrap_batch_norm_relu(
                 conv2D(3, 'stem', weight_sharer, out_filters=out_filters), 
                 add_relu=False, weight_sharer=weight_sharer, name='stem'),
@@ -123,6 +127,7 @@ class SSFEnasnetEager(mo.SearchSpaceFactory):
         inputs, outputs = get_enas_search_space(
             self.num_classes,
             self.num_layers, 
+         #   1,
             self.out_filters, 
             self.weight_sharer)
         return inputs, outputs, {}
