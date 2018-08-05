@@ -1,6 +1,6 @@
 
 
-from darch.searchers.common import random_specify, Searcher
+from darch.searchers.common import random_specify, specify, Searcher
 from darch.searchers.mcts import MCTSSearcher
 from darch.surrogates.common import extract_features
 import numpy as np
@@ -47,7 +47,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
     def update(self, val, searcher_eval_token):
         (inputs, outputs, hyperps) = self.search_space_fn()
         specify(outputs.values(), hyperps.values(), searcher_eval_token['vs'])
-        feats = su.extract_features(inputs, outputs, hyperps)
+        feats = extract_features(inputs, outputs, hyperps)
         self.surr_model.update(val, feats)
 
         self.cnt += 1

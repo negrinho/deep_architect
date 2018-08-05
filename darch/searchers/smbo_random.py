@@ -1,5 +1,5 @@
 
-from darch.searchers.common import random_specify, Searcher
+from darch.searchers.common import random_specify, specify, Searcher
 from darch.surrogates.common import extract_features
 import numpy as np
 

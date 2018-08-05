@@ -1,5 +1,6 @@
 import numpy as np
 import darch.core as co
+import darch.hyperparameters as hp
 
 class Searcher:
     """Abstract base class from which new searchers should inherit from.
