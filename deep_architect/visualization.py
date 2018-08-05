@@ -168,7 +168,7 @@ def draw_graph_evolution(output_lst, hyperp_value_lst, out_folderpath, graph_nam
             print_to_screen=False)
 
     draw_fn(0)
-    h_iter = se.unassigned_independent_hyperparameter_iterator(output_lst)
+    h_iter = co.unassigned_independent_hyperparameter_iterator(output_lst)
     for i, v in enumerate(hyperp_value_lst):
         h = h_iter.next()
         h.assign_value(v)
