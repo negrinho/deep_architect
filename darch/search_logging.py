@@ -477,7 +477,7 @@ class EvaluationLogger:
         the same searcher allowing it to update back its state. The searcher
         evaluation token is returned by the searcher when a new architecture
         to evaluate is sampled. See, for example,
-        :meth:`darch.searchers.MCTSearcher.sample`. The format of the searcher
+        :meth:`darch.searchers.MCTSSearcher.sample`. The format of the searcher
         evaluation token is searcher dependent, but it should be JSON serializable
         in all cases.
 

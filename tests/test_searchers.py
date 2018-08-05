@@ -58,7 +58,7 @@ def test_random_searcher():
     for _ in range(5):
         searcher = RandomSearcher(multiply_search_space_fn)
         inputs, outputs, hyperps, _, _ = searcher.sample()
-        multiplier = hyperps['multiplier'].get_val()
+        multiplier = hyperps['multiplier'].get_value()
 
         val = Tmp(inputs, outputs)
         for i in range(5):

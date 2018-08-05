@@ -91,7 +91,7 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
         g.edge(
             h.get_name(),
             m.get_name(),
-            label=h_localname + '=' + str(h.get_val()),
+            label=h_localname + '=' + str(h.get_value()),
             fontsize=edge_fs)
 
     def _draw_module_hyperparameter_info(m):
@@ -99,11 +99,11 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
             m.get_name(),
             xlabel="<" + '<br align="right"/>'.join([
                     '<FONT POINT-SIZE="%s">' % h_fs +
-                    h_localname + ('=' + str(h.get_val()) if h.is_set() else '') +
+                    h_localname + ('=' + str(h.get_value()) if h.has_value_assigned() else '') +
                     "</FONT>"
                     for h_localname, h in iteritems(m.hyperps)]) + ">")
 
-    def _draw_unset_hyperparameter(m, h_localname, h):
+    def _draw_unassigned_hyperparameter(m, h_localname, h):
         g.edge(
             h.get_name(),
             m.get_name(),
@@ -131,10 +131,10 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
         if draw_hyperparameters:
             for (h_localname, h) in iteritems(m.hyperps):
                 hs.add(h.get_name())
-                if h.is_set():
+                if h.has_value_assigned():
                     _draw_set_hyperparameter(m, h_localname, h)
                 else:
-                    _draw_unset_hyperparameter(m, h_localname, h)
+                    _draw_unassigned_hyperparameter(m, h_localname, h)
         if draw_module_hyperparameter_info:
             _draw_module_hyperparameter_info(m)
         return False
@@ -168,10 +168,10 @@ def draw_graph_evolution(output_lst, hyperp_value_lst, out_folderpath, graph_nam
             print_to_screen=False)
 
     draw_fn(0)
-    h_iter = se.unset_hyperparameter_iterator(output_lst)
+    h_iter = se.unassigned_independent_hyperparameter_iterator(output_lst)
     for i, v in enumerate(hyperp_value_lst):
         h = h_iter.next()
-        h.set_val(v)
+        h.assign_value(v)
         draw_fn(i + 1)
 
     in_filepath_expr = sl.join_paths([

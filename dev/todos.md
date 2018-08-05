@@ -151,7 +151,6 @@ of the code base, e.g., some of the private functions of the modules.
 * Needs to add error messages to the assert messages.
 * change get_current_evaluation_logger to get_next_evaluation_logger.
 * Check the logs for corrections.
-* The MCTSearcher is misspelled. Should be MCTSSearcher.
 * Compile the code.
 * Write down about the directly structure of the code. This is important to be explicit about the structure of the folder and what is container in each of them.
 * Decide on the capitalization, i.e., DArch vs Darch vs darch. I think that I prefer the first one.
@@ -188,6 +187,10 @@ of the code base, e.g., some of the private functions of the modules.
 * What are the current limitations in terms of models, i.e., what can be done
 * Evolution searcher with general mutation scheme that works for all search spaces.
 * A good way of reducing the effort of documenting the code is when finding something confusing, it is useful to document the code extensively then.
+* Are the functions in the empty module necessary or not.
+* Decide on better names for the variables that should be more consistent. This is problematic.
+* The propagation for dependent hyperparameters is going to be suboptimal.
+* Write more extensive tests for the new functionality for getting the hyperparameters.
 
 Before release:
 * Add more links to the project.
@@ -199,6 +202,7 @@ Before release:
 * Add pointers more extensively to the code that is there.
 * Check that MCTS and SMBO work as well as we expect.
 * Think about the sharing case for the model, i.e., what would happen in the case
+* Refactor some of the names in the code to make things more readable.
 
 Visualization:
 * Make sure that an exception is never thrown.
@@ -207,6 +211,9 @@ Visualization:
 * Copy row functionality.
 * Save visualization functionality for the plots. The maximum number of plots can also be done in the config.
 *
+
+Core:
+* Graph propagation has to be revisited. For example, for long chains of dependent hyperparameters, it is better to do things directly rather than through lazy evaluation.
 
 * Common metrics to maintain in logging:
     * Training loss

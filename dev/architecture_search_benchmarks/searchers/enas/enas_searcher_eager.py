@@ -8,7 +8,7 @@ tfe = tf.contrib.eager
 
 from .enas_common_ops import stack_lstm
 
-from darch.searchers import (Searcher, unset_hyperparameter_iterator,
+from darch.searchers import (Searcher, unassigned_independent_hyperparameter_iterator,
                              random_specify_hyperparameter)
 
 class ENASEagerSearcher(Searcher):
@@ -70,10 +70,10 @@ class ENASEagerSearcher(Searcher):
 
         inputs, outputs, hs = self.search_space_fn()
         vs = []
-        for i, h in enumerate(unset_hyperparameter_iterator(outputs.values(), hs.values())):
+        for i, h in enumerate(unassigned_independent_hyperparameter_iterator(outputs.values(), hs.values())):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
-                h.set_val(v)
+                h.assign_value(v)
                 vs.append(v)
             else:
                 v = random_specify_hyperparameter(h)
@@ -85,7 +85,7 @@ class ENASEagerSearcher(Searcher):
             loss = self._train(val, cfg_d['arc'])
             if self.train_step % 1 == 0:
                 print "Step: %d,    Reward: %f,    Loss:%f" % (self.train_step, val, loss.numpy())
-            
+
 
     def save_state(self, folder_name):
         pass
@@ -184,9 +184,9 @@ class ENASEagerSearcher(Searcher):
         return sample_arc.numpy().tolist()
 
     def _train(self, valid_acc, prev_arc):
-        with tf.GradientTape() as tape:    
+        with tf.GradientTape() as tape:
             reward = valid_acc
-            
+
             anchors = []
             anchors_w_1 = []
 
@@ -261,12 +261,12 @@ class ENASEagerSearcher(Searcher):
 
             entropys = tf.stack(entropys)
             sample_entropy = tf.reduce_sum(entropys)
-            
+
             skip_penaltys = tf.stack(skip_penaltys)
             skip_penaltys = tf.reduce_mean(skip_penaltys)
-            
+
             reward += self.entropy_weight * sample_entropy
-            
+
             self.baseline -= (1 - self.bl_dec) * (self.baseline - reward)
 
             loss = sample_log_prob * (reward - self.baseline)

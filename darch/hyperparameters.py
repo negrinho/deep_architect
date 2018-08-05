@@ -51,71 +51,6 @@ class HyperparameterSharer:
             self.name_to_h[hyperp_name] = self.name_to_h_fn[hyperp_name]()
         return self.name_to_h[hyperp_name]
 
-class DependentHyperparameter(co.Hyperparameter):
-    """Hyperparameter that depends on other hyperparameters.
-
-    The value of a dependent hyperparameter is set by calling a calling a function
-    using the values of the dependent hyperparameters as arguments.
-    This hyperparameter is convenient when we want to express search spaces where
-    the values of some hyperparameters are computed as a function of the
-    values of some other hyperparameters, rather than set independently.
-
-    Args:
-        fn ((...) -> (object)): Function used to compute the value of the
-            hyperparameter based on the values of the dependent hyperparameters.
-        hyperps (dict[str, darch.core.Hyperparameter]): Dictionary mapping
-            names to hyperparameters. The names used in the dictionary should
-            correspond to the names of the arguments of ``fn``.
-        scope (darch.core.Scope, optional): The scope in which to register the
-            hyperparameter in.
-        name (str, optional): Name from which the name of the hyperparameter
-            in the scope is derived.
-    """
-    # TODO: for now, dependent hyperparameters do not work well with the searchers.
-    def __init__(self, fn, hyperps, scope=None, name=None):
-        co.Hyperparameter.__init__(self, scope, name)
-        assert all(not isinstance(x, DependentHyperparameter) for x in itervalues(hyperps))
-        self._hyperps = hyperps
-        self._fn = fn
-        self._update()
-
-    def is_set(self):
-        """Checks if the hyperparameter has been assigned a value.
-
-        Returns:
-            bool: ``True`` if the hyperparameter has been assigned a value.
-        """
-        if not self.set_done:
-            self._update()
-        return self.set_done
-
-    def get_unset_dependent_hyperparameter(self):
-        """Get an hyperparameter that this hyperparameter depends on that has
-        not been set yet.
-
-        Asserts ``False`` if there are no unset dependant hyperparameters.
-
-        Returns:
-            darch.core.Hyperparameter:
-                Returns an hyperparameter that this hyperparameter depends on and
-                that has not been set yet.
-        """
-        assert not self.set_done
-        for h in itervalues(self._hyperps):
-            if not h.is_set():
-                return h
-
-    def _update(self):
-        """Checks if the hyperparameter is ready to set, and set it if that is the
-        case.
-        """
-        if all(h.is_set() for h in itervalues(self._hyperps)):
-            kwargs = {name: h.get_val() for name, h in iteritems(self._hyperps)}
-            self.set_val(self._fn(**kwargs))
-
-    def _check_val(self, val):
-        pass
-
 class Discrete(co.Hyperparameter):
     """List valued hyperparameter.
 
@@ -133,7 +68,7 @@ class Discrete(co.Hyperparameter):
         co.Hyperparameter.__init__(self, scope, name)
         self.vs = vs
 
-    def _check_val(self, val):
+    def _check_value(self, val):
         """Checks if the chosen values is in the list of valid values.
 
         Asserts ``False`` if the value is not in the list.

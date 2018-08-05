@@ -60,7 +60,7 @@ class SubstitutionModule(co.Module):
             name to hyperparameters that are needed for the substitution function.
             The names of the hyperparameters should be in correspondence to the
             name of the arguments of the substitution function.
-        sub_fn ((...) -> (dict[str, darch.core.Input], dict[str, darch.core.Output]):
+        substitution_fn ((...) -> (dict[str, darch.core.Input], dict[str, darch.core.Output]):
             Function that is called with the values of hyperparameters and
             values of inputs and returns the inputs and the outputs of the
             network fragment to put in the place the substitution module
@@ -70,12 +70,12 @@ class SubstitutionModule(co.Module):
         scope ((darch.core.Scope, optional)) Scope in which the module will be
             registered. If none is given, uses the default scope.
     """
-    def __init__(self, name, name_to_hyperp, sub_fn,
+    def __init__(self, name, name_to_hyperp, substitution_fn,
                  input_names, output_names, scope=None):
         co.Module.__init__(self, scope, name)
 
         self._register(input_names, output_names, name_to_hyperp)
-        self._sub_fn = sub_fn
+        self._substitution_fn = substitution_fn
         self._is_done = False
         self._update()
 
@@ -86,19 +86,19 @@ class SubstitutionModule(co.Module):
         the substitution operation is triggered, and the substitution operation
         is done.
         """
-        if (not self._is_done) and all(h.is_set() for h in itervalues(self.hyperps)):
-            argnames = self._sub_fn.__code__.co_varnames
+        if (not self._is_done) and all(h.has_value_assigned() for h in itervalues(self.hyperps)):
+            argnames = self._substitution_fn.__code__.co_varnames
 
             kwargs = {}
             for name, h in iteritems(self.hyperps):
-                kwargs[name] = h.get_val()
+                kwargs[name] = h.get_value()
             # NOTE: I'm not sure if it is possible to have this dependency on
-            # inputs. None of the examples below use inputs in sub_fn.
+            # inputs. None of the examples below use inputs in substitution_fn.
             for name, ix in iteritems(self.inputs):
                 if name in argnames:
                     kwargs[name] = ix.val
 
-            new_inputs, new_outputs = self._sub_fn(**kwargs)
+            new_inputs, new_outputs = self._substitution_fn(**kwargs)
             assert frozenset(new_inputs.keys()) == frozenset(self.inputs.keys())
             assert frozenset(new_outputs.keys()) == frozenset(self.outputs.keys())
 
@@ -137,7 +137,7 @@ def empty(num_connections=1):
     """
     return Empty(num_connections).get_io()
 
-def substitution_module(name, name_to_hyperp, sub_fn, input_names, output_names, scope):
+def substitution_module(name, name_to_hyperp, substitution_fn, input_names, output_names, scope):
     """Same as the substitution module, but directly works with the dictionaries of
     inputs and outputs.
 
@@ -156,7 +156,7 @@ def substitution_module(name, name_to_hyperp, sub_fn, input_names, output_names,
             name to hyperparameters that are needed for the substitution function.
             The names of the hyperparameters should be in correspondence to the
             name of the arguments of the substitution function.
-        sub_fn ((...) -> (dict[str, darch.core.Input], dict[str, darch.core.Output]):
+        substitution_fn ((...) -> (dict[str, darch.core.Input], dict[str, darch.core.Output]):
             Function that is called with the values of hyperparameters and
             values of inputs and returns the inputs and the outputs of the
             network fragment to put in the place the substitution module
@@ -169,7 +169,7 @@ def substitution_module(name, name_to_hyperp, sub_fn, input_names, output_names,
         (dict[str,darch.core.Input], dict[str,darch.core.Output]):
             Tuple with dictionaries with the inputs and outputs of the module.
     """
-    return SubstitutionModule(name, name_to_hyperp, sub_fn,
+    return SubstitutionModule(name, name_to_hyperp, substitution_fn,
         input_names, output_names, scope).get_io()
 
 def _get_name(name, default_name):
@@ -211,11 +211,11 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    def sub_fn(idx):
+    def substitution_fn(idx):
         return fn_lst[idx]()
 
     return substitution_module(_get_name(name, "Or"), {'idx': h_or},
-        sub_fn, input_names, output_names, scope)
+        substitution_fn, input_names, output_names, scope)
 
 # TODO: perhaps change slightly the semantics of the repeat parameter.
 def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, input_names, output_names,
@@ -254,7 +254,7 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, input_names, output_nam
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    def sub_fn(num_reps):
+    def substitution_fn(num_reps):
         assert num_reps > 0
         inputs, outputs = fn_first()
         for _ in range(1, num_reps):
@@ -262,7 +262,7 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, input_names, output_nam
         return inputs, outputs
 
     return substitution_module(_get_name(name, "NestedRepeat"),
-        {'num_reps': h_num_repeats}, sub_fn, input_names, output_names, scope)
+        {'num_reps': h_num_repeats}, substitution_fn, input_names, output_names, scope)
 
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     """Nested repetition substitution module.
@@ -356,7 +356,7 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    def sub_fn(num_reps):
+    def substitution_fn(num_reps):
         assert num_reps > 0
         # instantiating all the graph fragments.
         inputs_lst = []
@@ -374,7 +374,7 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
         return inputs_lst[0], outputs_lst[-1]
 
     return substitution_module(_get_name(name, "SISORepeat"),
-        {'num_reps': h_num_repeats}, sub_fn, ['In'], ['Out'], scope)
+        {'num_reps': h_num_repeats}, substitution_fn, ['In'], ['Out'], scope)
 
 def siso_optional(fn, h_opt, scope=None, name=None):
     """Substitution module that determines to include or not the search
@@ -401,11 +401,11 @@ def siso_optional(fn, h_opt, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    def sub_fn(opt):
+    def substitution_fn(opt):
         return fn() if opt else empty()
 
     return substitution_module(_get_name(name, "SISOOptional"),
-        {'opt': h_opt}, sub_fn, ['In'], ['Out'], scope)
+        {'opt': h_opt}, substitution_fn, ['In'], ['Out'], scope)
 
 # TODO: improve by not enumerating permutations
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
@@ -433,7 +433,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    def sub_fn(perm_idx):
+    def substitution_fn(perm_idx):
         g = itertools.permutations(range(len(fn_lst)))
         for _ in range(perm_idx + 1):
             idxs = next(g)
@@ -454,7 +454,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
         return inputs_lst[0], outputs_lst[-1]
 
     return substitution_module(_get_name(name, "SISOPermutation"),
-        {'perm_idx': h_perm}, sub_fn, ['In'], ['Out'], scope)
+        {'perm_idx': h_perm}, substitution_fn, ['In'], ['Out'], scope)
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     """Substitution module that create a number of parallel single-input
@@ -489,7 +489,7 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             resulting search space graph.
     """
-    def sub_fn(num_splits):
+    def substitution_fn(num_splits):
         inputs_lst, outputs_lst = zip(*[fn() for _ in range(num_splits)])
         c_inputs, c_outputs = combine_fn(num_splits)
 
@@ -500,7 +500,7 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
         return i_inputs, c_outputs
 
     return substitution_module(_get_name(name, "SISOSplitCombine"),
-        {'num_splits': h_num_splits}, sub_fn, ['In'], ['Out'], scope)
+        {'num_splits': h_num_splits}, substitution_fn, ['In'], ['Out'], scope)
 
 def mimo_combine(fns, combine_fn, scope=None, name=None):
     inputs_lst, outputs_lst = zip(*[fns[i]() for i in xrange(len(fns))])

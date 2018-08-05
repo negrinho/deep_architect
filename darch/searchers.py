@@ -3,45 +3,8 @@ import darch.hyperparameters as hp
 import darch.surrogates as su
 from darch.search_logging import join_paths, write_jsonfile
 import darch.core as co
+from six import iterkeys, itervalues, iteritems
 
-# TODO: perhaps change to not have to work until everything is specified.
-# this can be done through a flag.
-def unset_hyperparameter_iterator(output_lst, hyperp_lst=None):
-    """Returns an iterator over the hyperparameters that are not specified in
-    the current search space.
-
-    This iterator is used by the searchers to go over the unspecified
-    hyperparameters.
-
-    .. note::
-        It is assumed that all the hyperparameters that are touched by the
-        iterator will be specified (most likely, right away). Otherwise, the
-        iterator will never terminate.
-
-    Args:
-        output_lst (list[darch.core.Output]): List of output which by being
-            traversed back will reach all the modules in the search space, and
-            correspondingly all the current unspecified hyperparameters of the
-            search space.
-        hyperp_lst (list[darch.core.Hyperparameter], optional): List of
-            additional hyperparameter that are not involved in the search space.
-            Often used to specif additional hyperparameters, e.g., learning
-            rate.
-
-    Yields:
-        (darch.core.Hyperparameter):
-            Next unspecified hyperparameter of the search space.
-    """
-    if hyperp_lst is not None:
-        for h in hyperp_lst:
-            if not h.is_set():
-                yield h
-
-    while not co.is_specified(output_lst):
-        hs = co.get_unset_hyperparameters(output_lst)
-        for h in hs:
-            if not h.is_set():
-                yield h
 
 # TODO: generalize this for other types of hyperparameters. currently only supports
 # discrete hyperparameters.
@@ -52,11 +15,11 @@ def random_specify_hyperparameter(hyperp):
 
     hyperp (darch.core.Hyperparameter): Hyperparameter to specify.
     """
-    assert not hyperp.is_set()
+    assert not hyperp.has_value_assigned()
 
     if isinstance(hyperp, hp.Discrete):
         v = hyperp.vs[np.random.randint(len(hyperp.vs))]
-        hyperp.set_val(v)
+        hyperp.assign_value(v)
     else:
         raise ValueError
     return v
@@ -78,7 +41,7 @@ def random_specify(output_lst, hyperp_lst=None):
             rate.
     """
     vs = []
-    for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
+    for h in co.unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst):
         v = random_specify_hyperparameter(h)
         vs.append(v)
     return vs
@@ -106,8 +69,8 @@ def specify(output_lst, hyperp_lst, vs):
             rate.
         vs (list[object]): List of values used to specify the hyperparameters.
     """
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
-        h.set_val(vs[i])
+    for i, h in enumerate(co.unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst)):
+        h.assign_value(vs[i])
 
 class Searcher:
     """Abstract base class from which new searchers should inherit from.
@@ -183,7 +146,7 @@ class RandomSearcher(Searcher):
 class MCTSTreeNode:
     """Encapsulates the information contained in a single node of the MCTS tree.
 
-    See also :class:`darch.searchers.MCTSearcher`.
+    See also :class:`darch.searchers.MCTSSearcher`.
     """
     def __init__(self, parent_node):
         self.num_trials = 0
@@ -241,7 +204,7 @@ class MCTSTreeNode:
     def expand(self, num_children):
         self.children = [MCTSTreeNode(self) for _ in range(num_children)]
 
-class MCTSearcher(Searcher):
+class MCTSSearcher(Searcher):
     def __init__(self, search_space_fn, exploration_bonus=1.0):
         Searcher.__init__(self, search_space_fn)
         self.exploration_bonus = exploration_bonus
@@ -251,7 +214,7 @@ class MCTSearcher(Searcher):
     def sample(self):
         inputs, outputs, hyperps = self.search_space_fn()
 
-        h_it = unset_hyperparameter_iterator(outputs.values(), hyperps.values())
+        h_it = unassigned_independent_hyperparameter_iterator(outputs.values(), hyperps.values())
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
@@ -276,7 +239,7 @@ class MCTSearcher(Searcher):
             if not node.is_leaf():
                 node, i = node.best_child(self.exploration_bonus)
                 v = h.vs[i]
-                h.set_val(v)
+                h.assign_value(v)
 
                 hist.append(i)
                 vs.append(v)
@@ -288,7 +251,7 @@ class MCTSearcher(Searcher):
 
                     i = np.random.randint(0, len(h.vs))
                     v = h.vs[i]
-                    h.set_val(v)
+                    h.assign_value(v)
 
                     hist.append(i)
                     vs.append(v)
@@ -305,7 +268,7 @@ class MCTSearcher(Searcher):
             if isinstance(h, hp.Discrete):
                 i = np.random.randint(0, len(h.vs))
                 v = h.vs[i]
-                h.set_val(v)
+                h.assign_value(v)
 
                 hist.append(i)
                 vs.append(v)
@@ -359,7 +322,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
         eps_prob, tree_refit_interval):
         Searcher.__init__(self, search_space_fn)
         self.surr_model = surrogate_model
-        self.mcts = MCTSearcher(self.search_space_fn)
+        self.mcts = MCTSSearcher(self.search_space_fn)
         self.num_samples = num_samples
         self.eps_prob = eps_prob
         self.tree_refit_interval = tree_refit_interval
@@ -398,4 +361,4 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
 
         self.cnt += 1
         if self.cnt % self.tree_refit_interval == 0:
-            self.mcts = MCTSearcher(self.search_space_fn)
+            self.mcts = MCTSSearcher(self.search_space_fn)

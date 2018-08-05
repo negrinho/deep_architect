@@ -41,3 +41,4 @@ def test_addressable():
     assert add.get_name() == 'test_addressable'
     assert str(add) == add.get_name()
     assert add._get_base_name() == 'Addressable'
+

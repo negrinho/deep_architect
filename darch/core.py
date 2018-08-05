@@ -159,10 +159,11 @@ class Hyperparameter(Addressable):
 
         self.set_done = False
         self.modules = OrderedSet()
+        self.dependent_hyperps = OrderedSet()
 
         self.val = None
 
-    def is_set(self):
+    def has_value_assigned(self):
         """Checks if the hyperparameter has been assigned a value.
 
         Returns:
@@ -170,7 +171,7 @@ class Hyperparameter(Addressable):
         """
         return self.set_done
 
-    def set_val(self, val):
+    def assign_value(self, val):
         """Assigns a value to the hyperparameter.
 
         The hyperparameter value must be valid for the hyperparameter in question.
@@ -180,7 +181,7 @@ class Hyperparameter(Addressable):
             val (object): Value to assign to the hyperparameter.
         """
         assert not self.set_done
-        self._check_val(val)
+        self._check_value(val)
         self.set_done = True
         self.val = val
 
@@ -189,7 +190,11 @@ class Hyperparameter(Addressable):
         for m in self.modules:
             m._update()
 
-    def get_val(self):
+        # calls updates on the dependent hyperparameters.
+        for h in self.dependent_hyperps:
+            h._update()
+
+    def get_value(self):
         """Get the value assigned to the hyperparameter.
 
         The hyperparameter must have already been assigned a value, otherwise
@@ -209,13 +214,67 @@ class Hyperparameter(Addressable):
         """
         self.modules.add(module)
 
-    def _check_val(self, val):
+    def _register_dependent_hyperparameter(self, hyperp):
+        """Registers an hyperparameter as being dependent on this hyperparameter.
+
+        Args:
+            module (darch.core.Hyperparameter): Hyperparameter dependent of this hyperparameter.
+        """
+        # NOTE: for now, it is odd to register the same hyperparameter multiple times.
+        assert hyperp not in self.dependent_hyperps
+        assert isinstance(hyperp, DependentHyperparameter)
+        self.dependent_hyperps.add(hyperp)
+
+    def _check_value(self, val):
         """Checks if the value is valid for the hyperparameter.
 
         When ``set_val`` is called, this function is called to verify the
         validity of ``val``. This function is useful for error checking.
         """
         raise NotImplementedError
+
+class DependentHyperparameter(Hyperparameter):
+    """Hyperparameter that depends on other hyperparameters.
+
+    The value of a dependent hyperparameter is set by a calling a function
+    using the values of the dependent hyperparameters as arguments.
+    This hyperparameter is convenient when we want to express search spaces where
+    the values of some hyperparameters are computed as a function of the
+    values of some other hyperparameters, rather than set independently.
+
+    Args:
+        fn ((...) -> (object)): Function used to compute the value of the
+            hyperparameter based on the values of the dependent hyperparameters.
+        hyperps (dict[str, darch.core.Hyperparameter]): Dictionary mapping
+            names to hyperparameters. The names used in the dictionary should
+            correspond to the names of the arguments of ``fn``.
+        scope (darch.core.Scope, optional): The scope in which to register the
+            hyperparameter in.
+        name (str, optional): Name from which the name of the hyperparameter
+            in the scope is derived.
+    """
+    def __init__(self, fn, hyperps, scope=None, name=None):
+        Hyperparameter.__init__(self, scope, name)
+        self._hyperps = hyperps
+        self._fn = fn
+
+        # registering the dependencies.
+        for h in self._hyperps:
+            h._register_dependent_hyperparameter(self)
+
+        self._update()
+
+    def _update(self):
+        """Checks if the hyperparameter is ready to be set, and sets it if that
+        is the case.
+        """
+        # assert not self.has_value_assigned()
+        if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
+            kwargs = {name: h.get_value() for name, h in iteritems(self._hyperps)}
+            self.assign_value(self._fn(**kwargs))
+
+    def _check_value(self, val):
+        pass
 
 class Input(Addressable):
     """Manages input connections.
@@ -486,7 +545,7 @@ class Module(Addressable):
             dict[str, object]:
                 Dictionary of local hyperparameter names to their corresponding values.
         """
-        return {name: h.get_val() for name, h in iteritems(self.hyperps)}
+        return {name: h.get_value() for name, h in iteritems(self.hyperps)}
 
     def _set_output_values(self, output_name_to_val):
         """Set the values of the outputs of the module.
@@ -621,7 +680,7 @@ def traverse_backward(output_lst, fn):
     applied once to each module reached this way. This function is used to
     implement other functionality that requires traversing the graph. ``fn``
     typically has side effects, e.g., see :func:`is_specified` and
-    :func:`get_unset_hyperparameters`. See also: :func:`traverse_forward`.
+    :func:`get_unassigned_hyperparameters`. See also: :func:`traverse_forward`.
 
     Args:
         output_lst (list[darch.core.Output]): List of outputs to start the traversal at.
@@ -684,41 +743,12 @@ def is_specified(output_lst):
     is_spec = [True]
     def fn(module):
         for h in itervalues(module.hyperps):
-            if not h.is_set():
+            if not h.has_value_assigned():
                 is_spec[0] = False
                 return True
         return False
     traverse_backward(output_lst, fn)
     return is_spec[0]
-
-def get_unset_hyperparameters(output_lst):
-    """Going backward from the outputs provided, gets all the hyperparameters
-    that are not set yet.
-
-    Setting an hyperparameter may lead to the creation of additional hyperparameters,
-    which will be most likely not set. Such behavior happens when dealing with,
-    for example, hyperparameters associated with substitutition
-    modules such as :func:`darch.modules.siso_optional`,
-    :func:`darch.modules.siso_or`, and :func:`darch.modules.siso_repeat`.
-
-    Args:
-        output_lst (list[darch.core.Output]): List of outputs to start the traversal at.
-
-    Returns:
-        OrderedSet[darch.core.Hyperparameter]:
-            Ordered set of hyperparameters that are currently present in the
-            graph and not have been assigned a value yet.
-    """
-    assert not is_specified(output_lst)
-    hs = OrderedSet()
-
-    def fn(module):
-        for h in itervalues(module.hyperps):
-            if not h.is_set():
-                hs.add(h)
-        return False
-    traverse_backward(output_lst, fn)
-    return hs
 
 def forward(input_to_val, _module_seq=None):
     """Forward pass through the graph starting with the provided inputs.
@@ -802,3 +832,101 @@ def get_unconnected_outputs(input_lst):
         return False
     traverse_forward(input_lst, fn)
     return ox_lst
+
+def get_unassigned_independent_hyperparameters(output_lst):
+    """Going backward from the outputs provided, gets all the hyperparameters
+    that are not set yet.
+
+    Setting an hyperparameter may lead to the creation of additional hyperparameters,
+    which will be most likely not set. Such behavior happens when dealing with,
+    for example, hyperparameters associated with substitutition
+    modules such as :func:`darch.modules.siso_optional`,
+    :func:`darch.modules.siso_or`, and :func:`darch.modules.siso_repeat`.
+
+    Args:
+        output_lst (list[darch.core.Output]): List of outputs to start the traversal at.
+
+    Returns:
+        OrderedSet[darch.core.Hyperparameter]:
+            Ordered set of hyperparameters that are currently present in the
+            graph and not have been assigned a value yet.
+    """
+    assert not is_specified(output_lst)
+    unassigned_indep_hs = OrderedSet()
+    visited_hs = set()
+
+    def _add_reachable_unassigned_independent_hs(h_dep):
+        local_memo = set()
+        local_memo.add(h_dep)
+        h_dep_lst = [h_dep]
+        idx = 0
+        while idx < len(h_dep_lst):
+            for h in h_dep_lst[idx].dependent_hyperps:
+                # cycle detection.
+                assert h not in local_memo
+
+                # if this hyperparameter has never been seem
+                # NOTE: the not set condition seems reasonable; it may change later.
+                if not h.has_value_assigned() and h not in visited_hs:
+                    if isinstance(h, DependentHyperparameter):
+                        h_dep_lst.append(h)
+                    else:
+                        unassigned_indep_hs.add(h)
+                local_memo.add(h)
+                visited_hs.add(h)
+            idx += 1
+
+    # this function is applied on each of the modules in the graph.
+    def fn(module):
+        for h in itervalues(module.hyperps):
+            if h not in visited_hs:
+                visited_hs.add(h)
+                if not h.has_value_assigned():
+                    # traverses the subgraph of dependencies.
+                    if isinstance(h, DependentHyperparameter):
+                        _add_reachable_unassigned_independent_hs(h)
+                    else:
+                        unassigned_indep_hs.add(h)
+        return False
+
+    traverse_backward(output_lst, fn)
+    return hs
+
+# TODO: perhaps change to not have to work until everything is specified.
+# this can be done through a flag.
+def unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst=None):
+    """Returns an iterator over the hyperparameters that are not specified in
+    the current search space.
+
+    This iterator is used by the searchers to go over the unspecified
+    hyperparameters.
+
+    .. note::
+        It is assumed that all the hyperparameters that are touched by the
+        iterator will be specified (most likely, right away). Otherwise, the
+        iterator will never terminate.
+
+    Args:
+        output_lst (list[darch.core.Output]): List of output which by being
+            traversed back will reach all the modules in the search space, and
+            correspondingly all the current unspecified hyperparameters of the
+            search space.
+        hyperp_lst (list[darch.core.Hyperparameter], optional): List of
+            additional hyperparameter that are not involved in the search space.
+            Often used to specif additional hyperparameters, e.g., learning
+            rate.
+
+    Yields:
+        (darch.core.Hyperparameter):
+            Next unspecified hyperparameter of the search space.
+    """
+    if hyperp_lst is not None:
+        for h in hyperp_lst:
+            if not h.has_value_assigned():
+                yield h
+
+    while not is_specified(output_lst):
+        hs = get_unassigned_independent_hyperparameters(output_lst)
+        for h in hs:
+            if not h.has_value_assigned():
+                yield h
