@@ -48,7 +48,7 @@ class IRIS(data.Dataset):
                 return 1
             elif label == b'Iris-virginica':
                 return 2
-        
+
         self.data = np.loadtxt(fp, delimiter=',', usecols=[0,1,2,3])
         self.labels = np.loadtxt(fp, delimiter=',', usecols=[4], converters={4: iris_labels}, dtype=int)
         if one_hot:
@@ -228,14 +228,14 @@ class CANCER(data.Dataset):
         return fmt_str
 
 class MODEL_EVAL_LOGS(data.Dataset):
-    """ Model Evaluation Log Dataset: A torch dataset based on logged evaluations from darch.search_logger
+    """ Model Evaluation Log Dataset: A torch dataset based on logged evaluations from deep_architect.search_logger
     Unfinished
     """
     def __init__(self, root):
-        from darch import search_logging as sl
+        from deep_architect import search_logging as sl
         self.root = os.path.expanduser(root)
         self.raw_data = sl.read_search_folder(self.root)
-    
+
     def __getitem__(self, index):
         """
         Args:
@@ -286,14 +286,14 @@ class TorchInMemoryDataset:
     def __init__(self, dataset, shuffle_at_epoch_begin, batch_size=32, to_numpy=True):
         self.dataset = dataset
         self.shuffle_at_epoch_begin = shuffle_at_epoch_begin
-        
+
         self.dataloader = data.DataLoader(self.dataset, batch_size=batch_size, shuffle=shuffle_at_epoch_begin)
         self._iterator = self.dataloader.__iter__()
         self.to_numpy = to_numpy
 
     def get_num_examples(self):
         return len(self.dataset)
-    
+
     def check_size(self, batch_size):
         if self.dataloader.batch_size != batch_size:
             self.dataloader = data.DataLoader(self.dataset, batch_size=batch_size, shuffle=self.shuffle_at_epoch_begin)

@@ -1,10 +1,10 @@
-from darch import searchers as se, surrogates as su, core as co, search_logging as sl
+from deep_architect import searchers as se, surrogates as su, core as co, search_logging as sl
 
-import darch.contrib.search_spaces.tensorflow.dnn as search_dnn
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.search_spaces.tensorflow.common import D
-from darch.contrib.datasets.dataset import InMemoryDataset
-from darch.contrib.datasets.loaders import load_mnist
+import deep_architect.contrib.search_spaces.tensorflow.dnn as search_dnn
+from deep_architect.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.search_spaces.tensorflow.common import D
+from deep_architect.contrib.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.datasets.loaders import load_mnist
 import dev.surrogates.datasets as datasets
 import torchvision
 
@@ -99,7 +99,7 @@ def main(args):
     for name, info in config_Large.items():
         create_eval_dataset(info['TRAIN'], info['TEST'], name, info['CLASSES'])
 
-    
+
 
 if __name__ == '__main__':
     main(sys.argv)

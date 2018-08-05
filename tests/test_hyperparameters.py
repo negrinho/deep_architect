@@ -1,7 +1,7 @@
 
-import darch.core as co
-import darch.hyperparameters as hp
-import darch.searchers as se
+import deep_architect.core as co
+import deep_architect.hyperparameters as hp
+import deep_architect.searchers as se
 
 def test_dependent_hyperparameter():
     co.Scope.reset_default_scope()

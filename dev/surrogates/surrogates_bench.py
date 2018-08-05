@@ -1,4 +1,4 @@
-from darch import searchers as se, surrogates as su, core as co, search_logging as sl
+from deep_architect import searchers as se, surrogates as su, core as co, search_logging as sl
 # import benchmarks.datasets as datasets
 import datasets
 import numpy as np
@@ -10,11 +10,11 @@ import time
 import gc
 
 # TODO: Change the below imports when using PyTorch
-import darch.contrib.useful.search_spaces.tensorflow.dnn as search_dnn
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.search_spaces.tensorflow.common import D
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-from darch.contrib.useful.datasets.loaders import load_mnist
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as search_dnn
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
 
 
 # Python >= 3.5
@@ -279,7 +279,7 @@ class CharLSTMSurrogateKeras(CharLSTMSurrogate):
         outs = dense(outs)
         self.model = Model(inputs=feat, output=outs)
         self.model.compile(optimizer='Adam', loss='mse', metrics=['accuracy'])
-        
+
     def eval(self, feats):
         feats = self.preprocess(feats)
         output =  self.model.predict_on_batch(feats)
@@ -293,7 +293,7 @@ class CharLSTMSurrogateKeras(CharLSTMSurrogate):
                 print(feats)
             vals = vals.data.numpy()
             self.model.train_on_batch(feats, vals)
-        
+
         # Increase the number of batches by 1 (up to a max of max_batches)
         self.num_batches = min(min(self.num_batches + 1, self.max_batches), len(self.feats) // self.batch_size)
 

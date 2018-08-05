@@ -7,7 +7,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 
-import darch.search_logging as sl
+import deep_architect.search_logging as sl
 
 ### Loading the data.
 def process_logs(log_lst):

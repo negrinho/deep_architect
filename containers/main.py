@@ -116,7 +116,7 @@ def create_singularity_container(config_d, out_folderpath):
 
     help_lines = [
         '%help',
-        'This container contains the development environment for darch.',
+        'This container contains the development environment for deep_architect.',
         'You should be able to run all the examples, generate documentation,',
         'and generate visualizations with it.',
     ]
@@ -157,7 +157,7 @@ def create_singularity_container(config_d, out_folderpath):
     write_textfile(recipe_filepath, lines)
 
     # script for creating the container.
-    container_filepath = join_paths([out_folderpath, 'darch.img'])
+    container_filepath = join_paths([out_folderpath, 'deep_architect.img'])
     create_bash_script(
         ['sudo singularity build %s %s' % (container_filepath, recipe_filepath)],
         join_paths([out_folderpath, 'build.sh'])
@@ -196,7 +196,7 @@ def create_makefile(out_folderpath, container_config_lst):
 
     for cfg in container_config_lst:
         assert cfg['is_singularity'] # only for singularity for now.
-        cfg['target'] = join_paths([cfg['folderpath'], 'darch.img'])
+        cfg['target'] = join_paths([cfg['folderpath'], 'deep_architect.img'])
         cfg['command'] = join_paths(['./%s' % join_paths([cfg['folderpath'], 'build.sh'])])
         add_to_lists(cfg)
 

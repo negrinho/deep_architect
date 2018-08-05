@@ -37,9 +37,9 @@ SOFTWARE.
 from __future__ import division
 
 import argparse
-import darch.searchers as se
-import darch.search_logging as sl
-import darch.helpers.pytorch as hpt
+import deep_architect.searchers as se
+import deep_architect.search_logging as sl
+import deep_architect.helpers.pytorch as hpt
 from evaluator import get_eval_fn
 import search_space as ss
 

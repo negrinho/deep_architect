@@ -1,7 +1,7 @@
 from six.moves import range
 from six import iteritems
-from darch.core import Module, determine_module_eval_seq, forward
-from darch.hyperparameters import Discrete
+from deep_architect.core import Module, determine_module_eval_seq, forward
+from deep_architect.hyperparameters import Discrete
 
 def multiply_search_space_fn():
     class Multiply(Module):
@@ -53,7 +53,7 @@ class Tmp(object):
         return output_name_to_val
 
 def test_random_searcher():
-    from darch.searchers import RandomSearcher
+    from deep_architect.searchers import RandomSearcher
 
     for _ in range(5):
         searcher = RandomSearcher(multiply_search_space_fn)

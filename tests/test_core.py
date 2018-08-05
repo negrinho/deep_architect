@@ -1,5 +1,5 @@
 def test_ordered_set():
-    from darch.core import OrderedSet
+    from deep_architect.core import OrderedSet
 
     ord_s = OrderedSet()
     assert len(ord_s) == 0
@@ -15,7 +15,7 @@ def test_ordered_set():
 
 
 def test_scope():
-    from darch.core import Scope, Addressable
+    from deep_architect.core import Scope, Addressable
 
     scope = Scope()
     scope1 = Scope()
@@ -35,7 +35,7 @@ def test_scope():
 
 
 def test_addressable():
-    from darch.core import Addressable, Scope
+    from deep_architect.core import Addressable, Scope
 
     add = Addressable(Scope(), name='test_addressable')
     assert add.get_name() == 'test_addressable'

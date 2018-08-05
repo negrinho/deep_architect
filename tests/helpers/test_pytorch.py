@@ -17,7 +17,7 @@ def get_empty_cfn():
 
 
 def test_pytmodule():
-    from darch.helpers.pytorch import PyTModule
+    from deep_architect.helpers.pytorch import PyTModule
 
     cfn = get_empty_cfn()
     mod = PyTModule(name='test',

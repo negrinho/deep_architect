@@ -2,12 +2,12 @@ from time import sleep
 import argparse
 from mpi4py import MPI
 import tensorflow as tf
-from darch.contrib.useful.datasets.loaders import load_cifar10
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-from darch.contrib.useful import gpu_utils
-from darch import searchers as se
-import darch.search_logging as sl
+from deep_architect.contrib.useful.datasets.loaders import load_cifar10
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.useful import gpu_utils
+from deep_architect import searchers as se
+import deep_architect.search_logging as sl
 
 from search_spaces.search_space_factory import name_to_search_space_factory_fn
 from searchers.searcher import name_to_searcher_fn
@@ -71,7 +71,7 @@ def start_searcher(comm, num_workers, searcher, resume_if_exists,
                 evaluation_logger = eval_loggers[idx]
                 evaluation_logger.log_results(results)
                 print('Sample %d: %f' % (model_id, results['validation_accuracy']))
-                
+
                 if 'epoch' in results:
                     epochs = max(epochs, results['epoch'])
 
@@ -136,8 +136,8 @@ def main():
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
         start_searcher(
-            comm, comm.Get_size() - 1, searcher, options.resume, 
-            config['searcher_file_name'], num_samples=num_samples, 
+            comm, comm.Get_size() - 1, searcher, options.resume,
+            config['searcher_file_name'], num_samples=num_samples,
             num_epochs=num_epochs)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)

@@ -1,5 +1,5 @@
 import tensorflow as tf
-import darch.modules as mo
+import deep_architect.modules as mo
 from helpers import tfeager as htfe
 from .common_eager import siso_tfem
 
@@ -59,7 +59,7 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
         channels = channels if out_filters is None else out_filters
         conv_fn = lambda: tf.keras.layers.SeparableConv2D(channels, filter_size, padding='same')
         conv = weight_sharer.get(name + '_dsep_' + str(filter_size), conv_fn)
-        
+
         def fn(di, isTraining=True):
             return {'Out' : conv(di['In'])}
         return fn
@@ -90,13 +90,13 @@ def fc_softmax(num_classes, weight_sharer):
         def fn(di, isTraining=True):
             return {'Out' : fc(di['In'])}
         return fn
-    return siso_tfem('fc_softmax', cfn, {}) 
+    return siso_tfem('fc_softmax', cfn, {})
 
 def wrap_relu_batch_norm(io_pair, add_relu=True, add_bn=True, weight_sharer=None, name=None):
     assert add_relu or add_bn
     elements = [True, add_relu, add_bn]
     module_fns = [
-        lambda: io_pair, 
+        lambda: io_pair,
         relu,
         lambda: keras_batch_normalization(name=name, weight_sharer=weight_sharer)]
     return mo.siso_sequential([module_fn() for i, module_fn in enumerate(module_fns) if elements[i]])
@@ -105,7 +105,7 @@ def wrap_batch_norm_relu(io_pair, add_relu=True, add_bn=True, weight_sharer=None
     assert add_relu or add_bn
     elements = [True, add_bn, add_relu]
     module_fns = [
-        lambda: io_pair, 
-        lambda: keras_batch_normalization(name=name, weight_sharer=weight_sharer), 
+        lambda: io_pair,
+        lambda: keras_batch_normalization(name=name, weight_sharer=weight_sharer),
         relu]
     return mo.siso_sequential([module_fn() for i, module_fn in enumerate(module_fns) if elements[i]])

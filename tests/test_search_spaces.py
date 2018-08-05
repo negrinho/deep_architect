@@ -1,11 +1,11 @@
 
-import darch.core as co
-import darch.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
-import darch.hyperparameters as hp
-import darch.modules as mo
-import darch.searchers as se
-import darch.visualization as vi
-import darch.helpers.tensorflow as htf
+import deep_architect.core as co
+import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
+import deep_architect.hyperparameters as hp
+import deep_architect.modules as mo
+import deep_architect.searchers as se
+import deep_architect.visualization as vi
+import deep_architect.helpers.tensorflow as htf
 import tensorflow as tf
 
 D = hp.Discrete

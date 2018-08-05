@@ -4,11 +4,11 @@ Search space from Efficient Neural Architecture Search (Pham'17)
 import tensorflow as tf
 from collections import OrderedDict
 
-import darch.helpers.tensorflow as htf
-import darch.modules as mo
-from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+import deep_architect.helpers.tensorflow as htf
+import deep_architect.modules as mo
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
 from .common_ops import wrap_relu_batch_norm, global_pool_and_logits, avg_pool
-from darch.contrib.useful.search_spaces.tensorflow import cnn2d
+from deep_architect.contrib.useful.search_spaces.tensorflow import cnn2d
 
 TFM = htf.TFModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
@@ -17,7 +17,7 @@ class WeightSharer():
     def __init__(self):
         self.name_to_weight = OrderedDict()
         self.weights_used = OrderedDict()
-    
+
     def get(self, name, weight_fn):
         if name not in self.name_to_weight:
             weight = weight_fn()
@@ -26,7 +26,7 @@ class WeightSharer():
             weight = tf.constant(self.name_to_weight[name])
         self.weights_used[name] = weight
         return weight
-    
+
     def update(self, sess):
         weights = sess.run(self.weights_used.values())
         weights = zip(self.weights_used.keys(), weights)
@@ -79,7 +79,7 @@ def enas_space(h_num_layers, fn_first, fn_repeats, input_names, output_names, we
         for i in range(1, num_layers + 1):
             inputs, temp_outputs = fn_repeats(inputs, temp_outputs, i, weight_sharer)
         return inputs, OrderedDict({'Out': temp_outputs['Out' + str(len(temp_outputs) - 1)]})
-    return mo.substitution_module('ENASModule', {'num_layers': h_num_layers}, 
+    return mo.substitution_module('ENASModule', {'num_layers': h_num_layers},
                                   sub_fn, input_names, output_names, scope)
 
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
@@ -112,7 +112,7 @@ def concatenate_skip_layers(h_connects, weight_sharer):
             #     return {'Out' : inputs[0]}
 
         return fn, {p_var : 1}, {p_var : 0}
-    return TFM('SkipConcat', 
+    return TFM('SkipConcat',
                {'select_' + str(i) : h_connects[i] for i in range(len(h_connects))},
                cfn, ['In' + str(i) for i in range(len(h_connects) + 1)], ['Out']).get_io()
 
@@ -144,7 +144,7 @@ def enas_repeat_fn(inputs, outputs, layer_id, weight_sharer):
     # skip_outputs['Out'].connect(op_inputs['In'])
     outputs['Out' + str(len(outputs))] = skip_outputs['Out']
     return inputs, outputs
-    
+
 def fc_softmax(num_classes, weight_sharer):
     def cfn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
@@ -156,14 +156,14 @@ def fc_softmax(num_classes, weight_sharer):
             logits = tf.matmul(tf.squeeze(di['In'], axis=[1, 2]), W)
             return {'Out' : tf.nn.softmax(logits)}
         return fn
-    return siso_tfm('fc_softmax', cfn, {}) 
+    return siso_tfm('fc_softmax', cfn, {})
 
 def get_enas_search_space(num_classes, out_filters, weight_sharer):
     h_N = D([12], name='num_layers')
     return mo.siso_sequential([
         enas_space(
-            h_N, 
-            lambda: cnn2d.conv2d(D([out_filters]), D([3]), D([1]), D([False])), 
+            h_N,
+            lambda: cnn2d.conv2d(D([out_filters]), D([3]), D([1]), D([False])),
             enas_repeat_fn, ['In'], ['Out'], weight_sharer),
         global_pool_and_logits(),
         fc_softmax(num_classes, weight_sharer),

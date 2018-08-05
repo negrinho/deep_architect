@@ -1,5 +1,5 @@
-import darch.search_logging as sl
-import darch.visualization as vi
+import deep_architect.search_logging as sl
+import deep_architect.visualization as vi
 import numpy as np
 import seaborn as sns; sns.set()
 

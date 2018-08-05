@@ -8,7 +8,7 @@ tfe = tf.contrib.eager
 
 from .enas_common_ops import stack_lstm
 
-from darch.searchers import (Searcher, unassigned_independent_hyperparameter_iterator,
+from deep_architect.searchers import (Searcher, unassigned_independent_hyperparameter_iterator,
                              random_specify_hyperparameter)
 
 class ENASEagerSearcher(Searcher):

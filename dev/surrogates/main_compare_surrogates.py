@@ -1,6 +1,6 @@
-import darch.surrogates as su
-import darch.search_logging as sl
-import darch.visualization as vi
+import deep_architect.surrogates as su
+import deep_architect.search_logging as sl
+import deep_architect.visualization as vi
 from rnn_surrogates import RankingRNNSurrogate, RNNSurrogate, CharLSTMSurrogate
 from hashing_surrogates import SimplerHashingSurrogate
 

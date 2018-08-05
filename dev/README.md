@@ -31,13 +31,13 @@ Features:
 
 
 * darch: Most of the framework code lies in this folder.
-    * darch.core: This file contains the main code regarding the implementation.
-* darch.contrib.useful: The contrib folder is used to keep code that is potentially useful
+    * deep_architect.core: This file contains the main code regarding the implementation.
+* deep_architect.contrib.useful: The contrib folder is used to keep code that is potentially useful
     for the people using the framework, but for which we will not make a coherent
     effort to maintain it.
 *
 
-* darch.helpers
+* deep_architect.helpers
 This folder contains code to support search over multiple domains. We show that
 it is possible to search over architectures in arbitrary deep learning frameworks,
 we provide a number of pytorch and tensorflow examples. A keras example, and a

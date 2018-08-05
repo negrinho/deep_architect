@@ -1,8 +1,8 @@
 from .regularized_evolution_searcher import EvolutionSearcher, mutatable
 from enas.enas_searcher import ENASSearcher
 from enas.enas_searcher_eager import ENASEagerSearcher
-import darch.searchers as se
-import darch.surrogates as su
+import deep_architect.searchers as se
+import deep_architect.surrogates as su
 
 name_to_searcher_fn = {
     'random': lambda ssf: se.RandomSearcher(ssf),

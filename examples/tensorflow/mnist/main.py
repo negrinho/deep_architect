@@ -1,10 +1,10 @@
 
-from darch.contrib.useful.datasets.loaders import load_mnist
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import darch.modules as mo
-import darch.searchers as se
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.modules as mo
+import deep_architect.searchers as se
 
 class SSF0(mo.SearchSpaceFactory):
     def __init__(self, num_classes):

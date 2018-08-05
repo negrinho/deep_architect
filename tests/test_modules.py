@@ -1,6 +1,6 @@
 def test_empty():
-    from darch.modules import Empty
-    from darch.core import Input
+    from deep_architect.modules import Empty
+    from deep_architect.core import Input
 
     empty = Empty()
     assert isinstance(empty.outputs, dict) and isinstance(empty.inputs, dict)

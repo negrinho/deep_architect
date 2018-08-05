@@ -3,10 +3,10 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
-import darch.core as co
-import darch.helpers.tensorflow as htf
-import darch.search_logging as sl
-import darch.contrib.useful.gpu_utils as gpu_utils
+import deep_architect.core as co
+import deep_architect.helpers.tensorflow as htf
+import deep_architect.search_logging as sl
+import deep_architect.contrib.useful.gpu_utils as gpu_utils
 from six.moves import range
 
 class ENASEvaluator:
@@ -17,8 +17,8 @@ class ENASEvaluator:
     epochs.
     """
 
-    def __init__(self, train_dataset, val_dataset, num_classes, weight_sharer, 
-            model_path=None, max_num_training_epochs=200, 
+    def __init__(self, train_dataset, val_dataset, num_classes, weight_sharer,
+            model_path=None, max_num_training_epochs=200,
             max_eval_time_in_minutes=180.0, stop_patience=20, save_patience=2,
             optimizer_type='adam', batch_size=128,
             learning_rate_patience=7, learning_rate_init=1e-3,
@@ -52,7 +52,7 @@ class ENASEvaluator:
         self.step = 0
         self.controller_mode = False
         self.max_controller_steps = max_controller_steps
-        
+
         self.weight_sharer = weight_sharer
 
         if self.optimizer_type == 'adam':
@@ -64,8 +64,8 @@ class ENASEvaluator:
         else:
             raise ValueError("Unknown optimizer.")
 
-        
-    
+
+
 
     def _compute_accuracy(self, sess, X_pl, y_pl, num_correct, dataset, eval_feed):
         nc = 0
@@ -78,13 +78,13 @@ class ENASEvaluator:
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
         acc = float(nc) / dataset.get_num_examples()
-        return acc 
+        return acc
 
     def eval(self, inputs, outputs, hs):
         tf.reset_default_graph()
         X_pl = tf.placeholder("float", [None] + self.in_dim, name='X_data')
         y_pl = tf.placeholder("float", [None, self.num_classes], name='y_data')
-    
+
         with tf.variable_scope('image_model'):
             co.forward({inputs['In'] : X_pl})
         logits = outputs['Out'].val
@@ -94,7 +94,7 @@ class ENASEvaluator:
         loss = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y_pl))
         # chooses the optimizer. (this can be put in a function).
-        
+
         tf_variables = [var
                         for var in tf.trainable_variables() if var.name.startswith('image_model')]
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -106,7 +106,7 @@ class ENASEvaluator:
         num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
 
         init = tf.global_variables_initializer()
-        
+
         results = {}
         # Setting the session to allow growth, so it doesn't allocate all GPU memory.
         gpu_ops = tf.GPUOptions(allow_growth=True)

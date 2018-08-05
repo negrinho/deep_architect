@@ -1,6 +1,6 @@
 
-import darch.searchers as se
-import darch.surrogates as su
+import deep_architect.searchers as se
+import deep_architect.surrogates as su
 
 name_to_get_searcher_fn = {
     'random' : lambda ssf: se.RandomSearcher(ssf),

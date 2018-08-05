@@ -5,8 +5,8 @@ Implementation of Regularized Evolution searcher from Zoph et al '18
 import random
 from collections import deque
 
-from darch.search_logging import join_paths, write_jsonfile
-from darch.searchers import (Searcher, unassigned_independent_hyperparameter_iterator,
+from deep_architect.search_logging import join_paths, write_jsonfile
+from deep_architect.searchers import (Searcher, unassigned_independent_hyperparameter_iterator,
                              random_specify_hyperparameter)
 
 def mutatable(h):

@@ -1,6 +1,6 @@
-from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
-import darch.helpers.tensorflow as htf
-import darch.modules as mo
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+import deep_architect.helpers.tensorflow as htf
+import deep_architect.modules as mo
 
 import tensorflow as tf
 
@@ -62,7 +62,7 @@ def wrap_relu_batch_norm(io_pair, add_relu=True, add_bn=True):
     assert add_relu or add_bn
     elements = [True, add_relu, add_bn]
     module_fns = [
-        lambda: io_pair, 
+        lambda: io_pair,
         relu,
         batch_normalization]
     return mo.siso_sequential([module_fn() for i, module_fn in enumerate(module_fns) if elements[i]])
@@ -71,8 +71,8 @@ def wrap_batch_norm_relu(io_pair, add_relu=True, add_bn=True):
     assert add_relu or add_bn
     elements = [True, add_bn, add_relu]
     module_fns = [
-        lambda: io_pair, 
-        batch_normalization, 
+        lambda: io_pair,
+        batch_normalization,
         relu]
     return mo.siso_sequential([module_fn() for i, module_fn in enumerate(module_fns) if elements[i]])
 

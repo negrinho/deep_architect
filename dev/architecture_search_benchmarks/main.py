@@ -1,7 +1,7 @@
-from darch.contrib.useful.datasets.loaders import load_cifar10
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-import darch.search_logging as sl
+from deep_architect.contrib.useful.datasets.loaders import load_cifar10
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.search_logging as sl
 import search_spaces.search_space_factory as ssf
 import searchers.searcher as se
 

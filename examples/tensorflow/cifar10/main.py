@@ -1,4 +1,4 @@
-import darch.search_logging as sl
+import deep_architect.search_logging as sl
 
 # Make sure that only one GPU is visible.
 if __name__ == '__main__':
@@ -9,21 +9,21 @@ if __name__ == '__main__':
     cfg = sl.read_jsonfile(d_cmd['config_filepath'])[d_cmd['key']]
 
     if cfg['use_gpu']:
-        import darch.contrib.useful.gpu_utils as gpu_utils
+        import deep_architect.contrib.useful.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
         print "Using GPU %d" % gpu_id
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
-from darch.contrib.useful.datasets.loaders import load_cifar10
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-import darch.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
-import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import darch.modules as mo
-import darch.searchers as se
-import darch.hyperparameters as hp
-import darch.visualization as vi
+from deep_architect.contrib.useful.datasets.loaders import load_cifar10
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.modules as mo
+import deep_architect.searchers as se
+import deep_architect.hyperparameters as hp
+import deep_architect.visualization as vi
 
 D = hp.Discrete
 

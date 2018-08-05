@@ -113,7 +113,7 @@ of the code base, e.g., some of the private functions of the modules.
 * Be more consistent in the application of see also in the documentation.
 * While the visualization functionality is not fully finished, add some simple functionality to draw plots from search folders easily.
 * Perhaps remove the type redundancy in the documentation.
-* Write down some hyperparameter optimization vignettes comparing hyperopt and darch.
+* Write down some hyperparameter optimization vignettes comparing hyperopt and deep_architect.
 * Make this a lot cleaner.
 * Add a test for dependent hyperparameters that involves making a chain of dependent hyperparameters.
 * Make a test for dependent hyperparameters with a loop (should result in problems); needs loop detection.
@@ -153,7 +153,7 @@ of the code base, e.g., some of the private functions of the modules.
 * Check the logs for corrections.
 * Compile the code.
 * Write down about the directly structure of the code. This is important to be explicit about the structure of the folder and what is container in each of them.
-* Decide on the capitalization, i.e., DArch vs Darch vs darch. I think that I prefer the first one.
+* Decide on the capitalization, i.e., DArch vs Darch vs deep_architect. I think that I prefer the first one.
 * Make consistent vs with hyperp_value_lst
 * Complete the documentation.
 * Create a file that emphasizes the most interesting classes.
