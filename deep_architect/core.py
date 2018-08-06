@@ -157,7 +157,7 @@ class Hyperparameter(Addressable):
             ['H', (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
 
-        self.set_done = False
+        self.assign_done = False
         self.modules = OrderedSet()
         self.dependent_hyperps = OrderedSet()
 
@@ -169,7 +169,7 @@ class Hyperparameter(Addressable):
         Returns:
             bool: ``True`` if the hyperparameter has been assigned a value.
         """
-        return self.set_done
+        return self.assign_done
 
     def assign_value(self, val):
         """Assigns a value to the hyperparameter.
@@ -180,9 +180,9 @@ class Hyperparameter(Addressable):
         Args:
             val (object): Value to assign to the hyperparameter.
         """
-        assert not self.set_done
+        assert not self.assign_done
         self._check_value(val)
-        self.set_done = True
+        self.assign_done = True
         self.val = val
 
         # calls update on the dependent modules to signal that this hyperparameter
@@ -203,7 +203,7 @@ class Hyperparameter(Addressable):
         Returns:
             object: Value assigned to the hyperparameter.
         """
-        assert self.set_done
+        assert self.assign_done
         return self.val
 
     def _register_module(self, module):
@@ -255,11 +255,13 @@ class DependentHyperparameter(Hyperparameter):
     """
     def __init__(self, fn, hyperps, scope=None, name=None):
         Hyperparameter.__init__(self, scope, name)
+        # NOTE: this assert may or may not be necessary.
+        # assert isinstance(hyperps, OrderedDict)
         self._hyperps = hyperps
         self._fn = fn
 
         # registering the dependencies.
-        for h in self._hyperps:
+        for h in itervalues(self._hyperps):
             h._register_dependent_hyperparameter(self)
 
         self._update()
@@ -833,9 +835,60 @@ def get_unconnected_outputs(input_lst):
     traverse_forward(input_lst, fn)
     return ox_lst
 
+def get_all_hyperparameters(output_lst):
+    """Going backward from the outputs provided, gets all hyperparameters.
+
+    Hyperparameters that can be reached by traversing dependency links between
+    hyperparameters are also included. Setting an hyperparameter may lead to the
+    creation of additional hyperparameters, which will be most likely not set.
+    Such behavior happens when dealing with,
+    for example, hyperparameters associated with substitutition
+    modules such as :func:`deep_architect.modules.siso_optional`,
+    :func:`deep_architect.modules.siso_or`, and :func:`deep_architect.modules.siso_repeat`.
+
+    Args:
+        output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
+
+    Returns:
+        OrderedSet[deep_architect.core.Hyperparameter]:
+            Ordered set of hyperparameters that are currently present in the
+            graph.
+    """
+    visited_hs = OrderedSet()
+
+    def _add_reachable_hs(h_dep):
+        assert isinstance(h_dep, DependentHyperparameter)
+        local_memo = set([h_dep])
+        h_dep_lst = [h_dep]
+        idx = 0
+        while idx < len(h_dep_lst):
+            for h in itervalues(h_dep_lst[idx]._hyperps):
+                # cycle detection.
+                assert h not in local_memo
+
+                if h not in visited_hs:
+                    if isinstance(h, DependentHyperparameter):
+                        h_dep_lst.append(h)
+                local_memo.add(h)
+                visited_hs.add(h)
+            idx += 1
+
+    # this function is applied on each of the modules in the graph.
+    def fn(module):
+        for h in itervalues(module.hyperps):
+            if h not in visited_hs:
+                visited_hs.add(h)
+                if isinstance(h, DependentHyperparameter):
+                    _add_reachable_hs(h)
+        return False
+
+    traverse_backward(output_lst, fn)
+    return visited_hs
+
+
 def get_unassigned_independent_hyperparameters(output_lst):
-    """Going backward from the outputs provided, gets all the hyperparameters
-    that are not set yet.
+    """Going backward from the outputs provided, gets all the independent
+    hyperparameters that are not set yet.
 
     Setting an hyperparameter may lead to the creation of additional hyperparameters,
     which will be most likely not set. Such behavior happens when dealing with,
@@ -853,44 +906,10 @@ def get_unassigned_independent_hyperparameters(output_lst):
     """
     assert not is_specified(output_lst)
     unassigned_indep_hs = OrderedSet()
-    visited_hs = set()
-
-    def _add_reachable_unassigned_independent_hs(h_dep):
-        local_memo = set()
-        local_memo.add(h_dep)
-        h_dep_lst = [h_dep]
-        idx = 0
-        while idx < len(h_dep_lst):
-            for h in h_dep_lst[idx].dependent_hyperps:
-                # cycle detection.
-                assert h not in local_memo
-
-                # if this hyperparameter has never been seem
-                # NOTE: the not set condition seems reasonable; it may change later.
-                if not h.has_value_assigned() and h not in visited_hs:
-                    if isinstance(h, DependentHyperparameter):
-                        h_dep_lst.append(h)
-                    else:
-                        unassigned_indep_hs.add(h)
-                local_memo.add(h)
-                visited_hs.add(h)
-            idx += 1
-
-    # this function is applied on each of the modules in the graph.
-    def fn(module):
-        for h in itervalues(module.hyperps):
-            if h not in visited_hs:
-                visited_hs.add(h)
-                if not h.has_value_assigned():
-                    # traverses the subgraph of dependencies.
-                    if isinstance(h, DependentHyperparameter):
-                        _add_reachable_unassigned_independent_hs(h)
-                    else:
-                        unassigned_indep_hs.add(h)
-        return False
-
-    traverse_backward(output_lst, fn)
-    return hs
+    for h in get_all_hyperparameters(output_lst):
+        if not isinstance(h, DependentHyperparameter) and not h.has_value_assigned():
+            unassigned_indep_hs.add(h)
+    return unassigned_indep_hs
 
 # TODO: perhaps change to not have to work until everything is specified.
 # this can be done through a flag.

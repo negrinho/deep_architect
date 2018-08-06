@@ -87,12 +87,31 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
             ix.get_name(),
             ix.get_module().get_name())
 
-    def _draw_set_hyperparameter(m, h_localname, h):
+    def _draw_module_hyperparameter(m, h_localname, h):
+        if h.has_value_assigned():
+            label = h_localname + '=' + str(h.get_value())
+        else:
+            label = h_localname
+
         g.edge(
             h.get_name(),
             m.get_name(),
-            label=h_localname + '=' + str(h.get_value()),
+            label=label,
             fontsize=edge_fs)
+
+    def _draw_dependent_hyperparameter_relations(h_dep):
+
+        for h_localname, h in iteritems(h_dep._hyperps):
+            if h.has_value_assigned():
+                label = h_localname + '=' + str(h.get_value())
+            else:
+                label = h_localname
+
+            g.edge(
+                h.get_name(),
+                h_dep.get_name(),
+                label=label,
+                fontsize=edge_fs)
 
     def _draw_module_hyperparameter_info(m):
         g.node(
@@ -103,13 +122,6 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
                     "</FONT>"
                     for h_localname, h in iteritems(m.hyperps)]) + ">")
 
-    def _draw_unassigned_hyperparameter(m, h_localname, h):
-        g.edge(
-            h.get_name(),
-            m.get_name(),
-            label=h_localname,
-            fontsize=edge_fs)
-
     def _draw_output_terminal(ox_localname, ox):
         g.node(ox.get_name(), shape='house', penwidth=penwidth)
         g.edge(
@@ -117,7 +129,6 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
             ox.get_name())
 
     nodes = set()
-    hs = set()
     def fn(m):
         """Adds the module information to the graph that is local to the module.
         """
@@ -129,18 +140,25 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
                 _draw_unconnected_input(ix_localname, ix)
 
         if draw_hyperparameters:
-            for (h_localname, h) in iteritems(m.hyperps):
-                hs.add(h.get_name())
-                if h.has_value_assigned():
-                    _draw_set_hyperparameter(m, h_localname, h)
-                else:
-                    _draw_unassigned_hyperparameter(m, h_localname, h)
+            for h_localname, h in iteritems(m.hyperps):
+                _draw_module_hyperparameter(m, h_localname, h)
+
         if draw_module_hyperparameter_info:
             _draw_module_hyperparameter_info(m)
         return False
 
     # generate most of the graph.
     co.traverse_backward(output_lst, fn)
+
+    # drawing the hyperparameter graph.
+    if draw_hyperparameters:
+        hs = co.get_all_hyperparameters(output_lst)
+
+        for h in hs:
+            if isinstance(h, co.DependentHyperparameter):
+                _draw_dependent_hyperparameter_relations(h)
+
+            g.node(h.get_name(), fontsize=h_fs)
 
     # add the output terminals.
     for m in co.extract_unique_modules(output_lst):
@@ -150,8 +168,6 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
     # minor adjustments to attributes.
     for s in nodes:
         g.node(s, shape='rectangle', penwidth=penwidth)
-    for s in hs:
-        g.node(s, fontsize=h_fs)
 
     if print_to_screen or out_folderpath is not None:
         g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
