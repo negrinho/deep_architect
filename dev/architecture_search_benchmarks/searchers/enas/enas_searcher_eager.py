@@ -62,6 +62,11 @@ class ENASEagerSearcher(Searcher):
                                     use_locking=True)
         self.train_step = tfe.Variable(
             0, dtype=tf.int32, trainable=False, name="train_step")
+        
+        self.checkpoint = tf.train.Checkpoint(
+            optimizer=self.opt, 
+            variables=tf.contrib.checkpoint.List(self.variables))
+
 
     def sample(self):
         arc = self._sample()
@@ -94,10 +99,11 @@ class ENASEagerSearcher(Searcher):
             
 
     def save_state(self, folder_name):
-        pass
+        checkpoint_prefix = os.path.join(folder_name, "enas_searcher")
+        self.checkpoint.save(file_prefix=checkpoint_prefix)
 
-    def load(self, state):
-        pass
+    def load(self, folder_name, file_name=None):
+        self.checkpoint.restore(tf.train.latest_checkpoint(folder_name))
 
     def _create_params(self):
         self.variables = []
