@@ -19,17 +19,15 @@ MODEL_REQ = 1
 RESULTS_REQ = 2
 
 def start_searcher(comm, num_workers, searcher, resume_if_exists,
-    searcher_load_path, num_samples = -1, num_epochs= - 1):
+    searcher_load_path, num_samples = -1, num_epochs= - 1, save_every=1):
     assert num_samples != -1 or num_epochs != -1
 
     print('SEARCHER')
     search_logger = sl.SearchLogger('./logs', 'test',
         resume_if_exists=resume_if_exists, delete_if_exists=not resume_if_exists)
-    search_data_path = sl.join_paths([search_logger.search_data_folderpath, searcher_load_path])
 
-    if sl.file_exists(search_data_path):
-        state = sl.read_jsonfile(search_data_path)
-        searcher.load(state)
+    if resume_if_exists:
+        searcher.load(search_logger.search_data_folderpath, searcher_load_path)
 
     ready_requests = [comm.irecv(source=i+1, tag=READY_REQ) for i in range(num_workers)]
     eval_requests = [comm.irecv(source=i+1, tag=RESULTS_REQ) for i in range(num_workers)]
@@ -53,11 +51,14 @@ def start_searcher(comm, num_workers, searcher, resume_if_exists,
                     eval_loggers[idx].log_features(inputs, outputs, hs)
 
                     comm.isend(
-                        (vs, search_logger.current_evaluation_id, searcher_eval_token, False),
+                        (vs, search_logger.current_evaluation_id, searcher_eval_token, 
+                            search_logger.search_data_folderpath, False),
                         dest=idx + 1, tag=MODEL_REQ)
                     ready_requests[idx] = comm.irecv(source=idx + 1, tag=READY_REQ)
 
                     models_evaluated += 1
+                    if models_evaluated % save_every == 0:
+                        searcher.save_state(search_logger.search_data_folderpath)
                 elif not finished[idx]:
                     comm.isend((None, None, None, True),
                                 dest=idx + 1, tag=MODEL_REQ)
@@ -76,26 +77,35 @@ def start_searcher(comm, num_workers, searcher, resume_if_exists,
                     epochs = max(epochs, results['epoch'])
 
                 searcher.update(results['validation_accuracy'], searcher_eval_token)
-                searcher.save_state(search_logger.search_data_folderpath)
                 eval_requests[idx] = comm.irecv(source=idx + 1, tag=RESULTS_REQ)
 
 
-def start_worker(comm, rank, evaluator, search_space_factory):
+def start_worker(comm, rank, evaluator, search_space_factory, resume=True, save_every=1):
     # set the available gpu for process
     print('WORKER %d' % rank)
+    step = 0
     if len(gpu_utils.get_gpu_information()) != 0:
         #https://github.com/tensorflow/tensorflow/issues/1888
         gpu_utils.set_visible_gpus([rank % gpu_utils.get_total_num_gpus()])
 
+
     while(True):
         comm.ssend([rank], dest=0, tag=READY_REQ)
-        vs, evaluation_id, searcher_eval_token, kill = comm.recv(source=0, tag=MODEL_REQ)
+        (vs, evaluation_id, searcher_eval_token, 
+            search_data_folderpath, kill) = comm.recv(source=0, tag=MODEL_REQ)
         if kill:
             break
+
+        if resume:
+            evaluator.load_state(search_data_folderpath)
+            resume = False
 
         inputs, outputs, hs = search_space_factory.get_search_space()
         se.specify(outputs.values(), hs, vs)
         results = evaluator.eval(inputs, outputs, hs)
+        step += 1
+        if step % save_every == 0:
+            evaluator.save_state(search_data_folderpath)
         comm.ssend((results, evaluation_id, searcher_eval_token), dest=0, tag=RESULTS_REQ)
 
 def main():
@@ -136,10 +146,11 @@ def main():
         searcher = name_to_searcher_fn[config['searcher']](search_space_factory.get_search_space)
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
+        save_every = 1 if 'save_every' not in config else config['save_every']
         start_searcher(
             comm, comm.Get_size() - 1, searcher, options.resume, 
             config['searcher_file_name'], num_samples=num_samples, 
-            num_epochs=num_epochs)
+            num_epochs=num_epochs, save_every=save_every)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
         val_dataset = InMemoryDataset(Xval, yval, False)

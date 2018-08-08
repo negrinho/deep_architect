@@ -3,9 +3,11 @@ from __future__ import print_function
 from __future__ import division
 
 import gc
+import os
 from builtins import object
 from past.utils import old_div
 import tensorflow as tf
+tfe = tensorflow.contrib.eager
 import numpy as np
 import darch.core as co
 import darch.search_logging as sl
@@ -22,38 +24,27 @@ class ENASEagerEvaluator(object):
     """
 
     def __init__(self, train_dataset, val_dataset, num_classes, weight_sharer, 
-            model_path=None, max_num_training_epochs=200, 
-            max_eval_time_in_minutes=180.0, stop_patience=20, save_patience=2,
             optimizer_type='adam', batch_size=128,
-            learning_rate_patience=7, learning_rate_init=1e-3,
-            learning_rate_min=1e-6, learning_rate_mult=0.1,
-            display_step=1, log_output_to_terminal=True, test_dataset=None,
-            max_controller_steps=2000):
+            learning_rate_init=1e-3, display_step=50, log_output_to_terminal=True,
+            test_dataset=None, max_controller_steps=50):
 
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.num_classes = num_classes
         self.in_dim = list(train_dataset.next_batch(1)[0].shape[1:])
 
-        self.max_num_training_epochs = max_num_training_epochs
-        self.max_eval_time_in_minutes = max_eval_time_in_minutes
         self.display_step = display_step
-        self.stop_patience = stop_patience
-        self.save_patience = save_patience
-        self.learning_rate_patience = learning_rate_patience
-        self.learning_rate_mult = learning_rate_mult
         self.learning_rate_init = learning_rate_init
-        self.learning_rate_min = learning_rate_min
         self.batch_size = batch_size
         self.optimizer_type = optimizer_type
         self.log_output_to_terminal = log_output_to_terminal
-        self.model_path = model_path
         self.test_dataset = test_dataset
         self.num_batches = int(old_div(self.train_dataset.get_num_examples(), self.batch_size))
         self.batch_counter = 0
         self.epoch = 0
 
-        self.step = 0
+        self.controller_step = 0
+        self.child_step = 0
         self.controller_mode = False
         self.max_controller_steps = max_controller_steps
         
@@ -68,80 +59,102 @@ class ENASEagerEvaluator(object):
         else:
             raise ValueError("Unknown optimizer.")
 
+        self.checkpoint = tf.train.Checkpoint(
+            optimizer=self.optimizer, 
+            variables=tf.contrib.checkpoint.Mapping(self.weight_sharer.name_to_weight))
         
+    def save_state(self, folderpath):
+        checkpoint_prefix = os.path.join(folderpath, "enas_evaluator")
+        self.checkpoint.save(file_prefix=checkpoint_prefix)
     
+    def load_state(self, folderpath):
+        self.checkpoint.restore(tf.train.latest_checkpoint(folderpath))
 
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0
         num_left = dataset.get_num_examples()
         setTraining(list(outputs.values()), False)
+        loss = 0
         while num_left > 0:
             X_batch, y_batch = dataset.next_batch(self.batch_size)
-            X = tf.constant(X_batch)
+            X = tf.constant(X_batch).gpu()
+            y = tf.constant(y_batch).gpu()
 
             co.forward({inputs['In']: X})
             logits = outputs['Out'].val
             
-            correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y_batch, 1))
+            correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
+            loss += tf.reduce_sum(
+                tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
             nc += num_correct
             
             # update the number of examples left.
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
         acc = old_div(float(nc), dataset.get_num_examples())
-        return acc 
+        loss = old_div(float(loss), dataset.get_num_examples())
 
-    def _compute_loss(self, inputs, outputs, X, y, tf_variables=None):
+        return acc, loss
+
+    def _compute_loss(self, inputs, outputs, X, y, loss_metric):
         X = tf.constant(X).gpu()
         y = tf.constant(y).gpu()
         co.forward({inputs['In']: X})
         logits = outputs['Out'].val
         loss = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
+        loss_metric(loss)
         return loss
         
 
     def eval(self, inputs, outputs, hs):
-
-        # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        # with tf.control_dependencies(update_ops):
-            # optimizer = self.optimizer.minimize(loss, var_list=tf_variables)
-
-        # for computing the accuracy of the model
-        # correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y_pl, 1))
-        # num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
-
-        # init = tf.global_variables_initializer()
-        
         results = {}
-        # Setting the session to allow growth, so it doesn't allocate all GPU memory.
-        # gpu_ops = tf.GPUOptions(allow_growth=True)
-        # config = tf.ConfigProto(gpu_options=gpu_ops)
-
         if self.controller_mode:
-            val_acc = self._compute_accuracy(inputs, outputs, self.val_dataset)
+            # Compute accuracy of model
+            with tf.device('/gpu:0'):
+                val_acc, loss = self._compute_accuracy(inputs, outputs, self.val_dataset)
             results['validation_accuracy'] = val_acc
-            self.step += 1
-            if self.step % self.max_controller_steps == 0:
+
+            # Log validation info
+            self.controller_step += 1
+            if self.log_output_to_terminal and self.controller_step % self.display_step == 0:
+                log_string = ""
+                log_string += "ctrl_step={:<6d}".format(self.controller_step)
+                log_string += " loss={:<7.3f}".format(loss)
+                log_string += " acc={:<6.4f}".format(val_acc)
+                print(log_string)
+
+            # If controller phase finished, update epoch and switch back to 
+            # updating child params
+            if self.controller_step % self.max_controller_steps == 0:
                 self.controller_mode = False
+                self.epoch += 1
+                results['epoch'] = self.epoch
                 print('Starting Image model mode')
 
         else:
+            # Update child model parameters
             X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
             setTraining(list(outputs.values()), True)
             with tf.device('/gpu:0'):
-                self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch))
+                loss_metric = tfe.metrics.Mean('loss')
+                self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch, loss_metric))
 
+            # Log batch info
+            self.child_step += 1
+            if self.log_output_to_terminal and self.child_step % self.display_step == 0:
+                log_string = ""
+                log_string += "epoch={:<6d}".format(self.epoch)
+                log_string += " ch_step={:<6d}".format(self.child_step)
+                log_string += " loss={:<8.6f}".format(loss_metric.result())
+                print(log_string)
             epoch_end = self.train_dataset.iter_i == 0
 
+            # If epoch completed, switch to updating controller
             results['validation_accuracy'] = -1
             if epoch_end:
-                val_acc = self._compute_accuracy(inputs, outputs, self.val_dataset)
                 self.controller_mode = True
-                self.epoch += 1
-                results['epoch'] = self.epoch
-                print('Epoch %d: %f' % (self.epoch, val_acc))
                 print('Starting Controller Mode')
         gc.collect()
         return results
