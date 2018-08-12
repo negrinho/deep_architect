@@ -30,7 +30,14 @@ def max_pool(h_kernel_size, h_stride):
 
 def keras_batch_normalization(name='default', weight_sharer=None):
     def cfn(di, dh):
-        bn = weight_sharer.get(name + '_bn', tf.keras.layers.BatchNormalization)
+        name = name + '_bn'
+        bn = weight_sharer.get(name, tf.keras.layers.BatchNormalization,
+            lambda layer: layer.get_weights())
+        with tf.device('/gpu:0'):
+            bn.build(di['In'].get_shape())
+            weights = weight_sharer.load_weights(name)
+            if weights is not None:
+                bn.set_weights(weights)
         def fn(di, isTraining):
             with tf.device('/gpu:0'):
                 return {'Out' : bn(di['In'], training=isTraining) }
@@ -51,7 +58,13 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
         channels = channels if out_filters is None else out_filters
 
         conv_fn = lambda: tf.keras.layers.Conv2D(channels, filter_size, padding='same')
-        conv = weight_sharer.get(name + '_conv_' + str(filter_size), conv_fn)
+        conv = weight_sharer.get(name + '_conv_' + str(filter_size), conv_fn, 
+            lambda layer: layer.get_weights())
+        with tf.device('/gpu:0'):
+            conv.build(di['In'].get_shape())
+            weights = weight_sharer.load_weights(name)
+            if weights is not None:
+                conv.set_weights(weights)
         def fn(di, isTraining=True):
             with tf.device('/gpu:0'):
                 return {'Out' : conv(di['In'])}
@@ -64,7 +77,13 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
         (_, _, _, channels) = di['In'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
         conv_fn = lambda: tf.keras.layers.SeparableConv2D(channels, filter_size, padding='same')
-        conv = weight_sharer.get(name + '_dsep_' + str(filter_size), conv_fn)
+        conv = weight_sharer.get(name + '_dsep_' + str(filter_size), conv_fn, 
+            lambda layer: layer.get_weights())
+        with tf.device('/gpu:0'):
+            conv.build(di['In'].get_shape())
+            weights = weight_sharer.load_weights(name)
+            if weights is not None:
+                conv.set_weights(weights)
         
         def fn(di, isTraining=True):
             with tf.device('/gpu:0'):
@@ -95,7 +114,13 @@ def dropout(keep_prob):
 
 def fc_softmax(num_classes, weight_sharer):
     def cfn(di, dh):
-        fc = weight_sharer.get('softmax', lambda: tf.keras.layers.Dense(num_classes))
+        fc = weight_sharer.get('softmax', lambda: tf.keras.layers.Dense(num_classes), 
+            lambda layer: layer.get_weights())
+        with tf.device('/gpu:0'):
+            fc.build(di['In'].get_shape())
+            weights = weight_sharer.load_weights(name)
+            if weights is not None:
+                fc.set_weights(weights)
         def fn(di, isTraining=True):
             with tf.device('/gpu:0'):
                 return {'Out' : fc(di['In'])}
