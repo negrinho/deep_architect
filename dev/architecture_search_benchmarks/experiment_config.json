@@ -33,6 +33,6 @@
       "evaluator": "enas_eager_evaluator",
       "epochs": 310,
       "searcher_file_name": "searcher_state.json",
-      "save_every": 200
+      "save_every": 25
     }
   }

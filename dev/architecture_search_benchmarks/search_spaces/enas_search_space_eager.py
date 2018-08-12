@@ -13,7 +13,7 @@ import numpy as np
 from dev.architecture_search_benchmarks.helpers import tfeager as htfe
 from dev.architecture_search_benchmarks.search_spaces.common_eager import D
 from dev.architecture_search_benchmarks.search_spaces.common_ops_eager import (
-    conv2D, conv2D_depth_separable, global_pool, dropout, fc_softmax, 
+    conv2D, conv2D_depth_separable, global_pool, dropout, fc_layer, 
     wrap_batch_norm_relu, avg_pool, max_pool, keras_batch_normalization)
 import darch.modules as mo
 
@@ -38,7 +38,8 @@ class WeightSharer(object):
     def load_weights(self, name):
         if name in self.weight_dict:
             return self.weight_dict[name]
-        else return None
+        else:
+            return None
 
     def save(self, filename):
         weight_dict = self.weight_dict
@@ -126,7 +127,7 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
             enas_repeat_fn, ['In'], ['Out'], weight_sharer),
         global_pool(),
         dropout(keep_prob=.9),
-        fc_softmax(num_classes, weight_sharer),
+        fc_layer(num_classes, 'softmax', weight_sharer),
         ])
 
 class SSFEnasnetEager(mo.SearchSpaceFactory):
