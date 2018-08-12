@@ -7,7 +7,7 @@ import os
 from builtins import object
 from past.utils import old_div
 import tensorflow as tf
-tfe = tensorflow.contrib.eager
+tfe = tf.contrib.eager
 import numpy as np
 import darch.core as co
 import darch.search_logging as sl
@@ -64,11 +64,12 @@ class ENASEagerEvaluator(object):
             variables=tf.contrib.checkpoint.Mapping(self.weight_sharer.name_to_weight))
         
     def save_state(self, folderpath):
-        checkpoint_prefix = os.path.join(folderpath, "enas_evaluator")
-        self.checkpoint.save(file_prefix=checkpoint_prefix)
+        weight_sharer_file = os.path.join(folderpath, "weight_sharer")
+        self.weight_sharer.save(weight_sharer_file)
     
     def load_state(self, folderpath):
-        self.checkpoint.restore(tf.train.latest_checkpoint(folderpath))
+        weight_sharer_file = os.path.join(folderpath, "weight_sharer")
+        self.weight_sharer.load(weight_sharer_file)
 
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0

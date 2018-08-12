@@ -63,7 +63,7 @@ class ENASEagerSearcher(Searcher):
         self.train_step = tfe.Variable(
             0, dtype=tf.int32, trainable=False, name="train_step")
         
-        self.checkpoint = tf.train.Checkpoint(
+        self.checkpoint = tfe.Checkpoint(
             optimizer=self.opt, 
             variables=tf.contrib.checkpoint.List(self.variables))
 

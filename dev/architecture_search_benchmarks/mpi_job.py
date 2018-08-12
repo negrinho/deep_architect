@@ -142,11 +142,11 @@ def main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
+    save_every = 1 if 'save_every' not in config else config['save_every']
     if rank == 0:
         searcher = name_to_searcher_fn[config['searcher']](search_space_factory.get_search_space)
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
-        save_every = 1 if 'save_every' not in config else config['save_every']
         start_searcher(
             comm, comm.Get_size() - 1, searcher, options.resume, 
             config['searcher_file_name'], num_samples=num_samples, 
@@ -169,7 +169,7 @@ def main():
         assert not config['evaluator'].startswith('enas') or hasattr(search_space_factory, 'weight_sharer')
         evaluator = evaluators[config['evaluator']]()
 
-        start_worker(comm, rank, evaluator, search_space_factory)
+        start_worker(comm, rank, evaluator, search_space_factory, resume=options.resume, save_every=save_every)
 
 if __name__ == "__main__":
     main()

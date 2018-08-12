@@ -8,47 +8,57 @@ from builtins import object
 from collections import OrderedDict
 
 import tensorflow as tf
+import numpy as np
 
 from dev.architecture_search_benchmarks.helpers import tfeager as htfe
 from dev.architecture_search_benchmarks.search_spaces.common_eager import D
 from dev.architecture_search_benchmarks.search_spaces.common_ops_eager import (
     conv2D, conv2D_depth_separable, global_pool, dropout, fc_softmax, 
-    wrap_batch_norm_relu, avg_pool, max_pool)
+    wrap_batch_norm_relu, avg_pool, max_pool, keras_batch_normalization)
 import darch.modules as mo
 
 TFEM = htfe.TFEModule
 
 class WeightSharer(object):
     def __init__(self):
-        self.name_to_weight = OrderedDict()
-        self.weights_used = set()
+        self.name_to_weight = {}
+        self.name_to_np_fn = {}
+        self.weight_dict = {}
     
-    def get(self, name, weight_fn):
+    def get(self, name, construct_fn, np_fn):
         if name not in self.name_to_weight:
             with tf.device('/gpu:0'):
-                self.name_to_weight[name] = weight_fn()
+                self.name_to_weight[name] = construct_fn()
+                self.name_to_np_fn[name] = np_fn
             print(name)
 #        self.weights_used.add(name)
 #        self.name_to_weight[name].gpu()
         return self.name_to_weight[name]
 
-    def reset(self):
-#        for name in self.weights_used:
-#            self.name_to_weight[name].cpu()
-#        self.weights_used.clear()
-        pass
+    def load_weights(self, name):
+        if name in self.weight_dict:
+            return self.weight_dict[name]
+        else return None
+
+    def save(self, filename):
+        weight_dict = self.weight_dict
+        for name in self.name_to_weight:
+            weight_dict[name] = self.name_to_np_fn[name](self.name_to_weight[name])
+        np.save(filename, weight_dict)
     
+    def load(self, filename):
+        self.weight_dict = np.load(filename)
+
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
 # to form skip connections
 def concatenate_skip_layers(h_connects, weight_sharer):
     def cfn(di, dh):
-        bn = weight_sharer.get('skip_bn_' + str(len(dh)), tf.keras.layers.BatchNormalization)
         def fn(di, isTraining=True):
             inputs = [di['In' + str(i)] for i in range(len(dh)) if dh['select_' + str(i)]]
             inputs.append(di['In' + str(len(dh))])
             with tf.device('/gpu:0'):
                 out = tf.add_n(inputs)
-                return {'Out' : bn(out, training=isTraining)}
+                return {'Out' : tf.add_n(inputs)}
 
         return fn
     return TFEM('SkipConcat', 
@@ -79,14 +89,18 @@ def enas_repeat_fn(inputs, outputs, layer_id, out_filters, weight_sharer):
     op_inputs, op_outputs = enas_op(h_enas_op, out_filters, 'op_' + str(layer_id), weight_sharer)
     outputs[list(outputs.keys())[-1]].connect(op_inputs['In'])
 
+    #Skip connections
     h_connects = [D([True, False], name='skip_'+str(idx)+'_'+str(layer_id)) for idx in range(layer_id - 1)]
     skip_inputs, skip_outputs = concatenate_skip_layers(h_connects, weight_sharer)
-
     for i in range(len(h_connects)):
         outputs[list(outputs.keys())[i]].connect(skip_inputs['In' + str(i)])
     op_outputs['Out'].connect(skip_inputs['In' + str(len(h_connects))])
 
-    outputs['Out' + str(len(outputs))] = skip_outputs['Out']
+    # Batch norm after skip
+    bn_inputs, bn_outputs = keras_batch_normalization(
+        name='skip_bn_' + str(len(h_connects)), weight_sharer=weight_sharer)
+    skip_outputs['Out'].connect(bn_inputs['In'])
+    outputs['Out' + str(len(outputs))] = bn_outputs['Out']
     return inputs, outputs
     
 def enas_space(h_num_layers, out_filters, fn_first, fn_repeats, input_names, output_names, weight_sharer, scope=None):
