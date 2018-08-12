@@ -63,9 +63,8 @@ class ENASEagerSearcher(Searcher):
         self.train_step = tfe.Variable(
             0, dtype=tf.int32, trainable=False, name="train_step")
         
-        self.checkpoint = tfe.Checkpoint(
-            optimizer=self.opt, 
-            variables=tf.contrib.checkpoint.List(self.variables))
+        all_variables = self.variables + self.opt.variables() + [self.train_step]
+        self.saver = tfe.Saver(all_variables)
 
 
     def sample(self):
@@ -100,10 +99,10 @@ class ENASEagerSearcher(Searcher):
 
     def save_state(self, folder_name):
         checkpoint_prefix = os.path.join(folder_name, "enas_searcher")
-        self.checkpoint.save(file_prefix=checkpoint_prefix)
+        self.saver.save(checkpoint_prefix, global_step=self.train_step)
 
     def load(self, folder_name, file_name=None):
-        self.checkpoint.restore(tf.train.latest_checkpoint(folder_name))
+        self.saver.restore(tf.train.latest_checkpoint(folder_name))
 
     def _create_params(self):
         self.variables = []
@@ -141,8 +140,6 @@ class ENASEagerSearcher(Searcher):
 
     def _sample(self):
         """Build the sampler ops and the log_prob ops."""
-        print("-" * 80)
-        print("Build controller sampler")
         anchors = []
         anchors_w_1 = []
 

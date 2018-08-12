@@ -14,6 +14,7 @@ import darch.search_logging as sl
 import darch.contrib.useful.gpu_utils as gpu_utils
 from dev.architecture_search_benchmarks.helpers.tfeager import setTraining
 from six.moves import range
+import time
 
 class ENASEagerEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
@@ -27,7 +28,6 @@ class ENASEagerEvaluator(object):
             optimizer_type='adam', batch_size=128,
             learning_rate_init=1e-3, display_step=50, log_output_to_terminal=True,
             test_dataset=None, max_controller_steps=50):
-
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.num_classes = num_classes
@@ -59,10 +59,6 @@ class ENASEagerEvaluator(object):
         else:
             raise ValueError("Unknown optimizer.")
 
-        self.checkpoint = tf.train.Checkpoint(
-            optimizer=self.optimizer, 
-            variables=tf.contrib.checkpoint.Mapping(self.weight_sharer.name_to_weight))
-        
     def save_state(self, folderpath):
         weight_sharer_file = os.path.join(folderpath, "weight_sharer")
         self.weight_sharer.save(weight_sharer_file)
@@ -74,27 +70,60 @@ class ENASEagerEvaluator(object):
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0
         num_left = dataset.get_num_examples()
+        t0 = time.time()
         setTraining(list(outputs.values()), False)
+        t00 = time.time()
         loss = 0
+        time1 = 0.0
+        time2 = 0.0
+        time3 = 0.0
+        time4 = 0.0
+        time5 = 0.0
+        time6 = 0.0
         while num_left > 0:
+            t1 = time.time()
             X_batch, y_batch = dataset.next_batch(self.batch_size)
-            X = tf.constant(X_batch).gpu()
-            y = tf.constant(y_batch).gpu()
+            t2 = time.time()
+            X = tf.convert_to_tensor(X_batch, np.float32)#.gpu()
+            t3 = time.time()
+            y = tf.convert_to_tensor(y_batch, np.float32)#.gpu()
 
+            t4 = time.time()
             co.forward({inputs['In']: X})
+            t5 = time.time()
             logits = outputs['Out'].val
+            t4 = time.time()
             
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
+            t5 = time.time()
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
+            t6 = time.time()
             loss += tf.reduce_sum(
                 tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
+            t7 = time.time()
             nc += num_correct
+            time1 += t2 - t1
+            time2 += t3 - t2
+            time3 += t4 - t3
+            time4 += t5 - t4
+            time5 += t6 - t5
+            time6 += t7 - t6
             
             # update the number of examples left.
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
+        t8 = time.time()
         acc = old_div(float(nc), dataset.get_num_examples())
         loss = old_div(float(loss), dataset.get_num_examples())
+        t9 = time.time()
+        print('time0 = ' + str(t00 - t0))
+        print('time1 = ' + str(time1))
+        print('time2 = ' + str(time2))
+        print('time3 = ' + str(time3))
+        print('time4 = ' + str(time4))
+        print('time5 = ' + str(time5))
+        print('time6 = ' + str(time6))
+        print('time7 = ' + str(t9 - t8))
 
         return acc, loss
 
@@ -113,17 +142,19 @@ class ENASEagerEvaluator(object):
         results = {}
         if self.controller_mode:
             # Compute accuracy of model
-            with tf.device('/gpu:0'):
-                val_acc, loss = self._compute_accuracy(inputs, outputs, self.val_dataset)
+            t1 = time.time()
+            val_acc, loss = self._compute_accuracy(inputs, outputs, self.val_dataset)
+            t2 = time.time()
             results['validation_accuracy'] = val_acc
 
             # Log validation info
             self.controller_step += 1
-            if self.log_output_to_terminal and self.controller_step % self.display_step == 0:
+            if self.log_output_to_terminal:# and self.controller_step % self.display_step == 0:
                 log_string = ""
                 log_string += "ctrl_step={:<6d}".format(self.controller_step)
                 log_string += " loss={:<7.3f}".format(loss)
                 log_string += " acc={:<6.4f}".format(val_acc)
+                log_string += " time={:<6.4f}".format(t2 - t1)
                 print(log_string)
 
             # If controller phase finished, update epoch and switch back to 
@@ -150,7 +181,7 @@ class ENASEagerEvaluator(object):
                 log_string += " ch_step={:<6d}".format(self.child_step)
                 log_string += " loss={:<8.6f}".format(loss_metric.result())
                 print(log_string)
-            epoch_end = self.train_dataset.iter_i == 0
+            epoch_end = self.train_dataset.iter_i == 0 or self.train_dataset.iter_i > 25 * 128
 
             # If epoch completed, switch to updating controller
             results['validation_accuracy'] = -1
