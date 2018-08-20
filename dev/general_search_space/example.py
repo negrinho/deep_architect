@@ -7,6 +7,7 @@ from darch.searchers import random_specify
 import darch.visualization as viz
 from darch.contrib.useful.datasets.loaders import load_cifar10
 from darch.contrib.useful.datasets.dataset import InMemoryDataset
+from dev.keras.keras_ops import input_node
 
 def get_search_space(num_classes):
     return mo.siso_sequential([
@@ -25,14 +26,14 @@ def get_search_space(num_classes):
     ])
 
 def main():
-    backend.set_backend(backend.TENSORFLOW_EAGER)
+    backend.set_backend(backend.KERAS)
     ins, outs = get_search_space(10)
     random_specify(outs.values())
     viz.draw_graph(outs.values())
-    if backend.get_backend() < 2:
-        _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/')
-    else:
+    if backend.get_backend() == backend.PYTORCH:
         _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/', data_format='NCHW')
+    else:
+        _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/')
     dataset = InMemoryDataset(X, y, False)
     in_dim = list(dataset.next_batch(1)[0].shape[1:])
     X_batch, y_batch = dataset.next_batch(16)
@@ -60,6 +61,20 @@ def main():
         import torch
         co.forward({ins['In'] : torch.Tensor(X_batch)})
         logs = outs['Out'].val
+        print logs
+    elif backend.get_backend() == backend.KERAS:
+        import keras
+        in_node = input_node()
+        ins, outs = mo.siso_sequential([in_node, (ins, outs)])
+        _, input_layer = in_node
+        co.forward({ins['In'] : X.shape[1:]})
+        model = keras.Model(
+            inputs=[inp.val for inp in input_layer.values()],
+            outputs=[out.val for out in outs.values()])
+        model.compile(loss=keras.losses.categorical_crossentropy,
+              optimizer=keras.optimizers.Adadelta(),
+              metrics=['accuracy'])
+        logs = model.predict(X_batch)
         print logs
 
 if __name__ == '__main__':

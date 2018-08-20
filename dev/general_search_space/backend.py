@@ -1,6 +1,7 @@
 TENSORFLOW = 0
 TENSORFLOW_EAGER = 1
 PYTORCH = 2
+KERAS = 3
 
 _backend = None
 _func_dict = None
@@ -10,7 +11,7 @@ def set_backend(backend):
     global _backend, _func_dict
     if _backend is not None:
         raise RuntimeError('Backend is already specified')
-    if type(backend) is not int or backend < 0 or backend > 2:
+    if type(backend) is not int or backend < 0 or backend > 3:
         raise ValueError('value of backend not valid')
     
     _backend = backend
@@ -27,6 +28,8 @@ def set_backend(backend):
         from tfe_ops import func_dict
     elif backend is PYTORCH:
         from pytorch_ops import func_dict
+    elif backend is KERAS:
+        from dev.keras.keras_ops import func_dict
     _func_dict = func_dict
     if _func_dict is None:
         raise RuntimeError('Backend %s is not supported' % backend)
