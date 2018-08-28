@@ -3,12 +3,7 @@ import deep_architect.search_logging as sl
 
 # Make sure that only one GPU is visible.
 if __name__ == '__main__':
-    cmd = sl.CommandLineArgs()
-    cmd.add('config_filepath', 'str', 'examples/tensorflow/benchmarks/config.json', True)
-    cmd.add('key', 'str')
-    d_cmd = cmd.parse()
-    cfg = sl.read_jsonfile(d_cmd['config_filepath'])[d_cmd['key']]
-
+    cfg = sl.get_config()
     if cfg['use_gpu']:
         import deep_architect.contrib.useful.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)

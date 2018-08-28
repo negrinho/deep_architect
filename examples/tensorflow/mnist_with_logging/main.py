@@ -17,9 +17,9 @@ class SSF(mo.SearchSpaceFactory):
         inputs, outputs = css_dnn.dnn_net(self.num_classes)
         return inputs, outputs, {}
 
-def main(config_filepath, key):
+def main():
     # Loading the config file.
-    cfg = sl.read_jsonfile(config_filepath)[key]
+    cfg = sl.get_config()
     num_classes = 10
     num_samples = cfg['num_samples']
     # Loading the data.
@@ -54,8 +54,4 @@ def main(config_filepath, key):
         searcher.update(results['validation_accuracy'], searcher_eval_token)
 
 if __name__ == '__main__':
-    cmd = sl.CommandLineArgs()
-    cmd.add('config_filepath', 'str', 'examples/tensorflow/mnist_with_logging/config.json', True)
-    cmd.add('key', 'str')
-    d_cmd = cmd.parse()
-    main(**d_cmd)
+    main()
