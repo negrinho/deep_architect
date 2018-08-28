@@ -20,12 +20,16 @@ def process_logs(log_lst):
         ds.append(d)
     return ds
 
+logs_folderpath = "/home/renato/Desktop/darch/logs"
 # path_lst = ['logs/test_cifar10_short', 'logs/test_cifar10_medium', 'logs/test']
-path_lst = ['logs/test_cifar10_medium', 'logs/test_cifar10_short']
+path_lst = [sl.join_paths([logs_folderpath, p]) for p in ['cifar10_medium', 'cifar10_short']]
+print(path_lst)
 path_to_log = {p : process_logs(sl.read_search_folder(p)) for p in path_lst}
 keys = path_to_log.values()[0][0].keys()
 print keys
 ds = path_to_log.values()[0]
+
+# NOTE: this makes sense in aiding the construction of the model.
 
 # NOTE: it depends if I pass the path directly or something different.
 # NOTE: some idea of post-processing can be done here.
@@ -86,6 +90,7 @@ class Component:
         self.local_name = local_name
         self.parent_name = parent_name
         self.full_name = parent_name + '/' + local_name
+        print self.full_name
         self.html_comp = None
 
     def get_local_name(self):
@@ -113,6 +118,13 @@ class Component:
         assert self.html_comp is None
         self.html_comp = html_comp
 
+    # NOTE: I don't know if this is the correct way of doing things.
+    def get_state_dict(self):
+        raise NotImplementedError
+
+    def load_state_dict(self, state_dict):
+        raise NotImplementedError
+
 ### General components that are used throughout many dashboards of the visualization.
 class FullColumn(Component):
     def __init__(self, parent_name, local_name, contents):
@@ -138,6 +150,7 @@ class Dropdown(Component):
     def get_value_input(self):
         return self.get_input('value')
 
+
 class Button(Component):
     def __init__(self, parent_name, local_name, buttom_text):
         Component.__init__(self, parent_name, local_name)
@@ -147,7 +160,7 @@ class Button(Component):
                 children=buttom_text))
         # n_clicks if the property that should be used for on click events.
 
-    def get_nclicks_input(self):
+    def get_num_clicks_input(self):
         return self.get_input('n_clicks')
 
 class RadioItems(Component):
@@ -196,6 +209,7 @@ class TextBox(Component):
                 placeholder=placeholder_text,
                 style={'width': '100%'}))
 
+### Composite components that are used in more dashboards.
 class Notes(Component):
     def __init__(self, parent_name, local_name):
         Component.__init__(self, parent_name, local_name)
@@ -220,7 +234,7 @@ class LogSelectorDropdown(Component):
     def get_value_input(self):
         return self.dropdown.get_value_input()
 
-# NOTE: the log scale has not been very useful now.
+# NOTE: the log scale has not been very useful so far.
 class DimensionControls(Component):
     def __init__(self, parent_name, local_name, dimension_selector_placeholder_text):
         Component.__init__(self, parent_name, local_name)
@@ -262,6 +276,7 @@ class Scatter2DControls(Component):
         self.log_selector = LogSelectorDropdown(self.full_name, 'log_selector')
         self.dimension_controls = Scatter2DDimensionControls(self.full_name, 'dimension_controls')
         # self.filter_selector = FilterSelectorDropdown(self.full_name, 'filter_selector')
+        self.delete_button = Button(self.full_name, 'delete_button', 'Delete Row')
         self.notes = Notes(self.full_name, 'notes')
         self._register(
             full_column([
@@ -312,6 +327,8 @@ class Scatter2DRow(Component):
         callback_fn = scatter2d_update_callback
         return [(output, input_lst, state_lst, callback_fn)]
 
+
+### these need to be revisited.
 def make_scatter2d(x, y):
     opts_dict = {
         'mode' : 'markers',
@@ -351,6 +368,8 @@ def scatter2d_update_callback(log_folderpath_lst, xkey, xscale, ykey, yscale):
         'data' : data,
         'layout' : make_layout(xkey, xscale, ykey, yscale)
     }
+
+# NOTE: they need to call the function.
 
 # class GraphRow(Component):
 #     def __init__(self, parent_name, local_name, graph_type):
@@ -403,8 +422,8 @@ class Footer(Component):
                 self.add_row_button.get_layout()
             ]))
 
-    def get_add_button_nclicks_input(self):
-        return self.add_row_button.get_nclicks_input()
+    def get_add_button_num_clicks_input(self):
+        return self.add_row_button.get_num_clicks_input()
 
 # NOTE: this implementation is kind of weird because it constructs all possible
 # rows upfront.
@@ -451,7 +470,7 @@ class Visualization(Component):
 
     def _get_add_row_callback_config_lst(self):
         output = self.row_column.get_output('children')
-        input_lst = [self.footer.get_add_button_nclicks_input()]
+        input_lst = [self.footer.get_add_button_num_clicks_input()]
         state_lst = [self.row_column.get_state('children')]
         callback_fn = self._add_row_callback
         return [(output, input_lst, state_lst, callback_fn)]
@@ -546,7 +565,7 @@ class Visualization(Component):
 
 app = dash.Dash()
 
-vis = Visualization('', 'visualization', max_num_rows=10)
+vis = Visualization('', 'visualization', max_num_rows=4)
 app.layout = vis.get_layout()
 app.config['suppress_callback_exceptions'] = True
 
@@ -579,3 +598,23 @@ if __name__ == '__main__':
 # NOTE: one possibility is having the choice of logs determine the keys that are
 # available. this means that there may exist interaction between the model]
 # and something else.
+
+# TODO: I have to implement some of the loading and saving functionality.
+
+# NOTE: this may be something that I have to fix later.
+
+# simple JSON file, that shouold
+
+
+# how to get the appropriate
+
+# based on the results.
+# what can be done with the model.
+
+# how can I do this. I think that
+
+# NOTE: in terms of state, I think that it is better.
+# it is better to just have the loading functionality. you have to set the
+# values of the model easily.
+
+# I don't think that the nesting is that useful.

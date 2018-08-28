@@ -257,7 +257,7 @@ class DependentHyperparameter(Hyperparameter):
         Hyperparameter.__init__(self, scope, name)
         # NOTE: this assert may or may not be necessary.
         # assert isinstance(hyperps, OrderedDict)
-        self._hyperps = hyperps
+        self._hyperps = OrderedDict([(k, hyperps[k]) for k in sorted(hyperps)])
         self._fn = fn
 
         # registering the dependencies.

@@ -512,7 +512,6 @@ def mimo_combine(fns, combine_fn, scope=None, name=None):
         c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
     return (i_inputs, c_outputs)
 
-
 def siso_residual(main_fn, residual_fn, combine_fn):
     """Residual connection of two functions returning search spaces encoded
     as pairs of dictionaries of inputs and outputs.
@@ -556,7 +555,6 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     r_outputs['Out'].connect(c_inputs['In1'])
 
     return i_inputs, c_outputs
-
 
 def siso_sequential(io_lst):
     """Connects in a serial connection a list of dictionaries of the inputs and

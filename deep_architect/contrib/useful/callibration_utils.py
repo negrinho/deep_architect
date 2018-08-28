@@ -60,7 +60,7 @@ def sort_sequences(sequence_lst_lst, value_lst, maximizing):
     sorted_sequence_lst = [apply_permutation(seq, idxs) for seq in sequence_lst_lst]
     return sorted_sequence_lst
 
-def time_callibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True,
+def time_calibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True,
         max_num_plots=8, increase_factor=2, use_multiplicative_increases=True,
         time_axis_label=None, value_axis_label=None, show=True, plot_filepath=None):
     """Given two lists encoding the evaluation performance across time of different models,
@@ -155,7 +155,7 @@ def get_value_at_time(query_time, time_sequence, value_sequence, maximizing=True
                     assert False
     return v
 
-def callibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
+def calibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
         max_num_ranks=8, rank_increase_factor=2, rank_multiplicative_increases=True,
         start_time=1e-3, num_time_instants=16, time_increase_factor=2, time_multiplicative_increases=True,
         time_label=None, value_label=None, show=True, table_filepath=None):
@@ -226,11 +226,11 @@ def callibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
 
 # TODO: write the documentation.
 # TODO: make the corresponding change in the other one.
-def budget_callibration_plot(reference_value_sequence, other_value_sequence_lst,
+def budget_calibration_plot(reference_value_sequence, other_value_sequence_lst,
         maximizing=True, reference_label=None, other_label_lst=None,
         max_num_guidelines=8, increase_factor=2, use_multiplicative_increases=True,
         value_axis_label=None, show=True, plot_filepath=None):
-    """In comparison to ``time_callibration_plot``, this function is helpful to
+    """In comparison to ``time_calibration_plot``, this function is helpful to
     determine an appropriate resource budget to evaluate models, i.e., not just a
     time budget. To do so, this function requires that the same models be
     evaluated using different evaluators (i.e., evaluators with different budgets).

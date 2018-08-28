@@ -62,7 +62,6 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Separate items in research vs tooling.
 * For handling the models, it is important to have a way of formatting the input such that it is in the correct dimension, e.g., for images or sentences.
 * Make the search in ONNX and then export to the various languages. Would this be something interesting to consider?
-* Refactor the draw graph functionality.
 * Workflows based on the pretrained models. Make sure that I can interact with them easily.
 * Make it easy to log new metrics for a new evaluator. Right now everything is done locally with the model.
 * Perhaps make another one with resource logging specific functionality.
@@ -211,9 +210,6 @@ Visualization:
 * Copy row functionality.
 * Save visualization functionality for the plots. The maximum number of plots can also be done in the config.
 *
-
-Core:
-* Graph propagation has to be revisited. For example, for long chains of dependent hyperparameters, it is better to do things directly rather than through lazy evaluation.
 
 * Common metrics to maintain in logging:
     * Training loss

@@ -677,3 +677,10 @@ class CommandLineArgs:
 
     def get_parser(self):
         return self.parser
+
+def get_config():
+    cmd = CommandLineArgs()
+    cmd.add('config_filepath', 'str')
+    out = cmd.parse()
+    cfg = tb_io.read_jsonfile(out['config_filepath'])
+    return cfg
