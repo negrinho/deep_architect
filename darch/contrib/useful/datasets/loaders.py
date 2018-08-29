@@ -42,7 +42,12 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
     # flatten, one_hot, normalize_range, and possibly others once added.
     def _load_data(fpath):
         with open(fpath, 'rb') as f:
-            d = pickle.load(f)
+            if sys.version_info > (3, 0):
+                # Python3
+                d = pickle.load(f, encoding='latin1')
+            else:
+                # Python2
+                d = pickle.load(f)
 
             # for the data
             X = d['data'].astype('float32')

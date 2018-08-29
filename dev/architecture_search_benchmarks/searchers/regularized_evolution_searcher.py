@@ -7,7 +7,7 @@ from builtins import range
 import random
 from collections import deque
 
-from darch.search_logging import join_paths, write_jsonfile
+from darch.search_logging import join_paths, write_jsonfile, read_jsonfile, file_exists
 from darch.searchers import (Searcher, unset_hyperparameter_iterator,
                              random_specify_hyperparameter)
 
@@ -71,6 +71,7 @@ class EvolutionSearcher(Searcher):
         # Sample size
 
         self.population = deque(maxlen=P)
+        self.processing = []
         self.regularized = regularized
         self.initializing = True
         self.mutatable = mutatable_fn
@@ -98,10 +99,24 @@ class EvolutionSearcher(Searcher):
                 list(outputs.values()), user_vs, all_vs, self.mutatable, 
                 self.search_space_fn)
 
+            self.processing.append(self.population[weak_ind])
             del self.population[weak_ind]
             return inputs, outputs, hs, new_all_vs, {'user_vs': new_user_vs, 'all_vs': new_all_vs}
 
+    def update(self, val, cfg_d):
+        arc = (cfg_d['user_vs'], cfg_d['all_vs'], val)
+        if arc in self.processing:
+            self.processing.remove(arc)
+        self.population.append((
+            cfg_d['user_vs'], 
+            cfg_d['all_vs'], 
+            val))
+
     def get_searcher_state_token(self):
+        for arc in self.processing:
+            if len(self.population) >= self.P:
+                break
+            self.population.append(arc)
         return {
             "P": self.P,
             "S": self.S,
@@ -114,18 +129,21 @@ class EvolutionSearcher(Searcher):
         state = self.get_searcher_state_token()
         write_jsonfile(state, join_paths([folder_name, 'searcher_state.json']))
 
-    def load(self, state):
+    def load(self, folder_name, file_name=None):
+        if file_name is None:
+            filepath = join_paths([folder_name, 'searcher_state.json'])
+        else:
+            filepath = join_paths([folder_name, file_name])
+        if not file_exists(filepath):
+            raise RuntimeError("Load file does not exist")
+        
+        state = read_jsonfile(filepath)
         self.P = state["P"]
         self.S = state["S"]
         self.regularized = state['regularized']
         self.population = deque(state['population'])
         self.initializing = state['initializing']
 
-    def update(self, val, cfg_d):
-        self.population.append((
-            cfg_d['user_vs'], 
-            cfg_d['all_vs'], 
-            val))
 
     def get_weakest_model_index(self, sample_inds):
         if self.regularized:

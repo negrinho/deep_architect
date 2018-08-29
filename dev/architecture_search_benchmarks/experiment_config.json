@@ -32,6 +32,7 @@
       "search_space": "enas_eager",
       "evaluator": "enas_eager_evaluator",
       "epochs": 310,
-      "searcher_file_name": "searcher_state.json"
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 25
     }
   }
