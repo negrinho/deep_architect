@@ -3,10 +3,10 @@ from deep_architect.contrib.useful.datasets.loaders import load_mnist
 from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
 import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import deep_architect.searchers as se
 import deep_architect.search_logging as sl
 import deep_architect.visualization as vi
 import deep_architect.modules as mo
+from deep_architect.searchers.random import RandomSearcher
 
 class SSF(mo.SearchSpaceFactory):
     def __init__(self, num_classes):
@@ -34,7 +34,7 @@ def main():
     # Creating the search space.
     search_space_factory = SSF(num_classes)
     # Creating the searcher.
-    searcher = se.RandomSearcher(search_space_factory.get_search_space)
+    searcher = RandomSearcher(search_space_factory.get_search_space)
     # Creating the search logger to log the results of the experiment.
     search_logger = sl.SearchLogger(cfg['folderpath'], cfg['search_name'],
         delete_if_exists=cfg['delete_if_exists'], resume_if_exists=cfg['resume_if_exists'],

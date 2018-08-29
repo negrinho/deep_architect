@@ -1,5 +1,4 @@
 ## Guidelines for contributing
-
 <!--  Contributions welcome.-->
 We strongly encourage contributions to DeepArchitect.
 If DeepArchitect has been useful to you in your work, show some appreciation by
@@ -37,7 +36,6 @@ You can also check the evergrowing list of work items
 [here](https://github.com/negrinho/deep_architect/blob/master/todos.md).
 
 ## Types of contributions
-
 <!-- The contrib and dev folders and their semantics. -->
 Most contributions will live in the contrib folder.
 The contrib folder is used for functionality that is likely useful, but for
@@ -92,7 +90,6 @@ Make extensive use of mentions when writing issues and pull requests to make
 sure that the appropriate people look at it.
 
 ## Required documentation and tests
-
 <!-- Folder structure for contrib contributions. -->
 Your new library in contrib should be placed in `deep_architect/contrib/$YOUR_LIBRARY_NAME`.
 New folders in contrib should include a `README.md` file providing
@@ -139,7 +136,6 @@ contributed code and have some guarantee that specific features remain correct
 as the contributed code or the development environment change.
 
 ## Folder structure for contributions
-
 <!-- Motivation for the design of the contrib folder structure,
 and more details about its structure. -->
 For minimizing coupling between contributions of different people, we adopt a
@@ -162,29 +158,26 @@ structure and document a new example appropriately.
 
 <!-- The config.json file for storing runnable configurations. -->
 Configurations to run the example should be placed in a JSON configuration
-file `$CONFIG_NAME.json` living in a folder named `configs` in the same folder
-where the main file to run the example lies.
+file `$CONFIG_NAME.json` in a folder named `configs` living in the same folder
+of the main file of the example.
 JSON configuration files guarantee that the options that determine the behavior
 of running the code can be kept separated from the code itself.
 This is more manageable, programmable, and configurable than having a command line interface.
 This guarantees that it is easy to maintain and store many different configurations,
 e.g., one configuration where the code is exercised with
 few resources and another configuration where the code is exercised in a
-longer run.
-This allows us to include multiple configurations in a single JSON file, e.g.,
-see [here](https://github.com/negrinho/deep_architect/blob/merge_all/examples/tensorflow/benchmarks/config.json).
-Each key in the JSON configuration file corresponds to a different configuration.
-We suggest including a `debug` key.
-The configuration in the `debug` key will be used to run a quick experiment to
+longer run, e.g., see [here](https://github.com/negrinho/deep_architect/blob/merge_all/examples/tensorflow/benchmarks/).
+Each JSON file corresponds to a different configuration.
+We suggest including a `debug.json` to run a quick experiment to
 validate the functionality of both the code under `contrib/examples` and
 `deep_architect/contrib`.
-We recommend the inclusion of `config.json` for all, but the most trivial examples.
+We recommend the use of config files for all but the most trivial examples.
 
 <!-- Separating the contribution according to the different modular components
 identified in the framework. -->
 Whether contributing examples or libraries, we recommend identifying the
 search spaces, searchers, evaluators, and datasets and splitting them into
-different files.
+different files, e.g., [see]().
 Having these components into multiple files makes the dependencies more
 explicit and improves the reusability of the components.
 The framework is developed around these modular components.

@@ -7,7 +7,7 @@ from six import iteritems, itervalues
 class HashingSurrogate(SurrogateModel):
     """Simple hashing surrogate function that simply hashes the strings in the
     feature representation of the architecture to buckets. See
-    :func:`deep_architect.surrogates.extract_features` for the functions that is used to
+    :func:`deep_architect.surrogates.common.extract_features` for the functions that is used to
     extract string features for the architectures.
     """
     def __init__(self, hash_size, refit_interval, weight_decay_coeff=1e-5,

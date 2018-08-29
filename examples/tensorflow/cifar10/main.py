@@ -16,7 +16,7 @@ from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
 import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
 import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 import deep_architect.modules as mo
-from deep_architect.searchers import RandomSearcher
+from deep_architect.searchers.random import RandomSearcher
 import deep_architect.hyperparameters as hp
 import deep_architect.visualization as vi
 

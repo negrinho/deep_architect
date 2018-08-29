@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 import subprocess
-import deep_architect.surrogates as su
+from deep_architect.surrogates.common import extract_features
 
 from six import iteritems, itervalues
 
@@ -442,7 +442,7 @@ class EvaluationLogger:
     we can use along with the information in the results to train a model that
     predicts the performance of an architecture. This is useful if the
     evaluation used to collect the results is very expensive. See also
-    :func:`deep_architect.surrogates.extract_features`.
+    :func:`deep_architect.surrogates.common.extract_features`.
 
     The results JSON contains the results of the evaluating the particular
     architecture. In the case of deep learning, this often involves training the
@@ -508,7 +508,7 @@ class EvaluationLogger:
         an architecture from the search space with a searcher.
 
         Creates ``features.json`` in the evaluation log folder. See
-        :func:`deep_architect.surrogates.extract_features` for the function that extracts
+        :func:`deep_architect.surrogates.common.extract_features` for the function that extracts
         features from the dictionary representation of an architecture.
 
         Args:
@@ -520,7 +520,7 @@ class EvaluationLogger:
                 hyperparameters of the architecture to evaluate.
         """
         assert not file_exists(self.features_filepath)
-        feats = su.extract_features(inputs, outputs, hyperps)
+        feats = extract_features(inputs, outputs, hyperps)
         write_jsonfile(feats, self.features_filepath)
 
     def log_results(self, results):
@@ -682,5 +682,5 @@ def get_config():
     cmd = CommandLineArgs()
     cmd.add('config_filepath', 'str')
     out = cmd.parse()
-    cfg = tb_io.read_jsonfile(out['config_filepath'])
+    cfg = read_jsonfile(out['config_filepath'])
     return cfg
