@@ -15,6 +15,8 @@ Evaluation per day on a single GPU per evaluation length
 * 4096 models per day is equiv. ~22.5 secs per model
 * 8192 models per day is equiv. ~11.25 secs per model
 
+# TODO: this can be moved to a different place to show where the the
+
 ## Search spaces
 * Spatial pooling that
 
@@ -190,6 +192,12 @@ of the code base, e.g., some of the private functions of the modules.
 * Decide on better names for the variables that should be more consistent. This is problematic.
 * The propagation for dependent hyperparameters is going to be suboptimal.
 * Write more extensive tests for the new functionality for getting the hyperparameters.
+* Evaluation logging may change a little bit to allow for different types of logging information.
+* SearchLogger needs to be updated to take into account the fact that I may need to bypass it. I think that the current implementation relies too much on the existence of a single logger.
+* Some auxiliary scripts to keep things running on the server.
+* Make a few of the multiworker cases work smoothly.
+* Cover the first part of the model running on a single machine and then show how can you get multiple machines working on the same problem. There are multiple ways of accomplishing this. The goal is to show case them.
+
 
 Before release:
 * Add more links to the project.

@@ -6,6 +6,7 @@ import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
 import deep_architect.search_logging as sl
 import deep_architect.visualization as vi
 import deep_architect.modules as mo
+import deep_architect.utils as ut
 from deep_architect.searchers.random import RandomSearcher
 
 class SSF(mo.SearchSpaceFactory):
@@ -19,7 +20,7 @@ class SSF(mo.SearchSpaceFactory):
 
 def main():
     # Loading the config file.
-    cfg = sl.get_config()
+    cfg = ut.get_config()
     num_classes = 10
     num_samples = cfg['num_samples']
     # Loading the data.

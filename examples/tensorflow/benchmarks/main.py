@@ -1,9 +1,10 @@
 # Run configs to make it easier to run the code.
 import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 
 # Make sure that only one GPU is visible.
 if __name__ == '__main__':
-    cfg = sl.get_config()
+    cfg = ut.get_config()
     if cfg['use_gpu']:
         import deep_architect.contrib.useful.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
