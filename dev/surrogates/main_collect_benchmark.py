@@ -1,12 +1,12 @@
 
-from darch.contrib.datasets.loaders import load_mnist
-from darch.contrib.datasets.dataset import InMemoryDataset
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.search_spaces.tensorflow.common import D
-import darch.modules as mo
-import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
-import darch.search_logging as sl
-import darch.searchers as se
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
+import deep_architect.modules as mo
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.search_logging as sl
+import deep_architect.searchers as se
 
 # TODO: perhaps add more datasets and the dataset type to the config.
 name_to_cfg = {
@@ -59,6 +59,7 @@ def main():
     search_logger = sl.SearchLogger('./logs',
         'benchmark_surrogates.%s.mnist' % cfg_name)
 
+    print(search_logger.current_evaluation_id)
     # We want to populate our dataset with some initial configurations and evaluations
     if search_logger.current_evaluation_id < dataset_size:
         print('Not enough data found, training models.')

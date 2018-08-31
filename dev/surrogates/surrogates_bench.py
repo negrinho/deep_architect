@@ -1,4 +1,4 @@
-from darch import searchers as se, surrogates as su, core as co, search_logging as sl
+from deep_architect import searchers as se, surrogates as su, core as co, search_logging as sl
 # import benchmarks.datasets as datasets
 import datasets
 import numpy as np
@@ -10,11 +10,11 @@ import time
 import gc
 
 # TODO: Change the below imports when using PyTorch
-import darch.contrib.search_spaces.tensorflow.dnn as search_dnn
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.search_spaces.tensorflow.common import D
-from darch.contrib.datasets.dataset import InMemoryDataset
-from darch.contrib.datasets.loaders import load_mnist
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as search_dnn
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
 
 
 # Python >= 3.5
@@ -126,12 +126,12 @@ class CharLSTMSurrogate(su.SurrogateModel):
     def batch(self, feats_batch, val_batch, inference=False):
         # feats_batch is the raw list feats from extract_features, vals is a list of raw metrics from the logger
         # batch preprocesses the feats -> pads them -> batches them into one tensor
-
         # Preprocess
         for i, feats in enumerate(feats_batch):
             feats_batch[i] = self.preprocess(feats)
         # Pad and batch
-        for i, feat in enumerate(zip(*feats_batch)):
+        out_batch = [None] * 4
+        for i, feat in enumerate(zip(*feats_batch)): # 4 iterations
             seqs, seq_lengths = map(list, zip(*feat))
             max_length = max(seq_lengths)
             for k, seq in enumerate(seqs):
@@ -139,7 +139,7 @@ class CharLSTMSurrogate(su.SurrogateModel):
             feat = torch.cat(seqs, dim=0)
             seq_lengths = feat.new(seq_lengths) # Way to create a cuda.LongTensor if we're using gpu
             feat, seq_lengths = torch.autograd.Variable(feat, volatile=inference), torch.autograd.Variable(seq_lengths, volatile=inference) # no-op in torch v0.4
-            feats_batch[i] = feat, seq_lengths
+            out_batch[i] = feat, seq_lengths
 
         # Batch vals_batch if included
         if val_batch is not None:
@@ -151,7 +151,7 @@ class CharLSTMSurrogate(su.SurrogateModel):
 
             val_batch = torch.cat(val_batch, dim=0)
             val_batch = torch.autograd.Variable(val_batch, volatile=inference) # no-op in torch v0.4
-        return feats_batch, val_batch
+        return out_batch, val_batch
 
     def mini_batch(self, feats, vals, batch_size, num_batches, inference=False):
         # feats and vals are the raw feats from extract_features and a list of vals
@@ -204,7 +204,7 @@ class CharLSTMSurrogate(su.SurrogateModel):
     def set_validation_data(self, val_data):
         for eval_log in val_data:
             self.feats_val.append(eval_log['features'])
-            self.vals_val.append(eval_log['results']['val_acc'])
+            self.vals_val.append(eval_log['results']['validation_accuracy'])
 
     def validate(self):
         if len(self.feats_val) == 0:
@@ -216,6 +216,98 @@ class CharLSTMSurrogate(su.SurrogateModel):
             total_loss += torch.nn.MSELoss(size_average=False, reduce=True)(outs, vals).data[0]
 
         return total_loss / len(self.feats_val)
+
+class CharLSTMSurrogateKeras(CharLSTMSurrogate):
+    """ The CharLSTM Surrogate Function ported to Keras
+    """
+    # This class is largely a HACK, as it extends the torch-based
+    # CharLSTMSurrogate (meaning we go from np -> torch -> np -> tf)
+    # Character LSTM: One LSTM for each feature vector,
+    # For a total of 4, then concat the outputs and learn
+    character_list = [chr(i) for i in range(ord('A'), ord('Z'))] + [
+        chr(i) for i in range(ord('a'), ord('z') + 1)] + [
+        chr(i) for i in range(ord('0'), ord('9') + 1)] + [
+        '.', ':', '-', '_', '<', '>', '/', '=', '*', ' ', '|']
+    char_to_index = {ch : idx for (idx, ch) in enumerate(character_list)}
+    # Each input LSTM has an embedding size and hidden state of 128
+    embedding_size = 128
+    hidden_size = 128
+    def __init__(self, batch_size=2, max_batches=16, refit_interval=1, use_cuda=True, val_data=None):
+        # HACK
+        super().__init__(batch_size=batch_size, max_batches=max_batches,
+            refit_interval=refit_interval, use_cuda=False, val_data=val_data)
+        del self.model
+        del self.optimizer
+        del self.loss_fn
+        # Define our model here
+        try:
+            import keras.backend as K
+            from keras.models import Model
+            from keras.layers import Input, Dense, LSTM, Embedding, Lambda
+            import tensorflow as tf
+        except:
+            raise ValueError('Please Install Keras/Tensorflow')
+
+        # Backend session work
+        if use_cuda:
+            gpu_ops = tf.GPUOptions(allow_growth=True)
+            config = tf.ConfigProto(gpu_options=gpu_ops)
+            sess = tf.Session(config=config)
+            K.tensorflow_backend.set_session(sess)
+
+        # Define our layers
+        character_list = self.character_list
+        embedding_size = self.embedding_size
+        hidden_size = self.hidden_size
+        embeddings = Embedding(len(character_list), embedding_size)
+        lstm = []
+        feat = []
+        for _ in range(4):
+            lstm.append(LSTM(hidden_size))
+            feat.append(Input((None, )))
+        lstm_out = LSTM(hidden_size)
+        stack = Lambda(lambda x: K.stack(x, axis=1))
+        dense = Dense(1)
+        # Define computation graph and model
+        outs = []
+        for i in range(4):
+            embedded = embeddings(feat[i])
+            out = lstm[i](embedded)
+            outs.append(out)
+        outs = stack(outs)
+        outs = lstm_out(outs)
+        outs = dense(outs)
+        self.model = Model(inputs=feat, output=outs)
+        self.model.compile(optimizer='Adam', loss='mse', metrics=['accuracy'])
+
+    def eval(self, feats):
+        feats = self.preprocess(feats)
+        output =  self.model.predict_on_batch(feats)
+        return output
+
+    def _refit(self):
+        # Sample batch_size many points from memory to train from
+        for feats, vals in self.mini_batch(self.feats, self.vals, self.batch_size, self.num_batches):
+            for i in range(4):
+                feats[i] = feats[i][0].data.numpy()
+                print(feats)
+            vals = vals.data.numpy()
+            self.model.train_on_batch(feats, vals)
+
+        # Increase the number of batches by 1 (up to a max of max_batches)
+        self.num_batches = min(min(self.num_batches + 1, self.max_batches), len(self.feats) // self.batch_size)
+
+    def validate(self):
+        if len(self.feats_val) == 0:
+            return None
+        total_loss = 0.0
+        for feats, vals in self.mini_batch(self.feats_val, self.vals_val, self.batch_size, np.inf, inference=True):
+            for i in range(4):
+                feats[i] = feats[i][0].data.numpy()
+            vals = vals.data.numpy()
+            total_loss += self.model.test_on_batch(feats, vals)[0] * len(vals)
+        return total_loss / len(self.feats_val)
+
 
 class SearchSpaceFactory:
     def __init__(self, num_classes):
@@ -231,7 +323,7 @@ def savefig(filename):
 
 def test_clstm_surrogate():
     ## Params:
-    dataset_size = 1024 # Initial dataset size
+    dataset_size = 4  # Initial dataset size
     val_size = dataset_size // 2
     num_iters = 0
 
@@ -271,7 +363,8 @@ def test_clstm_surrogate():
     search_space_fn = SearchSpaceFactory(num_classes).get_search_space
 
     ## Define our surrogate models
-    clstm_sur = CharLSTMSurrogate()
+    # clstm_sur = CharLSTMSurrogate()
+    clstm_sur = CharLSTMSurrogateKeras()
     baseline_sur = su.HashingSurrogate(1024, 1)
 
     ## Choose our searching algorithm, using benchmarking surrogate model
@@ -305,7 +398,7 @@ def test_clstm_surrogate():
         for eval_log in val_data:
             feats = eval_log['features']
             results = eval_log['results']
-            total_squared_error_baseline += (baseline_sur.eval(feats) - results['val_acc'])**2
+            total_squared_error_baseline += (baseline_sur.eval(feats) - results['validation_accuracy'])**2
 
         return total_squared_error_baseline / len(val_data), mse_clstm
 
@@ -317,9 +410,9 @@ def test_clstm_surrogate():
             feats = eval_log['features']
             results = eval_log['results']
             # Take a backward step for both surrogate models (gradient step)
-            baseline_sur.update(results['val_acc'], feats)
+            baseline_sur.update(results['validation_accuracy'], feats)
             t0 = time.time()
-            clstm_sur.update(results['val_acc'], feats)
+            clstm_sur.update(results['validation_accuracy'], feats)
             avg_time += time.time() - t0
             # Validate
             if val_data is not None and i % validate_interval == 0:

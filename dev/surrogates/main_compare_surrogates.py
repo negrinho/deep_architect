@@ -1,6 +1,6 @@
-import darch.surrogates as su
-import darch.search_logging as sl
-import darch.visualization as vi
+import deep_architect.surrogates as su
+import deep_architect.search_logging as sl
+import deep_architect.visualization as vi
 from rnn_surrogates import RankingRNNSurrogate, RNNSurrogate, CharLSTMSurrogate
 from hashing_surrogates import SimplerHashingSurrogate
 
@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns; sns.set()
 import random
+
+from six.moves import zip, range
+from six import iteritems
 
 import itertools
 from collections import OrderedDict
@@ -26,7 +29,7 @@ cfg = name_to_cfg[cfg_name]
 
 def compute_rmse(surr_model, feats_lst, acc_lst):
     err = 0.0
-    for feats, acc in itertools.izip(feats_lst, acc_lst):
+    for feats, acc in zip(feats_lst, acc_lst):
         pred_acc = surr_model.eval(feats)
         err += (pred_acc - acc) ** 2
     return np.sqrt(err / len(feats_lst))
@@ -34,13 +37,13 @@ def compute_rmse(surr_model, feats_lst, acc_lst):
 def compute_ranking_error(surr_model, feats_lst, acc_lst, num_pairs):
     err = 0.0
     n = len(feats_lst)
-    for _ in xrange(num_pairs):
+    for _ in range(num_pairs):
         i = np.random.randint(n)
         i_other = np.random.randint(n)
 
         score = surr_model.eval(feats_lst[i])
         score_other = surr_model.eval(feats_lst[i_other])
-        # print score, score_other
+        # print(score, score_other)
 
         acc = acc_lst[i]
         acc_other = acc_lst[i_other]
@@ -50,7 +53,7 @@ def compute_ranking_error(surr_model, feats_lst, acc_lst, num_pairs):
     return err / num_pairs
 
 def train(surr_model, feats_lst, acc_lst):
-    for feats, acc in itertools.izip(feats_lst, acc_lst):
+    for feats, acc in zip(feats_lst, acc_lst):
         surr_model.update(acc, feats)
 
 def predict(surr_model, feats_lst):
@@ -96,13 +99,13 @@ def train_batched_charlstm():
     num_refits = 100
     clstm_sur = CharLSTMSurrogate(refit_interval=10000)
 
-    for feats, acc in itertools.izip(train_feats_lst, train_acc_lst):
+    for feats, acc in zip(train_feats_lst, train_acc_lst):
         clstm_sur.update(acc, feats)
 
-    for i in xrange(num_refits):
+    for i in range(num_refits):
         train_rmse = compute_rmse(clstm_sur, train_feats_lst, train_acc_lst)
         val_rmse = compute_rmse(clstm_sur, val_feats_lst, val_acc_lst)
-        print "refit %d <> train: %f, val: %f" % (i, train_rmse, val_rmse)
+        print("refit %d <> train: %f, val: %f" % (i, train_rmse, val_rmse))
         clstm_sur._refit()
 
 def train_unbatched_charlstm():
@@ -112,17 +115,17 @@ def train_unbatched_charlstm():
     clstm_sur = RankingRNNSurrogate(cfg['embedding_size'], cfg['hidden_size'])
 
     dummy_sur = su.DummySurrogate()
-    for feats, acc in itertools.izip(train_feats_lst, train_acc_lst):
+    for feats, acc in zip(train_feats_lst, train_acc_lst):
         clstm_sur.update(acc, feats)
         dummy_sur.update(acc, feats)
 
     train_rmse = compute_rmse(dummy_sur, train_feats_lst, train_acc_lst)
     val_rmse = compute_rmse(dummy_sur, val_feats_lst, val_acc_lst)
-    print "dummy <> train: %f, val: %f" % (train_rmse, val_rmse)
-    for i in xrange(num_refits):
+    print("dummy <> train: %f, val: %f" % (train_rmse, val_rmse))
+    for i in range(num_refits):
         train_rmse = compute_rmse(clstm_sur, train_feats_lst, train_acc_lst)
         val_rmse = compute_rmse(clstm_sur, val_feats_lst, val_acc_lst)
-        print "refit %d <> train: %f, val: %f" % (i, train_rmse, val_rmse)
+        print("refit %d <> train: %f, val: %f" % (i, train_rmse, val_rmse))
         clstm_sur._refit()
 
 def train_unbatched_ranking_charlstm():
@@ -132,13 +135,13 @@ def train_unbatched_ranking_charlstm():
     num_pairs = 100
     clstm_sur = RankingRNNSurrogate(cfg['embedding_size'], cfg['hidden_size'])
 
-    for feats, acc in itertools.izip(train_feats_lst, train_acc_lst):
+    for feats, acc in zip(train_feats_lst, train_acc_lst):
         clstm_sur.update(acc, feats)
 
-    for i in xrange(num_refits):
+    for i in range(num_refits):
         train_err = compute_ranking_error(clstm_sur, train_feats_lst, train_acc_lst, num_pairs)
         val_err = compute_ranking_error(clstm_sur, val_feats_lst, val_acc_lst, num_pairs)
-        print "refit %d <> train: %f, val: %f" % (i, train_err, val_err)
+        print("refit %d <> train: %f, val: %f" % (i, train_err, val_err))
         clstm_sur._refit()
 
 def compare_surrogates_mse():
@@ -160,12 +163,12 @@ def compare_surrogates_mse():
     #         name_to_get_surr_model_fn['hash_b1024_%s' % "".join(map(str, t))
     #             ] = lambda: su.HashingSurrogate(1024, refit_interval=1, weight_decay_coeff=1e-5, **d)
 
-    for name, fn in name_to_get_surr_model_fn.iteritems():
+    for name, fn in iteritems(name_to_get_surr_model_fn):
         surr_model = fn()
         n_prev = 0
         xs = []
         ys = []
-        for n in [2 ** i for i in xrange(1, 20)]:
+        for n in [2 ** i for i in range(1, 20)]:
             train(surr_model, train_feats_lst[n_prev:n], train_acc_lst[n_prev:n])
             n = len(train_feats_lst[:n])
             n_prev = n
@@ -174,7 +177,7 @@ def compare_surrogates_mse():
 
             xs.append(n)
             ys.append(val_rmse)
-            print "%s, %d <> train: %f, val: %f" % (name, n, train_rmse, val_rmse)
+            print("%s, %d <> train: %f, val: %f" % (name, n, train_rmse, val_rmse))
             if n >= len(train_feats_lst):
                 break
         # plot_scatter(val_acc_lst, predict(surr_model, val_feats_lst))
@@ -191,12 +194,12 @@ def compare_surrogates_ranking():
         name_to_get_surr_model_fn['clstm_%d' % embedding_size] = lambda: RankingRNNSurrogate(
             embedding_size, embedding_size)
 
-    for name, fn in name_to_get_surr_model_fn.iteritems():
+    for name, fn in iteritems(name_to_get_surr_model_fn):
         surr_model = fn()
         n_prev = 0
         xs = []
         ys = []
-        for n in [2 ** i for i in xrange(1, 20)]:
+        for n in [2 ** i for i in range(1, 20)]:
             train(surr_model, train_feats_lst[n_prev:n], train_acc_lst[n_prev:n])
             n = len(train_feats_lst[:n])
             n_prev = n
@@ -205,7 +208,7 @@ def compare_surrogates_ranking():
 
             xs.append(n)
             ys.append(val_err)
-            print "%s, %d <> train: %f, val: %f" % (name, n, train_err, val_err)
+            print("%s, %d <> train: %f, val: %f" % (name, n, train_err, val_err))
             if n >= len(train_feats_lst):
                 break
         # plot_scatter(val_acc_lst, predict(surr_model, val_feats_lst))

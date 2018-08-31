@@ -3,7 +3,7 @@ import torch
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import torch.nn.functional as F
-import darch.helpers.pytorch as hpt
+import deep_architect.helpers.pytorch as hpt
 
 
 def start_fn(d):

@@ -1,7 +1,7 @@
-import darch.helpers.pytorch as hpt
-import darch.hyperparameters as hp
+import deep_architect.helpers.pytorch as hpt
+import deep_architect.hyperparameters as hp
 from model import CifarResNeXt
-from darch.contrib.search_spaces.pytorch.common import siso_torchm
+from deep_architect.contrib.useful.search_spaces.pytorch.common import siso_torchm
 
 
 D = hp.Discrete

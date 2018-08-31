@@ -1,4 +1,3 @@
-
 Currently, we use the Docker images from [deepo](https://github.com/ufoym/deepo).
 We convert these Docker images to Singularity images.
 See [here](https://github.com/ufoym/deepo#tags) for the available
@@ -25,7 +24,9 @@ We created a Singularity and Docker recipe file generator to create the differen
 containers. Run `python containers/main.py` to create the folders with the recipes
 for the containers. To build the desired container run its corresponding `build.sh`
 script that lies in the same folder as the recipe. All commands should
-be ran from root folder of the project, i.e., same as it is done for running examples.
+be ran from root folder of the project, i.e., same as it is used for running examples.
+Additionally, we also generate build scripts in the `containers` folder for
+sets of containers, e.g., all containers or containers that use Python 2.7.
 
 I have built two Singularity images for darch: for the
 [CPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-cpu.img)
@@ -40,3 +41,6 @@ To run a Singularity container with GPU support, use the `--nv` flag, e.g.,
 `singularity shell --nv py27-gpu.img`.
 Check the documentation of [Singularity](http://singularity.lbl.gov/docs-usage)
 for more information on how to run and use Singularity containers.
+
+**Important:** The most battle-tested containers are the Python 2.7 Singularity
+ones. Expect additional adventures for the other ones.

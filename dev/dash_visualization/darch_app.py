@@ -108,8 +108,8 @@ ex = {
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import darch.search_logging as sl
-import darch.visualization as vi
+import deep_architect.search_logging as sl
+import deep_architect.visualization as vi
 
 app = dash.Dash()
 

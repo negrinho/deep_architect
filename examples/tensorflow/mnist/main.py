@@ -1,10 +1,10 @@
 
-from darch.contrib.datasets.loaders import load_mnist
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
-import darch.modules as mo
-import darch.searchers as se
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.modules as mo
+from deep_architect.searchers.random import RandomSearcher
 
 class SSF0(mo.SearchSpaceFactory):
     def __init__(self, num_classes):
@@ -26,7 +26,7 @@ def main():
         './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True)
     search_space_factory = SSF0(num_classes)
 
-    searcher = se.RandomSearcher(search_space_factory.get_search_space)
+    searcher = RandomSearcher(search_space_factory.get_search_space)
     for _ in xrange(num_samples):
         inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
         val_acc = evaluator.eval(inputs, outputs, hs)['validation_accuracy']
