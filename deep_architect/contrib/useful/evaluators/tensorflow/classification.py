@@ -5,7 +5,7 @@ import tensorflow as tf
 import numpy as np
 import deep_architect.core as co
 import deep_architect.helpers.tensorflow as htf
-import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 import deep_architect.contrib.useful.gpu_utils as gpu_utils
 from six.moves import range
 
@@ -93,7 +93,7 @@ class SimpleClassifierEvaluator:
         # Setting the session to allow growth, so it doesn't allocate all GPU memory.
         gpu_ops = tf.GPUOptions(allow_growth=True)
         config = tf.ConfigProto(gpu_options=gpu_ops)
-        seqs = sl.SequenceTracker(abort_if_different_lengths=True)
+        seqs = ut.SequenceTracker(abort_if_different_lengths=True)
         with tf.Session(config=config) as sess:
             sess.run(init)
 
@@ -109,7 +109,7 @@ class SimpleClassifierEvaluator:
             stop_counter = stop_patience
             rate_counter = learning_rate_patience
             save_counter = save_patience
-            timer_manager = sl.TimerManager()
+            timer_manager = ut.TimerManager()
             timer_manager.create_timer('eval')
 
             # getting the gpu_id based on the environment.

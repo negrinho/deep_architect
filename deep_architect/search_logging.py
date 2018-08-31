@@ -8,139 +8,47 @@ from deep_architect.surrogates.common import extract_features
 
 from six import iteritems, itervalues
 
-class SearchLogger:
-    """Class managing the logging of a search experiment.
+def get_search_folderpath(folderpath, search_name):
+    return ut.join_paths([folderpath, search_name])
 
-    Logging is based on the creation of folders. Each search experiment has
-    a folder. Each search log folder contains multiple evaluation log folders,
-    one for each architecture in the search that will be evaluated.
+def get_search_data_folderpath(folderpath, search_name):
+    return ut.join_paths([
+        get_search_folderpath(folderpath, search_name),
+        "search_data"])
 
-    Search logging is an **important** part of the framework as allows it
-    us to collect supervised data from architecture evaluations. This
-    dataset can in turn be used to train models to mimic the way deep
-    learning experts accumulate expertise by training different models in
-    different tasks.
+def get_all_evaluations_folderpath(folderpath, search_name):
+    return ut.join_paths([
+        get_search_folderpath(folderpath, search_name),
+        'evaluations'])
 
-    See also :class:`EvaluationLogger` for a logger for individual architecture
-    evaluations. The evaluation loggers are managed by the the search logger.
+def get_evaluation_folderpath(folderpath, search_name, evaluation_id):
+    return ut.join_paths([
+        get_all_evaluations_folderpath(folderpath, search_name),
+        'x%d' % evaluation_id])
 
-    .. note::
-        At most one of the possible boolean options about an existing search log
-        folder can be ``True``. If all boolean options are ``False`` and a
-        search log folder of the same name is found, the creation of the
-        search logger asserts ``False``.
+def get_evaluation_data_folderpath(folderpath, search_name, evaluation_id):
+    return ut.join_paths([
+        get_evaluation_folderpath(folderpath, search_name, evaluation_id),
+        "eval_data"])
 
-    Args:
-        folderpath (str): Path to the folder where the search folder for the
-            search experiment is to be placed (or found, if resuming the
-            experiment).
-        search_name (str): Name to give to the search experiment. The folder
-            will have that name (or a related name, dependending on its
-            existence and the options passed to the logger).
-        resume_if_exists (bool, optional): If ``True`` and a logging folder is found
-            for a search with the same name, resumes logging from the evaluation
-            found.
-        make_search_name_unique_by_numbering (bool, optional): If ``True`` and a logging
-            folder is found for an experiment with the same name, a new name is
-            created by suffixing the ``search_name`` with the next number that
-            would make the suffixed name unique.
-        create_parent_folders (bool, optional): If ``True`` and the folder where the
-            search logs should lie does not exist, creates it along with any
-            necessary parent folders. If ``False`` and the folder does not exist,
-            it asserts ``False``.
-    """
-    def __init__(self, folderpath, search_name,
-            resume_if_exists=False, delete_if_exists=False,
-            make_search_name_unique_by_numbering=False, create_parent_folders=False):
-        ok_if_exists = sum(x for x in [resume_if_exists, delete_if_exists,
-            make_search_name_unique_by_numbering])
-        assert ok_if_exists == 0 or ok_if_exists == 1
+def create_search_folderpath(folderpath, search_name,
+        abort_if_exists=False, delete_if_exists=False, create_parent_folders=False):
+    assert not (abort_if_exists and delete_if_exists)
 
-        self.folderpath = folderpath
-        if not make_search_name_unique_by_numbering:
-            self.search_name = search_name
-        else:
-            # getting a unique name.
-            cnt = 0
-            while ut.folder_exists(ut.join_paths([folderpath, search_name + '-%d' % cnt])):
-                cnt += 1
-            self.search_name = search_name + '-%d' % cnt
+    search_folderpath = get_search_folderpath(folderpath, search_name)
+    search_data_folderpath = get_search_data_folderpath(folderpath, search_name)
+    all_evaluations_folderpath = get_all_evaluations_folderpath(folderpath, search_name)
 
-        self.search_folderpath = ut.join_paths([folderpath, self.search_name])
-        self.search_data_folderpath = ut.join_paths([self.search_folderpath, 'search_data'])
-        self.all_evaluations_folderpath = ut.join_paths([self.search_folderpath, 'evaluations'])
-        # self.code_folderpath = ut.join_paths([self.search_folderpath, 'code'])
+    if delete_if_exists:
+        ut.delete_folder(search_folderpath, False, True)
+    assert not (abort_if_exists and ut.folder_exists(search_folderpath))
 
-        assert ok_if_exists == 1 or not ut.folder_exists(self.search_folderpath)
-        if ut.folder_exists(self.search_folderpath):
-            self.current_evaluation_id = 0
-            if resume_if_exists:
-                eval_id = 0
-                while True:
-                    if ut.folder_exists(ut.join_paths([
-                        self.all_evaluations_folderpath, 'x%d' % eval_id])):
-                        eval_id += 1
-                    else:
-                        break
-                self.current_evaluation_id = eval_id
+    if not ut.folder_exists(search_folderpath):
+        ut.create_folder(search_folderpath, create_parent_folders=create_parent_folders)
+        ut.create_folder(search_data_folderpath)
+        ut.create_folder(all_evaluations_folderpath)
 
-            if delete_if_exists:
-                ut.delete_folder(self.search_folderpath, False, True)
-                self._create_search_folders(create_parent_folders)
-                self.current_evaluation_id = 0
-        else:
-            self._create_search_folders(create_parent_folders)
-            self.current_evaluation_id = 0
-
-    def _create_search_folders(self, create_parent_folders):
-        """Creates the subfolders of the search folder.
-
-        Args:
-            create_parent_folders (bool): Whether to create parent folders
-                leading to the search folder if they do not exist.
-        """
-        ut.create_folder(self.search_folderpath, create_parent_folders=create_parent_folders)
-        ut.create_folder(self.search_data_folderpath)
-        ut.create_folder(self.all_evaluations_folderpath)
-        # ut.create_folder(self.code_folderpath)
-
-    def get_current_evaluation_id(self):
-        return self.current_evaluation_id
-
-    def get_current_evaluation_logger(self):
-        """Gets the evaluation logger for the next evaluation.
-
-        Each evaluation logger is associated to a single subfolder of the
-        evaluations subfolder. The returned evaluation logger is used to
-        log the information about this particular evaluation.
-
-        .. note::
-            This changes the state of the search logger. The next call to this
-            function will return a new evaluation logger and increment the
-            number of evaluations counter for the current search.
-
-        Returns:
-            deep_architect.search_logging.EvaluationLogger:
-                Evaluation logger for the next evaluation.
-        """
-        logger = EvaluationLogger(self.all_evaluations_folderpath, self.current_evaluation_id)
-        self.current_evaluation_id += 1
-        return logger
-
-    def get_search_data_folderpath(self):
-        """Get the search data folder where data that is common to all evaluations
-        can be stored.
-
-        The user can use this folder to store whatever appropriate search level data.
-        An example use-case is to store a file for the state of the
-        searcher after some number of evaluations to allow us to return the
-        searcher to the same state without having to repeat all evaluations.
-
-        Returns:
-            str: Path to the folder reserved for search level user data.
-        """
-        return self.search_data_folderpath
-
+# TODO: update the docstring for the class.
 class EvaluationLogger:
     """Evaluation logger for a simple evaluation.
 
@@ -165,16 +73,24 @@ class EvaluationLogger:
         all_evaluations_folderpath (str): Path to the folder where all the
             evaluation log folders lie. This folder is managed by the search
             logger.
+
         evaluation_id (int): Number of the evaluation with which the logger is
             associated with. The numbering starts at zero.
     """
-    def __init__(self, all_evaluations_folderpath, evaluation_id):
-        self.evaluation_folderpath = ut.join_paths([
-            all_evaluations_folderpath, 'x%d' % evaluation_id])
-        self.user_data_folderpath = ut.join_paths([self.evaluation_folderpath, 'user_data'])
-        assert not ut.folder_exists(self.evaluation_folderpath)
-        ut.create_folder(self.evaluation_folderpath)
-        ut.create_folder(self.user_data_folderpath)
+    def __init__(self, folderpath, search_name, evaluation_id,
+            abort_if_exists=False, abort_if_notexists=False):
+
+        self.evaluation_folderpath = get_evaluation_folderpath(
+            folderpath, search_name, evaluation_id)
+        self.evaluation_data_folderpath = get_evaluation_data_folderpath(
+            folderpath, search_name, evaluation_id)
+
+        assert (not abort_if_exists) or (not ut.folder_exists(self.evaluation_folderpath))
+        assert (not abort_if_notexists) or ut.folder_exists(self.evaluation_folderpath)
+        ut.create_folder(self.evaluation_folderpath,
+            abort_if_exists=abort_if_exists)
+        ut.create_folder(self.evaluation_data_folderpath,
+            abort_if_exists=abort_if_exists)
 
         self.config_filepath = ut.join_paths([self.evaluation_folderpath, 'config.json'])
         self.features_filepath = ut.join_paths([self.evaluation_folderpath, 'features.json'])
@@ -282,7 +198,7 @@ class EvaluationLogger:
 
         Only standard logging information about the evaluation should be written
         here. See
-        :meth:`deep_architect.search_logging.EvaluationLogger.get_user_data_folderpath`
+        :meth:`deep_architect.search_logging.EvaluationLogger.get_evaluation_data_folderpath`
         for a path to a folder that can
         be used to store non-standard user logging information.
 
@@ -293,7 +209,7 @@ class EvaluationLogger:
         """
         return self.evaluation_folderpath
 
-    def get_user_data_folderpath(self):
+    def get_evaluation_data_folderpath(self):
         """Path to the user data folder where non-standard logging data can
         be stored.
 
@@ -307,7 +223,132 @@ class EvaluationLogger:
         Returns:
             str: Path to the folder where the evaluations logs are written to.
         """
-        return self.user_data_folderpath
+        return self.evaluation_data_folderpath
+
+# # TODO: I think that this broke as a result of working with the model.
+# # I think that it is kind of annoying to wokr
+# class SearchLogger:
+#     """Class managing the logging of a search experiment.
+
+#     Logging is based on the creation of folders. Each search experiment has
+#     a folder. Each search log folder contains multiple evaluation log folders,
+#     one for each architecture in the search that will be evaluated.
+
+#     Search logging is an **important** part of the framework as allows it
+#     us to collect supervised data from architecture evaluations. This
+#     dataset can in turn be used to train models to mimic the way deep
+#     learning experts accumulate expertise by training different models in
+#     different tasks.
+
+#     See also :class:`EvaluationLogger` for a logger for individual architecture
+#     evaluations. The evaluation loggers are managed by the the search logger.
+
+#     .. note::
+#         At most one of the possible boolean options about an existing search log
+#         folder can be ``True``. If all boolean options are ``False`` and a
+#         search log folder of the same name is found, the creation of the
+#         search logger asserts ``False``.
+
+#     Args:
+#         folderpath (str): Path to the folder where the search folder for the
+#             search experiment is to be placed (or found, if resuming the
+#             experiment).
+#         search_name (str): Name to give to the search experiment. The folder
+#             will have that name (or a related name, dependending on its
+#             existence and the options passed to the logger).
+#         resume_if_exists (bool, optional): If ``True`` and a logging folder is found
+#             for a search with the same name, resumes logging from the evaluation
+#             found.
+#         delete_if_exists (bool, optional): If ``True`` and a logging folder is found
+#             for a search with the same name, deletes the existing folder and
+#             creates a new one is its place.
+#         create_parent_folders (bool, optional): If ``True`` and the folder where the
+#             search logs should lie does not exist, creates it along with any
+#             necessary parent folders. If ``False`` and the folder does not exist,
+#             it asserts ``False``.
+#     """
+#     def __init__(self, folderpath, search_name,
+#             resume_if_exists=False, delete_if_exists=False,
+#             create_parent_folders=False):
+#         ok_if_exists = sum(x for x in [resume_if_exists, delete_if_exists])
+#         assert ok_if_exists == 0 or resume_if_exists == 1
+
+#         self.folderpath = folderpath
+#         self.search_name = search_name
+
+#         self.search_folderpath = ut.join_paths([folderpath, self.search_name])
+#         self.search_data_folderpath = ut.join_paths([self.search_folderpath, 'search_data'])
+#         self.all_evaluations_folderpath = ut.join_paths([self.search_folderpath, 'evaluations'])
+#         # self.code_folderpath = ut.join_paths([self.search_folderpath, 'code'])
+
+#         assert ok_if_exists == 1 or not ut.folder_exists(self.search_folderpath)
+#         if ut.folder_exists(self.search_folderpath):
+#             self.current_evaluation_id = 0
+#             if resume_if_exists:
+#                 eval_id = 0
+#                 while True:
+#                     if ut.folder_exists(ut.join_paths([
+#                         self.all_evaluations_folderpath, 'x%d' % eval_id])):
+#                         eval_id += 1
+#                     else:
+#                         break
+
+#             if delete_if_exists:
+#                 ut.delete_folderpath, False, True)
+#                 self._create_parent_folders)
+#                 self.current_evaluation_id = 0
+#         else:
+#             self._create_search_folders(create_parent_folders)
+#             self.current_evaluation_id = 0
+
+#     def _create_search_folders(self, create_parent_folders):
+#         """Creates the subfolders of the search folder.
+
+#         Args:
+#             create_parent_folders (bool): Whether to create parent folders
+#                 leading to the search folder if they do not exist.
+#         """
+#         ut.create_folder(self.search_folderpath, create_parent_folders=create_parent_folders)
+#         ut.create_folder(self.search_data_folderpath)
+#         ut.create_folder(self.all_evaluations_folderpath)
+#         # ut.create_folder(self.code_folderpath)
+
+#     def get_current_evaluation_id(self):
+#         return self.current_evaluation_id
+
+#     def get_current_evaluation_logger(self):
+#         """Gets the evaluation logger for the next evaluation.
+
+#         Each evaluation logger is associated to a single subfolder of the
+#         evaluations subfolder. The returned evaluation logger is used to
+#         log the information about this particular evaluation.
+
+#         .. note::
+#             This changes the state of the search logger. The next call to this
+#             function will return a new evaluation logger and increment the
+#             number of evaluations counter for the current search.
+
+#         Returns:
+#             deep_architect.search_logging.EvaluationLogger:
+#                 Evaluation logger for the next evaluation.
+#         """
+#         logger = EvaluationLogger(self.all_evaluations_folderpath, self.current_evaluation_id)
+#         self.current_evaluation_id += 1
+#         return logger
+
+#     def get_search_data_folderpath(self):
+#         """Get the search data folder where data that is common to all evaluations
+#         can be stored.
+
+#         The user can use this folder to store whatever appropriate search level data.
+#         An example use-case is to store a file for the state of the
+#         searcher after some number of evaluations to allow us to return the
+#         searcher to the same state without having to repeat all evaluations.
+
+#         Returns:
+#             str: Path to the folder reserved for search level user data.
+#         """
+#         return self.search_data_folderpath
 
 def read_evaluation_folder(evaluation_folderpath):
     """Reads all the standard JSON log files associated to a single evaluation.

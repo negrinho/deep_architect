@@ -197,6 +197,8 @@ of the code base, e.g., some of the private functions of the modules.
 * Some auxiliary scripts to keep things running on the server.
 * Make a few of the multiworker cases work smoothly.
 * Cover the first part of the model running on a single machine and then show how can you get multiple machines working on the same problem. There are multiple ways of accomplishing this. The goal is to show case them.
+* I think that the SearchLogger may be too inflexive regarding the use in the multiworker case.
+* Change the eval data folderpath. I think that it is going to be important.
 
 
 Before release:
