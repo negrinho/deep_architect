@@ -1,5 +1,5 @@
 import math
-import darch.core as co
+import deep_architect.core as co
 import tensorflow as tf
 
 def evaluate_fn(inputs, outputs, hs, data, vocab_size, batch_size, num_steps):

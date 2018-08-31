@@ -5,9 +5,9 @@ from builtins import str
 from builtins import range
 import tensorflow as tf
 
-import darch.helpers.tensorflow as htf
-import darch.modules as mo
-from darch.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+import deep_architect.helpers.tensorflow as htf
+import deep_architect.modules as mo
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
 from .common_ops import wrap_relu_batch_norm, pool_and_logits
 
 
@@ -25,7 +25,7 @@ def nas_space(h_num_layers, fn_first, fn_repeats, input_names, output_names, sco
         for i, output in enumerate(outs):
             output.connect(skip_inputs['In' + str(i)])
         return inputs, skip_outputs
-    return mo.substitution_module('NASModule', {'num_layers': h_num_layers}, 
+    return mo.substitution_module('NASModule', {'num_layers': h_num_layers},
                                   sub_fn, input_names, output_names, scope)
 
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
@@ -39,14 +39,14 @@ def concatenate_skip_layers(h_connects):
         max_width = max(widths)
         def fn(di):
             paddings = [tf.constant([
-                [0,0], 
+                [0,0],
                 [0, max_height - heights[i]],
-                [0,  max_width - widths[i]], 
+                [0,  max_width - widths[i]],
                 [0,0]])]
             inputs = [tf.pad(inputs[i], paddings[i], 'CONSTANT')]
             return {'Out' : tf.concat(inputs, 3)}
         return fn
-    return TFM('SkipConcat', 
+    return TFM('SkipConcat',
                {'select_' + str(i) : h_connects[i] for i in range(len(h_connects))},
                cfn, ['In' + str(i) for i in range(len(h_connects))], ['Out']).get_io()
 
@@ -70,16 +70,16 @@ def nas_repeat_fn(inputs, outputs):
     skip_inputs, skip_outputs = concatenate_skip_layers(h_connects)
     for i, out_name in enumerate(outputs):
         outputs[out_name].connect(skip_inputs['In' + str(i)])
-    conv_inputs, conv_outputs = conv2d_nas(D([24, 36, 48, 64]), 
-                                           D([1, 3, 5, 7]), 
-                                           D([1, 3, 5, 7]), 
-                                           D([1, 2, 3]), 
+    conv_inputs, conv_outputs = conv2d_nas(D([24, 36, 48, 64]),
+                                           D([1, 3, 5, 7]),
+                                           D([1, 3, 5, 7]),
+                                           D([1, 2, 3]),
                                            D([True]))
     wrap_inputs, wrap_outputs = wrap_relu_batch_norm((conv_inputs, conv_outputs))
     skip_outputs['Out'].connect(wrap_inputs['In'])
     outputs['Out' + str(len(outputs))] = wrap_outputs['Out']
     return inputs, outputs
-    
+
 
 def get_nas_search_space(num_classes):
     h_N = D(list(range(6, 21)))

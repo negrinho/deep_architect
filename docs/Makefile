@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = darch
+SPHINXPROJ    = deep_architect
 SOURCEDIR     = .
 BUILDDIR      = _build
 
@@ -21,5 +21,5 @@ clean:
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %:
-	sphinx-apidoc -f -o _build/source/ ../darch
+	sphinx-apidoc -f -o _build/source/ ../deep_architect
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

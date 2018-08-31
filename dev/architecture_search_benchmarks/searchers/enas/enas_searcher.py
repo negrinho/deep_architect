@@ -12,8 +12,8 @@ import tensorflow as tf
 
 from .enas_common_ops import stack_lstm
 
-from darch.searchers import (Searcher, unset_hyperparameter_iterator,
-                             random_specify_hyperparameter)
+from deep_architect.searchers.common import Searcher, random_specify_hyperparameter
+from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 class ENASSearcher(Searcher):
     def __init__(self,
@@ -79,10 +79,10 @@ class ENASSearcher(Searcher):
 
         inputs, outputs, hs = self.search_space_fn()
         vs = []
-        for i, h in enumerate(unset_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
+        for i, h in enumerate(unassigned_independent_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
-                h.set_val(v)
+                h.assign_value(v)
                 vs.append(v)
             else:
                 v = random_specify_hyperparameter(h)
@@ -98,8 +98,8 @@ class ENASSearcher(Searcher):
                           self.prev_arc: np.array(cfg_d['arc'])}
             with self.graph.as_default():
                 loss, train_step, _= self.sess.run([
-                    self.loss, 
-                    self.train_step, 
+                    self.loss,
+                    self.train_step,
                     self.train_op], feed_dict=train_feed)
             if train_step % 1 == 0:
                 print("Step: %d,    Reward: %f,    Loss:%f" % (train_step, val, loss))
@@ -202,7 +202,7 @@ class ENASSearcher(Searcher):
             self.valid_acc = tf.placeholder(tf.float32, [self.batch_size])
             self.prev_arc = tf.placeholder(tf.int32, [self.batch_size, None])
             reward = self.valid_acc
-            
+
             anchors = []
             anchors_w_1 = []
 
@@ -279,12 +279,12 @@ class ENASSearcher(Searcher):
 
             entropys = tf.stack(entropys)
             sample_entropy = tf.reduce_sum(entropys)
-            
+
             skip_penaltys = tf.stack(skip_penaltys)
             skip_penaltys = tf.reduce_mean(skip_penaltys)
-            
+
             reward += self.entropy_weight * sample_entropy
-            
+
             baseline = tf.Variable(0.0, dtype=tf.float32, trainable=False)
             baseline_update = tf.assign_sub(
                 baseline, (1 - self.bl_dec) * (baseline - reward))

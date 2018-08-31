@@ -1,29 +1,24 @@
-import darch.search_logging as sl
+import deep_architect.search_logging as sl
 
 # Make sure that only one GPU is visible.
 if __name__ == '__main__':
-    cmd = sl.CommandLineArgs()
-    cmd.add('config_filepath', 'str', 'examples/tensorflow/cifar10/config.json', True)
-    cmd.add('key', 'str')
-    d_cmd = cmd.parse()
-    cfg = sl.read_jsonfile(d_cmd['config_filepath'])[d_cmd['key']]
-
+    cfg = ut.get_config()
     if cfg['use_gpu']:
-        import darch.contrib.useful.gpu_utils as gpu_utils
+        import deep_architect.contrib.useful.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
         print "Using GPU %d" % gpu_id
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
-from darch.contrib.useful.datasets.loaders import load_cifar10
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-import darch.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
-import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import darch.modules as mo
-import darch.searchers as se
-import darch.hyperparameters as hp
-import darch.visualization as vi
+from deep_architect.contrib.useful.datasets.loaders import load_cifar10
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.modules as mo
+from deep_architect.searchers.random import RandomSearcher
+import deep_architect.hyperparameters as hp
+import deep_architect.visualization as vi
 
 D = hp.Discrete
 
@@ -61,7 +56,7 @@ def main(cfg):
         log_output_to_terminal=True, test_dataset=test_dataset)
 
     search_space_factory = SSF0(num_classes)
-    searcher = se.RandomSearcher(search_space_factory.get_search_space)
+    searcher = RandomSearcher(search_space_factory.get_search_space)
     for _ in xrange(num_samples - search_logger.get_current_evaluation_id()):
         evaluation_logger = search_logger.get_current_evaluation_logger()
         inputs, outputs, hs, hyperp_value_lst, searcher_eval_token = searcher.sample()

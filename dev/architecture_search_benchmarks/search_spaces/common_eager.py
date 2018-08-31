@@ -1,4 +1,4 @@
-import darch.hyperparameters as hp
+import deep_architect.hyperparameters as hp
 from dev.architecture_search_benchmarks.helpers import tfeager as htfe
 
 D = hp.Discrete

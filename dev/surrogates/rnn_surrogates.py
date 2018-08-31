@@ -1,4 +1,4 @@
-import darch.surrogates as su
+import deep_architect.surrogates as su
 from six import itervalues
 import torch.nn as nn
 from torch.autograd import Variable

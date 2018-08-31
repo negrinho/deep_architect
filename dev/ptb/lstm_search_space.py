@@ -1,8 +1,8 @@
-import darch.core as co
-import darch.hyperparameters as hp
-import darch.utils as ut
-import darch.helpers.tensorflow as htf
-import darch.modules as mo
+import deep_architect.core as co
+import deep_architect.hyperparameters as hp
+import deep_architect.utils as ut
+import deep_architect.helpers.tensorflow as htf
+import deep_architect.modules as mo
 import tensorflow as tf
 import numpy as np
 import random
@@ -11,7 +11,7 @@ TFM = htf.TFModule
 D = hp.Discrete
 
 def siso_tfm(name, compile_fn, name_to_h={}, scope=None):
-    return htf.TFModule(name, name_to_h, compile_fn, 
+    return htf.TFModule(name, name_to_h, compile_fn,
             ['In'], ['Out'], scope).get_io()
 
 # Learned embeddings module
@@ -36,7 +36,7 @@ def lstm_cell(hidden_size, keep_prob):
 # Creates an Multi layer LSTM module
 def multi_rnn_cell(h_hidden_size, h_keep_prob, h_num_layers, batch_size, num_steps):
     def cfn(di, dh):
-        cell = tf.contrib.rnn.MultiRNNCell([lstm_cell(dh['hidden_size'], 
+        cell = tf.contrib.rnn.MultiRNNCell([lstm_cell(dh['hidden_size'],
             dh['keep_prob']) for _ in range(dh['num_layers'])], state_is_tuple=True)
         def fn(di):
             initial_state = cell.zero_state(batch_size, tf.float32)
@@ -75,7 +75,7 @@ def hyperparameters_fn():
     return {
         'optimizer_type' : D([ 'adam' ]),
         'lr_start' : D( np.logspace(-1, -4, num=16) ),
-        'stop_patience' : D([ 512 ]), 
+        'stop_patience' : D([ 512 ]),
         'lr_end' : D([ 1e-6 ]),
         # 'max_num_epochs' : D([ 100 ]),
         # 'angle_delta' : D([ 0, 5, 10, 15, 20, 25, 30, 35 ]),

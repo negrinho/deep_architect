@@ -15,7 +15,7 @@ from dev.architecture_search_benchmarks.search_spaces.common_eager import D
 from dev.architecture_search_benchmarks.search_spaces.common_ops_eager import (
     conv2D, conv2D_depth_separable, global_pool, dropout, fc_layer, 
     wrap_batch_norm_relu, avg_pool, max_pool, keras_batch_normalization)
-import darch.modules as mo
+import deep_architect.modules as mo
 
 TFEM = htfe.TFEModule
 
@@ -62,12 +62,12 @@ def concatenate_skip_layers(h_connects, weight_sharer):
                 return {'Out' : tf.add_n(inputs)}
 
         return fn
-    return TFEM('SkipConcat', 
+    return TFEM('SkipConcat',
                {'select_' + str(i) : h_connects[i] for i in range(len(h_connects))},
                cfn, ['In' + str(i) for i in range(len(h_connects) + 1)], ['Out']).get_io()
 
 def enas_conv(out_filters, filter_size, separable, weight_sharer, name):
-    io_pair = (conv2D_depth_separable(filter_size, name, weight_sharer) if separable 
+    io_pair = (conv2D_depth_separable(filter_size, name, weight_sharer) if separable
                else conv2D(filter_size, name, weight_sharer))
     return mo.siso_sequential([
         wrap_batch_norm_relu(conv2D(1, name, weight_sharer, out_filters=out_filters), weight_sharer=weight_sharer, name=name + '_conv_1'),
@@ -103,7 +103,7 @@ def enas_repeat_fn(inputs, outputs, layer_id, out_filters, weight_sharer):
     skip_outputs['Out'].connect(bn_inputs['In'])
     outputs['Out' + str(len(outputs))] = bn_outputs['Out']
     return inputs, outputs
-    
+
 def enas_space(h_num_layers, out_filters, fn_first, fn_repeats, input_names, output_names, weight_sharer, scope=None):
     def sub_fn(num_layers):
         assert num_layers > 0
@@ -112,7 +112,7 @@ def enas_space(h_num_layers, out_filters, fn_first, fn_repeats, input_names, out
         for i in range(1, num_layers + 1):
             inputs, temp_outputs = fn_repeats(inputs, temp_outputs, i, out_filters, weight_sharer)
         return inputs, OrderedDict({'Out': temp_outputs['Out' + str(len(temp_outputs) - 1)]})
-    return mo.substitution_module('ENASModule', {'num_layers': h_num_layers}, 
+    return mo.substitution_module('ENASModule', {'num_layers': h_num_layers},
                                   sub_fn, input_names, output_names, scope)
 
 def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
@@ -122,7 +122,7 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
             h_N, out_filters,
             #mo.empty,
             lambda: wrap_batch_norm_relu(
-                conv2D(3, 'stem', weight_sharer, out_filters=out_filters), 
+                conv2D(3, 'stem', weight_sharer, out_filters=out_filters),
                 add_relu=False, weight_sharer=weight_sharer, name='stem'),
             enas_repeat_fn, ['In'], ['Out'], weight_sharer),
         global_pool(),
@@ -141,8 +141,7 @@ class SSFEnasnetEager(mo.SearchSpaceFactory):
     def _get_search_space(self):
         inputs, outputs = get_enas_search_space(
             self.num_classes,
-            self.num_layers, 
-         #   1,
-            self.out_filters, 
+            self.num_layers,
+            self.out_filters,
             self.weight_sharer)
         return inputs, outputs, {}

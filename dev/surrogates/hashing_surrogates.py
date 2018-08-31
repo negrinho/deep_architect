@@ -1,4 +1,4 @@
-import darch.surrogates as su
+import deep_architect.surrogates as su
 from six import iteritems
 import scipy.sparse as sp
 

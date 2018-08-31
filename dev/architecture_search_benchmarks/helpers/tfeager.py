@@ -1,9 +1,9 @@
-import darch.core as co
+import deep_architect.core as co
 
 class TFEModule(co.Module):
     """Class for taking TFEager code and wrapping it in a darch module.
 
-    This class subclasses :class:`darch.core.Module` as therefore inherits all
+    This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
     the information associated to it (e.g., inputs, outputs, and hyperparameters).
     It also enables to do the compile and forward operations for these types of
     modules once a module is fully specified, i.e., once all the hyperparameters
@@ -15,7 +15,7 @@ class TFEModule(co.Module):
     operation and constructs the actual computational graph fragment associated
     to this module.
 
-    See :class:`darch.helpers.tensorflow.TFModule` for a similar class for
+    See :class:`deep_architect.helpers.tensorflow.TFModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
     static computational graphs, so the forward functionality is usually only
     called once per creation for the graph creation. TFEager requires calling
@@ -35,7 +35,7 @@ class TFEModule(co.Module):
 
     Args:
         name (str): Name of the module
-        name_to_hyperp (dict[str,darch.core.Hyperparameter]): Dictionary of
+        name_to_hyperp (dict[str,deep_architect.core.Hyperparameter]): Dictionary of
             hyperparameters that the model depends on. The keys are the local
             names of the hyperparameters.
         compile_fn ((dict[str,object], dict[str,object]) -> ((dict[str,object]) -> (dict[str,object], list[torch.nn.Modules]))):
@@ -47,7 +47,7 @@ class TFEModule(co.Module):
             computation of the darch module.
         input_names (list[str]): List of names for the inputs.
         output_names (list[str]): List of names for the outputs.
-        scope (darch.core.Scope, optional): Scope where the module will be
+        scope (deep_architect.core.Scope, optional): Scope where the module will be
             registered.
     """
     def __init__(self, name, name_to_hyperp, compile_fn,
@@ -69,7 +69,7 @@ class TFEModule(co.Module):
 
     def _update(self):
         pass
-    
+
 def setTraining(output_lst, isTraining):
     def fn(mx):
         if hasattr(mx, 'isTraining'):

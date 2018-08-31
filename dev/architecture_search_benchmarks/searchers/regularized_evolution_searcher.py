@@ -7,9 +7,9 @@ from builtins import range
 import random
 from collections import deque
 
-from darch.search_logging import join_paths, write_jsonfile, read_jsonfile, file_exists
-from darch.searchers import (Searcher, unset_hyperparameter_iterator,
-                             random_specify_hyperparameter)
+from deep_architect.utils import join_paths, write_jsonfile, read_jsonfile, file_exists
+from deep_architect.searchers.common import Searcher, random_specify_hyperparameter
+from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 def mutatable(h):
     return h.get_name().startswith('H.Mutatable')
@@ -17,10 +17,10 @@ def mutatable(h):
 def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
     mutate_candidates = []
     new_vs = list(user_vs)
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst)):
+    for i, h in enumerate(unassigned_independent_hyperparameter_iterator(output_lst)):
         if mutatable_fn(h):
             mutate_candidates.append(h)
-        h.set_val(all_vs[i])
+        h.assign_value(all_vs[i])
 
     # mutate a random hyperparameter
     assert len(mutate_candidates) == len(user_vs)
@@ -32,7 +32,7 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
     while v == user_vs[m_ind]:
         v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
     new_vs[m_ind] = v
- 
+
     inputs, outputs, hs = search_space_fn()
     output_lst = list(outputs.values())
     all_vs = specify_evolution(output_lst, mutatable_fn, new_vs, hs)
@@ -41,7 +41,7 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
 def random_specify_evolution(output_lst, mutatable_fn, hyperp_lst=None):
     user_vs = []
     all_vs = []
-    for h in unset_hyperparameter_iterator(output_lst, hyperp_lst):
+    for h in unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst):
         v = random_specify_hyperparameter(h)
         if mutatable_fn(h):
             user_vs.append(v)
@@ -51,9 +51,9 @@ def random_specify_evolution(output_lst, mutatable_fn, hyperp_lst=None):
 def specify_evolution(output_lst, mutatable_fn, user_vs, hyperp_lst=None):
     vs_idx = 0
     vs = []
-    for i, h in enumerate(unset_hyperparameter_iterator(output_lst, hyperp_lst)):
+    for i, h in enumerate(unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst)):
         if mutatable_fn(h):
-            h.set_val(user_vs[vs_idx])
+            h.assign_value(user_vs[vs_idx])
             vs.append(user_vs[vs_idx])
             vs_idx += 1
         else:

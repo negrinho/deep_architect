@@ -14,8 +14,8 @@ tfe = tf.contrib.eager
 
 from dev.architecture_search_benchmarks.searchers.enas.enas_common_ops import stack_lstm
 
-from darch.searchers import (Searcher, unset_hyperparameter_iterator,
-                             random_specify_hyperparameter, random_specify)
+from deep_architect.searchers.common import Searcher, random_specify_hyperparameter
+from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 class ENASEagerSearcher(Searcher):
     def __init__(self,
@@ -80,10 +80,10 @@ class ENASEagerSearcher(Searcher):
 
         inputs, outputs, hs = self.search_space_fn()
         vs = []
-        for i, h in enumerate(unset_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
+        for i, h in enumerate(unassigned_independent_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
-                h.set_val(v)
+                h.assign_value(v)
                 vs.append(v)
             else:
                 v = random_specify_hyperparameter(h)

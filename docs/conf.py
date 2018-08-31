@@ -154,7 +154,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'darch.tex', u'darch Documentation',
+    (master_doc, 'deep_architect.tex', u'darch Documentation',
      u'Renato Negrinho', 'manual'),
 ]
 

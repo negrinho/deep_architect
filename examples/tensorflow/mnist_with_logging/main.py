@@ -1,12 +1,13 @@
 
-from darch.contrib.useful.datasets.loaders import load_mnist
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-import darch.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import darch.searchers as se
-import darch.search_logging as sl
-import darch.visualization as vi
-import darch.modules as mo
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.search_logging as sl
+import deep_architect.visualization as vi
+import deep_architect.modules as mo
+import deep_architect.utils as ut
+from deep_architect.searchers.random import RandomSearcher
 
 class SSF(mo.SearchSpaceFactory):
     def __init__(self, num_classes):
@@ -17,9 +18,9 @@ class SSF(mo.SearchSpaceFactory):
         inputs, outputs = css_dnn.dnn_net(self.num_classes)
         return inputs, outputs, {}
 
-def main(config_filepath, key):
+def main():
     # Loading the config file.
-    cfg = sl.read_jsonfile(config_filepath)[key]
+    cfg = ut.get_config()
     num_classes = 10
     num_samples = cfg['num_samples']
     # Loading the data.
@@ -34,7 +35,7 @@ def main(config_filepath, key):
     # Creating the search space.
     search_space_factory = SSF(num_classes)
     # Creating the searcher.
-    searcher = se.RandomSearcher(search_space_factory.get_search_space)
+    searcher = RandomSearcher(search_space_factory.get_search_space)
     # Creating the search logger to log the results of the experiment.
     search_logger = sl.SearchLogger(cfg['folderpath'], cfg['search_name'],
         delete_if_exists=cfg['delete_if_exists'], resume_if_exists=cfg['resume_if_exists'],
@@ -54,8 +55,4 @@ def main(config_filepath, key):
         searcher.update(results['validation_accuracy'], searcher_eval_token)
 
 if __name__ == '__main__':
-    cmd = sl.CommandLineArgs()
-    cmd.add('config_filepath', 'str', 'examples/tensorflow/mnist_with_logging/config.json', True)
-    cmd.add('key', 'str')
-    d_cmd = cmd.parse()
-    main(**d_cmd)
+    main()

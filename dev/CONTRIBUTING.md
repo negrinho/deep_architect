@@ -1,10 +1,14 @@
 ## Guidelines for contributing
 <!--  Contributions welcome.-->
-
 We strongly encourage contributions to DeepArchitect.
 If DeepArchitect has been useful to you in your work, show some appreciation by
 citing it and/or contributing to the codebase, e.g., by refactoring part of your
 code into something that can be generally useful to the community.
+We encourage everyone doing research in architecture search to implement their
+algorithms in DeepArchitect to make them widely available to other researchers
+and the machine learning community at large.
+Taking this route will significantly improve reproducibility and reusability
+of architecture search research.
 Everyone benefits from open-source so please make an effort to contribute.
 
 <!-- Information that you will find in this document. -->
@@ -23,19 +27,19 @@ After reading this document, you will understand:
 <!-- How to decide exactly what to contribute. -->
 If you have a feature in mind that you would like to add to DeepArchitect but you
 aren't sure if it would be a good fit for inclusion, open a
-[GitHub issue](https://github.com/negrinho/darch/issues)
+[GitHub issue](https://github.com/negrinho/deep_architect/issues)
 to discuss its scope and suitability.
 This guarantees that your efforts are well-aligned with the project direction.
 The best way to start a discussion is with a code snippet or pseudo-code
 that illustrates an important use case for the feature that you want to implement.
 You can also check the evergrowing list of work items
-[here](https://github.com/negrinho/darch/blob/master/todos.md).
+[here](https://github.com/negrinho/deep_architect/blob/master/todos.md).
 
 ## Types of contributions
 <!-- The contrib and dev folders and their semantics. -->
 Most contributions will live in the contrib folder.
 The contrib folder is used for functionality that is likely useful, but for
-which we cannot necessarily guarantee that it will be maintained over time.
+which we cannot guarantee that it will be maintained over time.
 While code lies in the contrib folder, it is the responsibility of the code
 owners to maintain it, i.e., that it does not break over time.
 If code in the contrib folder breaks and the code owner does not fix it
@@ -50,10 +54,10 @@ for additional functionality.
 
 <!-- How code evolves between the different folders. -->
 Code that is part of the contrib folder may eventually be refactored into code
-that is part of the darch folder.
+that is part of the deep_architect folder.
 Similarly, code in the dev folder may be refactored in code that goes in the
 contrib folder.
-In the case the code becomes part of the main darch folder, it becomes the
+In the case the code becomes part of the deep_architect folder, it becomes the
 responsibility of the developers of DeepArchitect to maintain it.
 To create a new contrib folder, it is best to first discuss its scope to
 make sure that contributions implement functionality that we would like to have
@@ -64,7 +68,7 @@ We will only accept contributions to the dev folder if it is determined
 that they showcase important functionality and there is sufficient reason
 to include them even without them being complete in functionality or scope.
 For cases where the functionality is indeed complete, we advise the
-contributor to refactor its contribution into the contrib folder.
+contributor to refactor the contribution into the contrib folder.
 Including the contribution in the contrib folder can be done either by adding
 it to an existing contrib subfolder, or by creating a new well-scoped
 contrib subfolder.
@@ -87,7 +91,7 @@ sure that the appropriate people look at it.
 
 ## Required documentation and tests
 <!-- Folder structure for contrib contributions. -->
-Your new library in contrib should be placed in `darch/contrib/$YOUR_LIBRARY_NAME`.
+Your new library in contrib should be placed in `deep_architect/contrib/$YOUR_LIBRARY_NAME`.
 New folders in contrib should include a `README.md` file providing
 information about the functionality that the library seeks to implement,
 the features that are implemented in the folder contributed, and
@@ -98,7 +102,7 @@ library.
 This guarantees that a new user will quickly get a reasonable grasp of
 how to use the library and what files to look at for specific desired functionality.
 Comments for each major class and function are also recommended but not mandatory.
-Check the comments in `darch/core.py` to get a sense of the style and format used for
+Check the comments in `deep_architect/core.py` to get a sense of the style and format used for
 comments.
 It is also convenient to include in `README.md`, a roadmap for
 missing functionality that would be nice to include in the future.
@@ -109,7 +113,7 @@ and compels them to help, e.g., if they believe that the feature is important.
 A typical structure for `README.md` would be something like this:
 explanation of the problem that the contributed code tries to solve,
 some example code, a brief description of the high-level organization of the
-contributed library, and a roadmap for future work items and nice to haves
+contributed library, and a roadmap for future work items and nice-to-haves
 and how other people can contribute to it, additional comments, GitHub handles
 of the code owners.
 If another contributor would like to extend an existing contributed library,
@@ -120,12 +124,12 @@ exercise the newly developed code.
 
 <!-- Test and examples. -->
 In addition to `README.md`, it is convenient to add tests and examples.
-The tests should be placed in `tests/contrib/$YOUR_LIBRARY_NAME` and
-examples can be placed in `examples/contrib/$YOUR_LIBRARY_NAME`.
+The contributor should place tests in `tests/contrib/$YOUR_LIBRARY_NAME` and
+examples in `examples/contrib/$YOUR_LIBRARY_NAME`.
 Both `tests/contrib` and `examples/contrib` are meant to mostly reproduce the
-folder structure in `darch/contrib`.
+folder structure in `deep_architect/contrib`.
 This guarantees that removing a contributed library can be done easily by
-removing the corresponding folders in `darch/contrib`, `tests/contrib`,
+removing the corresponding folders in `deep_architect/contrib`, `tests/contrib`,
 and `examples/contrib`.
 While an example is not required, we do require a few tests to exercise the
 contributed code and have some guarantee that specific features remain correct
@@ -138,44 +142,42 @@ For minimizing coupling between contributions of different people, we adopt a
 design similar to the one used in
 [Tensorflow](https://github.com/tensorflow/tensorflow).
 Namely, we have a contrib folder where each new sufficiently
-different well-scoped contribution gets assigned a folder in `darch/contrib`.
+different well-scoped contribution gets assigned a folder in `deep_architect/contrib`.
 The name of the folder should be chosen to reflect the functionality that
 lies within.
 All the library code contributed by the developer will be placed in this folder.
 Main files that are meant to be run should be placed in `examples/contrib`
-rather than in `darch/contrib`.
-The same name should be used for both the folder in `darch/contrib` and
+rather than in `deep_architect/contrib`.
+The same name should be used for both the folder in `deep_architect/contrib` and
 in `examples/contrib`.
 The subfolder in `examples/contrib` is meant for runnable code related to
-or making extensive use of the library code in the `darch/contrib` subfolder.
+or making extensive use of the library code in the `deep_architect/contrib` subfolder.
 We recommend checking existing examples in the
-[repo](https://github.com/negrinho/darch) for determining how to
+[repo](https://github.com/negrinho/deep_architect) for determining how to
 structure and document a new example appropriately.
 
 <!-- The config.json file for storing runnable configurations. -->
-Options to run the code should be placed in a JSON configuration file `config.json`
-in the same subfolder as the other code.
-This JSON configuration guarantees that the options that determine the behavior
-of running the code can be kept separated from the code.
-This is more manageable than having a command line interface.
+Configurations to run the example should be placed in a JSON configuration
+file `$CONFIG_NAME.json` in a folder named `configs` living in the same folder
+of the main file of the example.
+JSON configuration files guarantee that the options that determine the behavior
+of running the code can be kept separated from the code itself.
+This is more manageable, programmable, and configurable than having a command line interface.
 This guarantees that it is easy to maintain and store many different configurations,
 e.g., one configuration where the code is exercised with
 few resources and another configuration where the code is exercised in a
-longer run.
-This allows us to include multiple configurations in a single JSON file, e.g.,
-see [here](https://github.com/negrinho/darch/blob/merge_all/examples/tensorflow/benchmarks/config.json).
-Each key in the JSON configuration file corresponds to a different configuration.
-We suggest including a `debug` key.
-The configuration in the `debug` key will be used to run a quick experiment to
+longer run, e.g., see [here](https://github.com/negrinho/deep_architect/blob/merge_all/examples/tensorflow/benchmarks/).
+Each JSON file corresponds to a different configuration.
+We suggest including a `debug.json` to run a quick experiment to
 validate the functionality of both the code under `contrib/examples` and
-`darch/contrib`.
-We recommend the inclusion of `config.json` for all, but the most trivial examples.
+`deep_architect/contrib`.
+We recommend the use of config files for all but the most trivial examples.
 
 <!-- Separating the contribution according to the different modular components
 identified in the framework. -->
 Whether contributing examples or libraries, we recommend identifying the
 search spaces, searchers, evaluators, and datasets and splitting them into
-different files.
+different files, e.g., [see]().
 Having these components into multiple files makes the dependencies more
 explicit and improves the reusability of the components.
 The framework is developed around these modular components.
@@ -208,8 +210,8 @@ These fixes should be reasonably straightforward in most cases.
 ## Code style
 <!-- Guidelines on the code style to use. -->
 All contributions should follow the code style used in most of the code base.
-When in doubt, mimic the code style used in `darch`.
-The code in `darch` is the one most carefully designed in the framework.
+When in doubt, mimic the code style used in `deep_architect`.
+The code in `deep_architect` is the one most carefully designed in the framework.
 Getting the general gist of the design decisions that went in writing this code
 will help you write code that fits well with the existing code.
 This guarantees that the focus stays on the functionality rather than
@@ -220,7 +222,7 @@ Readable variable names are preferred for function names, function arguments,
 class names, object attributes, object attributes, and dictionary keys.
 Names for iterator variables or local variables with a short lifespan
 can be shorter and slightly less readable.
-`darch/core.py` (and the code in `darch` in general) is a good place to get
+`deep_architect/core.py` (and the code in `deep_architect` in general) is a good place to get
 the gist of how these decisions influenced the naming conventions of the code.
 Function signatures should be readable without much documentation.
 Use four spaces for indentation.

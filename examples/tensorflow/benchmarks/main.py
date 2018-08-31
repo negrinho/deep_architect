@@ -1,25 +1,21 @@
 # Run configs to make it easier to run the code.
-import darch.search_logging as sl
+import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 
 # Make sure that only one GPU is visible.
 if __name__ == '__main__':
-    cmd = sl.CommandLineArgs()
-    cmd.add('config_filepath', 'str', 'examples/tensorflow/benchmarks/config.json', True)
-    cmd.add('key', 'str')
-    d_cmd = cmd.parse()
-    cfg = sl.read_jsonfile(d_cmd['config_filepath'])[d_cmd['key']]
-
+    cfg = ut.get_config()
     if cfg['use_gpu']:
-        import darch.contrib.useful.gpu_utils as gpu_utils
+        import deep_architect.contrib.useful.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
         print "Using GPU %d" % gpu_id
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
-from darch.contrib.useful.datasets.loaders import load_mnist
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-import darch.visualization as vi
+from deep_architect.contrib.useful.datasets.loaders import load_mnist
+from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+import deep_architect.visualization as vi
 
 import searchers as local_se
 import search_spaces as local_ss

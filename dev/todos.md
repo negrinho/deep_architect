@@ -15,6 +15,8 @@ Evaluation per day on a single GPU per evaluation length
 * 4096 models per day is equiv. ~22.5 secs per model
 * 8192 models per day is equiv. ~11.25 secs per model
 
+# TODO: this can be moved to a different place to show where the the
+
 ## Search spaces
 * Spatial pooling that
 
@@ -62,7 +64,6 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Separate items in research vs tooling.
 * For handling the models, it is important to have a way of formatting the input such that it is in the correct dimension, e.g., for images or sentences.
 * Make the search in ONNX and then export to the various languages. Would this be something interesting to consider?
-* Refactor the draw graph functionality.
 * Workflows based on the pretrained models. Make sure that I can interact with them easily.
 * Make it easy to log new metrics for a new evaluator. Right now everything is done locally with the model.
 * Perhaps make another one with resource logging specific functionality.
@@ -113,7 +114,7 @@ of the code base, e.g., some of the private functions of the modules.
 * Be more consistent in the application of see also in the documentation.
 * While the visualization functionality is not fully finished, add some simple functionality to draw plots from search folders easily.
 * Perhaps remove the type redundancy in the documentation.
-* Write down some hyperparameter optimization vignettes comparing hyperopt and darch.
+* Write down some hyperparameter optimization vignettes comparing hyperopt and deep_architect.
 * Make this a lot cleaner.
 * Add a test for dependent hyperparameters that involves making a chain of dependent hyperparameters.
 * Make a test for dependent hyperparameters with a loop (should result in problems); needs loop detection.
@@ -151,10 +152,9 @@ of the code base, e.g., some of the private functions of the modules.
 * Needs to add error messages to the assert messages.
 * change get_current_evaluation_logger to get_next_evaluation_logger.
 * Check the logs for corrections.
-* The MCTSearcher is misspelled. Should be MCTSSearcher.
 * Compile the code.
 * Write down about the directly structure of the code. This is important to be explicit about the structure of the folder and what is container in each of them.
-* Decide on the capitalization, i.e., DArch vs Darch vs darch. I think that I prefer the first one.
+* Decide on the capitalization, i.e., DArch vs Darch vs deep_architect. I think that I prefer the first one.
 * Make consistent vs with hyperp_value_lst
 * Complete the documentation.
 * Create a file that emphasizes the most interesting classes.
@@ -188,6 +188,18 @@ of the code base, e.g., some of the private functions of the modules.
 * What are the current limitations in terms of models, i.e., what can be done
 * Evolution searcher with general mutation scheme that works for all search spaces.
 * A good way of reducing the effort of documenting the code is when finding something confusing, it is useful to document the code extensively then.
+* Are the functions in the empty module necessary or not.
+* Decide on better names for the variables that should be more consistent. This is problematic.
+* The propagation for dependent hyperparameters is going to be suboptimal.
+* Write more extensive tests for the new functionality for getting the hyperparameters.
+* Evaluation logging may change a little bit to allow for different types of logging information.
+* SearchLogger needs to be updated to take into account the fact that I may need to bypass it. I think that the current implementation relies too much on the existence of a single logger.
+* Some auxiliary scripts to keep things running on the server.
+* Make a few of the multiworker cases work smoothly.
+* Cover the first part of the model running on a single machine and then show how can you get multiple machines working on the same problem. There are multiple ways of accomplishing this. The goal is to show case them.
+* I think that the SearchLogger may be too inflexive regarding the use in the multiworker case.
+* Change the eval data folderpath. I think that it is going to be important.
+
 
 Before release:
 * Add more links to the project.
@@ -199,6 +211,7 @@ Before release:
 * Add pointers more extensively to the code that is there.
 * Check that MCTS and SMBO work as well as we expect.
 * Think about the sharing case for the model, i.e., what would happen in the case
+* Refactor some of the names in the code to make things more readable.
 
 Visualization:
 * Make sure that an exception is never thrown.

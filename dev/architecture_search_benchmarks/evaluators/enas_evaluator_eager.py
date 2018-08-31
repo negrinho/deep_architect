@@ -9,9 +9,10 @@ from past.utils import old_div
 import tensorflow as tf
 tfe = tf.contrib.eager
 import numpy as np
-import darch.core as co
-import darch.search_logging as sl
-import darch.contrib.useful.gpu_utils as gpu_utils
+import deep_architect.core as co
+from helpers import tfeager as htfe
+import deep_architect.search_logging as sl
+import deep_architect.contrib.useful.gpu_utils as gpu_utils
 from dev.architecture_search_benchmarks.helpers.tfeager import setTraining
 from six.moves import range
 import time
@@ -47,7 +48,7 @@ class ENASEagerEvaluator(object):
         self.child_step = 0
         self.controller_mode = False
         self.max_controller_steps = max_controller_steps
-        
+
         self.weight_sharer = weight_sharer
 
         if self.optimizer_type == 'adam':
@@ -136,7 +137,7 @@ class ENASEagerEvaluator(object):
             tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
         loss_metric(loss)
         return loss
-        
+
 
     def eval(self, inputs, outputs, hs):
         results = {}
