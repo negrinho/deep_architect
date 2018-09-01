@@ -7,11 +7,11 @@ import tensorflow as tf
 import numpy as np
 import random
 
-TFM = htf.TFModule
+TFM = htf.TensorflowModule
 D = hp.Discrete
 
-def siso_tfm(name, compile_fn, name_to_h={}, scope=None):
-    return htf.TFModule(name, name_to_h, compile_fn,
+def siso_tensorflow_module(name, compile_fn, name_to_h={}, scope=None):
+    return htf.TensorflowModule(name, name_to_h, compile_fn,
             ['In'], ['Out'], scope).get_io()
 
 # Learned embeddings module
@@ -22,7 +22,7 @@ def embeddings(h_embedding_size, vocab_size):
             return {'Out':tf.nn.embedding_lookup(embedding, di['In'])}
         return fn
 
-    return siso_tfm('Embeddings', cfn,{
+    return siso_tensorflow_module('Embeddings', cfn,{
         'embedding_size': h_embedding_size
         })
 
@@ -50,7 +50,7 @@ def multi_rnn_cell(h_hidden_size, h_keep_prob, h_num_layers, batch_size, num_ste
             output = tf.reshape(tf.concat(outputs, 1), [-1, dh['hidden_size']])
             return {'Out': output}
         return fn
-    return siso_tfm('MultiRNNCell', cfn, {
+    return siso_tensorflow_module('MultiRNNCell', cfn, {
         'hidden_size': h_hidden_size,
         'num_layers': h_num_layers,
         'keep_prob': h_keep_prob
@@ -67,7 +67,7 @@ def softmax(h_hidden_size, batch_size, num_steps, vocab_size):
             logits = tf.reshape(logits, [batch_size, num_steps, vocab_size])
             return {'Out': logits}
         return fn
-    return siso_tfm('Softmax', cfn, {
+    return siso_tensorflow_module('Softmax', cfn, {
         'hidden_size': h_hidden_size
         })
 

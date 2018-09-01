@@ -1,4 +1,4 @@
-from darch.contrib.useful.search_spaces.tensorflow.common import siso_tfm 
+from darch.contrib.useful.search_spaces.tensorflow.common import siso_tensorflow_module
 import tensorflow as tf
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
@@ -8,7 +8,7 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
         def fn(di):
             return {'Out' : conv_op(di['In'])}
         return fn
-    return siso_tfm('Conv2D', cfn, {
+    return siso_tensorflow_module('Conv2D', cfn, {
         'num_filters' : h_num_filters,
         'filter_width' : h_filter_width,
         'stride' : h_stride,
@@ -21,7 +21,7 @@ def max_pool2d(h_kernel_size, h_stride):
             return {'Out' : tf.nn.max_pool(di['In'],
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return siso_tfm('MaxPool2D', cfn, {
+    return siso_tensorflow_module('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride,})
 
 def dropout(h_keep_prob):
@@ -30,7 +30,7 @@ def dropout(h_keep_prob):
         def fn(di):
             return {'Out' : tf.nn.dropout(di['In'], p)}
         return fn, {p : dh['keep_prob']}, {p : 1.0}
-    return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_tensorflow_module('Dropout', cfn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
     def cfn(di, dh):
@@ -38,17 +38,17 @@ def batch_normalization():
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn, {})
+    return siso_tensorflow_module('BatchNormalization', cfn, {})
 
 def relu():
-    return siso_tfm('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
+    return siso_tensorflow_module('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
 
 def global_pool2d():
     def cfn(di, dh):
         def fn(di):
             return {'Out' : tf.reduce_mean(di['In'], [1,2])}
         return fn
-    return siso_tfm('GlobalAveragePool', cfn, {})
+    return siso_tensorflow_module('GlobalAveragePool', cfn, {})
 
 def fc_layer(h_num_units):
     def cfn(di, dh):
@@ -56,7 +56,7 @@ def fc_layer(h_num_units):
         def fn(di):
             return {'Out' : fc(di['In'])}
         return fn
-    return siso_tfm('FCLayer', cfn, {'num_units' : h_num_units})
+    return siso_tensorflow_module('FCLayer', cfn, {'num_units' : h_num_units})
 
 func_dict = {
     'dropout': dropout,

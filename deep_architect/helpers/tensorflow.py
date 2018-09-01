@@ -3,7 +3,7 @@ import deep_architect.core as co
 import tensorflow as tf
 import numpy as np
 
-class TFModule(co.Module):
+class TensorflowModule(co.Module):
     """Class for taking Tensorflow code and wrapping it in a darch module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all

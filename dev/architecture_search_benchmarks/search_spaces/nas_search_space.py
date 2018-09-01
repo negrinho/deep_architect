@@ -7,11 +7,11 @@ import tensorflow as tf
 
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
 from .common_ops import wrap_relu_batch_norm, pool_and_logits
 
 
-TFM = htf.TFModule
+TFM = htf.TensorflowModule
 
 def nas_space(h_num_layers, fn_first, fn_repeats, input_names, output_names, scope=None):
     def sub_fn(num_layers):
@@ -57,7 +57,7 @@ def conv2d_nas(h_num_filters, h_filter_height, h_filter_width, h_stride, h_use_b
         def fn(di):
             return {'Out' : conv_op(di['In'])}
         return fn
-    return siso_tfm('Conv2DNAS', cfn, {
+    return siso_tensorflow_module('Conv2DNAS', cfn, {
         'num_filters' : h_num_filters,
         'filter_height' : h_filter_height,
         'filter_width' : h_filter_width,

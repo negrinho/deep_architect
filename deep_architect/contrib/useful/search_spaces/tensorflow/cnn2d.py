@@ -1,4 +1,4 @@
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
 import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as dnn
 import deep_architect.modules as mo
 import tensorflow as tf
@@ -19,7 +19,7 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
         def fn(di):
             return {'Out' : conv_op(di['In'])}
         return fn
-    return siso_tfm('Conv2D', cfn, {
+    return siso_tensorflow_module('Conv2D', cfn, {
         'num_filters' : h_num_filters,
         'filter_width' : h_filter_width,
         'stride' : h_stride,
@@ -32,7 +32,7 @@ def max_pool2d(h_kernel_size, h_stride):
             return {'Out' : tf.nn.max_pool(di['In'],
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return siso_tfm('MaxPool2D', cfn, {
+    return siso_tensorflow_module('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride,})
 
 def conv_cell(h_num_filters, h_filter_width, h_swap, h_opt_drop, h_keep_prob, stride):
@@ -74,5 +74,5 @@ def spatial_squeeze(h_pool_op, h_num_hidden):
             out = tf.squeeze(out, [1, 2])
             return {'Out' : out}
         return fn
-    return siso_tfm('SpatialSqueeze', cfn, {
+    return siso_tensorflow_module('SpatialSqueeze', cfn, {
         'pool_op' : h_pool_op, 'num_hidden' : h_num_hidden})

@@ -11,11 +11,11 @@ from collections import OrderedDict
 
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
 from .common_ops import wrap_relu_batch_norm, global_pool_and_logits, avg_pool
 from deep_architect.contrib.useful.search_spaces.tensorflow import cnn2d
 
-TFM = htf.TFModule
+TFM = htf.TensorflowModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
 class WeightSharer(object):
@@ -54,7 +54,7 @@ def conv2D(filter_size, name, weight_sharer):
                 tf.nn.conv2d(di['In'], W, [1, 1, 1, 1], 'SAME'), b)}
         return fn
 
-    return siso_tfm('Conv2D', cfn, {})
+    return siso_tensorflow_module('Conv2D', cfn, {})
 
 def conv2D_depth_separable(filter_size, name, weight_sharer):
     def cfn(di, dh):
@@ -74,7 +74,7 @@ def conv2D_depth_separable(filter_size, name, weight_sharer):
                 tf.nn.separable_conv2d(di['In'], W_depth, W_point, [1, 1, 1, 1], 'SAME', [1, 1]), b)}
         return fn
 
-    return siso_tfm('Conv2DSeparable', cfn, {})
+    return siso_tensorflow_module('Conv2DSeparable', cfn, {})
 
 def enas_space(h_num_layers, fn_first, fn_repeats, input_names, output_names, weight_sharer, scope=None):
     def sub_fn(num_layers):
@@ -161,7 +161,7 @@ def fc_softmax(num_classes, weight_sharer):
             logits = tf.matmul(tf.squeeze(di['In'], axis=[1, 2]), W)
             return {'Out' : tf.nn.softmax(logits)}
         return fn
-    return siso_tfm('fc_softmax', cfn, {})
+    return siso_tensorflow_module('fc_softmax', cfn, {})
 
 def get_enas_search_space(num_classes, out_filters, weight_sharer):
     h_N = D([12], name='num_layers')

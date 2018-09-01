@@ -1,12 +1,10 @@
 from __future__ import absolute_import
-import darch.core as co
-import tensorflow as tf
-import numpy as np
+import deep_architect.core as co
 
 class KerasModule(co.Module):
     """Class for taking Keras code and wrapping it in a darch module.
 
-    This class subclasses :class:`darch.core.Module` as therefore inherits all
+    This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
     the functionality associated to it (e.g., keeping track of inputs, outputs,
     and hyperparameters). It also enables to do the compile and forward
     operations for these types of modules once a module is fully specified,
@@ -21,7 +19,7 @@ class KerasModule(co.Module):
     .. note::
         This module is abstract, meaning that it does not actually implement
         any particular Keras computation. It simply wraps Keras
-        functionality in a darch module. The instantation of the Keras
+        functionality in a DeepArchitect module. The instantation of the Keras
         variables is taken care by the `compile_fn` function that takes a two
         dictionaries, one of inputs and another one of outputs, and
         returns another function that takes a dictionary of inputs and creates
@@ -32,17 +30,15 @@ class KerasModule(co.Module):
         respectively. The dictionary returned by the forward function has keys
         equal to the names of the outputs.
 
-    The usage of this class is best understood through examples.
-    Examples for how to instantiate objects of this class to implement
-    specific Tensorflow computation can be found in
-    :mod:`darch.search_spaces.tensorflow.conv2d`.
+        This implementation is very similar to the implementation of the Tensorflow
+        helper :class:`deep_architect.helpers.tensorflow`.
 
     Args:
         name (str): Name of the module
         name_to_hyperp (dict[str,darch.core.Hyperparameter]): Dictionary of
             hyperparameters that the model depends on. The keys are the local
             names of the hyperparameters.
-        compile_fn ((dict[str,object], dict[str,object]) -> ((dict[str,object]) -> ((dict[str,object]) | (dict[str,object], dict[tensorflow.python.framework.ops.Tensor,object], dict[tensorflow.python.framework.ops.Tensor,object])))):
+        compile_fn ((dict[str,object], dict[str,object]) -> (dict[str,object] -> dict[str,object])):
             The first function takes two dictionaries with
             keys corresponding to `input_names` and `output_names` and returns
             a function that takes a dictionary with keys corresponding to
@@ -67,10 +63,7 @@ class KerasModule(co.Module):
         hyperp_name_to_val = self._get_hyperp_values()
 
         out = self._compile_fn(input_name_to_val, hyperp_name_to_val)
-        if isinstance(out, tuple):
-            (self._fn, self.train_feed, self.eval_feed) = out
-        else:
-            self._fn = out
+        self._fn = out
 
     def _forward(self):
         input_name_to_val = self._get_input_values()
@@ -80,33 +73,8 @@ class KerasModule(co.Module):
     def _update(self):
         pass
 
-def get_feed_dicts(output_lst):
-    """Get the training and evaluation dictionaries that map placeholders to the
-    values that they should take during training and evaluation, respectively
-    (e.g., used for dropout or batch normalization).
+def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
+    return KerasModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
 
-    Args:
-        output_lst (list[darch.core.Output]): List of outputs of the model
-            (i.e., with no unspecified hyperparameters available) sampled
-            from the search space.
-
-    Returns:
-        (dict, dict):
-            Training and evaluation dictionaries where the keys are placeholders
-            and the values are the values the placeholders should take during
-            each of these stages.
-    """
-    train_feed = {}
-    eval_feed = {}
-
-    def fn(x):
-        if hasattr(x, 'train_feed'):
-            train_feed.update(x.train_feed)
-        if hasattr(x, 'eval_feed'):
-            eval_feed.update(x.eval_feed)
-        return False
-    co.traverse_backward(output_lst, fn)
-    return (train_feed, eval_feed)
-
-def get_num_trainable_parameters():
-    return np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+def siso_module_from_keras_layer_fn(layer_fn, name_to_hyperp):
+    compile_fn = lambda di, dh: layer_fn(**dh)

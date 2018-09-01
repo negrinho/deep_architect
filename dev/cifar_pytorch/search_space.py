@@ -1,14 +1,14 @@
 import deep_architect.helpers.pytorch as hpt
 import deep_architect.hyperparameters as hp
 from model import CifarResNeXt
-from deep_architect.contrib.useful.search_spaces.pytorch.common import siso_torchm
+from deep_architect.contrib.useful.search_spaces.pytorch.common import siso_pytorch_module
 
 
 D = hp.Discrete
 
 
 def SISOPTM(name, compile_fn, name_to_h={}, scope=None):
-    return hpt.PyTModule(name, name_to_h, compile_fn,
+    return hpt.PyTorchModule(name, name_to_h, compile_fn,
             ['In'], ['Out'], scope)
 
 
@@ -17,7 +17,7 @@ def get_net(nlabels):
         net = CifarResNeXt(nlabels=nlabels, **dh)
         def fn(di):
             return lambda inp_dict: {'Out': net(di['In'])}, [net]
-    return siso_torchm('CifarResNeXt', cfn, hyperparameters_fn())
+    return siso_pytorch_module('CifarResNeXt', cfn, hyperparameters_fn())
 
 def hyperparameters_fn():
     return {

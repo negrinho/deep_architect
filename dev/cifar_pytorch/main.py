@@ -89,7 +89,7 @@ if __name__ == '__main__':
     eval_fn = get_eval_fn()
     for _ in range(16):
         (inputs, outputs, hs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
-        d['net'] = hpt.PyTNetContainer(inputs, outputs)
+        d['net'] = hpt.PyTorchModel(inputs, outputs)
         d['darch'] = {'inputs' : inputs, 'outputs' : outputs, 'hs' : hs}
         eval_fn(d)
 

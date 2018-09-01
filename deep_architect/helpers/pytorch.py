@@ -2,7 +2,7 @@ from six import iteritems
 import deep_architect.core as co
 import torch.nn as nn
 
-class PyTModule(co.Module):
+class PyTorchModule(co.Module):
     """Class for taking Pytorch code and wrapping it in a darch module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
@@ -17,7 +17,7 @@ class PyTModule(co.Module):
     operation and constructs the actual computational graph fragment associated
     to this module.
 
-    See :class:`deep_architect.helpers.tensorflow.TFModule` for a similar class for
+    See :class:`deep_architect.helpers.tensorflow.TensorflowModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
     static computational graphs, so the forward functionality is usually only
     called once per creation for the graph creation. Pytorch requires calling
@@ -116,8 +116,8 @@ def parameters(output_lst):
         ps.update(pyth_m.parameters())
     return ps
 
-class PyTNetContainer(nn.Module):
-    """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch.PyTModule`
+class PyTorchModel(nn.Module):
+    """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch.PyTorchModule`
     in a way that they can be used as :class:`torch.nn.Module`, e.g.,
     functionality to move the computation of the GPU or to get all the parameters
     involved in the computation are available.

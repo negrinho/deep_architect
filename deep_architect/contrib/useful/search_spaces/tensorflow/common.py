@@ -4,5 +4,5 @@ import deep_architect.hyperparameters as hp
 
 D = hp.Discrete
 
-def siso_tfm(name, compile_fn, name_to_hyperp, scope=None):
-    return htf.TFModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
+    return htf.TensorflowModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()

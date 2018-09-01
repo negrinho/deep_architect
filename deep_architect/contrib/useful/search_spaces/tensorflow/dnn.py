@@ -2,7 +2,7 @@
 import deep_architect.modules as mo
 import tensorflow as tf
 import numpy as np
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import siso_tfm, D
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import siso_tensorflow_module, D
 
 # initializers
 def constant_initializer(c):
@@ -26,7 +26,7 @@ def xavier_initializer_affine(gain=1.0):
 
 # modules
 def relu():
-    return siso_tfm('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
+    return siso_tensorflow_module('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
 
 def affine(h_m, h_W_init_fn, h_b_init_fn):
     def cfn(di, dh):
@@ -41,7 +41,7 @@ def affine(h_m, h_W_init_fn, h_b_init_fn):
                 In = tf.reshape(In, [-1, n])
             return {'Out' : tf.add(tf.matmul(In, W), b)}
         return fn
-    return siso_tfm('Affine', cfn,
+    return siso_tensorflow_module('Affine', cfn,
         {'m' : h_m, 'W_init_fn' : h_W_init_fn, 'b_init_fn' : h_b_init_fn})
 
 def dropout(h_keep_prob):
@@ -50,7 +50,7 @@ def dropout(h_keep_prob):
         def fn(di):
             return {'Out' : tf.nn.dropout(di['In'], p)}
         return fn, {p : dh['keep_prob']}, {p : 1.0}
-    return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_tensorflow_module('Dropout', cfn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
     def cfn(di, dh):
@@ -58,7 +58,7 @@ def batch_normalization():
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn, {})
+    return siso_tensorflow_module('BatchNormalization', cfn, {})
 
 # add having a bias or not.
 
@@ -72,7 +72,7 @@ def affine_simplified(h_m):
                 In = tf.reshape(In, [-1, n])
             return {'Out' : tf.layers.dense(In, dh['m'])}
         return fn
-    return siso_tfm('AffineSimplified', cfn, {'m' : h_m})
+    return siso_tensorflow_module('AffineSimplified', cfn, {'m' : h_m})
 
 def nonlinearity(h_nonlin_name):
     def cfn(di, dh):
@@ -92,7 +92,7 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {"Out" : Out}
         return fn
-    return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+    return siso_tensorflow_module('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([

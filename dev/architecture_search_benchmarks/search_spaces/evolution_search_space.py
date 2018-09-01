@@ -7,12 +7,12 @@ import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
 import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as cnn2d
 from .common_ops import relu, add, pool_and_logits, batch_normalization, avg_pool, wrap_relu_batch_norm
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
 import tensorflow as tf
 import numpy as np
 
 
-TFM = htf.TFModule
+TFM = htf.TensorflowModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
 # Basic convolutional module that selects number of filters based on number of
@@ -33,7 +33,7 @@ def conv2D(h_filter_size, h_stride):
                 tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
         return fn
 
-    return siso_tfm('Conv2D', cfn, {
+    return siso_tensorflow_module('Conv2D', cfn, {
         'stride' : h_stride,
         'filter_size' : h_filter_size})
 
@@ -57,7 +57,7 @@ def conv_spatial_separable(h_filter_size, h_stride):
                 tf.nn.conv2d(intermediate, W2, [1, 1, 1, 1], 'SAME'), b2)}
         return fn
 
-    return siso_tfm('Conv2DSimplified', cfn, {
+    return siso_tensorflow_module('Conv2DSimplified', cfn, {
         'filter_size' : h_filter_size,
         'stride' : h_stride})
 
@@ -76,7 +76,7 @@ def conv2D_dilated(h_filter_size, h_dilation):
                 tf.nn.atrous_conv2d(di['In'], W, dh['dilation'], 'SAME'), b)}
         return fn
 
-    return siso_tfm('Conv2DDilated', cfn, {
+    return siso_tensorflow_module('Conv2DDilated', cfn, {
         'filter_size' : h_filter_size,
         'dilation' : h_dilation
         })
@@ -99,7 +99,7 @@ def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
                 tf.nn.separable_conv2d(di['In'], W_depth, W_point, [1, dh['stride'], dh['stride'], 1], 'SAME', [1, 1]), b)}
         return fn
 
-    return siso_tfm('Conv2DSeparable', cfn, {
+    return siso_tensorflow_module('Conv2DSeparable', cfn, {
         'filter_size' : h_filter_size,
         'channel_multiplier' : h_channel_multiplier,
         'stride' : h_stride})

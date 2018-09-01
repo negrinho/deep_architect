@@ -1,17 +1,17 @@
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tfm
+from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
 
 import tensorflow as tf
 
-TFM = htf.TFModule
+TFM = htf.TensorflowModule
 
 def relu():
     def cfn(di, dh):
         def fn(di):
             return {'Out' : tf.nn.relu(di['In'])}
         return fn
-    return siso_tfm('ReLU', cfn, {})
+    return siso_tensorflow_module('ReLU', cfn, {})
 
 def pool_and_logits(num_classes):
     def cfn(di, dh):
@@ -39,7 +39,7 @@ def batch_normalization():
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var) }
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn, {})
+    return siso_tensorflow_module('BatchNormalization', cfn, {})
 
 def avg_pool(h_kernel_size, h_stride):
     def cfn(di, dh):
@@ -47,14 +47,14 @@ def avg_pool(h_kernel_size, h_stride):
             return {'Out' : tf.nn.avg_pool(di['In'],
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return siso_tfm('AvgPool', cfn, {
+    return siso_tensorflow_module('AvgPool', cfn, {
         'kernel_size' : h_kernel_size,
         'stride' : h_stride,
         })
 
 # Add two inputs
 def add():
-    return htf.TFModule('Add', {},
+    return htf.TensorflowModule('Add', {},
         lambda: lambda In0, In1: tf.add(In0, In1),
         ['In0', 'In1'], ['Out']).get_io()
 

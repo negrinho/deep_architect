@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from darch.contrib.useful.search_spaces.pytorch.common import siso_torchm
+from darch.contrib.useful.search_spaces.pytorch.common import siso_pytorch_module
 
 def calculate_same_padding(h_in, w_in, stride, filter_size):
     h_out = ceil(float(h_in) / float(stride))
@@ -17,7 +17,7 @@ def calculate_same_padding(h_in, w_in, stride, filter_size):
         pad_along_width = max(filter_size - stride, 0)
     else:
         pad_along_width = max(filter_size - (h_in % stride), 0)
-    
+
     pad_top = pad_along_height // 2
     pad_bottom = pad_along_height - pad_top
     pad_left = pad_along_width // 2
@@ -30,13 +30,13 @@ def conv2d(h_num_filters, h_filter_size, h_stride, h_use_bias):
         padding = nn.ZeroPad2d(
             calculate_same_padding(height, width, dh['stride'], dh['filter_size']))
         conv = nn.Conv2d(
-            channels, dh['num_filters'], dh['filter_size'], 
+            channels, dh['num_filters'], dh['filter_size'],
             stride=dh['stride'], bias=dh['use_bias'])
         def fn(di):
             x = padding(di['In'])
             return {'Out' : conv(x)}
         return fn, [conv, padding]
-    return siso_torchm('Conv2D', cfn, {
+    return siso_pytorch_module('Conv2D', cfn, {
         'num_filters' : h_num_filters,
         'filter_size' : h_filter_size,
         'stride' : h_stride,
@@ -53,7 +53,7 @@ def max_pool2d(h_kernel_size, h_stride):
             x = padding(di['In'])
             return {'Out' : max_pool(x)}
         return fn, [padding, max_pool]
-    return siso_torchm('MaxPool2D', cfn, {
+    return siso_pytorch_module('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride})
 
 def dropout(h_keep_prob):
@@ -62,7 +62,7 @@ def dropout(h_keep_prob):
         def fn(di):
             return {'Out' : dropout_layer(di['In'])}
         return fn, [dropout_layer]
-    return siso_torchm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_pytorch_module('Dropout', cfn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
     def cfn(di, dh):
@@ -71,14 +71,14 @@ def batch_normalization():
         def fn(di):
             return {'Out' : batch_norm(di['In'])}
         return fn, [batch_norm]
-    return siso_torchm('BatchNormalization', cfn, {})
+    return siso_pytorch_module('BatchNormalization', cfn, {})
 
 def relu():
     def cfn(di, dh):
         def fn(di):
             return {'Out' : F.relu(di['In'])}
         return fn, []
-    return siso_torchm('ReLU', cfn, {})
+    return siso_pytorch_module('ReLU', cfn, {})
 
 def global_pool2d():
     def cfn(di, dh):
@@ -88,7 +88,7 @@ def global_pool2d():
             x = torch.squeeze(x, 2)
             return {'Out' : torch.squeeze(x, 2)}
         return fn, []
-    return siso_torchm('GlobalAveragePool', cfn, {})
+    return siso_pytorch_module('GlobalAveragePool', cfn, {})
 
 def fc_layer(h_num_units):
     def cfn(di, dh):
@@ -97,7 +97,7 @@ def fc_layer(h_num_units):
         def fn(di):
             return {'Out' : fc(di['In'])}
         return fn, [fc]
-    return siso_torchm('FCLayer', cfn, {'num_units' : h_num_units})
+    return siso_pytorch_module('FCLayer', cfn, {'num_units' : h_num_units})
 
 func_dict = {
     'dropout': dropout,

@@ -15,7 +15,7 @@ class TFEModule(co.Module):
     operation and constructs the actual computational graph fragment associated
     to this module.
 
-    See :class:`deep_architect.helpers.tensorflow.TFModule` for a similar class for
+    See :class:`deep_architect.helpers.tensorflow.TensorflowModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
     static computational graphs, so the forward functionality is usually only
     called once per creation for the graph creation. TFEager requires calling

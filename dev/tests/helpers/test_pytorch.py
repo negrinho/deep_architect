@@ -17,10 +17,10 @@ def get_empty_cfn():
 
 
 def test_pytmodule():
-    from deep_architect.helpers.pytorch import PyTModule
+    from deep_architect.helpers.pytorch import PyTorchModule
 
     cfn = get_empty_cfn()
-    mod = PyTModule(name='test',
+    mod = PyTorchModule(name='test',
                     name_to_hyperp={},
                     compile_fn=cfn,
                     input_names=['In'],
