@@ -26,3 +26,5 @@ We then can also use pandoc to help converting from Markdown to RST https://pand
 
 If you want to convert md to rst, use pandoc directly 
 pandoc -o text.rst text.md
+
+Alternatively, you can also write your tutorial in markdown or rst format 

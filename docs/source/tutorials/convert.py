@@ -29,17 +29,21 @@ else:
             header = line.strip()[6:-1].lower()
             assert(target_format == header) 
             mode = "text"
-            if code_block != "": content += code_block + "```\n\n" 
+            if code_block != "": 
+                content += code_block + "```\n\n" if target_format == "markdown" else code_block + "\n\n"
             continue 
         if (line.strip() == code_header): 
             mode = "code" 
-            code_block = "\n```python\n"
+            code_block = "\n```python\n" if target_format == "markdown" else "\n.. code-block:: python\n"
             continue 
         if (mode == "text"): 
             line = line[2:] # first two characters should be "# " so delete them 
             content += line
         elif (mode == "code"): 
-            code_block += line
+            code_block += line if target_format == "markdown" else "\t" + line 
+
+    # add last code block 
+    if (mode == "code"): content += code_block + "```\n\n" if target_format == "markdown" else code_block + "\n\n"
 
 fin.close()
 

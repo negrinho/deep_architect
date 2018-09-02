@@ -3,14 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to DeepArchitect documentation!
-=========================================
+
+DeepArchitect: The Python Architecture Search Library 
+======================================================
 
 DeepArchitect is an expressive framework to conducting neural architecture search research.
-With DeepArchitect researchers can represent expressive search spaces over deep 
-architectures and automatically search over them. 
+ 
+Why use DeepArchitect? 
+======================
 
-DeepArchitect can be installed according to instructions below 
+With DeepArchitect researchers can represent expressive search spaces over deep 
+architectures and automatically search over them.
+
+Getting Started
+================
+
+DeepArchitect can be installed according to instructions below
 
 .. toctree::
 
@@ -19,19 +27,18 @@ DeepArchitect can be installed according to instructions below
 Below are the tutorials and basic information to help you get start with DeepArchitect
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
-    tutorials/mnist_tutorial
-    tutorials/mnist_test
+    tutorials 
 
 Below are advanced topics: 
 
 .. toctree:: 
 
-    resource 
     darch_ref
+    resource 
 
-Contributions
+We welcome contributions! 
 
 .. toctree::
 
