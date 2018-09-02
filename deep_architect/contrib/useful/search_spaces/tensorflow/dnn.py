@@ -28,9 +28,9 @@ def xavier_initializer_affine(gain=1.0):
 def relu():
     return siso_tensorflow_module('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
 
-def affine(h_m, h_W_init_fn, h_b_init_fn):
+def affine(h_num_hidden, h_W_init_fn, h_b_init_fn):
     def cfn(di, dh):
-        m = dh['m']
+        m = dh['num_hidden']
         shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
         W = tf.Variable(dh['W_init_fn']([n, m]))
@@ -42,7 +42,7 @@ def affine(h_m, h_W_init_fn, h_b_init_fn):
             return {'Out' : tf.add(tf.matmul(In, W), b)}
         return fn
     return siso_tensorflow_module('Affine', cfn,
-        {'m' : h_m, 'W_init_fn' : h_W_init_fn, 'b_init_fn' : h_b_init_fn})
+        {'num_hidden' : h_num_hidden, 'W_init_fn' : h_W_init_fn, 'b_init_fn' : h_b_init_fn})
 
 def dropout(h_keep_prob):
     def cfn(di, dh):
@@ -60,9 +60,7 @@ def batch_normalization():
         return fn, {p_var : 1}, {p_var : 0}
     return siso_tensorflow_module('BatchNormalization', cfn, {})
 
-# add having a bias or not.
-
-def affine_simplified(h_m):
+def affine_simplified(h_num_hidden):
     def cfn(di, dh):
         shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
@@ -70,9 +68,9 @@ def affine_simplified(h_m):
             In = di['In']
             if len(shape) > 2:
                 In = tf.reshape(In, [-1, n])
-            return {'Out' : tf.layers.dense(In, dh['m'])}
+            return {'Out' : tf.layers.dense(In, dh['num_hidden'])}
         return fn
-    return siso_tensorflow_module('AffineSimplified', cfn, {'m' : h_m})
+    return siso_tensorflow_module('AffineSimplified', cfn, {'num_hidden' : h_num_hidden})
 
 def nonlinearity(h_nonlin_name):
     def cfn(di, dh):
