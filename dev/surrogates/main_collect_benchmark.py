@@ -1,10 +1,10 @@
 
-from deep_architect.contrib.useful.datasets.loaders import load_mnist
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
-from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D
 import deep_architect.modules as mo
-import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as css_dnn
 import deep_architect.search_logging as sl
 import deep_architect.searchers as se
 

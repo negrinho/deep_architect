@@ -1,4 +1,4 @@
-from darch.contrib.useful.search_spaces.tensorflow.common import siso_tensorflow_module
+from darch.contrib.misc.search_spaces.tensorflow.common import siso_tensorflow_module
 import tensorflow as tf
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):

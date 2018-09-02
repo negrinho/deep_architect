@@ -2,10 +2,10 @@ from time import sleep
 import argparse
 from mpi4py import MPI
 import tensorflow as tf
-from deep_architect.contrib.useful.datasets.loaders import load_cifar10
-from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
-from deep_architect.contrib.useful import gpu_utils
+from deep_architect.contrib.misc.datasets.loaders import load_cifar10
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.misc import gpu_utils
 from deep_architect import searchers as se
 import deep_architect.search_logging as sl
 
@@ -51,7 +51,7 @@ def start_searcher(comm, num_workers, searcher, resume_if_exists,
                     eval_loggers[idx].log_features(inputs, outputs, hs)
 
                     comm.isend(
-                        (vs, search_logger.current_evaluation_id, searcher_eval_token, 
+                        (vs, search_logger.current_evaluation_id, searcher_eval_token,
                             search_logger.search_data_folderpath, False),
                         dest=idx + 1, tag=MODEL_REQ)
                     ready_requests[idx] = comm.irecv(source=idx + 1, tag=READY_REQ)
@@ -91,7 +91,7 @@ def start_worker(comm, rank, evaluator, search_space_factory, resume=True, save_
 
     while(True):
         comm.ssend([rank], dest=0, tag=READY_REQ)
-        (vs, evaluation_id, searcher_eval_token, 
+        (vs, evaluation_id, searcher_eval_token,
             search_data_folderpath, kill) = comm.recv(source=0, tag=MODEL_REQ)
         if kill:
             break
@@ -148,8 +148,8 @@ def main():
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
         start_searcher(
-            comm, comm.Get_size() - 1, searcher, options.resume, 
-            config['searcher_file_name'], num_samples=num_samples, 
+            comm, comm.Get_size() - 1, searcher, options.resume,
+            config['searcher_file_name'], num_samples=num_samples,
             num_epochs=num_epochs, save_every=save_every)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)

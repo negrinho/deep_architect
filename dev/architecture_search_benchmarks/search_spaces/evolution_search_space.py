@@ -5,9 +5,9 @@ import deep_architect.core as co
 import deep_architect.hyperparameters as hp
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
-import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as cnn2d
+import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
 from .common_ops import relu, add, pool_and_logits, batch_normalization, avg_pool, wrap_relu_batch_norm
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D, siso_tensorflow_module
 import tensorflow as tf
 import numpy as np
 

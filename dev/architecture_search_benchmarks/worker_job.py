@@ -3,10 +3,10 @@ import argparse
 import random
 import os
 import tensorflow as tf
-from darch.contrib.useful.datasets.loaders import load_cifar10
-from darch.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
-from darch.contrib.useful import gpu_utils
+from darch.contrib.misc.datasets.loaders import load_cifar10
+from darch.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from darch.contrib.misc.datasets.dataset import InMemoryDataset
+from darch.contrib.misc import gpu_utils
 from darch import searchers as se
 import darch.search_logging as sl
 
@@ -16,7 +16,7 @@ from searchers.searcher import name_to_searcher_fn
 from evaluators.enas_evaluator import ENASEvaluator
 from evaluators.enas_evaluator_eager import ENASEagerEvaluator
 
-def start_worker(rank, evaluator, search_space_factory, 
+def start_worker(rank, evaluator, search_space_factory,
     worker_queue_file='worker_queue', worker_results_prefix='worker_results_',):
     # set the available gpu for process
     print 'WORKER %d' % rank
@@ -37,7 +37,7 @@ def start_worker(rank, evaluator, search_space_factory,
         se.specify(outputs.values(), hs, vs)
         results = evaluator.eval(inputs, outputs, hs)
         write_file(
-            worker_results_prefix + str(rank), 
+            worker_results_prefix + str(rank),
             (results, evaluation_id, searcher_eval_token))
 
 def main():
@@ -58,7 +58,7 @@ def main():
     dirname = './comm_dir'
     if not os.path.isdir(dirname):
         os.mkdir(dirname)
-    
+
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/cifar-10-batches-py/'), 10)
     }
@@ -84,8 +84,8 @@ def main():
     evaluator = evaluators[config['evaluator']]()
 
 
-    start_worker(options.rank, evaluator, search_space_factory, 
-        worker_queue_file=dirname + '/worker_queue', 
+    start_worker(options.rank, evaluator, search_space_factory,
+        worker_queue_file=dirname + '/worker_queue',
         worker_results_prefix=dirname + '/worker_results_')
 
 if __name__ == "__main__":

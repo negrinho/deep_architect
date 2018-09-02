@@ -1,7 +1,7 @@
-import deep_architect.contrib.useful.evaluators.tensorflow.ptb_evaluator as ev
+import deep_architect.contrib.misc.evaluators.tensorflow.ptb_evaluator as ev
 import deep_architect.searchers as se
-import deep_architect.contrib.useful.search_spaces.tensorflow.lstm_search_space as ss
-import deep_architect.contrib.useful.datasets.ptb_reader as reader
+import deep_architect.contrib.misc.search_spaces.tensorflow.lstm_search_space as ss
+import deep_architect.contrib.misc.datasets.ptb_reader as reader
 
 if __name__ == '__main__':
     train_data, valid_data, test_data, vocab = reader.ptb_raw_data('darch/data/simple-examples/data')

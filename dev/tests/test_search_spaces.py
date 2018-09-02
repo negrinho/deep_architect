@@ -1,6 +1,6 @@
 
 import deep_architect.core as co
-import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
+import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as css_cnn2d
 import deep_architect.hyperparameters as hp
 import deep_architect.modules as mo
 import deep_architect.searchers as se

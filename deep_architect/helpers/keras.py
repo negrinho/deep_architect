@@ -31,7 +31,7 @@ class KerasModule(co.Module):
         equal to the names of the outputs.
 
         This implementation is very similar to the implementation of the Tensorflow
-        helper :class:`deep_architect.helpers.tensorflow`.
+        helper :class:`deep_architect.helpers.tensorflow.TensorflowModule`.
 
     Args:
         name (str): Name of the module

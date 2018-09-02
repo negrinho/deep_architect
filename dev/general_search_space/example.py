@@ -5,8 +5,8 @@ from dev.general_search_space.general_ops import *
 from dev.general_search_space import backend
 from darch.searchers import random_specify
 import darch.visualization as viz
-from darch.contrib.useful.datasets.loaders import load_cifar10
-from darch.contrib.useful.datasets.dataset import InMemoryDataset
+from darch.contrib.misc.datasets.loaders import load_cifar10
+from darch.contrib.misc.datasets.dataset import InMemoryDataset
 from dev.keras.keras_ops import input_node
 
 def get_search_space(num_classes):

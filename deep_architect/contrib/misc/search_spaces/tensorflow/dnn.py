@@ -2,7 +2,7 @@
 import deep_architect.modules as mo
 import tensorflow as tf
 import numpy as np
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import siso_tensorflow_module, D
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tensorflow_module, D
 
 # initializers
 def constant_initializer(c):

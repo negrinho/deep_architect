@@ -1,5 +1,5 @@
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
-import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as dnn
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D, siso_tensorflow_module
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as dnn
 import deep_architect.modules as mo
 import tensorflow as tf
 import numpy as np

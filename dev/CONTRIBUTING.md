@@ -413,7 +413,7 @@ SearchSpace.
 -->
 
 <!-- NOTE: this discussion for the  -->
-<!-- contrib.useful.H1000 -->
+<!-- contrib.misc.H1000 -->
 
 Numbering for the works items starts at zero for each priority level.
 Once assigned, the number is persistent, meaning that future work items will

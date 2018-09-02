@@ -7,7 +7,7 @@ import tensorflow as tf
 
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D, siso_tensorflow_module
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D, siso_tensorflow_module
 from .common_ops import wrap_relu_batch_norm, pool_and_logits
 
 

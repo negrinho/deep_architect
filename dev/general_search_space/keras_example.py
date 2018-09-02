@@ -5,10 +5,10 @@ from darch import core as co
 from darch import modules as mo
 from darch.searchers import random_specify
 from darch.hyperparameters import Discrete as D
-from darch.contrib.useful.datasets.loaders import load_mnist
+from darch.contrib.misc.datasets.loaders import load_mnist
 
 from dev.keras.keras_ops import (
-    input_node, conv2d, max_pool2d, relu, batch_normalization, 
+    input_node, conv2d, max_pool2d, relu, batch_normalization,
     global_pool2d, fc_layer)
 
 def train_keras():

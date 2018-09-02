@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import sys
-import deep_architect.contrib.useful.datasets.augmentation as au
+import deep_architect.contrib.misc.datasets.augmentation as au
 if sys.version_info[0] == 2:
     import cPickle as pickle # pylint: disable=E0401
 else:

@@ -4,9 +4,7 @@ import shutil
 import time
 import subprocess
 import argparse
-
 from six import iteritems, itervalues
-
 
 def run_bash_command(cmd):
     str_output = subprocess.check_output(cmd, shell=True)

@@ -1,7 +1,7 @@
 
 import numpy as np
-
 import tensorflow as tf
+
 class TFDataset:
     def __init__(self, X, y, shuffle_at_epoch_begin, batch_size=128, batch_transform_fn=None):
         if X.shape[0] != y.shape[0]:
@@ -14,7 +14,7 @@ class TFDataset:
             self.dataset = self.dataset.map(batch_transform_fn)
         self.dataset = self.dataset.batch(batch_size)
         self.dataset = self.dataset.cache().prefetch(batch_size)
-        
+
         self.num_examples = X.shape[0]
         self.epoch = 0
         self.examples_in_cur_epoch = 0
@@ -33,8 +33,6 @@ class TFDataset:
             return (X, y), True
         else:
             return (X, y), False
-
-        
 
 class InMemoryDataset:
     """Wrapper around a dataset for iteration that allows cycling over the

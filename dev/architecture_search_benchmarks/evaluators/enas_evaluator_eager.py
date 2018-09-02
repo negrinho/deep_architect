@@ -12,7 +12,7 @@ import numpy as np
 import deep_architect.core as co
 from helpers import tfeager as htfe
 import deep_architect.search_logging as sl
-import deep_architect.contrib.useful.gpu_utils as gpu_utils
+import deep_architect.contrib.misc.gpu_utils as gpu_utils
 from dev.architecture_search_benchmarks.helpers.tfeager import setTraining
 from six.moves import range
 import time
@@ -25,7 +25,7 @@ class ENASEagerEvaluator(object):
     epochs.
     """
 
-    def __init__(self, train_dataset, val_dataset, num_classes, weight_sharer, 
+    def __init__(self, train_dataset, val_dataset, num_classes, weight_sharer,
             optimizer_type='adam', batch_size=128,
             learning_rate_init=1e-3, display_step=50, log_output_to_terminal=True,
             test_dataset=None, max_controller_steps=50):
@@ -63,7 +63,7 @@ class ENASEagerEvaluator(object):
     def save_state(self, folderpath):
         weight_sharer_file = os.path.join(folderpath, "weight_sharer")
         self.weight_sharer.save(weight_sharer_file)
-    
+
     def load_state(self, folderpath):
         weight_sharer_file = os.path.join(folderpath, "weight_sharer")
         self.weight_sharer.load(weight_sharer_file)
@@ -94,7 +94,7 @@ class ENASEagerEvaluator(object):
             t5 = time.time()
             logits = outputs['Out'].val
             t4 = time.time()
-            
+
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
             t5 = time.time()
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
@@ -109,7 +109,7 @@ class ENASEagerEvaluator(object):
             time4 += t5 - t4
             time5 += t6 - t5
             time6 += t7 - t6
-            
+
             # update the number of examples left.
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
@@ -158,7 +158,7 @@ class ENASEagerEvaluator(object):
                 log_string += " time={:<6.4f}".format(t2 - t1)
                 print(log_string)
 
-            # If controller phase finished, update epoch and switch back to 
+            # If controller phase finished, update epoch and switch back to
             # updating child params
             if self.controller_step % self.max_controller_steps == 0:
                 self.controller_mode = False

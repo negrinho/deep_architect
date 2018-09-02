@@ -32,7 +32,7 @@ Features:
 
 * darch: Most of the framework code lies in this folder.
     * deep_architect.core: This file contains the main code regarding the implementation.
-* deep_architect.contrib.useful: The contrib folder is used to keep code that is potentially useful
+* deep_architect.contrib.misc: The contrib folder is used to keep code that is potentially useful
     for the people using the framework, but for which we will not make a coherent
     effort to maintain it.
 *

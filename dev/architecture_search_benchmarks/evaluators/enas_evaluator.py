@@ -9,7 +9,7 @@ import numpy as np
 import deep_architect.core as co
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.search_logging as sl
-import deep_architect.contrib.useful.gpu_utils as gpu_utils
+import deep_architect.contrib.misc.gpu_utils as gpu_utils
 from six.moves import range
 
 class ENASEvaluator(object):
@@ -81,7 +81,7 @@ class ENASEvaluator(object):
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
         acc = old_div(float(nc), dataset.get_num_examples())
-        return acc 
+        return acc
 
     def eval(self, inputs, outputs, hs):
         tf.reset_default_graph()

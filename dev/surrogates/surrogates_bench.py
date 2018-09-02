@@ -10,11 +10,11 @@ import time
 import gc
 
 # TODO: Change the below imports when using PyTorch
-import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as search_dnn
-from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
-from deep_architect.contrib.useful.datasets.loaders import load_mnist
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as search_dnn
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
 
 
 # Python >= 3.5

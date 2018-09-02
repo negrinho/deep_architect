@@ -6,7 +6,7 @@ import numpy as np
 import deep_architect.core as co
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.utils as ut
-import deep_architect.contrib.useful.gpu_utils as gpu_utils
+import deep_architect.contrib.misc.gpu_utils as gpu_utils
 from six.moves import range
 
 class SimpleClassifierEvaluator:
