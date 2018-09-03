@@ -13,13 +13,13 @@ def kaiming2015delving_initializer_conv(gain=1.0):
     return init_fn
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         conv_op = tf.layers.Conv2D(dh['num_filters'], (dh['filter_width'],) * 2,
             (dh['stride'],) * 2, use_bias=dh['use_bias'], padding='SAME')
-        def fn(di):
+        def forward_fn(di):
             return {'Out' : conv_op(di['In'])}
-        return fn
-    return siso_tensorflow_module('Conv2D', cfn, {
+        return forward_fn
+    return siso_tensorflow_module('Conv2D', compile_fn, {
         'num_filters' : h_num_filters,
         'filter_width' : h_filter_width,
         'stride' : h_stride,
@@ -27,12 +27,12 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
         })
 
 def max_pool2d(h_kernel_size, h_stride):
-    def cfn(di, dh):
-        def fn(di):
+    def compile_fn(di, dh):
+        def forward_fn(di):
             return {'Out' : tf.nn.max_pool(di['In'],
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
-        return fn
-    return siso_tensorflow_module('MaxPool2D', cfn, {
+        return forward_fn
+    return siso_tensorflow_module('MaxPool2D', compile_fn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride,})
 
 def conv_cell(h_num_filters, h_filter_width, h_swap, h_opt_drop, h_keep_prob, stride):
@@ -61,10 +61,10 @@ def conv_net(h_num_spatial_reductions):
         ]), h_num_spatial_reductions)
 
 def spatial_squeeze(h_pool_op, h_num_hidden):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         (_, height, width, _) = di['In'].get_shape().as_list()
         conv_op = tf.layers.Conv2D(dh['num_hidden'], (1, 1), (1, 1))
-        def fn(di):
+        def forward_fn(di):
             out = conv_op(di['In'])
             if dh['pool_op'] == 'max' or dh['pool_op'] == 'avg':
                 out = tf.nn.pool(out, [height, width], dh['pool_op'].upper(), 'VALID')
@@ -73,6 +73,6 @@ def spatial_squeeze(h_pool_op, h_num_hidden):
                 raise ValueError
             out = tf.squeeze(out, [1, 2])
             return {'Out' : out}
-        return fn
-    return siso_tensorflow_module('SpatialSqueeze', cfn, {
+        return forward_fn
+    return siso_tensorflow_module('SpatialSqueeze', compile_fn, {
         'pool_op' : h_pool_op, 'num_hidden' : h_num_hidden})

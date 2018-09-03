@@ -29,52 +29,52 @@ def relu():
     return siso_tensorflow_module('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
 
 def affine(h_num_hidden, h_W_init_fn, h_b_init_fn):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         m = dh['num_hidden']
         shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
         W = tf.Variable(dh['W_init_fn']([n, m]))
         b = tf.Variable(dh['b_init_fn']([m]))
-        def fn(di):
+        def forward_fn(di):
             In = di['In']
             if len(shape) > 2:
                 In = tf.reshape(In, [-1, n])
             return {'Out' : tf.add(tf.matmul(In, W), b)}
-        return fn
-    return siso_tensorflow_module('Affine', cfn,
+        return forward_fn
+    return siso_tensorflow_module('Affine', compile_fn,
         {'num_hidden' : h_num_hidden, 'W_init_fn' : h_W_init_fn, 'b_init_fn' : h_b_init_fn})
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p = tf.placeholder(tf.float32)
-        def fn(di):
+        def forward_fn(di):
             return {'Out' : tf.nn.dropout(di['In'], p)}
-        return fn, {p : dh['keep_prob']}, {p : 1.0}
-    return siso_tensorflow_module('Dropout', cfn, {'keep_prob' : h_keep_prob})
+        return forward_fn, {p : dh['keep_prob']}, {p : 1.0}
+    return siso_tensorflow_module('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p_var = tf.placeholder(tf.bool)
-        def fn(di):
+        def forward_fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
-        return fn, {p_var : 1}, {p_var : 0}
-    return siso_tensorflow_module('BatchNormalization', cfn, {})
+        return forward_fn, {p_var : 1}, {p_var : 0}
+    return siso_tensorflow_module('BatchNormalization', compile_fn, {})
 
 def affine_simplified(h_num_hidden):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
-        def fn(di):
+        def forward_fn(di):
             In = di['In']
             if len(shape) > 2:
                 In = tf.reshape(In, [-1, n])
             return {'Out' : tf.layers.dense(In, dh['num_hidden'])}
-        return fn
-    return siso_tensorflow_module('AffineSimplified', cfn, {'num_hidden' : h_num_hidden})
+        return forward_fn
+    return siso_tensorflow_module('AffineSimplified', compile_fn, {'num_hidden' : h_num_hidden})
 
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
-        def fn(di):
+    def compile_fn(di, dh):
+        def forward_fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
                 Out = tf.nn.relu(di['In'])
@@ -89,8 +89,8 @@ def nonlinearity(h_nonlin_name):
             else:
                 raise ValueError
             return {"Out" : Out}
-        return fn
-    return siso_tensorflow_module('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+        return forward_fn
+    return siso_tensorflow_module('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([

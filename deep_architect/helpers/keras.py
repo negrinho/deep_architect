@@ -76,5 +76,10 @@ class KerasModule(co.Module):
 def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
     return KerasModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
 
-def siso_module_from_keras_layer_fn(layer_fn, name_to_hyperp):
-    compile_fn = lambda di, dh: layer_fn(**dh)
+def siso_keras_module_from_keras_layer_fn(layer_fn, name_to_hyperp, scope=None):
+    def compile_fn(di, dh):
+        m = layer_fn(**dh)
+        def forward_fn(di):
+            return {"Out" : m(di["In"])}
+        return forward_fn
+    return siso_keras_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)

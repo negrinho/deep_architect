@@ -44,16 +44,12 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 ## Work items
 * Group the work items into logical groups.
 
-* Talk about the naming conventions employed for hyperparameters and normal values.
-* Fix the broken abstraction for assessing the values for the inputs. If done just in a single place it is fine, but it is done every time that we call forward.
-* Change the names to be more meaningful.
 * Run the benchmark on the server.
 * Add a few PyTorch examples.
 * Write a better loader for CIFAR-10.
 * Develop the PyTorch functionality.
 * Write down documentation.
 * Merge some of the functionality as examples, or keep them in their own branches for now.
-* Develop a good way of keeping track of important branches or of experiments that are relevant for the model.
 * Think of a good way of adding regularization to the model. Either the current helper can be extended or we just want to have broad regularization over all the image.
 * Fix the problem of it not being JSON serializable.
 * Visualizer for ONNX models.

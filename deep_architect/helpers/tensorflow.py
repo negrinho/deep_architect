@@ -110,3 +110,14 @@ def get_feed_dicts(output_lst):
 
 def get_num_trainable_parameters():
     return np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
+
+def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
+    return TensorflowModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+
+def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn, name_to_hyperp, scope=None):
+    def compile_fn(di, dh):
+        m = layer_fn(**dh)
+        def forward_fn(di):
+            return {"Out" : m(di["In"])}
+        return forward_fn
+    return siso_tensorflow_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)
