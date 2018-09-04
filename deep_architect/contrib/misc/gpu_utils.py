@@ -1,6 +1,6 @@
 import subprocess
 import os
-import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 
 def is_environment_variable_defined(name):
     return name in os.environ
@@ -16,7 +16,7 @@ def get_environment_variable(name, abort_if_notexists=True):
 def get_gpu_information():
     gpus = []
     try:
-        convert_to_gigabytes = lambda x: sl.convert_between_byte_units(x,
+        convert_to_gigabytes = lambda x: ut.convert_between_byte_units(x,
             src_units='megabytes', dst_units='gigabytes')
         out = subprocess.check_output([
             'nvidia-smi',

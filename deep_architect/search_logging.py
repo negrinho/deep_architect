@@ -40,7 +40,7 @@ def create_search_folderpath(folderpath, search_name,
     all_evaluations_folderpath = get_all_evaluations_folderpath(folderpath, search_name)
 
     if delete_if_exists:
-        ut.delete_folder(search_folderpath, False, True)
+        ut.delete_folder(search_folderpath, False, False)
     assert not (abort_if_exists and ut.folder_exists(search_folderpath))
 
     if not ut.folder_exists(search_folderpath):

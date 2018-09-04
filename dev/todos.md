@@ -51,7 +51,6 @@ Reasonable dimensions can be computed based on the model on the dimensions of th
 * Write down documentation.
 * Merge some of the functionality as examples, or keep them in their own branches for now.
 * Think of a good way of adding regularization to the model. Either the current helper can be extended or we just want to have broad regularization over all the image.
-* Fix the problem of it not being JSON serializable.
 * Visualizer for ONNX models.
 * Standards for ONNX models.
 * Standards for data representation in disk.
@@ -176,12 +175,10 @@ of the code base, e.g., some of the private functions of the modules.
 * Visualization with better support to connect to assets that result from search.
 * Do the wrapping of the search space at the level of the searcher. There is some amount of boilerplate that happens at that level. Right now, solved via the search space factory.
 * Check if a multi input, multi output empty is necessary.
-* Move the filesystem utils somewhere else.
 * Use the term triage for the purpose of the contrib directory.
 * Change the links to the deep_architect repo once we have all the models.
 * Improve the way the padding of existing search spaces is done.
 * In some cases it would be convenient to have functions that take the specificed hyperparameters and create the desired artifacts, e.g., search spaces for data augmentation schemes and search spaces for learning rate schedules.
-* What are the current limitations in terms of models, i.e., what can be done
 * Evolution searcher with general mutation scheme that works for all search spaces.
 * A good way of reducing the effort of documenting the code is when finding something confusing, it is useful to document the code extensively then.
 * Are the functions in the empty module necessary or not.
@@ -189,7 +186,6 @@ of the code base, e.g., some of the private functions of the modules.
 * The propagation for dependent hyperparameters is going to be suboptimal.
 * Write more extensive tests for the new functionality for getting the hyperparameters.
 * Evaluation logging may change a little bit to allow for different types of logging information.
-* SearchLogger needs to be updated to take into account the fact that I may need to bypass it. I think that the current implementation relies too much on the existence of a single logger.
 * Some auxiliary scripts to keep things running on the server.
 * Make a few of the multiworker cases work smoothly.
 * Cover the first part of the model running on a single machine and then show how can you get multiple machines working on the same problem. There are multiple ways of accomplishing this. The goal is to show case them.
