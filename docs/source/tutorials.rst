@@ -3,6 +3,8 @@
 DeepArchitect Tutorials 
 =========================
 
+This page also instructs how to go about tutorials 
+
 .. toctree::
     :maxdepth: 1
 
