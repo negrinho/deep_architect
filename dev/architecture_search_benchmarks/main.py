@@ -2,6 +2,7 @@ from deep_architect.contrib.misc.datasets.loaders import load_cifar10
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 import search_spaces.search_space_factory as ssf
 import searchers.searcher as se
 
@@ -16,14 +17,15 @@ def main():
                     './temp', max_num_training_epochs=4, log_output_to_terminal=True,
                     test_dataset=test_dataset, max_eval_time_in_minutes=.1)
 
+    # TODO: revisit this.
     search_logger = sl.SearchLogger('./logs', 'test', resume_if_exists=True)
-    search_data_path = sl.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])
+    search_data_path = ut.join_paths([search_logger.search_data_folderpath, "searcher_state.json"])
 
     search_space_factory = ssf.name_to_search_space_factory_fn['zoph_sp1'](num_classes)
     searcher = se.name_to_searcher_fn['evolution_pop=20_samp=20_reg=t'](search_space_factory.get_search_space)
 
-    if sl.file_exists(search_data_path):
-        state = sl.read_jsonfile(search_data_path)
+    if ut.file_exists(search_data_path):
+        state = ut.read_jsonfile(search_data_path)
         searcher.load(state)
 
     for i in xrange(search_logger.current_evaluation_id, num_samples):

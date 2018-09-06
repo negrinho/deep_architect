@@ -1,6 +1,7 @@
 import deep_architect.visualization as vi
-import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 import numpy as np
+import itertools
 
 def map_dict(d, fn):
     return {k : fn(k, v) for (k, v) in d.iteritems()}
@@ -220,7 +221,7 @@ def calibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
         table_lines.append(line)
 
     if table_filepath is not None:
-        sl.write_textfile(table_filepath, table_lines)
+        ut.write_textfile(table_filepath, table_lines)
     if show:
         print "\n".join(table_lines)
 
@@ -243,14 +244,14 @@ def budget_calibration_plot(reference_value_sequence, other_value_sequence_lst,
     assert all(len(reference_value_sequence) == len(seq) for seq in other_value_sequence_lst)
     assert other_label_lst is None or (len(other_value_sequence_lst) == len(other_label_lst))
 
-    argsort_fn = lambda seq: cut.argsort(seq, [lambda x: x], increasing=not maximizing)
+    argsort_fn = lambda seq: argsort(seq, [lambda x: x], increasing=not maximizing)
 
     num_evals = len(reference_value_sequence)
     ref_sorting_idxs = argsort_fn(reference_value_sequence)
-    sorted_ref_seq = cut.apply_permutation(reference_value_sequence, ref_sorting_idxs)
+    sorted_ref_seq = apply_permutation(reference_value_sequence, ref_sorting_idxs)
 
     # creating the initial values for the guidelines.
-    guideline_idxs = cut.generate_indices(num_evals, max_num_guidelines,
+    guideline_idxs = generate_indices(num_evals, max_num_guidelines,
         increase_factor, use_multiplicative_increases)
     guideline_values_lst = [[sorted_ref_seq[idx]] for idx in guideline_idxs]
     guideline_idxs_lst = [[idx] for idx in guideline_idxs]
@@ -259,9 +260,9 @@ def budget_calibration_plot(reference_value_sequence, other_value_sequence_lst,
     # with respect to the baseline.
     sorted_other_seq_lst = []
     for seq in other_value_sequence_lst:
-        aux_seq = cut.apply_permutation(seq, ref_sorting_idxs)
+        aux_seq = apply_permutation(seq, ref_sorting_idxs)
         sorting_idxs = argsort_fn(aux_seq)
-        sorted_seq = cut.apply_permutation(aux_seq, sorting_idxs)
+        sorted_seq = apply_permutation(aux_seq, sorting_idxs)
         sorted_other_seq_lst.append(sorted_seq)
 
         # adding the guidelines for the corresponding sequence.
@@ -288,8 +289,8 @@ def budget_calibration_plot(reference_value_sequence, other_value_sequence_lst,
     # adding the guidelines with respect to the best one.
     for xs, ys in itertools.izip(guideline_idxs_lst, guideline_values_lst):
         sorting_idxs = argsort_fn(ys)
-        xs = cut.apply_permutation(xs, sorting_idxs)
-        ys = cut.apply_permutation(ys, sorting_idxs)
+        xs = apply_permutation(xs, sorting_idxs)
+        ys = apply_permutation(ys, sorting_idxs)
         plotter.add_line(xs, ys, color='black', line_type='dashed')
 
     plotter.plot(show=show, fpath=plot_filepath)
