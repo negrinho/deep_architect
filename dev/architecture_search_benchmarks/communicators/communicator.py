@@ -42,14 +42,14 @@ class Communicator(object):
         raise NotImplementedError
 
     def publish_architecture_to_worker(self, vs, current_evaluation_id, 
-                                       searcher_eval_token, search_data_folderpath):
+                                       searcher_eval_token):
         if not self.is_master():
             raise ValueError("Worker cannot publish architecture")
         self._publish_architecture_to_worker(self, vs, current_evaluation_id, 
-                                             searcher_eval_token, search_data_folderpath)
+                                             searcher_eval_token)
     
     def _publish_architecture_to_worker(self, vs, current_evaluation_id, 
-                                        searcher_eval_token, search_data_folderpath):
+                                        searcher_eval_token):
         raise NotImplementedError
     
     def receive_results_in_master(self, src):
@@ -60,12 +60,18 @@ class Communicator(object):
     def _receive_results_in_master(self, src):
         raise NotImplementedError
     
-    def kill_worker(self, worker):
+    def kill_worker(self):
         if not self.is_master():
             raise ValueError("Worker cannot kill another worker")
-        return self._kill_worker(worker)
+        return self._kill_worker()
 
-    def _kill_worker(self, worker):
+    def _kill_worker(self):
         raise NotImplementedError
 
-    
+def get_communicator(name, num_procs=2):
+    from file_communicator import FileCommunicator
+    from mpi_communicator import MPICommunicator
+    if name == 'mpi':
+        return MPICommunicator()
+    elif name == 'file':
+        return FileCommunicator(num_procs)

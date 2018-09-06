@@ -1,4 +1,4 @@
-from communicator import Communicator
+from dev.architecture_search_benchmarks.communicators.communicator import Communicator
 from dev.architecture_search_benchmarks.file_utils import (clear_file, consume_file, 
                                                            read_file, write_file)
 import os
@@ -48,13 +48,13 @@ class FileCommunicator(Communicator):
                 continue
 
             # if kill signal is given, return None, otherwise return contents of file
-            vs, evaluation_id, searcher_eval_token, search_data_folderpath, kill = file_data
+            vs, evaluation_id, searcher_eval_token, kill = file_data
             if kill:
                 write_file(self.worker_results_prefix + str(self.rank), 'done')
                 self.done = True
                 return None
 
-            return vs, evaluation_id, searcher_eval_token, search_data_folderpath
+            return vs, evaluation_id, searcher_eval_token
         return None
 
     def _is_ready_to_publish_architecture(self):
@@ -62,11 +62,10 @@ class FileCommunicator(Communicator):
         return file_data is None
 
     def _publish_architecture_to_worker(self, vs, current_evaluation_id, 
-                                        searcher_eval_token, search_data_folderpath):
+                                        searcher_eval_token):
         write_file(
             self.worker_queue_file, 
-            (vs, current_evaluation_id, searcher_eval_token, 
-                search_data_folderpath, False))
+            (vs, current_evaluation_id, searcher_eval_token, False))
     
     def _receive_results_in_master(self, src):
         result = consume_file(self.worker_results_prefix + str(src))
@@ -75,7 +74,7 @@ class FileCommunicator(Communicator):
             return None
         return result
 
-    def _kill_worker(self, worker):
+    def _kill_worker(self):
         write_file(
             self.worker_queue_file, 
             (0, 0, 0, 0, True))
