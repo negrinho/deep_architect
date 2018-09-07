@@ -99,7 +99,7 @@ if __name__ == "__main__":
     tikz_lines.extend([
         '\\documentclass{standalone}',
         '\\usepackage{tikz}',
-        '\\usetikzlibrary{arrows.meta}',
+        '\\usetikzlibrary{arrows.meta, positioning}',
         '\\begin{document}',
         '\\begin{tikzpicture}',
     ])
@@ -116,4 +116,6 @@ if __name__ == "__main__":
     ut.write_textfile('logo.tex', tikz_lines)
 
 # https://tex.stackexchange.com/questions/5461/is-it-possible-to-change-the-size-of-an-arrowhead-in-tikz-pgf
+# https://tex.stackexchange.com/questions/228724/how-do-i-make-tikz-make-a-curved-arrow-from-one-node-to-another-when-my-nodes-ar
+# https://tex.stackexchange.com/questions/228724/how-do-i-make-tikz-make-a-curved-arrow-from-one-node-to-another-when-my-nodes-ar
 # ipython dev/negrinho/logo.py -- --config_filepath dev/negrinho/logo.json && pdflatex logo.tex
