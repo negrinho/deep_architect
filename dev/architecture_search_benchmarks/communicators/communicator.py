@@ -69,9 +69,9 @@ class Communicator(object):
         raise NotImplementedError
 
 def get_communicator(name, num_procs=2):
-    from dev.architecture_search_benchmarks.communicators.file_communicator import FileCommunicator
-    from dev.architecture_search_benchmarks.communicators.mpi_communicator import MPICommunicator
     if name == 'mpi':
+        from dev.architecture_search_benchmarks.communicators.mpi_communicator import MPICommunicator
         return MPICommunicator()
     elif name == 'file':
+        from dev.architecture_search_benchmarks.communicators.file_communicator import FileCommunicator
         return FileCommunicator(num_procs)

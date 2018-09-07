@@ -17,6 +17,7 @@ class FileCommunicator(Communicator):
         lock = portalocker.Lock(os.path.join(dirname, 'init'), mode='a+', flags=portalocker.LOCK_EX)
         lock.acquire()
         fh = lock.fh
+        fh.seek(0)
         curnum = fh.read()
         if len(curnum) is 0:
             rank = 0
@@ -68,7 +69,7 @@ class FileCommunicator(Communicator):
             (vs, current_evaluation_id, searcher_eval_token, False))
     
     def _receive_results_in_master(self, src):
-        result = consume_file(self.worker_results_prefix + str(src))
+        result = consume_file(self.worker_results_prefix + str(src + 1))
         if result is 'done':
             self.finished += 1
             return None
@@ -77,4 +78,4 @@ class FileCommunicator(Communicator):
     def _kill_worker(self):
         write_file(
             self.worker_queue_file, 
-            (0, 0, 0, 0, True))
+            (0, 0, 0, True))

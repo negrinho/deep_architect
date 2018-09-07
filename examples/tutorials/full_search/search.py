@@ -56,10 +56,11 @@ def main():
 
         models_sampled = 0
         killed = 0
+        finished = 0
 
-        # Keep looping as long as their is a worker process that has not been
-        # sent a kill signal
-        while killed < comm.num_workers:
+        # Keep looping as long as we have not received results for all sampled
+        # models
+        while finished < num_total_models:
             if models_sampled < num_total_models:
                 
                 # Check by the communicator to see if worker queue is ready
@@ -75,7 +76,7 @@ def main():
             # sends is equal to the number of workers, all workers should have
             # received a kill signal
             else:
-                if comm.is_ready_to_publish_architecture():
+                if comm.is_ready_to_publish_architecture() and killed < comm.num_workers:
                     comm.kill_worker()
                     killed += 1
 
@@ -86,6 +87,7 @@ def main():
                 if msg is not None:
                     results, model_id, searcher_eval_token = msg
                     searcher.update(results['validation_accuracy'], searcher_eval_token)
+                    finished += 1
                     print('Model %d accuracy: %f' % (model_id, results['validation_accuracy']))
         print('Best architecture accuracy: %f' % searcher.best_acc)
         print('Best architecture params: %r' % searcher.best_vs)

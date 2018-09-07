@@ -6,10 +6,10 @@ def clear_file(fh):
     fh.truncate(0)
 
 def consume_file(filename):
-    lock = portalocker.Lock(filename, mode='a+', flags=portalocker.LOCK_EX)
+    lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
     lock.acquire()
     fh = lock.fh
-
+    fh.seek(0)
     if len(fh.read()) is 0:
         file_data = None
     else:
@@ -22,10 +22,10 @@ def consume_file(filename):
     return file_data
 
 def read_file(filename):
-    lock = portalocker.Lock(filename, mode='a+', flags=portalocker.LOCK_EX)
+    lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
     lock.acquire()
     fh = lock.fh
-
+    fh.seek(0)
     if len(fh.read()) is 0:
         file_data = None
     else:
@@ -37,9 +37,10 @@ def read_file(filename):
 def write_file(filename, obj):
     file_data = 0
     while file_data is not None:
-        lock = portalocker.Lock(filename, mode='a+', flags=portalocker.LOCK_EX)
+        lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
         lock.acquire()
         fh = lock.fh
+        fh.seek(0)
         if len(fh.read()) is 0:
             file_data = None
         else:
