@@ -14,6 +14,7 @@ class RandomSearcher(Searcher):
 
     def update(self, val, searcher_eval_token):
         if val > self.best_acc:
+            self.best_acc = val
             self.best_vs = searcher_eval_token['vs']
 
 

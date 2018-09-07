@@ -1,5 +1,5 @@
 from mpi4py import MPI
-from communicator import Communicator
+from dev.architecture_search_benchmarks.communicators.communicator import Communicator
 
 """
 Tags for the requests used by the communicator

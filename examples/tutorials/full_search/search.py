@@ -6,8 +6,8 @@ To run this tutorial, simply call 'mpiexec -np NP python search.py' where NP is
 the number of evaluator workers + 1 (to account for the searcher process).
 
 If running this tutorial with a file based communicator, change the argument of
-the get_communicator function to 'file' and the sub folder where communication
-should take place. Then, run 'python search.py' for as many processes as you
+the get_communicator function to 'file' and number of processes that are going
+to be used. Then, run 'python search.py' for as many processes as you
 want (eg run 5 concurrent calls of 'python search.py' if you want 4 workers and
 1 searcher)
 """
@@ -87,8 +87,8 @@ def main():
                     results, model_id, searcher_eval_token = msg
                     searcher.update(results['validation_accuracy'], searcher_eval_token)
                     print('Model %d accuracy: %f' % (model_id, results['validation_accuracy']))
-        print(searcher.best_acc)
-        print(searcher.best_vs)
+        print('Best architecture accuracy: %f' % searcher.best_acc)
+        print('Best architecture params: %r' % searcher.best_vs)
     
     # This is a worker process
     else:

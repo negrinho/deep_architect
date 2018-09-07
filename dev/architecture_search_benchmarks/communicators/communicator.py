@@ -20,7 +20,7 @@ class Communicator(object):
     def publish_results_to_master(self, results, evaluation_id, searcher_eval_token):
         if not self.is_worker():
             raise ValueError("Master cannot publish results")
-        self._publish_results_to_master(self, results, evaluation_id, searcher_eval_token)
+        return self._publish_results_to_master(results, evaluation_id, searcher_eval_token)
     
     def _publish_results_to_master(self, results, evaluation_id, searcher_eval_token):
         raise NotImplementedError
@@ -36,7 +36,7 @@ class Communicator(object):
     def is_ready_to_publish_architecture(self):
         if not self.is_master():
             raise ValueError("Worker cannot publish architecture")
-        self._is_ready_to_publish_architecture()
+        return self._is_ready_to_publish_architecture()
     
     def _is_ready_to_publish_architecture(self):
         raise NotImplementedError
@@ -45,7 +45,7 @@ class Communicator(object):
                                        searcher_eval_token):
         if not self.is_master():
             raise ValueError("Worker cannot publish architecture")
-        self._publish_architecture_to_worker(self, vs, current_evaluation_id, 
+        return self._publish_architecture_to_worker(vs, current_evaluation_id, 
                                              searcher_eval_token)
     
     def _publish_architecture_to_worker(self, vs, current_evaluation_id, 
@@ -69,8 +69,8 @@ class Communicator(object):
         raise NotImplementedError
 
 def get_communicator(name, num_procs=2):
-    from file_communicator import FileCommunicator
-    from mpi_communicator import MPICommunicator
+    from dev.architecture_search_benchmarks.communicators.file_communicator import FileCommunicator
+    from dev.architecture_search_benchmarks.communicators.mpi_communicator import MPICommunicator
     if name == 'mpi':
         return MPICommunicator()
     elif name == 'file':
