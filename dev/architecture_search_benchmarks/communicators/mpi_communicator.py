@@ -1,5 +1,5 @@
 from mpi4py import MPI
-from communicator import Communicator
+from dev.architecture_search_benchmarks.communicators.communicator import Communicator
 
 """
 Tags for the requests used by the communicator
@@ -46,13 +46,13 @@ class MPICommunicator(Communicator):
         self.comm.ssend([self.rank], dest=0, tag=READY_REQ)
 
         (vs, evaluation_id, searcher_eval_token, 
-            search_data_folderpath, kill) = self.comm.recv(source=0, tag=MODEL_REQ)
+            kill) = self.comm.recv(source=0, tag=MODEL_REQ)
         
         if kill:
             self.done = True
             return None
 
-        return vs, evaluation_id, searcher_eval_token, search_data_folderpath
+        return vs, evaluation_id, searcher_eval_token
 
     """
     Called in master process only.
@@ -76,10 +76,9 @@ class MPICommunicator(Communicator):
     worker. Returns nothing. 
     """
     def _publish_architecture_to_worker(self, vs, current_evaluation_id, 
-                                        searcher_eval_token, search_data_folderpath):
+                                        searcher_eval_token):
         self.comm.isend(
-            (vs, current_evaluation_id, searcher_eval_token, 
-                search_data_folderpath, False),
+            (vs, current_evaluation_id, searcher_eval_token, False),
             dest=self.next_worker, tag=MODEL_REQ)
         self.ready_requests[self.next_worker - 1] = (
             self.comm.irecv(source=self.next_worker, tag=READY_REQ))
@@ -91,12 +90,13 @@ class MPICommunicator(Communicator):
     """
     def _receive_results_in_master(self, src):
         test, msg = self.eval_requests[src].test()
-        self.eval_requests[src] = self.comm.irecv(source=src + 1, tag=RESULTS_REQ)
+        if test:
+            self.eval_requests[src] = self.comm.irecv(source=src + 1, tag=RESULTS_REQ)
         return msg if test else None
 
     """
     Called in master process only.
     Sends a kill signal to given worker. Doesn't return anything.
     """
-    def _kill_worker(self, worker):
-        self.comm.isend((0, 0, 0, True), dest=worker + 1, tag=MODEL_REQ)
+    def _kill_worker(self):
+        self.comm.isend((0, 0, 0, True), dest=self.next_worker, tag=MODEL_REQ)

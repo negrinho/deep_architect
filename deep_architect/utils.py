@@ -165,7 +165,7 @@ class SequenceTracker:
                 sequences, and values are the additional data point to add to
                 the sequence.
         """
-        for k, v in d.iteritems():
+        for k, v in iteritems(d):
             assert type(k) == str and len(k) > 0
             if k not in self.d:
                 self.d[k] = []
