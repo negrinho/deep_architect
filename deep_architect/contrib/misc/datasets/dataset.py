@@ -1,38 +1,5 @@
 
 import numpy as np
-import tensorflow as tf
-
-class TFDataset:
-    def __init__(self, X, y, shuffle_at_epoch_begin, batch_size=128, batch_transform_fn=None):
-        if X.shape[0] != y.shape[0]:
-            assert ValueError("X and y the same number of examples.")
-
-        self.dataset = tf.data.Dataset.from_tensor_slices((X, y))
-        if shuffle_at_epoch_begin:
-            self.dataset = self.dataset.shuffle(45000)
-        if batch_transform_fn is not None:
-            self.dataset = self.dataset.map(batch_transform_fn)
-        self.dataset = self.dataset.batch(batch_size)
-        self.dataset = self.dataset.cache().prefetch(batch_size)
-
-        self.num_examples = X.shape[0]
-        self.epoch = 0
-        self.examples_in_cur_epoch = 0
-        self.iterator = self.dataset.make_one_shot_iterator()
-
-    def get_num_examples(self):
-        return self.num_examples
-
-    def next_batch(self):
-        X, y = self.iterator.next()
-        self.examples_in_cur_epoch += X.shape[0]
-        if self.examples_in_cur_epoch == self.num_examples:
-            self.iterator = self.dataset.make_one_shot_iterator()
-            self.examples_in_cur_epoch = 0
-            self.epoch += 1
-            return (X, y), True
-        else:
-            return (X, y), False
 
 class InMemoryDataset:
     """Wrapper around a dataset for iteration that allows cycling over the

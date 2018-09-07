@@ -1,8 +1,8 @@
 """
 This tutorial is for a basic architecture search using an MPI communicator
-and a random searcher. 
+and a random searcher.
 
-To run this tutorial, simply call 'mpiexec -np NP python search.py' where NP is 
+To run this tutorial, simply call 'mpiexec -np NP python search.py' where NP is
 the number of evaluator workers + 1 (to account for the searcher process).
 
 If running this tutorial with a file based communicator, change the argument of
@@ -37,10 +37,10 @@ class SSF(mo.SearchSpaceFactory):
 
 def main():
     # create the communicator
-    comm = get_communicator('mpi')
+    comm = get_communicator('file', 2)
 
     # number of total models to be evaluated in search
-    num_total_models = 25 
+    num_total_models = 25
 
     # Set up the datasets and the search space
     X_train, y_train, X_val, y_val, _, _ = load_mnist('data/mnist', normalize_range=True)
@@ -62,14 +62,14 @@ def main():
         # models
         while finished < num_total_models:
             if models_sampled < num_total_models:
-                
+
                 # Check by the communicator to see if worker queue is ready
                 # for a new architecture
                 if comm.is_ready_to_publish_architecture():
                     _, _, _, vs, se_token = searcher.sample()
                     comm.publish_architecture_to_worker(vs, models_sampled, se_token)
                     models_sampled += 1
-            
+
             # If we are over the specified number of models to be sampled, we
             # send a kill signal to each worker. Each worker should only consume
             # one kill signal, so if the number of kill signals the searcher
@@ -91,11 +91,11 @@ def main():
                     print('Model %d accuracy: %f' % (model_id, results['validation_accuracy']))
         print('Best architecture accuracy: %f' % searcher.best_acc)
         print('Best architecture params: %r' % searcher.best_vs)
-    
+
     # This is a worker process
     else:
         # Initialize an evaluator
-        evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, 10, 
+        evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, 10,
             './temp', max_num_training_epochs=2)
 
         while(True):
@@ -105,7 +105,7 @@ def main():
             # worker process
             if arch is None:
                 break
-            
+
             vs, evaluation_id, searcher_eval_token = arch
 
             # Create a new unspecified search space, and specify it using the
