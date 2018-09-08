@@ -75,3 +75,6 @@ def setTraining(output_lst, isTraining):
         if hasattr(mx, 'isTraining'):
             mx.isTraining = isTraining
     co.traverse_backward(output_lst, fn)
+
+def siso_tfeager_module(name, compile_fn, name_to_hyperp, scope=None):
+    return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
