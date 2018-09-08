@@ -1,22 +1,41 @@
 ### ${MARKDOWN} 
 
-# MNIST with TensorFlow Tutorial
+# Simple Architecture Search for MNIST Tutorial
 # ===
+# 
+# Outline: 
+# 1. Goals of this tutorial 
+# 2. Overview 
+#   - What is Architecture Search 
+#   - Decompose the problem 
+#   - Running the program 
+# 3. Search Space 
+#   - What is search space 
+#   - Baseline architecture and our current search space  
+#   - DeepArchitect search space basics 
+#   - Code 
+# 4. Searcher 
+# 5. Evaluator 
+# 6. Optional - Logging and Visualization# 
+# 
+# Goals of this tutorial 
+# --- 
+# • Introduce the basic building blocks of Neural Architecture Search and DeepArchitect, 
+# using the canonical MNIST handwritten-digit classification task. 
+# • Demonstrate how to construct a simple neural architecture system with DeepArchitect. 
+# 
 # Prerequisite 
 # ---
-# • (Required) This tutorial assumes basic ML knowledge. ML crash course by Google provides a good overview  https://developers.google.com/machine-learning/crash-course/ml-intro  
-# • (Required) DeepArchitect installed (Installation page)  
+# • This tutorial assumes users have experience with Machine Learning and Deep Learning. 
+# In particular, we will make use 
+# • Have DeepArchitect installed (Installation page)  
 # • (Required) TensorFlow installed (https://www.tensorflow.org/install/). We recommend the virtualenv method.  
 # • (Required) Experience using tensorflow or Keras.   
-# • (Optional) Familiarity with MNIST handwritten digit task, its tensorflow implementation, and neural networks is recommended. 
 # 
-# Goals
-# --- 
-# • Introduce the basic building blocks of DeepArchitect via image classification with MNIST a well-known example in ML.  
-# • Demonstrate how to construct a simple neural architecture system with DeepArchitect. Specifically, we will construct a search space for the task, used a simple random searcher to sample a number of candidate architecture, and write a simple evaluator for the architecture.  
 # 
-# Task introduction 
+# Overview and Getting Start  
 # ---
+# Specifically, we will construct a search space for the task, used a simple random searcher to sample a number of candidate architecture, and write a simple evaluator for the architecture.  
 # • The task is recognizing handwritten digits numbers in the MNIST dataset. (figure 1: Picture handwritten digit) This is perhaps the most widely-used example in ML today, dubbed "Hello World of Machine Learning". The MNIST dataset consists of 60,000 examples in the training set, and 10,000 examples in the test set. Each example is a 28x28 monochrome image of a handwritten digits from 0 - 9.  Since this tutorial is based on MNIST Tensorflow implementation, we highly recommend understanding the Tensorflow implementation first: https://www.tensorflow.org/tutorials/
 # 
 # ```python

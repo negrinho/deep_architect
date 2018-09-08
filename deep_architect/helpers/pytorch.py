@@ -139,7 +139,7 @@ class PyTNetContainer(nn.Module):
         self._module_seq = None
         self._is_compiled = False
 
-    def __call__(self, input_to_val):
+    def __call__(self, input_to_val): # this is also input_name_to_val right? Needs to be consistent 
         return self.forward(input_to_val)
 
     # TODO: needs additional error checking to make sure that the set of

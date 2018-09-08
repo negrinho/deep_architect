@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import struct
 import deep_architect.contrib.useful.datasets.augmentation as au
 if sys.version_info[0] == 2:
     import cPickle as pickle # pylint: disable=E0401
@@ -111,3 +112,50 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
         Xtest = au.zero_pad_border(Xtest, border_pad_size)
 
     return (Xtrain, ytrain, Xval, yval, Xtest, ytest)
+
+# load mnist, but for DyNet 
+def read_mnist(dataset, path):
+    if dataset is "training":
+        fname_img = os.path.join(path, "train-images-idx3-ubyte")
+        fname_lbl = os.path.join(path, "train-labels-idx1-ubyte")
+    elif dataset is "testing":
+        fname_img = os.path.join(path, "t10k-images-idx3-ubyte")
+        fname_lbl = os.path.join(path, "t10k-labels-idx1-ubyte")
+    else:
+        raise ValueError("dataset must be 'testing' or 'training'")
+
+    # Load everything in some numpy arrays
+    with open(fname_lbl, "rb") as flbl:
+        magic, num = struct.unpack(">II", flbl.read(8))
+        labels = np.fromfile(flbl, dtype=np.int8)
+
+    with open(fname_img, "rb") as fimg:
+        magic, num, rows, cols = struct.unpack(">IIII", fimg.read(16))
+        images = np.multiply(
+            np.fromfile(fimg, dtype=np.uint8).reshape(len(labels), rows*cols),
+            1.0 / 255.0)
+
+    get_instance = lambda idx: (labels[idx], images[idx])
+
+    # Create an iterator which returns each image in turn
+    for i in range(len(labels)):
+        yield get_instance(i)
+
+def download_examples(path):
+    if not os.path.exists(path): 
+        os.makedirs(path)
+    import gzip
+    from six.moves import urllib
+    baseurl = "http://yann.lecun.com/exdb/mnist/"
+    for elem in ["train-images-idx3-ubyte.gz",
+                 "train-labels-idx1-ubyte.gz",
+                 "t10k-images-idx3-ubyte.gz",
+                 "t10k-labels-idx1-ubyte.gz"]:
+        print("downloading " + elem + " ...")
+        data = urllib.request.urlopen(baseurl + elem)
+        file_path = os.path.join(path, elem)
+        with open(file_path, 'wb') as f:
+            f.write(data.read())
+        with open(file_path.replace('.gz', ''), "wb") as f, \
+                gzip.GzipFile(file_path) as zip_f: 
+            f.write(zip_f.read())
