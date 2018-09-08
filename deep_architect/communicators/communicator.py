@@ -70,8 +70,8 @@ class Communicator(object):
 
 def get_communicator(name, num_procs=2):
     if name == 'mpi':
-        from dev.architecture_search_benchmarks.communicators.mpi_communicator import MPICommunicator
+        from deep_architect.communicators.mpi_communicator import MPICommunicator
         return MPICommunicator()
     elif name == 'file':
-        from dev.architecture_search_benchmarks.communicators.file_communicator import FileCommunicator
+        from deep_architect.communicators.file_communicator import FileCommunicator
         return FileCommunicator(num_procs)

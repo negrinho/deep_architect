@@ -1,8 +1,9 @@
-from dev.architecture_search_benchmarks.communicators.communicator import Communicator
-from dev.architecture_search_benchmarks.file_utils import (clear_file, consume_file, 
-                                                           read_file, write_file)
 import os
 import portalocker
+
+from deep_architect.communicators.communicator import Communicator
+from deep_architect.communicators.file_utils import (consume_file, read_file,
+                                                     write_file)
 
 class FileCommunicator(Communicator):
     def __init__(self, num_procs, dirname='file_comm', worker_queue_file='worker_queue',
