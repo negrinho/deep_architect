@@ -21,7 +21,7 @@ import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as dnn
 import deep_architect.searchers.common as se
 
-from dev.architecture_search_benchmarks.communicators.communicator import get_communicator
+from deep_architect.communicators.communicator import get_communicator
 
 """
 This is simply a wrapper for the function that returns a new search space.
