@@ -1,8 +1,7 @@
 from builtins import str
 import tensorflow as tf
 import deep_architect.modules as mo
-from dev.architecture_search_benchmarks.helpers import tfeager as htfe
-from dev.architecture_search_benchmarks.search_spaces.common_eager import siso_tfem
+from deep_architect.helpers import tfeager as htfe
 
 TFEM = htfe.TFEModule
 
@@ -13,7 +12,7 @@ def avg_pool(h_kernel_size, h_stride):
                 return {'Out' : tf.nn.avg_pool(di['In'],
                     [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return siso_tfem('AvgPool', cfn, {
+    return htfe.siso_tfeager_module('AvgPool', cfn, {
         'kernel_size' : h_kernel_size,
         'stride' : h_stride,
         })
@@ -25,7 +24,7 @@ def max_pool(h_kernel_size, h_stride):
                 return {'Out' : tf.nn.max_pool(di['In'],
                     [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return siso_tfem('MaxPool2D', cfn, {
+    return htfe.siso_tfeager_module('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride,})
 
 def keras_batch_normalization(name='default', weight_sharer=None):
@@ -43,7 +42,7 @@ def keras_batch_normalization(name='default', weight_sharer=None):
             with tf.device('/gpu:0'):
                 return {'Out' : bn(di['In'], training=isTraining) }
         return fn
-    return siso_tfem('BatchNormalization', cfn, {})
+    return htfe.siso_tfeager_module('BatchNormalization', cfn, {})
 
 def relu():
     def cfn(di, dh):
@@ -51,7 +50,7 @@ def relu():
             with tf.device('/gpu:0'):
                 return {'Out' : tf.nn.relu(di['In'])}
         return fn
-    return siso_tfem('ReLU', cfn, {})
+    return htfe.siso_tfeager_module('ReLU', cfn, {})
 
 def conv2D(filter_size, name, weight_sharer, out_filters=None):
     def cfn(di, dh):
@@ -72,7 +71,7 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
                 return {'Out' : conv(di['In'])}
         return fn
 
-    return siso_tfem('Conv2D', cfn, {})
+    return htfe.siso_tfeager_module('Conv2D', cfn, {})
 
 def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
     def cfn(di, dh):
@@ -93,7 +92,7 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
                 return {'Out' : conv(di['In'])}
         return fn
 
-    return siso_tfem('Conv2DSeparable', cfn, {})
+    return htfe.siso_tfeager_module('Conv2DSeparable', cfn, {})
 
 def global_pool():
     def cfn(di, dh):
@@ -101,7 +100,7 @@ def global_pool():
             with tf.device('/gpu:0'):
                 return {'Out': tf.reduce_mean(di['In'], [1, 2])}
         return fn
-    return TFEM('GlobalPool', {}, cfn, ['In'], ['Out']).get_io()
+    return htfe.siso_tfeager_module('GlobalPool', cfn, {})
 
 def dropout(keep_prob):
     def cfn(di, dh):
@@ -113,7 +112,7 @@ def dropout(keep_prob):
                 out = di['In']
             return {'Out': out}
         return fn
-    return TFEM('Dropout', {}, cfn, ['In'], ['Out']).get_io()
+    return siso_tfem('Dropout', cfn, {}) 
 
 def fc_layer(num_classes, name, weight_sharer):
     name = name + '_fc_layer_' + str(num_classes)
@@ -130,7 +129,7 @@ def fc_layer(num_classes, name, weight_sharer):
             with tf.device('/gpu:0'):
                 return {'Out' : fc(di['In'])}
         return fn
-    return siso_tfem('fc_layer', cfn, {}) 
+    return siso_tfem('FC_Layer', cfn, {}) 
 
 def wrap_relu_batch_norm(io_pair, add_relu=True, add_bn=True, weight_sharer=None, name=None):
     assert add_relu or add_bn

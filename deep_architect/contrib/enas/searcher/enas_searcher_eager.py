@@ -1,21 +1,20 @@
 from __future__ import print_function
 from __future__ import division
+
+import os
 from builtins import zip
 from builtins import str
 from builtins import range
 from past.utils import old_div
-import sys
-import os
-import time
 
-import numpy as np
 import tensorflow as tf
-tfe = tf.contrib.eager
 
-from dev.architecture_search_benchmarks.searchers.enas.enas_common_ops import stack_lstm
+from deep_architect.contrib.enas.searcher.enas_common_ops import stack_lstm
 
 from deep_architect.searchers.common import Searcher, random_specify_hyperparameter
 from deep_architect.core import unassigned_independent_hyperparameter_iterator
+
+tfe = tf.contrib.eager
 
 class ENASEagerSearcher(Searcher):
     def __init__(self,
