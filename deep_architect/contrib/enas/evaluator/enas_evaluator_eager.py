@@ -7,15 +7,12 @@ import os
 from builtins import object
 from past.utils import old_div
 import tensorflow as tf
-tfe = tf.contrib.eager
 import numpy as np
+
 import deep_architect.core as co
-from helpers import tfeager as htfe
-import deep_architect.search_logging as sl
-import deep_architect.contrib.misc.gpu_utils as gpu_utils
-from dev.architecture_search_benchmarks.helpers.tfeager import setTraining
-from six.moves import range
-import time
+from deep_architect.helpers.tfeager import setTraining
+
+tfe = tf.contrib.eager
 
 class ENASEagerEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
@@ -71,60 +68,27 @@ class ENASEagerEvaluator(object):
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0
         num_left = dataset.get_num_examples()
-        t0 = time.time()
         setTraining(list(outputs.values()), False)
-        t00 = time.time()
         loss = 0
-        time1 = 0.0
-        time2 = 0.0
-        time3 = 0.0
-        time4 = 0.0
-        time5 = 0.0
-        time6 = 0.0
         while num_left > 0:
-            t1 = time.time()
             X_batch, y_batch = dataset.next_batch(self.batch_size)
-            t2 = time.time()
             X = tf.convert_to_tensor(X_batch, np.float32)#.gpu()
-            t3 = time.time()
             y = tf.convert_to_tensor(y_batch, np.float32)#.gpu()
 
-            t4 = time.time()
             co.forward({inputs['In']: X})
-            t5 = time.time()
             logits = outputs['Out'].val
-            t4 = time.time()
 
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
-            t5 = time.time()
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
-            t6 = time.time()
             loss += tf.reduce_sum(
                 tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
-            t7 = time.time()
             nc += num_correct
-            time1 += t2 - t1
-            time2 += t3 - t2
-            time3 += t4 - t3
-            time4 += t5 - t4
-            time5 += t6 - t5
-            time6 += t7 - t6
 
             # update the number of examples left.
             eff_batch_size = y_batch.shape[0]
             num_left -= eff_batch_size
-        t8 = time.time()
         acc = old_div(float(nc), dataset.get_num_examples())
         loss = old_div(float(loss), dataset.get_num_examples())
-        t9 = time.time()
-        print('time0 = ' + str(t00 - t0))
-        print('time1 = ' + str(time1))
-        print('time2 = ' + str(time2))
-        print('time3 = ' + str(time3))
-        print('time4 = ' + str(time4))
-        print('time5 = ' + str(time5))
-        print('time6 = ' + str(time6))
-        print('time7 = ' + str(t9 - t8))
 
         return acc, loss
 
@@ -143,9 +107,7 @@ class ENASEagerEvaluator(object):
         results = {}
         if self.controller_mode:
             # Compute accuracy of model
-            t1 = time.time()
             val_acc, loss = self._compute_accuracy(inputs, outputs, self.val_dataset)
-            t2 = time.time()
             results['validation_accuracy'] = val_acc
 
             # Log validation info
@@ -155,7 +117,6 @@ class ENASEagerEvaluator(object):
                 log_string += "ctrl_step={:<6d}".format(self.controller_step)
                 log_string += " loss={:<7.3f}".format(loss)
                 log_string += " acc={:<6.4f}".format(val_acc)
-                log_string += " time={:<6.4f}".format(t2 - t1)
                 print(log_string)
 
             # If controller phase finished, update epoch and switch back to

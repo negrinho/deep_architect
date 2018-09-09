@@ -1,149 +1,163 @@
 from __future__ import absolute_import
 from builtins import str
 from builtins import range
+
+import tensorflow as tf
+import numpy as np
+
 import deep_architect.core as co
 import deep_architect.hyperparameters as hp
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
-from .common_ops import relu, add, pool_and_logits, batch_normalization, avg_pool, wrap_relu_batch_norm
-from deep_architect.contrib.misc.search_spaces.tensorflow.common import D, siso_tensorflow_module
-import tensorflow as tf
-import numpy as np
+from deep_architect.contrib.deep_learning_backend.tf_ops import (
+    relu, batch_normalization, conv2d, conv2d_separable, add, avg_pool2d,
+    max_pool2d, fc_layer, global_pool2d
+)
+
+from deep_architect.hyperparameters import Discrete as D
 
 
 TFM = htf.TensorflowModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
-# Basic convolutional module that selects number of filters based on number of
-# input channels and the stride as in "Learning transferable architectures for scalable
-# image recognition" (Zoph et al, 2017)
-def conv2D(h_filter_size, h_stride):
-    def cfn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
-        b_init_fn = const_fn(0.0)
+def conv_spatial_separable(h_num_filters, h_filter_size, h_stride):
+    h_filter_size_1 = co.DependentHyperparameter(lambda size: [1, size], {'size': h_filter_size})
+    h_filter_size_2 = co.DependentHyperparameter(lambda size: [size, 1], {'size': h_filter_size})
+    return mo.siso_sequential([
+        conv2d(h_num_filters, h_filter_size_1, h_stride, D([1]), D([True])),
+        batch_normalization(),
+        relu(),
+        conv2d(h_num_filters, h_filter_size_2, h_stride, D([1]), D([True]))
+    ])
 
-        num_filters = 2 * channels if dh['stride'] == 2 else channels
+def wrap_relu_batch_norm(conv):
+    return mo.siso_sequential([
+        relu(),
+        conv,
+        batch_normalization()
+    ])
 
-        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, num_filters] ) )
-        b = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(di):
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(di['In'], W, [1, dh['stride'], dh['stride'], 1], 'SAME'), b)}
-        return fn
+def apply_conv_op(main_op, op_name, h_num_filter):
+    if op_name is 's_sep3':
+        reduced_filter_size = co.DependentHyperparameter(
+            lambda size: int(3 * size / 8), 
+            {'size': h_num_filter})
+    else:
+        reduced_filter_size = co.DependentHyperparameter(
+            lambda size: int(size / 4), 
+            {'size': h_num_filter})
 
-    return siso_tensorflow_module('Conv2D', cfn, {
-        'stride' : h_stride,
-        'filter_size' : h_filter_size})
+    bottleneck_too_thin = co.DependentHyperparameter(
+        lambda size: size < 1, {'size': reduced_filter_size}
+    )
 
-# Spatially separable convolutions, with output filter calculations as in Zoph17
-def conv_spatial_separable(h_filter_size, h_stride):
-    def cfn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
-        b_init_fn = const_fn(0.0)
+    return mo.siso_sequential([
+        mo.siso_optional(
+            lambda: wrap_relu_batch_norm(
+                conv2d(reduced_filter_size, D([1]), D([1]), D([1]), D([True]))
+            ), bottleneck_too_thin
+        ),
+        wrap_relu_batch_norm(main_op),
+        mo.siso_optional(
+            lambda: wrap_relu_batch_norm(
+                conv2d(h_num_filter, D([1]), D([1]), D([1]), D([True])),
+            ), bottleneck_too_thin
+        )
+    ])
 
-        num_filters = 2 * channels if dh['stride'] == 2 else channels
+def check_stride(h_stride, h_num_filter, h_op_name):
+    need_stride = co.DependentHyperparameter(
+        lambda name, stride: int(name is 'conv1' or stride > 1),
+        {'name': h_op_name, 'stride': h_stride}
+    )
+    return mo.siso_or([
+        mo.empty,
+        lambda: wrap_relu_batch_norm(
+            conv2d(h_num_filter, D([1]), h_stride, D([1]), D([True]))
+        )
+    ], need_stride)
 
-        W1 = tf.Variable( W_init_fn( [1, dh['filter_size'], channels, num_filters] ) )
-        b1 = tf.Variable( b_init_fn( [num_filters] ) )
-        W2 = tf.Variable( W_init_fn( [dh['filter_size'], 1, num_filters, num_filters] ) )
-        b2 = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(di):
-            intermediate = tf.nn.bias_add(
-                tf.nn.conv2d(di['In'], W1, [1, dh['stride'], dh['stride'], 1], 'SAME'), b1)
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.conv2d(intermediate, W2, [1, 1, 1, 1], 'SAME'), b2)}
-        return fn
+def check_reduce(main_op, h_stride, h_num_filter):
+    need_stride = co.DependentHyperparameter(
+        lambda stride: int(stride > 1),
+        {'stride': h_stride}
+    )
+    return mo.siso_sequential([
+        main_op,
+        mo.siso_optional(
+            lambda: mo.siso_sequential([
+                conv2d(h_num_filter, D([1]), h_stride, D([1]), D([True])),
+                batch_normalization()
+            ]), need_stride
+        )
+    ])
 
-    return siso_tensorflow_module('Conv2DSimplified', cfn, {
-        'filter_size' : h_filter_size,
-        'stride' : h_stride})
+def stacked_depth_separable_conv(h_filter_size, h_num_filters, 
+                                 h_depth_multiplier, h_stride):
+    return mo.siso_sequential([
+        relu(),
+        conv2d_separable(
+            h_num_filters, h_filter_size, D([1]), D([1]), h_depth_multiplier, 
+            D([True])),
+        batch_normalization(),
+        relu(),
+        conv2d_separable(
+            h_num_filters, h_filter_size, h_stride, D([1]), h_depth_multiplier, 
+            D([True])),
+        batch_normalization()
+    ])
 
-
-# Dilated convolutions, with output filter calculations as in Zoph17
-def conv2D_dilated(h_filter_size, h_dilation):
-    def cfn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
-        b_init_fn = const_fn(0.0)
-
-        W = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, channels] ) )
-        b = tf.Variable( b_init_fn( [channels] ) )
-        def fn(di):
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.atrous_conv2d(di['In'], W, dh['dilation'], 'SAME'), b)}
-        return fn
-
-    return siso_tensorflow_module('Conv2DDilated', cfn, {
-        'filter_size' : h_filter_size,
-        'dilation' : h_dilation
-        })
-
-
-# Depth separable convolutions, with output filter calculations as in Zoph17
-def conv2D_depth_separable(h_filter_size, h_channel_multiplier, h_stride):
-    def cfn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
-        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
-        b_init_fn = const_fn(0.0)
-
-        num_filters = 2 * channels if dh['stride'] == 2 else channels
-
-        W_depth = tf.Variable( W_init_fn( [dh['filter_size'], dh['filter_size'], channels, dh['channel_multiplier']] ) )
-        W_point = tf.Variable( W_init_fn( [1, 1, channels * dh['channel_multiplier'], num_filters] ) )
-        b = tf.Variable( b_init_fn( [num_filters] ) )
-        def fn(di):
-            return {'Out' : tf.nn.bias_add(
-                tf.nn.separable_conv2d(di['In'], W_depth, W_point, [1, dh['stride'], dh['stride'], 1], 'SAME', [1, 1]), b)}
-        return fn
-
-    return siso_tensorflow_module('Conv2DSeparable', cfn, {
-        'filter_size' : h_filter_size,
-        'channel_multiplier' : h_channel_multiplier,
-        'stride' : h_stride})
-
-def conv1x1(h_num_filters):
-    return cnn2d.conv2d(h_num_filters, D([1]), D([1]), D([True]))
 
 # The operations used in search space 1 and search space 3 in Regularized Evolution for
 # Image Classifier Architecture Search (Real et al, 2018)
-def sp1_operation(h_op_name, h_stride):
+def sp1_operation(h_op_name, h_stride, h_filters):
     return mo.siso_or({
-            'identity': lambda: mo.empty(),
-            'd_sep3': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([3]), D([1]), h_stride)),
-            'd_sep5': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([5]), D([1]), h_stride)),
-            'd_sep7': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([7]), D([1]), h_stride)),
-            'avg3': lambda: avg_pool(D([3]), h_stride),
-            'max3': lambda: cnn2d.max_pool2d(D([3]), h_stride),
-            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
-            's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride))
+            'identity': lambda: check_stride(h_stride, h_filters, h_op_name),
+            'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
+            'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
+            'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
+            'avg3': lambda: check_reduce(avg_pool2d(D([3]), h_stride), h_stride, h_filters),
+            'max3': lambda: check_reduce(max_pool2d(D([3]), h_stride), h_stride, h_filters),
+            'dil3': lambda: apply_conv_op(
+                conv2d(h_filters, D([3]), h_stride, D([2]), D([True])),
+                'dil3', h_stride),
+            's_sep7': lambda:apply_conv_op(
+                conv_spatial_separable(h_filters, D([7]), h_stride),
+                's_sep7', h_stride), 
             }, h_op_name)
 
 # The operations used in search space 2 in Regularized Evolution for
 # Image Classifier Architecture Search (Real et al, 2018)
-def sp2_operation(h_op_name, h_stride):
+def sp2_operation(h_op_name, h_stride, h_filters):
     return mo.siso_or({
             'identity': lambda: mo.empty(),
-            'conv1': lambda: wrap_relu_batch_norm(conv2D(D([1]), h_stride)),
-            'conv3': lambda: wrap_relu_batch_norm(conv2D(D([3]), h_stride)),
-            'd_sep3': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([3]), D([1]), h_stride)),
-            'd_sep5': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([5]), D([1]), h_stride)),
-            'd_sep7': lambda: wrap_relu_batch_norm(conv2D_depth_separable(D([7]), D([1]), h_stride)),
-            'avg2': lambda: avg_pool(D([2]), h_stride),
-            'avg3': lambda: avg_pool(D([3]), h_stride),
-            'min2': lambda: mo.empty(),
-            'max2': lambda: max_pool(D([2]), h_stride),
-            'max3': lambda: max_pool(D([3]), h_stride),
-            'dil3': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
-            'dil5': lambda: wrap_relu_batch_norm(conv2D_dilated(D([5]), D([2]))),
-            'dil7': lambda: wrap_relu_batch_norm(conv2D_dilated(D([7]), D([2]))),
-            's_sep3': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([3]), h_stride)),
-            's_sep7': lambda: wrap_relu_batch_norm(conv_spatial_separable(D([7]), h_stride)),
-            'dil3_2': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([2]))),
-            'dil3_4': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([4]))),
-            'dil3_6': lambda: wrap_relu_batch_norm(conv2D_dilated(D([3]), D([6])))
+            'conv1': lambda: check_stride(h_stride, h_filters, h_op_name),
+            'conv3': lambda: apply_conv_op(
+                conv2d(h_filters, D([3]), h_stride, D([1]), D([True])),
+                'conv3', h_stride),
+            'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
+            'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
+            'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
+            'avg2': lambda: check_reduce(avg_pool2d(D([2]), h_stride), h_stride, h_filters),
+            'avg3': lambda: check_reduce(avg_pool2d(D([3]), h_stride), h_stride, h_filters),
+            'max2': lambda: check_reduce(max_pool2d(D([2]), h_stride), h_stride, h_filters),
+            'max3': lambda: check_reduce(max_pool2d(D([3]), h_stride), h_stride, h_filters),
+            'dil3_2': lambda: apply_conv_op(
+                conv2d(h_filters, D([3]), h_stride, D([2]), D([True])), 
+                'dil3_2', h_stride),
+            'dil4_2': lambda: apply_conv_op(
+                conv2d(h_filters, D([3]), h_stride, D([4]), D([True])), 
+                'dil3_4', h_stride),
+            'dil6_2': lambda: apply_conv_op(
+                conv2d(h_filters, D([3]), h_stride, D([6]), D([True])), 
+                'dil3_6', h_stride),
+            's_sep3': lambda:apply_conv_op(
+                conv_spatial_separable(h_filters, D([3]), h_stride),
+                's_sep3', h_stride),
+            's_sep7': lambda:apply_conv_op(
+                conv_spatial_separable(h_filters, D([7]), h_stride),
+                's_sep7', h_stride),             
             }, h_op_name)
 
 # A module that takes in a specifiable number of inputs, uses 1x1 convolutions to make the number
@@ -180,9 +194,9 @@ def mi_add(num_terms):
     return TFM('MultiInputAdd', {}, cfn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
 
 # A module that applies a sp1_operation to two inputs, and adds them together
-def sp1_combine(h_op1_name, h_op2_name, h_stride):
-    in1 = lambda: sp1_operation(h_op1_name, h_stride)
-    in2 = lambda: sp1_operation(h_op2_name, h_stride)
+def sp1_combine(h_op1_name, h_op2_name, h_stride, h_filters):
+    in1 = lambda: sp1_operation(h_op1_name, h_stride, h_filters)
+    in2 = lambda: sp1_operation(h_op2_name, h_stride, h_filters)
     return mo.mimo_combine([in1, in2], mi_add)
 
 # A module that selects an input from a list of inputs
@@ -197,7 +211,7 @@ def selector(h_selection, sel_fn, num_selections):
 
 # A module that outlines the basic cell structure in Learning Transferable
 # Architectures for Scalable Image Recognition (Zoph et al, 2017)
-def basic_cell(h_sharer, C=5, normal=True):
+def basic_cell(h_sharer, h_filters, C=5, normal=True):
     i_inputs, i_outputs = mo.empty(num_connections=2)
     available = [i_outputs['Out' + str(i)] for i in range(len(i_outputs))]
     unused = [False] * (C + 2)
@@ -223,7 +237,8 @@ def basic_cell(h_sharer, C=5, normal=True):
             available[o_idx].connect(sel0_inputs['In' + str(o_idx)])
             available[o_idx].connect(sel1_inputs['In' + str(o_idx)])
 
-        comb_inputs, comb_outputs = sp1_combine(h_op1, h_op2, D([1 if normal or i > 0 else 2]))
+        comb_inputs, comb_outputs = sp1_combine(
+            h_op1, h_op2, D([1 if normal or i > 0 else 2]), h_filters)
         sel0_outputs['Out'].connect(comb_inputs['In0'])
         sel1_outputs['Out'].connect(comb_inputs['In1'])
         available.append(comb_outputs['Out'])
@@ -236,27 +251,36 @@ def basic_cell(h_sharer, C=5, normal=True):
 
 # A module that creates a number of repeated cells (both reduction and normal)
 # as in Learning Transferable Architectures for Scalable Image Recognition (Zoph et al, 2017)
-def ss_repeat(h_N, h_sharer, C, num_ov_repeat, num_classes, scope=None):
+def ss_repeat(h_N, h_sharer, h_filters, C, num_ov_repeat, num_classes, scope=None):
     def sub_fn(N):
         assert N > 0
+
         i_inputs, i_outputs = mo.simo_split(2)
         prev_2 = [i_outputs['Out0'], i_outputs['Out1']]
-
+        h_iter = h_filters
         for i in range(num_ov_repeat):
             for j in range(N):
-                norm_inputs, norm_outputs = basic_cell(h_sharer, C=C, normal=True)
+                print(h_filters)
+                norm_inputs, norm_outputs = basic_cell(h_sharer, h_iter, C=C, normal=True)
                 prev_2[0].connect(norm_inputs['In0'])
                 prev_2[1].connect(norm_inputs['In1'])
                 prev_2[0] = prev_2[1]
                 prev_2[1] = norm_outputs['Out']
             if j < num_ov_repeat - 1:
-                red_inputs, red_outputs = basic_cell(h_sharer, C=C, normal=False)
+                h_iter = co.DependentHyperparameter(
+                    lambda filters: filters*2,
+                    {'filters': h_iter})
+
+                red_inputs, red_outputs = basic_cell(h_sharer, h_iter, C=C, normal=False)
                 prev_2[0].connect(red_inputs['In0'])
                 prev_2[1].connect(red_inputs['In1'])
                 prev_2[0] = prev_2[1]
                 prev_2[1] = red_outputs['Out']
 
-        logits_inputs, logits_outputs = pool_and_logits(num_classes)
+        logits_inputs, logits_outputs = mo.siso_sequential([
+            global_pool2d(),
+            fc_layer(D([num_classes]))
+        ]) 
         prev_2[1].connect(logits_inputs['In'])
         return i_inputs, logits_outputs
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)
@@ -266,8 +290,8 @@ def ss_repeat(h_N, h_sharer, C, num_ov_repeat, num_classes, scope=None):
 def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
     C = 5
-    h_N = D([3])
-    h_F = D([8])
+    h_N = D([1])
+    h_F = D([24])
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
         h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
@@ -283,8 +307,8 @@ def get_search_space_small(num_classes, C):
             h_sharer.register('h_red_op2_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3', 's_sep7'], name='Mutatable'))
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
-    i_inputs, i_outputs = conv1x1(h_F)
-    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
+    i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
+    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, h_F, C, 3, num_classes)
     i_outputs['Out'].connect(o_inputs['In'])
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
     return r_inputs, r_outputs

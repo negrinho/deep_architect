@@ -1,4 +1,4 @@
-from dev.architecture_search_benchmarks.search_spaces.common_eager import siso_tfem
+from deep_architect.helpers.tfeager import siso_tfeager_module
 import tensorflow as tf
 
 def max_pool2d(h_kernel_size, h_stride):
@@ -7,7 +7,7 @@ def max_pool2d(h_kernel_size, h_stride):
             return {'Out' : tf.nn.max_pool(di['In'],
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return siso_tfem('MaxPool2D', cfn, {
+    return siso_tfeager_module('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 
         'stride' : h_stride,})
 
@@ -17,14 +17,14 @@ def batch_normalization():
         def fn(di, isTraining):
             return {'Out' : bn(di['In'], training=isTraining) }
         return fn
-    return siso_tfem('BatchNormalization', cfn, {})
+    return siso_tfeager_module('BatchNormalization', cfn, {})
 
 def relu():
     def cfn(di, dh):
         def fn(di, isTraining=True):
             return {'Out' : tf.nn.relu(di['In'])}
         return fn
-    return siso_tfem('ReLU', cfn, {})
+    return siso_tfeager_module('ReLU', cfn, {})
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
     def cfn(di, dh):
@@ -33,7 +33,7 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
         def fn(di, isTraining=True):
             return {'Out' : conv(di['In'])}
         return fn
-    return siso_tfem('Conv2D', cfn, {
+    return siso_tfeager_module('Conv2D', cfn, {
         'num_filters' : h_num_filters,
         'filter_width' : h_filter_width,
         'stride' : h_stride,
@@ -49,14 +49,14 @@ def dropout(h_keep_prob):
                 out = di['In']
             return {'Out': out}
         return fn
-    return siso_tfem('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_tfeager_module('Dropout', cfn, {'keep_prob' : h_keep_prob})
 
 def global_pool2d():
     def cfn(di, dh):
         def fn(di, isTraining=True):
             return {'Out' : tf.reduce_mean(di['In'], [1,2])}
         return fn
-    return siso_tfem('GlobalAveragePool', cfn, {})
+    return siso_tfeager_module('GlobalAveragePool', cfn, {})
 
 def fc_layer(h_num_units):
     def cfn(di, dh):
@@ -64,7 +64,7 @@ def fc_layer(h_num_units):
         def fn(di, isTraining=True):
             return {'Out' : fc(di['In'])}
         return fn
-    return siso_tfem('FCLayer', cfn, {'num_units' : h_num_units})
+    return siso_tfeager_module('FCLayer', cfn, {'num_units' : h_num_units})
 
 func_dict = {
     'dropout': dropout,
