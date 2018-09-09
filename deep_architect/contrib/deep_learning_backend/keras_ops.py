@@ -1,8 +1,8 @@
 from builtins import str
 from keras import layers
 import darch.modules as mo
-from dev.keras.helpers import keras as hk
-from darch.hyperparameters import Discrete as D
+from deep_architect.helpers import keras as hk
+from deep_architect.hyperparameters import Discrete as D
 KM = hk.KerasModule
 
 def siso_km(name, compile_fn, name_to_hyperp, scope=None):

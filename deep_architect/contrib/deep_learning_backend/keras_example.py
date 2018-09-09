@@ -1,13 +1,13 @@
 import keras
 from keras import Model
 
-from darch import core as co
-from darch import modules as mo
-from darch.searchers import random_specify
-from darch.hyperparameters import Discrete as D
-from darch.contrib.misc.datasets.loaders import load_mnist
+from deep_architect import core as co
+from deep_architect import modules as mo
+from deep_architect.searchers.common import random_specify
+from deep_architect.hyperparameters import Discrete as D
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
 
-from dev.keras.keras_ops import (
+from deep_architect.contrib.deep_learning_backend.keras_ops import (
     input_node, conv2d, max_pool2d, relu, batch_normalization,
     global_pool2d, fc_layer)
 
