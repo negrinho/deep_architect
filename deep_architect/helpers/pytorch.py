@@ -161,3 +161,6 @@ class PyTorchModel(nn.Module):
                 self.add_module(str(i), m)
             self._is_compiled = True
         return output_name_to_val
+
+def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
+    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()

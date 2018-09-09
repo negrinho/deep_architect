@@ -2,19 +2,20 @@ import argparse
 import tensorflow as tf
 
 from deep_architect.contrib.misc.datasets.loaders import load_cifar10
-from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
-from deep_architect.contrib.misc import gpu_utils
 
 from deep_architect.searchers import common as se
+from deep_architect.contrib.misc import gpu_utils
 from deep_architect import search_logging as sl
 from deep_architect import utils as ut
-from dev.architecture_search_benchmarks.search_spaces.search_space_factory import name_to_search_space_factory_fn
 
-from dev.architecture_search_benchmarks.searchers.searcher import name_to_searcher_fn
-from dev.architecture_search_benchmarks.evaluators.enas_evaluator import ENASEvaluator
-from dev.architecture_search_benchmarks.evaluators.enas_evaluator_eager import ENASEagerEvaluator
-from dev.architecture_search_benchmarks.communicators.communicator import get_communicator
+from search_space_factory import name_to_search_space_factory_fn
+from searcher import name_to_searcher_fn
+
+from deep_architect.contrib.enas.evaluator.enas_evaluator_eager import ENASEagerEvaluator
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+
+from deep_architect.communicators.communicator import get_communicator
 
 
 def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
@@ -154,8 +155,6 @@ def main():
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                         './temp' + str(comm.get_rank()), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output,
                         test_dataset=test_dataset),
-            'enas_evaluator': lambda: ENASEvaluator(train_dataset, val_dataset, num_classes,
-                        search_space_factory.weight_sharer),
             'enas_eager_evaluator': lambda: ENASEagerEvaluator(train_dataset, val_dataset, num_classes,
                         search_space_factory.weight_sharer)
         }
