@@ -28,3 +28,9 @@ If you want to convert md to rst, use pandoc directly
 pandoc -o text.rst text.md
 
 Alternatively, you can also write your tutorial in markdown or rst format 
+
+
+NOTE: 
+Mnist tutorial main is tf.keras, with link to github code for all other frameworks (should be heavily commented for the difference)
+
+In the future, develop to have code tabs
