@@ -1,11 +1,15 @@
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
-from pip.req import parse_requirements
-import pip.download
+try:  # for pip >= 10
+    from pip._internal.req import parse_requirements
+    from pip._internal import download
+except ImportError:
+    from pip.req import parse_requirements
+    import pip.download
 
 
-install_reqs = parse_requirements("requirements.txt", session=pip.download.PipSession())
+install_reqs = parse_requirements("requirements.txt", session=download.PipSession())
 install_requires = [str(ir.req) for ir in install_reqs]
 
 
