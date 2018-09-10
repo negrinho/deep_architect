@@ -66,5 +66,12 @@ setup(
     # simple. Or you can use find_packages().
     packages=['deep_architect'],
 
+    # optional dependencies
+    extras_require = {
+        'torch': ['torch'],
+        'tensorflow': ['tensorflow'],
+        'all': ['tensorflow', 'torch'],
+    },
+
     install_requires=install_requires
 )
