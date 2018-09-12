@@ -63,10 +63,11 @@ class MPICommunicator(Communicator):
     """
     def _is_ready_to_publish_architecture(self):
         for idx, req in enumerate(self.ready_requests):
-            test, msg = req.test()
-            if test:
-                self.next_worker = idx + 1
-                return True
+            if req:
+                test, msg = req.test()
+                if test:
+                    self.next_worker = idx + 1
+                    return True
         return False
 
     """
@@ -100,3 +101,4 @@ class MPICommunicator(Communicator):
     """
     def _kill_worker(self):
         self.comm.isend((0, 0, 0, True), dest=self.next_worker, tag=MODEL_REQ)
+        self.ready_requests[self.next_worker - 1] = None

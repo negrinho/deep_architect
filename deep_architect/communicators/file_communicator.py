@@ -71,7 +71,7 @@ class FileCommunicator(Communicator):
     
     def _receive_results_in_master(self, src):
         result = consume_file(self.worker_results_prefix + str(src + 1))
-        if result is 'done':
+        if result == 'done':
             self.finished += 1
             return None
         return result
