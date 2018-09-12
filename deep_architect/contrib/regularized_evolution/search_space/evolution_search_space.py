@@ -290,7 +290,7 @@ def ss_repeat(h_N, h_sharer, h_filters, C, num_ov_repeat, num_classes, scope=Non
 def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
     C = 5
-    h_N = D([1])
+    h_N = D([2])
     h_F = D([24])
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
@@ -313,7 +313,8 @@ def get_search_space_small(num_classes, C):
     r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
     return r_inputs, r_outputs
 
-# Search space 1 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
+# Search space 1 from Regularized Evolution for 
+# Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_1(num_classes):
     return get_search_space_small(num_classes, 5)
 

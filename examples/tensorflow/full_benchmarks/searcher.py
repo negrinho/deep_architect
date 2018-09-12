@@ -1,7 +1,6 @@
 from __future__ import absolute_import
-from dev.architecture_search_benchmarks.searchers.regularized_evolution_searcher import EvolutionSearcher, mutatable
-from dev.architecture_search_benchmarks.searchers.enas.enas_searcher import ENASSearcher
-from dev.architecture_search_benchmarks.searchers.enas.enas_searcher_eager import ENASEagerSearcher
+from deep_architect.contrib.regularized_evolution.searcher.regularized_evolution_searcher import EvolutionSearcher, mutatable
+from deep_architect.contrib.enas.searcher.enas_searcher import ENASSearcher
 import deep_architect.searchers.random as ra
 from deep_architect.searchers.smbo_mcts import SMBOSearcherWithMCTSOptimizer
 from deep_architect.searchers.smbo_random import SMBOSearcher
@@ -24,6 +23,5 @@ name_to_searcher_fn = {
     'smbo_optimizer=rand_samples=512' : lambda ssf: SMBOSearcher(ssf, HashingSurrogate(2048, 1), 512, 0.1),
     'smbo_optimizer=mcts_samples=256' : lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1), 256, 0.1, 1),
     'smbo_optimizer=mcts_samples=512' : lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1), 512, 0.1, 1),
-    'enas_searcher': lambda ssf: ENASSearcher(ssf),
-    'enas_searcher_eager': lambda ssf: ENASEagerSearcher(ssf)
+    'enas_searcher': lambda ssf: ENASSearcher(ssf)
 }

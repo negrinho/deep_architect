@@ -14,7 +14,7 @@ from deep_architect.helpers.tfeager import setTraining
 
 tfe = tf.contrib.eager
 
-class ENASEagerEvaluator(object):
+class ENASEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
     that achieves the best validation performance, reduces the step size

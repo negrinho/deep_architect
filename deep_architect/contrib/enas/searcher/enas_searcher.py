@@ -16,7 +16,7 @@ from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 tfe = tf.contrib.eager
 
-class ENASEagerSearcher(Searcher):
+class ENASSearcher(Searcher):
     def __init__(self,
                  search_space_fn,
                  num_layers=12,

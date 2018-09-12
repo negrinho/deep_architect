@@ -10,9 +10,9 @@ from collections import OrderedDict
 import tensorflow as tf
 import numpy as np
 
-from dev.architecture_search_benchmarks.helpers import tfeager as htfe
-from dev.architecture_search_benchmarks.search_spaces.common_eager import D
-from dev.architecture_search_benchmarks.search_spaces.common_ops_eager import (
+from deep_architect.helpers import tfeager as htfe
+from deep_architect.hyperparameters import D
+from deep_architect.contrib.enas.search_space.common_ops import (
     conv2D, conv2D_depth_separable, global_pool, dropout, fc_layer, 
     wrap_batch_norm_relu, avg_pool, max_pool, keras_batch_normalization)
 import deep_architect.modules as mo
@@ -130,7 +130,7 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
         fc_layer(num_classes, 'softmax', weight_sharer),
         ])
 
-class SSFEnasnetEager(mo.SearchSpaceFactory):
+class SSFEnasnet(mo.SearchSpaceFactory):
     def __init__(self, num_classes, num_layers, out_filters):
         mo.SearchSpaceFactory.__init__(self)
         self.num_classes = num_classes
