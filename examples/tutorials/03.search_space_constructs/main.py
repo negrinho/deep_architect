@@ -277,8 +277,6 @@ def get_search_space():
     ])
 (inputs, outputs) = get_search_space()
 
-
-
 # All the language features so far have been focused on simple search spaces
 # where the module connections are fixed upfront.
 # One could argue that these search spaces are easily expressible th
@@ -505,11 +503,12 @@ x = a(D([0, 1]), D([16, 32, 64, 128]))
 # sense of what we are doing here.
 # TODO: check for models vs modules.
 # TODO: check for subsitution. is it correct or not.
-
 # TODO: perhaps cover the hyperparameter sharer because this will allow it
 # to show the model
-
 # NOTE: maybe put all imports near the top.
-
 # NOTE: overall, I we believe that the language has multiple opportunities for
 # composition.
+# TODO: write something about understanding substitution modules.
+# there is the code but there is also the behavior that this implements.
+# I think that I can show both.
+

@@ -41,11 +41,11 @@ def wrap_relu_batch_norm(conv):
 def apply_conv_op(main_op, op_name, h_num_filter):
     if op_name is 's_sep3':
         reduced_filter_size = co.DependentHyperparameter(
-            lambda size: int(3 * size / 8), 
+            lambda size: int(3 * size / 8),
             {'size': h_num_filter})
     else:
         reduced_filter_size = co.DependentHyperparameter(
-            lambda size: int(size / 4), 
+            lambda size: int(size / 4),
             {'size': h_num_filter})
 
     bottleneck_too_thin = co.DependentHyperparameter(
@@ -93,17 +93,17 @@ def check_reduce(main_op, h_stride, h_num_filter):
         )
     ])
 
-def stacked_depth_separable_conv(h_filter_size, h_num_filters, 
+def stacked_depth_separable_conv(h_filter_size, h_num_filters,
                                  h_depth_multiplier, h_stride):
     return mo.siso_sequential([
         relu(),
         conv2d_separable(
-            h_num_filters, h_filter_size, D([1]), D([1]), h_depth_multiplier, 
+            h_num_filters, h_filter_size, D([1]), D([1]), h_depth_multiplier,
             D([True])),
         batch_normalization(),
         relu(),
         conv2d_separable(
-            h_num_filters, h_filter_size, h_stride, D([1]), h_depth_multiplier, 
+            h_num_filters, h_filter_size, h_stride, D([1]), h_depth_multiplier,
             D([True])),
         batch_normalization()
     ])
@@ -124,7 +124,7 @@ def sp1_operation(h_op_name, h_stride, h_filters):
                 'dil3', h_stride),
             's_sep7': lambda:apply_conv_op(
                 conv_spatial_separable(h_filters, D([7]), h_stride),
-                's_sep7', h_stride), 
+                's_sep7', h_stride),
             }, h_op_name)
 
 # The operations used in search space 2 in Regularized Evolution for
@@ -144,20 +144,20 @@ def sp2_operation(h_op_name, h_stride, h_filters):
             'max2': lambda: check_reduce(max_pool2d(D([2]), h_stride), h_stride, h_filters),
             'max3': lambda: check_reduce(max_pool2d(D([3]), h_stride), h_stride, h_filters),
             'dil3_2': lambda: apply_conv_op(
-                conv2d(h_filters, D([3]), h_stride, D([2]), D([True])), 
+                conv2d(h_filters, D([3]), h_stride, D([2]), D([True])),
                 'dil3_2', h_stride),
             'dil4_2': lambda: apply_conv_op(
-                conv2d(h_filters, D([3]), h_stride, D([4]), D([True])), 
+                conv2d(h_filters, D([3]), h_stride, D([4]), D([True])),
                 'dil3_4', h_stride),
             'dil6_2': lambda: apply_conv_op(
-                conv2d(h_filters, D([3]), h_stride, D([6]), D([True])), 
+                conv2d(h_filters, D([3]), h_stride, D([6]), D([True])),
                 'dil3_6', h_stride),
             's_sep3': lambda:apply_conv_op(
                 conv_spatial_separable(h_filters, D([3]), h_stride),
                 's_sep3', h_stride),
             's_sep7': lambda:apply_conv_op(
                 conv_spatial_separable(h_filters, D([7]), h_stride),
-                's_sep7', h_stride),             
+                's_sep7', h_stride),
             }, h_op_name)
 
 # A module that takes in a specifiable number of inputs, uses 1x1 convolutions to make the number
@@ -280,7 +280,7 @@ def ss_repeat(h_N, h_sharer, h_filters, C, num_ov_repeat, num_classes, scope=Non
         logits_inputs, logits_outputs = mo.siso_sequential([
             global_pool2d(),
             fc_layer(D([num_classes]))
-        ]) 
+        ])
         prev_2[1].connect(logits_inputs['In'])
         return i_inputs, logits_outputs
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In'], ['Out'], scope)

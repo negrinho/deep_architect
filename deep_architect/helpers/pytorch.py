@@ -78,6 +78,17 @@ class PyTorchModule(co.Module):
     def _update(self):
         pass
 
+def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
+    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+
+def siso_pytorch_module_from_pytorch_layer_fn(layer_fn, name_to_hyperp, scope=None):
+    def compile_fn(di, dh):
+        m = layer_fn(**dh)
+        def forward_fn(di):
+            return {"Out" : m(di["In"])}
+        return forward_fn, [m]
+    return siso_pytorch_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)
+
 # NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
 def _call_fn_on_pytorch_module(output_lst, fn):
@@ -161,6 +172,3 @@ class PyTorchModel(nn.Module):
                 self.add_module(str(i), m)
             self._is_compiled = True
         return output_name_to_val
-
-def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
-    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()

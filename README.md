@@ -127,5 +127,30 @@ In core.py you will find the necessary functionality.
 TODO: say something about if you find comments missing, looking for an example
 of usage of the model is the best way to go.
 
+NOTE: I think that the tutorials should be linked here.
+the actual generated tutorials should be hold somewhere
+TODO: check where to find a place that can hold tutorials.
+
+TODO: write tutorials and examples as they make a large difference for adoption.
 
 
+The main problems for architecture search are the difficulty of encoding many
+computational paths.
+This is solved by the introduction of the domain specific language to
+write down search spaces over computational architectures.
+
+TODO: DeepArchitect can be used for writing programs over architectures.
+
+
+TODO: do the MCTS optimizer for the logo.
+
+
+NOTE: most of the examples are given in Keras, but due to the abstraction
+of DeepArchitect, they are very easy to transfer to new settings.
+
+
+TODO: say that
+why use DeepArchitect:
+* Expressive: express complex search spaces.
+* Visualization tools: make the most out of the spend computation by exploring
+your results through interactive visualizations.
