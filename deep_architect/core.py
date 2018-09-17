@@ -192,7 +192,8 @@ class Hyperparameter(Addressable):
 
         # calls updates on the dependent hyperparameters.
         for h in self.dependent_hyperps:
-            h._update()
+            if not h.assign_done:
+                h._update()
 
     def get_value(self):
         """Get the value assigned to the hyperparameter.
