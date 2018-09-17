@@ -48,7 +48,7 @@ class WeightSharer(object):
         np.save(filename, weight_dict)
     
     def load(self, filename):
-        self.weight_dict = np.load(filename)
+        self.weight_dict = np.load(filename).item()
 
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
 # to form skip connections

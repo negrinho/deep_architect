@@ -18,10 +18,10 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate, h_use_bias)
         'dilation_rate' : h_dilation_rate,
         })
 
-def conv2d_separable(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
+def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
                      h_depth_multiplier, h_use_bias):
     def cfn(di, dh):
-        conv_op = tf.layers.separable_conv2d(dh['num_filters'], dh['filter_width'],
+        conv_op = tf.layers.SeparableConv2D(dh['num_filters'], dh['filter_width'],
             strides=dh['stride'], dilation_rate=dh['dilation_rate'],
             depth_multiplier=dh['depth_multiplier'], use_bias=dh['use_bias'],
             padding='SAME')

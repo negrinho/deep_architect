@@ -239,3 +239,9 @@ class SimpleClassifierEvaluator:
         results['training_time_in_hours'] = timer_manager.get_time_since_event(
             'eval', 'start', units='hours')
         return results
+
+    def save_state(folder):
+        pass
+    
+    def load_state(folder):
+        pass

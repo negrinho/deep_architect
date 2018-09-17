@@ -143,7 +143,7 @@ class ENASEvaluator(object):
                 log_string += " ch_step={:<6d}".format(self.child_step)
                 log_string += " loss={:<8.6f}".format(loss_metric.result())
                 print(log_string)
-            epoch_end = self.train_dataset.iter_i == 0 or self.train_dataset.iter_i > 25 * 128
+            epoch_end = self.train_dataset.iter_i == 0
 
             # If epoch completed, switch to updating controller
             results['validation_accuracy'] = -1
