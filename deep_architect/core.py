@@ -864,7 +864,7 @@ def get_all_hyperparameters(output_lst):
         while idx < len(h_dep_lst):
             for h in itervalues(h_dep_lst[idx]._hyperps):
                 # cycle detection.
-                assert h not in local_memo
+                # assert h not in local_memo
 
                 if h not in visited_hs:
                     if isinstance(h, DependentHyperparameter):
