@@ -1,5 +1,7 @@
 import argparse
 import tensorflow as tf
+import pickle
+import deep_architect.utils as ut
 
 from deep_architect.contrib.misc.datasets.loaders import load_cifar10, load_mnist
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
@@ -25,22 +27,29 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
     print('SEARCHER')
 
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
-
-    # Load previous searcher
-    if resume_if_exists:
-        searcher.load(search_data_folder, searcher_load_path)
+    save_filepath = ut.join_paths((search_data_folder, searcher_load_path))
 
     models_sampled = 0
     epochs = 0
     finished = 0
     killed = 0
 
+    # Load previous searcher
+    if resume_if_exists:
+        searcher.load(search_data_folder)
+        state = ut.read_jsonfile(save_filepath)
+        epochs = state['epochs']
+        killed = state['killed']
+        models_sampled = state['models_finished']
+        finished = state['models_finished']
+
+
     while(finished < models_sampled or killed < comm.num_workers):
-        # See whether workers are ready to consume architectures
-            # Search end conditions
+        # Search end conditions
         cont = num_samples == -1 or models_sampled < num_samples
         cont = cont and (num_epochs == -1 or epochs < num_epochs)
         if cont:
+            # See whether workers are ready to consume architectures
             if comm.is_ready_to_publish_architecture():
                 eval_logger = sl.EvaluationLogger(folderpath, search_name, models_sampled)
                 inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
@@ -52,10 +61,6 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
                                        searcher_eval_token)
 
                 models_sampled += 1
-
-                if models_sampled % save_every == 0:
-                    searcher.save_state(search_data_folder)
-
         else:
             if comm.is_ready_to_publish_architecture():
                 comm.kill_worker()
@@ -74,6 +79,14 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
 
                 searcher.update(results['validation_accuracy'], searcher_eval_token)
                 finished += 1
+                if finished % save_every == 0:
+                    searcher.save_state(search_data_folder)
+                    state = {
+                        'models_finished': finished,
+                        'epochs': epochs,
+                        'killed': killed
+                    }
+                    ut.write_jsonfile(state, save_filepath)
 
 def start_worker(comm, evaluator, search_space_factory, folderpath, 
     search_name, resume=True, save_every=1):
@@ -85,9 +98,12 @@ def start_worker(comm, evaluator, search_space_factory, folderpath,
         gpu_utils.set_visible_gpus([comm.get_rank() % gpu_utils.get_total_num_gpus()])
 
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
+    save_filepath = ut.join_paths((search_data_folder, 'worker' + str(comm.get_rank()) + '.json'))
 
     if resume:
         evaluator.load_state(search_data_folder)
+        state = ut.read_jsonfile(save_filepath)
+        step = state['step']
 
     while(True):
         arch = comm.receive_architecture_in_worker()
@@ -104,10 +120,14 @@ def start_worker(comm, evaluator, search_space_factory, folderpath,
         step += 1
         if step % save_every == 0:
             evaluator.save_state(search_data_folder)
+            state = {
+                'step': step
+            }
+            ut.write_jsonfile(state, save_filepath)
         comm.publish_results_to_master(results, evaluation_id, searcher_eval_token)
 
 def main():
-    configs = ut.read_jsonfile("./dev/architecture_search_benchmarks/experiment_config.json")
+    configs = ut.read_jsonfile("./examples/tensorflow/full_benchmarks/experiment_config.json")
 
     parser = argparse.ArgumentParser("MPI Job for architecture search")
     parser.add_argument('--config', '-c', action='store', dest='config_name',
@@ -118,13 +138,12 @@ def main():
                         default=False)
     parser.add_argument('--resume', '-r', action='store_true', dest='resume',
                         default=False)
-    parser.add_argument('--load_searcher', '-l', action='store', dest='searcher_file_name',
-                        default='searcher_state.json')
 
     options = parser.parse_args()
     config = configs[options.config_name]
 
     if 'eager' in config and config['eager']:
+        tf.logging.set_verbosity(tf.logging.ERROR)
         tfconfig = tf.ConfigProto()
         tfconfig.gpu_options.allow_growth=True
         tf.enable_eager_execution(tfconfig, device_policy=tf.contrib.eager.DEVICE_PLACEMENT_SILENT)
@@ -147,7 +166,7 @@ def main():
         num_epochs = -1 if 'epochs' not in config else config['epochs']
         start_searcher(
             comm, searcher, options.resume, config['search_folder'], 
-            config['search_name'], config['searcher_load_file_name'], 
+            config['search_name'], config['searcher_file_name'], 
             num_samples=num_samples, num_epochs=num_epochs, save_every=save_every)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
@@ -156,7 +175,7 @@ def main():
 
         evaluators = {
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-                        './temp' + str(comm.get_rank()), max_num_training_epochs=config['epochs'], log_output_to_terminal=options.display_output,
+                        './temp' + str(comm.get_rank()), max_num_training_epochs=config['eval_epochs'], log_output_to_terminal=options.display_output,
                         test_dataset=test_dataset),
             'enas_evaluator': lambda: ENASEvaluator(train_dataset, val_dataset, num_classes,
                         search_space_factory.weight_sharer)
