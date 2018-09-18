@@ -1,8 +1,6 @@
 import deep_architect.core as co
-from six import itervalues, iteritems
+from six import itervalues, iteritems, itertools
 from six.moves import range
-import itertools
-from collections import OrderedDict
 
 class Empty(co.Module):
     """Module passes the input to the output without changes.
