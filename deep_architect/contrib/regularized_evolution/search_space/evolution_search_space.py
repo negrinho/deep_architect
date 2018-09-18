@@ -408,7 +408,7 @@ def get_search_space_small(num_classes, C):
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
     o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
-    return i_inputs, o_outputs
+    return mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
 
 # Search space 1 from Regularized Evolution for 
 # Image Classifier Architecture Search (Real et al, 2018)
@@ -448,7 +448,7 @@ def get_search_space_2(num_classes):
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
     o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
-    return i_inputs, o_outputs
+    return mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
 
 class SSFZoph17(mo.SearchSpaceFactory):
     def __init__(self, search_space, num_classes):
