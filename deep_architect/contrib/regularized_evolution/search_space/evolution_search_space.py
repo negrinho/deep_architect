@@ -1,10 +1,47 @@
+###${MARKDOWN}
+# This search space is the one used in
+# [Learning Transferable Architectures for Scalable Image Recognition](https://arxiv.org/abs/1707.07012) and
+# [Regularized Evolution for Image Classifier Architecture Search](https://arxiv.org/abs/1802.01548),
+# for the purposes of reproducing the
+# [Regularized Evolution for Image Classifier Architecture Search](https://arxiv.org/abs/1802.01548)
+# paper. The search space was created using descriptions in the paper and examining
+# the code from [here](https://github.com/tensorflow/tpu/tree/master/models/official/amoeba_net).
+# While the search space does not match the one used in the original work
+# exactly, it contains most of the major ideas used. We have annotated this file
+# to show how to implement even fairly complex search spaces in our framework.
+#
+# To give a high level summary of the search space, it essentially specifies two
+# types of cells--Normal cells and Reduction cells--which are then stacked to
+# create the overall architecture. Each cell takes in as inputs the outputs of
+# the previous two layers. Normal cells maintain the number of filters and the
+# kernel size, which Reduction cells double the number of filters while halving
+# the kernel size in both dimensions. N normal cells are followed by 1 reduction
+# cell and this pattern continues (except for the very end, where the reduction
+# cell is omitted), a certain number of times that is constant for the whole
+# search. The initial number of filters used is parameterized as F. Each 
+# individual cell is constructed as follows: two of the previous inputs available
+# to the cell are independently chosen, after which each is transformed using
+# one of a certain set of prespecified operations (conv, maxpool...). The two
+# transformed inputs are added together and this new value is added to the list
+# of inputs. This is done C times, where C is another parameter, and then the
+# unused inputs in the list are added up together to form the output of the cell.
+# For reduction cells, any time one of the original two inputs is used, a stride
+# of two is applied.
+#
+# This tutorial assumes familiarity with the rest of the DeepArchitect framework
+# including substitution modules and dependent hyperparameters. It is meant to
+# showcase how these components can be used to create a complex search space. We
+# will mostly be using modules adhering to framework agnostic signatures, but
+# some specific modules will be used that are Tensorflow specific. 
+# (Note, in this tutorial, we will refer to modules using framework agnostic
+# signatures as framework agnostic modules, even though many are Tensorflow
+# specific modules specified in tf_ops)
+
 from __future__ import absolute_import
 from builtins import str
 from builtins import range
 
 import tensorflow as tf
-import numpy as np
-from pprint import pprint
 from collections import OrderedDict
 
 import deep_architect.core as co
@@ -13,7 +50,7 @@ import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
 from deep_architect.contrib.deep_learning_backend.tf_ops import (
-    relu, batch_normalization, conv2d, separable_conv2d, add, avg_pool2d,
+    relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d,
     max_pool2d, fc_layer, global_pool2d
 )
 
@@ -23,6 +60,11 @@ from deep_architect.hyperparameters import Discrete as D
 TFM = htf.TensorflowModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
+# This is a module created using framework agnostic modules to perform spatially
+# separable convolutions (eg a 1x3 conv followed by a 3x1 conv). Dependent
+# hyperparameters are used to turn the h_filter_size and
+# h_stride parameters--which only take values of ints--into the necessary 
+# parameters for the spatially separable convolution.
 def conv_spatial_separable(h_num_filters, h_filter_size, h_stride):
     h_filter_size_1 = co.DependentHyperparameter(lambda size: [1, size], {'size': h_filter_size})
     h_filter_size_2 = co.DependentHyperparameter(lambda size: [size, 1], {'size': h_filter_size})
@@ -35,6 +77,8 @@ def conv_spatial_separable(h_num_filters, h_filter_size, h_stride):
         conv2d(h_num_filters, h_filter_size_2, h_stride_2, D([1]), D([True]))
     ])
 
+# This is a simple convenience function used to wrap a conv module with relu
+# and batch norm
 def wrap_relu_batch_norm(conv):
     return mo.siso_sequential([
         relu(),
@@ -42,6 +86,12 @@ def wrap_relu_batch_norm(conv):
         batch_normalization()
     ])
 
+# This function applies some of the convolution specific logic that is not
+# specified in the paper but is used in the code base. Essentially, it transforms
+# the convolution into a bottleneck layer. The dependent hyperparameters are 
+# being used in two ways below. One way is to calculate the bottleneck filter
+# size, and the other (in conjunction with an Optional subsitituion module) to
+# decide whether to apply the bottleneck at all. 
 def apply_conv_op(main_op, op_name, h_num_filter):
     if op_name is 's_sep3':
         reduced_filter_size = co.DependentHyperparameter(
@@ -78,10 +128,13 @@ def apply_conv_op(main_op, op_name, h_num_filter):
         )
     ])
 
+# This module is used to encode the logic for 1x1 convolution and no op
+# operations. It essentially adds a stride by using a 1x1 convolution to the
+# no op layer if needed.
 def check_stride(h_stride, h_num_filter, h_op_name):
     need_stride = co.DependentHyperparameter(
         lambda name, stride: int(name is 'conv1' or stride > 1),
-        {'name': h_op_name, 'stride': h_stride}, name='check_stride'
+        {'name': h_op_name, 'stride': h_stride},
     )
     return mo.siso_or([
         mo.empty,
@@ -90,10 +143,12 @@ def check_stride(h_stride, h_num_filter, h_op_name):
         )
     ], need_stride)
 
+# This module is used to apply the pooling layer specific logic used for
+# striding by the amoebanet code.
 def check_reduce(main_op, h_stride, h_num_filter):
     need_stride = co.DependentHyperparameter(
         lambda stride: int(stride > 1),
-        {'stride': h_stride}, name='check_reduce'
+        {'stride': h_stride},
     )
     return mo.siso_sequential([
         main_op,
@@ -105,6 +160,9 @@ def check_reduce(main_op, h_stride, h_num_filter):
         )
     ])
 
+# The regularized evolution paper mentions in the appendix that for the depth
+# separable convolutions, they applied them twice whenever selected. This
+# is the implementation of that scheme that is used in the amoebanet code.
 def stacked_depth_separable_conv(h_filter_size, h_num_filters, 
                                  h_depth_multiplier, h_stride):
     return mo.siso_sequential([
@@ -120,69 +178,59 @@ def stacked_depth_separable_conv(h_filter_size, h_num_filters,
         batch_normalization()
     ])
 
-
-# The operations used in search space 1 and search space 3 in Regularized Evolution for
-# Image Classifier Architecture Search (Real et al, 2018)
+# This is simply an Or substitution module that chooses between the operations
+# used in search space 1 and search space 3 in the regularized evolution paper. 
 def sp1_operation(h_op_name, h_stride, h_filters):
     return mo.siso_or({
-            'identity': lambda: check_stride(h_stride, h_filters, h_op_name),
-            'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
-            'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
-            'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
-            'avg3': lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
-            'max3': lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
-            'dil3_2': lambda: apply_conv_op(
-                lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])),
-                'dil3_2', h_filters),
-            's_sep7': lambda:apply_conv_op(
-                lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
-                's_sep7', h_filters), 
-            }, h_op_name)
+        'identity': lambda: check_stride(h_stride, h_filters, h_op_name),
+        'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
+        'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
+        'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
+        'avg3': lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'max3': lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'dil3_2': lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])),
+            'dil3_2', h_filters),
+        's_sep7': lambda:apply_conv_op(
+            lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
+            's_sep7', h_filters), 
+        }, h_op_name)
 
-# The operations used in search space 2 in Regularized Evolution for
-# Image Classifier Architecture Search (Real et al, 2018)
+# This is simply an Or substitution module that chooses between the operations
+# used in search space 2 in the regularized evolution paper.
 def sp2_operation(h_op_name, h_stride, h_filters):
     return mo.siso_or({
-            'identity': lambda: mo.empty(),
-            'conv1': lambda: check_stride(h_stride, h_filters, h_op_name),
-            'conv3': lambda: apply_conv_op(
-                lambda filters: conv2d(filters, D([3]), h_stride, D([1]), D([True])),
-                'conv3', h_stride),
-            'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
-            'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
-            'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
-            'avg2': lambda: check_reduce(avg_pool2d(D([2]), D([1])), h_stride, h_filters),
-            'avg3': lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
-            'max2': lambda: check_reduce(max_pool2d(D([2]), D([1])), h_stride, h_filters),
-            'max3': lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
-            'dil3_2': lambda: apply_conv_op(
-                lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])), 
-                'dil3_2', h_stride),
-            'dil4_2': lambda: apply_conv_op(
-                conv2d(h_filters, D([3]), h_stride, D([4]), D([True])), 
-                'dil3_4', h_stride),
-            'dil6_2': lambda: apply_conv_op(
-                lambda filters: conv2d(filters, D([3]), h_stride, D([6]), D([True])), 
-                'dil3_6', h_stride),
-            's_sep3': lambda:apply_conv_op(
-                lambda filters: conv_spatial_separable(filters, D([3]), h_stride),
-                's_sep3', h_stride),
-            's_sep7': lambda:apply_conv_op(
-                lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
-                's_sep7', h_stride),             
-            }, h_op_name)
+        'identity': lambda: check_stride(h_stride, h_filters, h_op_name),
+        'conv1': lambda: check_stride(h_stride, h_filters, h_op_name),
+        'conv3': lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([1]), D([True])),
+            'conv3', h_stride),
+        'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
+        'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
+        'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
+        'avg2': lambda: check_reduce(avg_pool2d(D([2]), D([1])), h_stride, h_filters),
+        'avg3': lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'max2': lambda: check_reduce(max_pool2d(D([2]), D([1])), h_stride, h_filters),
+        'max3': lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'dil3_2': lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])), 
+            'dil3_2', h_stride),
+        'dil4_2': lambda: apply_conv_op(
+            conv2d(h_filters, D([3]), h_stride, D([4]), D([True])), 
+            'dil3_4', h_stride),
+        'dil6_2': lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([6]), D([True])), 
+            'dil3_6', h_stride),
+        's_sep3': lambda:apply_conv_op(
+            lambda filters: conv_spatial_separable(filters, D([3]), h_stride),
+            's_sep3', h_stride),
+        's_sep7': lambda:apply_conv_op(
+            lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
+            's_sep7', h_stride),             
+        }, h_op_name)
 
-def mimo_combine(fns, combine_fn, scope=None, name=None):
-    inputs_lst, outputs_lst = zip(*[fns[i]() for i in range(len(fns))])
-    c_inputs, c_outputs = combine_fn(len(fns))
-    i_inputs = OrderedDict()
-    for i in range(len(fns)):
-        i_inputs['In' + str(i)] = inputs_lst[i]['In']
-        c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
-    return (i_inputs, c_outputs)
-
-# A module that takes in a specifiable number of inputs, uses 1x1 convolutions to make the number
-# filters match, and then adds the inputs together
+# This module takes in a specifiable number of inputs, uses 1x1 convolutions to
+# make the number filters match, and then adds the inputs together
 def mi_add(num_terms, name=None):
     def cfn(di, dh):
         (_, _, _, min_channels) = di['In0'].get_shape().as_list()
@@ -214,7 +262,7 @@ def mi_add(num_terms, name=None):
         return fn
     return TFM('MultiInputAdd' if name is None else name, {}, cfn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
 
-# A module that applies a sp1_operation to two inputs, and adds them together
+# This module applies a sp1_operation to two inputs, and adds them together
 def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
     op1 = sp1_operation(h_op1_name, h_stride_1, h_filters)
     op2 = sp1_operation(h_op2_name, h_stride_2, h_filters)
@@ -227,7 +275,8 @@ def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
         add_inputs['In' + str(i)].connect(ops[i][1]['Out'])
     return (i_inputs, add_outputs)
 
-# A module that selects an input from a list of inputs
+# This module is a substitution module that selects a module from a list of
+# input modules.
 def selector(h_selection, available, scope=None):
     def sub_fn(selection):
         ins, outs = available[selection]
@@ -237,6 +286,20 @@ def selector(h_selection, available, scope=None):
         return ins, outs
     return mo.substitution_module('Selector', {'selection': h_selection}, sub_fn, ['In'], ['Out'], scope)
 
+# This module takes in a list of cell inputs, a list of hyperparameters that
+# will specify which cell inputs are used, and then adds up the unused inputs.
+# It is a substitution module that results in only the unused inputs being
+# connected to the module that adds them together. Because we don't know how
+# inputs will end up being connected to the substitution module (since this is
+# a value determined by the list of selection hyperparameters), we
+# need to use a trick where we create the substitution module using a dummy
+# function. Then, our true substitution function, which will be called once all
+# of the selection hyperparameters are specified and we can determine the number
+# of inputs to the substitution/add module, will directly modify the inputs
+# dictionary for the module according to how many inputs we need. It will also
+# connect all of the relevant input modules to the created add module. 
+# Finally, we replace the dummy substitution module for our module with the true
+# substitution function. 
 def add_unused(h_selections, available, normal, name=None, scope=None):
     def dummy_func(**dummy_hs):
         return mo.empty()
@@ -264,6 +327,8 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
     module._substitution_fn = sub_fn
     return module.get_io()
 
+# This is a module used to pad and shift the input. This is used as part of the
+# factorized reduction operation in the amoebanet code.
 def pad_and_shift():
     def cfn(di, dh):
         pad_arr = [[0, 0], [0, 1], [0, 1], [0, 0]]
@@ -272,6 +337,9 @@ def pad_and_shift():
         return fn
     return htf.siso_tensorflow_module('Pad', cfn, {})
 
+# This is a module used to concatenate two inputs along the channel dimension.
+# This is used as part of the factorized reduction operation in the amoebanet
+# code.
 def concat(axis):
     def cfn(di, dh):
         def fn(di):
@@ -279,6 +347,13 @@ def concat(axis):
         return fn
     return TFM('Concat', {}, cfn, ['In0', 'In1'], ['Out']).get_io()
 
+# This operation is used to reduce the size of the input, either by striding
+# ir reducing the number of filters, without losing information. It is specified
+# in the amoebanet code. The reduction of the number of filters is fairly
+# straightforward. The striding is done by splitting the input along two paths,
+# both of which are strided with half the number of final filters, and then
+# concatenated along the channel dimensions. We use the `is_stride_2` dependent
+# hyperparameter to decide whether we need to do the striding operations.  
 def factorized_reduction(h_num_filters, h_stride):
     is_stride_2 = co.DependentHyperparameter(lambda stride: int(stride == 2), {'stride': h_stride})
     reduced_filters = co.DependentHyperparameter(lambda filters: filters / 2, {'filters': h_num_filters})
@@ -310,8 +385,11 @@ def factorized_reduction(h_num_filters, h_stride):
         ])
     ], is_stride_2, name='factor')
 
-# A module that outlines the basic cell structure in Learning Transferable
-# Architectures for Scalable Image Recognition (Zoph et al, 2017)
+# A module that outlines the basic cell structure in the transferable
+# architectures paper. It uses a hyperparameter sharer to get the same
+# architecture specification across cells. It takes in an array called
+# `available` which contains the previous two outputs. Then, it builds the cell
+# according to the process described at the top of this tutorial.
 def basic_cell(available, h_sharer, h_filters, C=5, normal=True):
     assert len(available) == 2
     i_inputs = OrderedDict([('In' + str(idx), available[idx][1]['Out']) for idx in range(len(available))])
@@ -357,8 +435,10 @@ def basic_cell(available, h_sharer, h_filters, C=5, normal=True):
     return i_inputs, add_outputs
 
 
-# A module that creates a number of repeated cells (both reduction and normal)
-# as in Learning Transferable Architectures for Scalable Image Recognition (Zoph et al, 2017)
+# This module creates a number of repeated cells (both reduction and normal)
+# according to the overall architecture parameter specification. It is a
+# substitution module, so it will not exist once the architecture is fully
+# specified.
 def ss_repeat(input_layers, h_N, h_sharer, h_filters, C, num_ov_repeat, num_classes, scope=None):
     def sub_fn(N):
         assert N > 0
@@ -388,8 +468,8 @@ def ss_repeat(input_layers, h_N, h_sharer, h_filters, C, num_ov_repeat, num_clas
         ])
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In0', 'In1'], ['Out'], scope)
 
-# Creates search space using operations from search spaces 1 and 3 from
-# Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
+# This function creates a search space using operations from search spaces 1 
+# and 3 from the regularized evolution paper
 def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
     C = 5
@@ -410,16 +490,15 @@ def get_search_space_small(num_classes, C):
     o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
     return mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
 
-# Search space 1 from Regularized Evolution for 
-# Image Classifier Architecture Search (Real et al, 2018)
+# This function creates search space 1 from the regularized evolution paper
 def get_search_space_1(num_classes):
     return get_search_space_small(num_classes, 5)
 
-# Search space 3 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
+# This function creates search space 3 from the regularized evolution paper
 def get_search_space_3(num_classes):
     return get_search_space_small(num_classes, 15)
 
-# Search space 2 from Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
+# This function creates search space 2 from the regularized evolution paper
 def get_search_space_2(num_classes):
     co.Scope.reset_default_scope()
     C = 5
@@ -450,6 +529,8 @@ def get_search_space_2(num_classes):
     o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
     return mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
 
+# A simple search space factory to create the appropriate search space after
+# getting the search space name.
 class SSFZoph17(mo.SearchSpaceFactory):
     def __init__(self, search_space, num_classes):
         mo.SearchSpaceFactory.__init__(self)
