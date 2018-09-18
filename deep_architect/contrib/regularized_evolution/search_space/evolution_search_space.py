@@ -26,11 +26,13 @@ const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 def conv_spatial_separable(h_num_filters, h_filter_size, h_stride):
     h_filter_size_1 = co.DependentHyperparameter(lambda size: [1, size], {'size': h_filter_size})
     h_filter_size_2 = co.DependentHyperparameter(lambda size: [size, 1], {'size': h_filter_size})
+    h_stride_1 = co.DependentHyperparameter(lambda stride: [1, stride], {'stride': h_stride})
+    h_stride_2 = co.DependentHyperparameter(lambda stride: [stride, 1], {'stride': h_stride})
     return mo.siso_sequential([
-        conv2d(h_num_filters, h_filter_size_1, h_stride, D([1]), D([True])),
+        conv2d(h_num_filters, h_filter_size_1, h_stride_1, D([1]), D([True])),
         batch_normalization(),
         relu(),
-        conv2d(h_num_filters, h_filter_size_2, h_stride, D([1]), D([True]))
+        conv2d(h_num_filters, h_filter_size_2, h_stride_2, D([1]), D([True]))
     ])
 
 def wrap_relu_batch_norm(conv):
@@ -390,8 +392,8 @@ def ss_repeat(input_layers, h_N, h_sharer, h_filters, C, num_ov_repeat, num_clas
 # Regularized Evolution for Image Classifier Architecture Search (Real et al, 2018)
 def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
-    C = 3
-    h_N = D([1])
+    C = 5
+    h_N = D([3])
     h_F = D([24])
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
@@ -400,18 +402,13 @@ def get_search_space_small(num_classes, C):
         h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
         h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     for i in range(C):
-        if i == 0:
-            h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
-            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
-        else:
-            h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
-            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
+        h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
+        h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
-    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 2, num_classes)
-    r_inputs, r_outputs = mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
-    return r_inputs, r_outputs
+    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
+    return i_inputs, o_outputs
 
 # Search space 1 from Regularized Evolution for 
 # Image Classifier Architecture Search (Real et al, 2018)
@@ -427,7 +424,7 @@ def get_search_space_2(num_classes):
     co.Scope.reset_default_scope()
     C = 5
     h_N = D([3])
-    h_F = D([8])
+    h_F = D([24])
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
         h_sharer.register('h_norm_op0_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
@@ -449,9 +446,8 @@ def get_search_space_2(num_classes):
             'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
         h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
-    i_inputs, i_outputs = conv1x1(h_F)
-    o_inputs, o_outputs = ss_repeat(h_N, h_sharer, C, 3, num_classes)
-    i_outputs['Out'].connect(o_inputs['In'])
+    i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
+    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
     return i_inputs, o_outputs
 
 class SSFZoph17(mo.SearchSpaceFactory):

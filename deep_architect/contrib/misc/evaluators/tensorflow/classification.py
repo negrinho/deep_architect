@@ -240,8 +240,8 @@ class SimpleClassifierEvaluator:
             'eval', 'start', units='hours')
         return results
 
-    def save_state(folder):
+    def save_state(self, folder):
         pass
     
-    def load_state(folder):
+    def load_state(self, folder):
         pass
