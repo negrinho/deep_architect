@@ -1,4 +1,11 @@
 
+### META:
+# This tutorial is divided into sections, with one section per paper.
+# In each section, the ideas of the paper regarding the search space are discussed
+# and we discuss its implementation in the DSL of DeepArchitect.
+# Finally, we discuss a summary about general guidelines to express search
+# spaces in DeepArchitect.
+
 
 # In this tutorial, we will show how to use DeepArchitect to implement
 # search spaces from the literature.
@@ -190,6 +197,56 @@ reproducibility and reusability of architecture search research.
 
 
 #### Genetic CNN,
+
+As in other cases that we have looked at, the paper proposes an ad-hoc encoding
+for the search space that can be represented in the language for representing
+search spaces of DeepArchitect.
+The main aspect that is searched over in this search space is the connectivity
+pattern.
+
+# TODO: copy 3.1; binary representation section.
+
+# TODO: copy the 3.1.1 technical details section from the paper.
+
+From reading this section, our understanding is that all stages have the
+same number of nodes
+
+# NOTE: what does it that the connections between the ordinary nodes and the
+# the default nodes are not encoded.
+
+Some of the advantages of the encoding of this search space in DeepArchitect
+when compared to the ad-hoc one are that it is easy to change the search space
+within using DeepArchitect, e.g., it is trivial to extend the search space to
+also search over depth of the network or to search over the number of computational
+nodes on each stage (tying them or not).
+Arguably, doing all these extensions in an ad-hoc encoding is not straightforward
+as we have to think about custom ways of encoding these options.
+Within DeepArchitect, these transformations can be expressed in a straighforward
+way with basic and substitution modules.
+
+# TODO: perhaps show that this is indeed the case.
+
+
+# Summary
+
+This tutorial has two main purposes.
+First, we aim to show that many (arguably, most) of the search spaces in the
+literature can be represented straightforwardly using constructs from our
+language, where understanding the definition of the search space is often more
+difficult than actually writing down the search space in DeepArchitect.
+Second, we argue that writing ad-hoc representations is a terribly innefficient
+way of doing architecture search research.
+Some of the main problems with ad-hoc encodings for search spaces is that they
+are hard to reuse.
+We recommend researchers to use DeepArchitect as a starting point for
+research on architecture search to make the search spaces and the search
+algorithms readily available for reuse and extension.
+
+We made a serious effort to mimic represent the search spaces in DeepArchitect
+in a way that is analog to the way that was used in the paper.
+This means that we may need we may need to opt for a representation that is
+more complex to
+
 
 # TODO: distinguish place where we are talking and places where someone else is
 # talking.
