@@ -1,0 +1,63 @@
+{
+    "evolution_20": {
+      "searcher": "evolution_pop=20_samp=20_reg=t",
+      "dataset": "cifar10",
+      "search_space": "zoph_sp1",
+      "evaluator": "simple_classification",
+      "epochs": 4,
+      "samples": 100,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 5,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "evol_20_debug"
+    },
+    "evolution_20_debug": {
+      "searcher": "evolution_pop=20_samp=20_reg=t",
+      "dataset": "mnist",
+      "search_space": "zoph_sp1",
+      "evaluator": "simple_classification",
+      "eval_epochs": 1,
+      "samples": 25,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 5,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "evol_20_debug"
+    },
+    "random": {
+      "searcher": "random",
+      "dataset": "cifar10",
+      "search_space": "zoph_sp1",
+      "evaluator": "simple_classification",
+      "epochs": 4,
+      "samples": 100,
+      "searcher_file_name": "searcher_state.json"
+    },
+    "enas": {
+      "searcher": "enas_searcher",
+      "dataset": "cifar10",
+      "search_space": "enas",
+      "evaluator": "enas_evaluator",
+      "epochs": 310,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 25,
+      "eager": true,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "enas"
+    },
+    "enas_debug": {
+      "searcher": "enas_searcher",
+      "dataset": "mnist",
+      "search_space": "enas",
+      "evaluator": "enas_evaluator",
+      "epochs": 20,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 10,
+      "eager": true,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "enas_debug"
+    }
+  }

@@ -1,7 +1,6 @@
 import deep_architect.core as co
-from six import itervalues, iteritems
+from six import itervalues, iteritems, itertools
 from six.moves import range
-import itertools
 
 class Empty(co.Module):
     """Module passes the input to the output without changes.
@@ -502,16 +501,6 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     return substitution_module(_get_name(name, "SISOSplitCombine"),
         {'num_splits': h_num_splits}, substitution_fn, ['In'], ['Out'], scope)
 
-def mimo_combine(fns, combine_fn, scope=None, name=None):
-    inputs_lst, outputs_lst = zip(*[fns[i]() for i in xrange(len(fns))])
-    c_inputs, c_outputs = combine_fn(len(fns))
-
-    i_inputs, i_outputs = empty(num_connections=len(fns))
-    for i in xrange(len(fns)):
-        i_outputs['Out' + str(i)].connect( inputs_lst[i]['In'] )
-        c_inputs['In' + str(i)].connect( outputs_lst[i]['Out'] )
-    return (i_inputs, c_outputs)
-
 def siso_residual(main_fn, residual_fn, combine_fn):
     """Residual connection of two functions returning search spaces encoded
     as pairs of dictionaries of inputs and outputs.
@@ -580,7 +569,7 @@ def siso_sequential(io_lst):
 def simo_split(num_split):
     i_inputs, i_outputs = empty()
     o_inputs, o_outputs = empty(num_split)
-    for i in xrange(num_split):
+    for i in range(num_split):
         i_outputs['Out'].connect(o_inputs['In' + str(i)])
     return (i_inputs, o_outputs)
 

@@ -1,4 +1,4 @@
-from dev.general_search_space.backend import get_func
+from deep_architect.contrib.deep_learning_backend.backend import get_func
 
 def dropout(h_keep_prob):
     fn = get_func('dropout')

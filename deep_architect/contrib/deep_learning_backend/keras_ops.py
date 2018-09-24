@@ -1,12 +1,6 @@
-from builtins import str
 from keras import layers
-import darch.modules as mo
-from dev.keras.helpers import keras as hk
-from darch.hyperparameters import Discrete as D
-KM = hk.KerasModule
-
-def siso_km(name, compile_fn, name_to_hyperp, scope=None):
-    return KM(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+from deep_architect.helpers.keras import siso_keras_module
+from deep_architect.hyperparameters import Discrete as D
 
 """
 di['In'] is expected to be a tuple representing the shape of a single input
@@ -16,7 +10,7 @@ def input_node():
         def fn(di):
             return {'Out': layers.Input(di['In'])}
         return fn
-    return siso_km('Input', cfn, {})
+    return siso_keras_module('Input', cfn, {})
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
     def cfn(di, dh):
@@ -25,7 +19,7 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('Conv2D', cfn, {
+    return siso_keras_module('Conv2D', cfn, {
         'num_filters' : h_num_filters,
         'filter_width' : h_filter_width,
         'stride' : h_stride,
@@ -41,7 +35,7 @@ def avg_pool2d(h_kernel_size, h_stride):
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('AvgPool', cfn, {
+    return siso_keras_module('AvgPool', cfn, {
         'kernel_size' : h_kernel_size,
         'stride' : h_stride,
         })
@@ -55,7 +49,7 @@ def max_pool2d(h_kernel_size, h_stride):
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('MaxPool2D', cfn, {
+    return siso_keras_module('MaxPool2D', cfn, {
         'kernel_size' : h_kernel_size, 
         'stride' : h_stride,
         })
@@ -66,7 +60,7 @@ def dropout(h_keep_prob):
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_keras_module('Dropout', cfn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
     def cfn(di, dh):
@@ -74,7 +68,7 @@ def batch_normalization():
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('BatchNormalization', cfn, {})
+    return siso_keras_module('BatchNormalization', cfn, {})
 
 def activation(h_activation):
     def cfn(di, dh):
@@ -82,7 +76,7 @@ def activation(h_activation):
         def fn(di):
             return {'Out': layer(di['In'])}
         return fn
-    return siso_km('Activation', cfn, {'activation': h_activation})
+    return siso_keras_module('Activation', cfn, {'activation': h_activation})
 
 def relu():
     return activation(D(['relu']))
@@ -93,7 +87,7 @@ def global_pool2d():
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('GlobalAveragePool', cfn, {})
+    return siso_keras_module('GlobalAveragePool', cfn, {})
 
 def fc_layer(h_num_units):
     def cfn(di, dh):
@@ -101,7 +95,7 @@ def fc_layer(h_num_units):
         def fn(di):
             return {'Out' : layer(di['In'])}
         return fn
-    return siso_km('FCLayer', cfn, {'num_units' : h_num_units})
+    return siso_keras_module('FCLayer', cfn, {'num_units' : h_num_units})
 
 func_dict = {
     'dropout': dropout,
