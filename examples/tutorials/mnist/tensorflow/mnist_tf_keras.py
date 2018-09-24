@@ -138,7 +138,7 @@ class SimpleClassifierEvaluator:
         probs = tf.keras.layers.Softmax()(logits)
         model = tf.keras.models.Model(inputs=[inputs['In'].val], outputs=[probs])
         optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
-        model.compile(optimizer=,
+        model.compile(optimizer=optimizer,
                     loss='sparse_categorical_crossentropy',
                     metrics=['accuracy'])
         model.summary()
