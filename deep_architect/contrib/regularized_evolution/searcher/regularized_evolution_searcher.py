@@ -127,13 +127,10 @@ class EvolutionSearcher(Searcher):
 
     def save_state(self, folder_name):
         state = self.get_searcher_state_token()
-        write_jsonfile(state, join_paths([folder_name, 'searcher_state.json']))
+        write_jsonfile(state, join_paths([folder_name, 'evolution_searcher.json']))
 
-    def load(self, folder_name, file_name=None):
-        if file_name is None:
-            filepath = join_paths([folder_name, 'searcher_state.json'])
-        else:
-            filepath = join_paths([folder_name, file_name])
+    def load(self, folder_name):
+        filepath = join_paths([folder_name, 'evolution_searcher.json'])
         if not file_exists(filepath):
             raise RuntimeError("Load file does not exist")
         

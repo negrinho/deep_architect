@@ -14,7 +14,7 @@ from deep_architect.helpers.tfeager import setTraining
 
 tfe = tf.contrib.eager
 
-class ENASEagerEvaluator(object):
+class ENASEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
     that achieves the best validation performance, reduces the step size
@@ -143,7 +143,7 @@ class ENASEagerEvaluator(object):
                 log_string += " ch_step={:<6d}".format(self.child_step)
                 log_string += " loss={:<8.6f}".format(loss_metric.result())
                 print(log_string)
-            epoch_end = self.train_dataset.iter_i == 0 or self.train_dataset.iter_i > 25 * 128
+            epoch_end = self.train_dataset.iter_i == 0
 
             # If epoch completed, switch to updating controller
             results['validation_accuracy'] = -1

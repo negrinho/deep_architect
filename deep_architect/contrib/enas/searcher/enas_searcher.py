@@ -16,7 +16,7 @@ from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 tfe = tf.contrib.eager
 
-class ENASEagerSearcher(Searcher):
+class ENASSearcher(Searcher):
     def __init__(self,
                  search_space_fn,
                  num_layers=12,
@@ -100,7 +100,7 @@ class ENASEagerSearcher(Searcher):
         checkpoint_prefix = os.path.join(folder_name, "enas_searcher")
         self.saver.save(checkpoint_prefix, global_step=self.train_step)
 
-    def load(self, folder_name, file_name=None):
+    def load(self, folder_name):
         self.saver.restore(tf.train.latest_checkpoint(folder_name))
 
     def _create_params(self):

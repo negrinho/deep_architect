@@ -112,7 +112,7 @@ def dropout(keep_prob):
                 out = di['In']
             return {'Out': out}
         return fn
-    return siso_tfem('Dropout', cfn, {}) 
+    return htfe.siso_tfeager_module('Dropout', cfn, {}) 
 
 def fc_layer(num_classes, name, weight_sharer):
     name = name + '_fc_layer_' + str(num_classes)
@@ -129,7 +129,7 @@ def fc_layer(num_classes, name, weight_sharer):
             with tf.device('/gpu:0'):
                 return {'Out' : fc(di['In'])}
         return fn
-    return siso_tfem('FC_Layer', cfn, {}) 
+    return htfe.siso_tfeager_module('FC_Layer', cfn, {}) 
 
 def wrap_relu_batch_norm(io_pair, add_relu=True, add_bn=True, weight_sharer=None, name=None):
     assert add_relu or add_bn
