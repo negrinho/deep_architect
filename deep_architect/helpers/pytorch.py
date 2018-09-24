@@ -150,8 +150,8 @@ class PyTorchModel(nn.Module):
         self._module_seq = None
         self._is_compiled = False
 
-    def __call__(self, input_to_val):
-        return self.forward(input_to_val)
+    def __call__(self, input_name_to_val):
+        return self.forward(input_name_to_val)
 
     # TODO: needs additional error checking to make sure that the set of
     # outputs is correct.
@@ -162,8 +162,8 @@ class PyTorchModel(nn.Module):
         if self._module_seq is None:
             self._module_seq = co.determine_module_eval_seq(self.inputs.values())
 
-        input_name_to_val = {ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)}
-        co.forward(input_name_to_val, self._module_seq)
+        input_to_val = {ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)}
+        co.forward(input_to_val, self._module_seq)
         output_name_to_val = {name: ox.val for name, ox in iteritems(self.outputs)}
 
         if not self._is_compiled:

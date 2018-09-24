@@ -4,7 +4,7 @@
 #
 # This file does only contain a selection of the most common options. For a
 # full list see the documentation:
-# http://www.sphinx-doc.org/en/stable/config
+# http://www.sphinx-doc.org/en/master/config
 
 # -- Path setup --------------------------------------------------------------
 
@@ -15,12 +15,12 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('./_build/'))
+sys.path.insert(0, os.path.abspath('../..'))
+
 
 # -- Project information -----------------------------------------------------
 
-project = u'darch'
+project = u'DeepArchitect'
 copyright = u'2018, Renato Negrinho'
 author = u'Renato Negrinho'
 
@@ -41,17 +41,14 @@ release = u''
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',]
-
-# # Show documentation for private functions.
-# napoleon_include_private_with_doc = True
+    'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -83,14 +80,12 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output -------------------------------------------------
 
-import sphinx_rtd_theme
-
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = 'alabaster'
-html_theme = 'sphinx_rtd_theme'
+import sphinx_rtd_theme
 
+html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -114,20 +109,23 @@ html_context = {
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #
-# This is required for the alabaster theme
-# refs: http://alabaster.readthedocs.io/en/latest/installation.html#sidebars
-html_sidebars = {
-    '**': [
-        'relations.html',  # needs 'show_related': True theme option to display
-        'searchbox.html',
-    ]
-}
+# The default sidebars (for documents that don't match any pattern) are
+# defined by theme itself.  Builtin themes are using these templates by
+# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
+# 'searchbox.html']``.
+#
+# html_sidebars = {
+#     '**': [
+#         'relations.html',  # needs 'show_related': True theme option to display
+#         'searchbox.html',
+#     ]
+# }
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'darchdoc'
+htmlhelp_basename = 'DeepArchitectdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -154,7 +152,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'deep_architect.tex', u'darch Documentation',
+    (master_doc, 'DeepArchitect.tex', u'DeepArchitect Documentation',
      u'Renato Negrinho', 'manual'),
 ]
 
@@ -164,7 +162,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'darch', u'darch Documentation',
+    (master_doc, 'deeparchitect', u'DeepArchitect Documentation',
      [author], 1)
 ]
 
@@ -175,8 +173,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'darch', u'darch Documentation',
-     author, 'darch', 'One line description of project.',
+    (master_doc, 'DeepArchitect', u'DeepArchitect Documentation',
+     author, 'DeepArchitect', 'One line description of project.',
      'Miscellaneous'),
 ]
 
