@@ -192,7 +192,8 @@ class Hyperparameter(Addressable):
 
         # calls updates on the dependent hyperparameters.
         for h in self.dependent_hyperps:
-            h._update()
+            if not h.assign_done:
+                h._update()
 
     def get_value(self):
         """Get the value assigned to the hyperparameter.
@@ -864,7 +865,7 @@ def get_all_hyperparameters(output_lst):
         while idx < len(h_dep_lst):
             for h in itervalues(h_dep_lst[idx]._hyperps):
                 # cycle detection.
-                assert h not in local_memo
+                # assert h not in local_memo
 
                 if h not in visited_hs:
                     if isinstance(h, DependentHyperparameter):

@@ -27,33 +27,25 @@ inputs = Input(shape=(784,))
 x = Dense(64, activation='relu')(inputs)
 x = Dense(64, activation='relu')(x)
 predictions = Dense(10, activation='softmax')(x)
-model = Model(inputs=inputs, outputs=predictions)
-model.summary()
-plot_model(model, show_shapes=True)
-# NOTE: I think that these can be put in the write model.
 # I can write these in assets.
 
 # The above code is an example of a fixed two-layer perceptron defined in Keras.
 # The problem with the above code is that it requires the expert to commit to
-# a single model.
 # There are many opportunities in the code above to be less specific about the
-# model.
 # For example, we commit to a neural network with two layers, each with 64 hidden
 # units and ReLU activations.
 # A natural first step is to be less specific about these hyperparameters by
-# searching over them.
-# For example, by searching over the number of layers and activations of
-# each layer.
+# searching over them, e.g., by searching over the number of layers and
+# activations of each layer.
 # We defined a few simple helper functions that, for simple cases, allow us
-# to take a function that returns a Keras layer and wraps it in a DeepArchitect
-# module.
+# to take a function that returns a Keras layer and wraps it in a DeepArchitect module.
 # A minimal adaptation of the above example in DeepArchitect would look like
 
 import deep_architect.core as co
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.helpers.keras as hke
-from deep_architect.searchers.common import random_specify
+from deep_architect.searchers.common import random_specify, specify
 
 D = hp.Discrete
 
@@ -68,60 +60,43 @@ def get_search_space():
         dense(D([32, 64, 128, 256]), D(["relu", "sigmoid"])),
         dense(D([10]), D(["softmax"]))
     ])
-
 (inputs, outputs) = get_search_space()
 
-in_model = Input(shape=(784,))
-co.forward({inputs["In"] : in_model})
-predictions = outputs["Out"].val
-model = Model(inputs=in_model, outputs=predictions)
-model.summary()
-plot_model(model, show_shapes=True)
-
 # The above code defines a search space where the nonlinearities and number of
-# hidden units are allowed to vary pre layer.
+# from this search space.
 # In this case, the hyperparameters are independent for each of the modules.
 # What we have done is simply defining a search space that captures all possible
 # choices for the values of these hyperparameters .
-# In the DeepArchitect codebase we have defined some auxiliary tools to
+# In DeepArchitect, we have implemented some auxiliary tools to
 # visualize the search search as a graph.
 
-# TODO: say something about hyperparameter creation.
-
-# NOTE: write about how this is used
-
 import deep_architect.visualization as vi
-
 vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
-# Something that can be grasped from the graph is that the connection among
-# the modules is fixed.
-
+# The connections between the modules in the graph are fixed.
 # In the construction of the search space, all function calls return a dictionary
 # of inputs and outputs.
-# To sample a model from this search space, we can use some of the common
-# functionality defined in searchers.
 # Typically, we just use a searcher, but in this case we are just going
 # to use a simple function from the search tools that randomly chooses
-# values for all hyperparameters of the search space until a single model
-# is obtained.
-
-# The rectangles in the graph represent hyperparameters, and the ovals
+# values for all hyperparameters of the search space until values for all the
+#
+# The rectangles in the graph represent modules, and the ovals
 # represent hyperparameters.
-# The edges between the rectangles represent outputs of a module going into
+# The edges between the rectangles represent outputs of a modules going into
 # inputs of other modules.
 # The edges between the ovals and the rectangles represent the dependency
 # of the module on the value of that hyperparameter.
 
 import deep_architect.searchers.common as seco
-
 vs = seco.random_specify(outputs.values())
+x = Input(shape=(784,))
+co.forward({inputs["In"] : x})
+y = outputs["Out"].val
 print(vs)
 
 # The values randomly chosen are returned by `random_specify`.
 # This function simply iterates through the hyperparameters that have not
 # been assigned a value yet and chooses a value randomly among the possible ones.
-
 # After choosing all these values, the resulting search space looks like this.
 
 vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
@@ -138,18 +113,19 @@ vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 inputs, outputs = get_search_space()
 vi.draw_graph_evolution(outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
 
-# TODO: I think that it is perhaps a good idea to talk about hyperparameters
-# here.
+# We see that we start with the initial graph with no hyperparameters specified
+# (i.e., no hyperparameters have been assigned a value), and progressively,
+# one by one, each hyperparameter is assigned a value.
+# We ask the reader to pay attention to how the edges connecting hyperparameters
+# to modules change with each transition.
 
-# We see that we start with the initial graph
-
-# This graph is still very simple.
-# The functionality to visualize the transitions between graphs will be more
+# This graph defining a search space is still very simple.
+# The functionality to visualize the transitions between graphs will become more
 # insightful once we start using more complex graph operators.
-# The hyperparameter were chosen independently for each of the layers.
-# If we wanted to tie the hyperparameter across the different parts of the
-# search space, e.g., tie the value of the value of the nonlinearity,
-# we simply have to instantiate a single hyperparamter object and use it in
+# The hyperparameter values were chosen independently for each of the layers.
+# If we wished to tie some hyperparameters across different parts of the
+# search space, e.g., use the same nonlinearity for all modules,
+# we would simply have to instantiate a single hyperparamter and use it in
 # multiple places.
 # Adapting the first search space to reflect this change is straightforward.
 
@@ -162,19 +138,16 @@ def get_search_space_hp_shared():
         dense(D([10]), D(["softmax"]))
     ])
 (inputs, outputs) = get_search_space_hp_shared()
-
 vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
 # Redrawing the initial graph for the search space (i.e., after having
 # made any choices for hyperparameters), we see that that now there exists
-# a single hyperparameter associated to the local hyperparameter value for the
-# activation of each of the dense modules.
-
-# Another useful language feature that we have implemented in our framework
-# is the notion of dependent hyperparameters.
-# Sometimes, we wish to have an hyperparameter that takes a value that is a
-# function of the values of some other hyperparameters.
-# For example, we will adapt our running example for writing a search space
+# a single hyperparameter associated to activations of all dense modules.
+#
+# We have implemented another useful language features for hyperparameters,
+# namely dependent hyperparameters, which allows us to express an hyperparameter
+# whose value is a function of the value of other hyperparameters.
+# We will adapt our running example for writing a search space
 # where the value of the number of hidden units for the second layer of the
 # network is twice as many as the number of hidden units for the first dense
 # layer.
@@ -192,50 +165,68 @@ def get_search_space_hp_dependent():
         dense(D([10]), D(["softmax"]))
     ])
 (inputs, outputs) = get_search_space()
-
 vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
-
-# TODO: draw the hyperparameter evolution here.
 
 # As we can see in the graph, there is an edge going from the independent
 # hyperparameter to the hyperparameter that it depends on.
-# This edge represents the dependency of one of these hyperparameters on the
-# other one.
+# This edge represents the dependency of one of the hyperparameters on the other one.
 # Dependent hyperparameters can depend on other dependent hyperparameters,
 # as long as no directed cycles are formed.
 # One may question why introduce dependent hyperparameters in such a language.
 # While independent hyperparameters can be used to express a superset of
 # what can be done with dependent hyperparameters, it is useful to have the
-# possibility of expressing depedent hyperaparameters to restrict the search
+# possibility of writing depedent hyperaparameters to restrict the search
 # space to transformations that are of interest rather than only being able
-# to consider search spaces that have undue flexibility.
-# NOTE: I'm not sure if I want to include this in the model
+# to consider search spaces that have excessive flexibility.
+#
+# It may be informative to observe how does the graph transition with
+# successive assignments to the values of hyperparameters.
 
-# So far we talked about modules and hyperparameters.
+vs = seco.random_specify(outputs.values())
+inputs, outputs = get_search_space_hp_dependent()
+vi.draw_graph_evolution(outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
+
+# By looking at the graph, we see that as soon as a value is a assigned
+# to the hyperparameter that the dependent hyperparameter depends on, the
+# the dependent hyperparameter is assigned a value.
+# The value assignment to the dependent hyperparameter is triggered due to the
+# fact that all the hyperparameters that the depedent hyperparameter depends
+# on have been assigned a value.
+
+# We have talked about modules and hyperparameters.
 # For hyperparameters, we distinguish between independent hyperparameters
 # (hyperparameters whose value is set independently of any other hyperparameters),
 # and dependent hyperparameters (hyperparameters whose value is computed
 # as a function of the values of some other hyperparameters).
-# For modules, we distinguish between basic modules and substitution modules.
-# So far, we have only concerned ourselves with basic modules (i.e., the dense
+# For modules, we distinguish between basic modules
+# (modules that stay in place when all hyperparameters that the module depends
+# on have been assigned values),
+# and substitution modules
+# (modules that disappear, giving rise to a new graph fragment in its place
+# with other modules, when all
+# hyperparameters that the module depends on have been assigned values).
+#
+# So far, we have only concerned ourselves with basic modules (e.g., the dense
 # module that we used in the example search spaces above).
-# Basic modules are used to represent computations eventual computations, i.e.,
+# Basic modules are used to represent eventual computations, i.e.,
 # after values for all the hyperparameters of the module and values for the
-# inputs are available, the module implements some specific computation.
-# In contrast, we can have modules whose sole purpose is to serve as a placeholder
+# inputs are available, the module implements some well-defined computation.
+# In contrast, we can have modules whose purpose is to serve as a placeholder
 # until some property is determined.
-# The purpose of these modules is not to implement a specific computation but
+# The purpose of these modules is not to implement any computation but
 # to delay the choice of a specific property (i.e., the choice of values for
 # specific hyperperameter that capture this structural transformation).
 # The fundamental concepts to express these transformations is the notion of
 # a substitution module.
 # Substitution modules rely heavily on the ideas of delayed evaluation.
-# We have implemented many structural transformations as subsitution modules in
+#
+# We have implemented many structural transformations as substitution modules in
 # DeepArchitect.
 # A very important property of substitution modules is that they are
-# completely indendent of the underlying framework used for the modules (i.e.,
-# they work without requiring any adaptation for Keras, Tensorflow, or Scikit-Learn).
-# Let us consider an example for a substitution module that implements
+# completely independent of the underlying framework used in the basic modules (i.e.,
+# they work without requiring any adaptation for Keras, Tensorflow, Scikit-Learn,
+# or any other framework).
+# Let us consider an example search space using a substitution module that implements
 # the optional operation which either includes a submodule or not.
 
 def get_search_space():
@@ -253,15 +244,32 @@ def get_search_space():
     ])
 (inputs, outputs) = get_search_space()
 
-# A few things to keep in mind about the example above.
-# The
+# The optional module takes a thunk (this terminology comes from programming
+# languages) which returns a graph fragment (returned as a dictionary of
+# input names to inputs and a dictionary of output names to outputs)
+# which is called if the hyperparameter that determines if the thunk is
+# to be called or not, takes the value 1 (i.e., the thunk is to be called,
+# and the resulting graph fragment is to be included in the place of the
+# substitution module).
+# The visualization functionality will be more insightful in this case.
+# Consider the graph evolution for a random sample from this search space.
 
-# TODO: show that it should be interesting. how does the other hyperparameter
-# appear.
+vs = seco.random_specify(outputs.values())
+inputs, outputs = get_search_space()
+vi.draw_graph_evolution(outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
 
-# Another simple subsitution module is the one that repeats
+# We see that once the hyperparameter that the optional substitution module depends on
+# is assigned a value, the substitution module disappears and is replaced by a graph
+# fragment that depends on the value that was assigned to hyperparameter, i.e.,
+# if we decide to include it, the thunk is called returning a graph fragment;
+# if we decide to not include it, an identity module is substituted in its place.
+#
+# Another simple substitution module is the one that repeats the graph fragment
+# in a serial connection multiple times.
+# In this case, the substitution hyperparameter is for how many times will
+# the thunk returning a graph fragment will be called; all repetitions are
+# connected in a serial connection.
 
-# Substitution modules can be nested, for example,
 def get_search_space():
     co.Scope.reset_default_scope()
     h_activation = D(["relu", "sigmoid"])
@@ -269,247 +277,155 @@ def get_search_space():
     h_units_dep = co.DependentHyperparameter(
         lambda units: 2 * units, {"units" : h_units})
     h_opt = D([0, 1])
+    h_num_repeats = D([1, 2, 4])
 
     return mo.siso_sequential([
-        dense(h_units, h_activation),
+        mo.siso_repeat(lambda: dense(h_units, h_activation), h_num_repeats),
         mo.siso_optional(lambda: dense(h_units_dep, h_activation), h_opt),
         dense(D([10]), D(["softmax"]))
     ])
 (inputs, outputs) = get_search_space()
 
-
-
-# All the language features so far have been focused on simple search spaces
-# where the module connections are fixed upfront.
-# One could argue that these search spaces are easily expressible th
-
-
-
-# In this case, to get the Keras model, we do
-
-# NOTE: the model operates over these predictions.
-# this s a good way of going about it.
-
-# explain the transition mechanism and what not.
-
-
-
-
-
-# We will use DeepArchitect to write search spaces over architectures effortlessly.
-# The first concept that we introduce is that of a module.
-# There is a very direct correspondence between each layers in a neural network
-# and a module.
-#
-# Modules are the main building blocks for writing search spaces over
-# computational graphs.
-# Consider the signature of the class definition in deep_architect/core.py
-# A module is composed of inputs, outputs, and hyperparameters.
-# Given values for the inputs and values for the hyperparameters the module
-# implements some computation that can be a function of both values.
-
-
-
-
-
-
-
-# <!--- NOTE: it might be a better idea to talk about a generic example. -->
-# In essence, DeepArchitect is a framework to search over arbitrary computational
-# graphs.
-# The graphs can be in a lot of different domains as we will see.
-# TODO: link to a different tutorial on applying to different domains.
-
-# # Modules
-
-#
-# For pedagogical purposes, we will dive deep into the internals of DeepArchitect.
-# From the point of view of the user, much of these internals will be hidden,
-# e.g., because the user is concerned mainly with a specific framework for
-# which many of these components are already implemented.
-
-# As a toy illustrative example, consider that we define two types of
-# modules in an arbitrary framework.
-# The goal here is simply to show how can we define search spaces over
-# these graphs.
-# We will have many chances to look at deep learning examples.
-
-
-
-# Modules can be connected to other modules to form networks.
-# The computation done by a module is entirely up to the user,
-# leading to the modularity and extensibility of the framework.
-# New modules can be implemented easily.
-
-
-# NOTE: perhaps start with a simple example. I think that it is going to be
-# better to show some of the functionality.
-
-import deep_architect.core as co
-
-def get_module(name, input_names, output_names, name_to_hyperp):
-    m = co.Module(name=name)
-    m._register(input_names, output_names, name_to_hyperp)
-    return m.get_io()
-
-def a(h1, h2):
-    return get_module('A', ["In"], ["Out"], {"h1" : h1, "h2" : h2})
-
-def b(h):
-    return get_module('B', ["In"], ["Out0", "Out1"], {"h" : h})
-
-def c(h):
-    return get_module('C', ["In0", "In1"], ["Out"], {"h" : h})
-
-# A few observations about the above code,
-
-# We simply defined a few modules.
-# This is sufficient to write a few computational graphs, but they do not have
-# any defined computational behavior.
-# Nonetheless, it is possible use them to write them search spaces.
-# For example, a very basic search space is
-
-import deep_architect.hyperparameters as hp
-
-D = hp.Discrete
-
-x = a(D([0, 1]), D([16, 32, 64, 128]))
-
-# NOTE: cover more information about dealing with these models.
-
-
-
-# Inputs and outputs.
-# hyperparameters
-# use of the main scope.
-#
-
-
-# Using the model, it is possible to write a few search spaces.
-
-
-
-# NOTE: I should talk about building blocks somewhere in the model.
-
-
-
-# NOTE: how do I put into context the notion of compilation and forward with
-# the different models.
-
-
-# contrary to other examples, this is going
-
-
-
-# Consider an arbitrary domain which has two types of modules A, and B.
-# Modules of type A take two hyperparameters
-
-
-
-
-# Hyperparameter
-
-# We already hinted at how to use hyperparameters, but in this section
-# we will go into more detail.
-#
-
-
-# Substitution Modules
-
-# NOTE: substitution modules are domain independent.
-# all
-
-
-# Dependent Hyperparameters
-
-#
-
-# Weight sharing
-
-
-#
-
-
-
-# <!--- -->
-
-
-# Summary
-
-# Recap all the important points of working with the framework
-# contextualualize on the model
-
-
-
-
-
-
-# TODO: move this somewhere else.
-# When thinking about DeepArchitect, you should always have the three main
-# components of the framework in mind: search space, searcher, and evaluator.
-# Thinking about where each of the different aspects fits will help the reader
-# put the information in context of the framework as a whole.
-# To get acquainted with the main building blocks of the framework we recommend
-# the reader to peruse the code in deep_architect/core.py.
-# TODO: add a link to it.
-
-
-# TODO: make a recommendation about the use of auxiliary functions to put
-# together some of these search spaces.
-
-# TODO: say that siso stands for single input single output.
-
-# NOTE: after going through this tutorial, we seriously recommend the reader
-# to peruse
-
-# TODO: set the values of the operators.
-
-# TODO: what does it need to be done for
-
-# TODO:
-# most important parts of the model to read are
-
-### NOTE: this is nice but it is mostly about the visualization functionality.
-
-# NOTE: For large complex graphs where the number of hyperparameters can
-# lead to too much clutter, we can use the visualization functionality that
-
-# TODO: I think that I should mention everything in the beginning that there
-# are these different ways of working with these models.
-
-# TODO: change the model to make it nicer. I really can't define functions that
-# lead to conflicts.
-
-# NOTE: something that I like in writing down search spaces is that I can provide
-# a textual description of what the search space is going to accomplish and then
-# go ahead and actually show it in code. the nice thing is that the code is a lot
-# shorter than the actual definition, which I think should help.
-
-# NOTE: I will need to compile the model into a keras model just to show
-# that is working as appropriately.
-
-# TODO: I will have to explain the notion of
-
-# SearchSpaceFactory; just takes a function that returns inputs and output.
-# I think that it is fairly decent.
-
-# NOTE: explanation of what is the scope.
-
-# NOTE: discuss some of the common questions that come when comparing to
-# existing hyperparameter optimization algorithms.
-
-# the scope is used for naming stuff.
-# TODO: talk about an important concept in the definition of the language.
-
-# TODO: recommend the reader to look at the helper to get a better
-# sense of what we are doing here.
-# TODO: check for models vs modules.
-# TODO: check for subsitution. is it correct or not.
-
-# TODO: perhaps cover the hyperparameter sharer because this will allow it
-# to show the model
-
-# NOTE: maybe put all imports near the top.
-
-# NOTE: overall, I we believe that the language has multiple opportunities for
-# composition.
+Note that in the search space above, the hyperparameter respective to the
+number of units of the dense modules inside the repeat share the same hyperparameter,
+meaning that all these modules will have the same number of units.
+
+vs = seco.random_specify(outputs.values())
+inputs, outputs = get_search_space_hp_dependent()
+vi.draw_graph_evolution(outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
+
+In the graph evolution, we see that once we assign a value to the hyperparameter
+corresponding to the number of repetitions of the graph fragment returned by the
+thunk, a graph fragment corresponding to the serial connections of that many
+repetitions is substituted in its place.
+These example search spaces together with the visualizations of the graph
+evolutions as we assign values to hyperparameters should give the
+reader a sense about what types of options are expressible in
+DeepArchitect with basic and substitution modules, and independent and
+dependent hyperparameters.
+It should also hint to the reader how the language to represent search spaces
+is implemented.
+
+# Substitution modules can be used in any place a module is required, meaning that
+# they can nested without any issues.
+# For example, consider the following example
+def get_search_space():
+    co.Scope.reset_default_scope()
+    h_activation = D(["relu", "sigmoid"])
+    h_units = D([32, 64, 128, 256])
+    h_units_dep = co.DependentHyperparameter(
+        lambda units: 2 * units, {"units" : h_units})
+    h_opt = D([0, 1])
+    h_num_repeats = D([1, 2, 4])
+
+    return mo.siso_sequential([
+        mo.siso_repeat(lambda: dense(h_units, h_activation), h_num_repeats),
+        mo.siso_optional(lambda: mo.siso_repeat(
+            lambda: dense(h_units_dep, h_activation), h_num_repeats), h_opt),
+        dense(D([10]), D(["softmax"]))
+    ])
+(inputs, outputs) = get_search_space()
+
+Again, given the search space above, the reader begin to understand what kind
+of graph evolution to expect.
+Take one minute to ponder on what kind of transitions to expect and then run
+the code below to generate the visualization for the graph evolution and see if
+it matches your expected visualization.
+
+vs = seco.random_specify(outputs.values())
+inputs, outputs = get_search_space_hp_dependent()
+vi.draw_graph_evolution(outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
+
+We argue that by using basic modules, substitution modules, independent hyperparameters,
+and dependent hyperparameters we are able to represent a large variety of
+search spaces in a compact and natural manner.
+As the reader becomes more confortable with these concepts, the reader should
+find it progressively easier to express search spaces in DeepArchitect and
+better appreciate the expressivity of the language.
+
+We now provide some ending notes for this tutorial, both talking about
+minor aspects that we have not paid much attention in this tutorial, and
+giving recommendations to the reader on how and what to learn next.
+Throughout the definition of the various search spaces, we have seen
+this line `co.Scope.reset_default_scope()`.
+We use an object that we call the scope to assign unique names to the elements
+that show up in the search space (currently, modules, hyperparameters, inputs, and
+outputs).
+Every time a module, hyperparameter, input, or output is created, we use
+the scope to assign a unique name to it.
+Every time that we want to start the search from scratch with a new search space,
+we should clear the scope to avoid keeping the names and objects from the previous
+samples around.
+In most cases, the user does not have to be concerned about the scope as it
+can just use the default scope.
+We also recommend the reader to look into search space factory as it provides
+a convenient auxiliary function that directly takes care of these issues.
+# TODO: probably they shouldn't be called issues. there is probably a better
+# terminology to talk about it.
+
+Besides basic modules and substitution modules, we also use several auxiliary
+functions whose purpose is to put arrange multiple graph fragments in different
+ways.
+They often do not create new modules, but simply use graph fragments or
+functions that return graph fragments to create a new graph fragment by using the
+arguments in a certain way.
+An example of a function of this type is `siso_sequential`, which just connects
+the graph fragments (expressed as a dictionary of inputs and a dictionary of outputs),
+in a serial connection, which just require us to connect inputs and outputs of the
+fragments passed as arguments to the function.
+Similarly to substitution modules, these auxiliary functions are framework
+independent as they only rely on properties of the module API.
+A reasonable way of thinking about these auxiliary functions is that they
+are just like substitution modules, but the substitution is done immediately
+rather than being postponed to some later stage when some hyperparameters have
+been specified.
+Using and defining auxiliary functions of this type will help the user have
+a more effective and pleasant experience with the framework.
+Auxiliary functions of this type are very useful in practice as we can use
+them to construct larger search spaces by making complex arrangements from
+smaller search spaces.
+
+When implementing support for a new framework, the only concepts that need to
+potentially be specialized to the new framework are the basic modules.
+We recommend the reader to read `deep_architect.core.py` for extensive information
+about the APIs.
+This code is the basis of DeepArchitect and has been extensively commented,
+meaning that the reader should have a much better understanding on how to
+extend the framework after perusing this code and perhaps, experimenting with it.
+Everything in `deep_architect.core.py` is framework independent.
+To understand more about substitution modules and how they are implemented, we
+point the reader to `deep_architect.modules.py`, which is also extensively
+commented.
+We point the reader to the tutorial about supporting new frameworks for an
+explanation of the aspects that come into play when specializing to a
+new framework.
+
+For learning more about the framework, please read more tutorials on aspects or
+use cases which you may find important and/or hard to understand.
+In this tutorial, we only covered expressing search spaces over architectures.
+DeepArchitect is composed of many other components such as search, evaluation, logging, visualization
+and multiworker, so please read additional tutorials if you wish
+to become familiar with these other aspects of the framework.
+
+# TODO: improve parallelism. move things around.
+While we have not covered rerouting in this tutorial, it is reasonably
+straightforward to think about how to implement rerouting with, either a
+substitution module or simply a basic module.
+For example, for a rerouting operation that takes k inputs and k outputs, and
+does a permutation of the inputs and outputs based on the value of an
+hyperparameter, if we implement this operation using a basic module,
+the basic module simply has to implement the chosen permutation when forward is
+called.
+If a substitution module is used instead, the module disappears once the value
+for the hyperparameter is chosen and the result of rerouting shows up in its
+place.
+After the user becomes proefficient with the ideas of basic and substitution
+modules, the user will realize that oftentimes there are multiple ways of
+expressing the same search space, and that in most cases there is not a single
+correct decision.
+Our suggestion that basic modules, substitution modules, independent hyperaparameters
+and dependent hyperparameters should be used for maximum effect.
+These often allows us to express search spaces very compactly and clearly.
+We give preference to solutions that are both compact and clear.
+Once the reader is familiar with substitution modules, the reader will see that
+they often allows us to express complex search spaces very compactly.

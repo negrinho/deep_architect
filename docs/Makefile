@@ -4,9 +4,9 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = deep_architect
-SOURCEDIR     = .
-BUILDDIR      = _build
+SPHINXPROJ    = DeepArchitect
+SOURCEDIR     = source
+BUILDDIR      = build
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -15,11 +15,9 @@ help:
 .PHONY: help Makefile
 
 clean:
-	# rm -r _build/source/
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	rm -rf build
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%:
-	sphinx-apidoc -f -o _build/source/ ../deep_architect
+%: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

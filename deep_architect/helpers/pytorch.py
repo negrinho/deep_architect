@@ -78,6 +78,17 @@ class PyTorchModule(co.Module):
     def _update(self):
         pass
 
+def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
+    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+
+def siso_pytorch_module_from_pytorch_layer_fn(layer_fn, name_to_hyperp, scope=None):
+    def compile_fn(di, dh):
+        m = layer_fn(**dh)
+        def forward_fn(di):
+            return {"Out" : m(di["In"])}
+        return forward_fn, [m]
+    return siso_pytorch_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)
+
 # NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
 def _call_fn_on_pytorch_module(output_lst, fn):
@@ -139,8 +150,8 @@ class PyTorchModel(nn.Module):
         self._module_seq = None
         self._is_compiled = False
 
-    def __call__(self, input_to_val):
-        return self.forward(input_to_val)
+    def __call__(self, input_name_to_val):
+        return self.forward(input_name_to_val)
 
     # TODO: needs additional error checking to make sure that the set of
     # outputs is correct.
@@ -151,8 +162,8 @@ class PyTorchModel(nn.Module):
         if self._module_seq is None:
             self._module_seq = co.determine_module_eval_seq(self.inputs.values())
 
-        input_name_to_val = {ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)}
-        co.forward(input_name_to_val, self._module_seq)
+        input_to_val = {ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)}
+        co.forward(input_to_val, self._module_seq)
         output_name_to_val = {name: ox.val for name, ox in iteritems(self.outputs)}
 
         if not self._is_compiled:

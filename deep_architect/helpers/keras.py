@@ -62,8 +62,7 @@ class KerasModule(co.Module):
         input_name_to_val = self._get_input_values()
         hyperp_name_to_val = self._get_hyperp_values()
 
-        out = self._compile_fn(input_name_to_val, hyperp_name_to_val)
-        self._fn = out
+        self._fn = self._compile_fn(input_name_to_val, hyperp_name_to_val)
 
     def _forward(self):
         input_name_to_val = self._get_input_values()

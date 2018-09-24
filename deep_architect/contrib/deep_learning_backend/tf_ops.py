@@ -1,10 +1,12 @@
-from darch.contrib.misc.search_spaces.tensorflow.common import siso_tensorflow_module
+from deep_architect.helpers.tensorflow import (siso_tensorflow_module,
+                                               TensorflowModule)
 import tensorflow as tf
 
-def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
+def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate, h_use_bias):
     def cfn(di, dh):
-        conv_op = tf.layers.Conv2D(dh['num_filters'], (dh['filter_width'],) * 2,
-            (dh['stride'],) * 2, use_bias=dh['use_bias'], padding='SAME')
+        conv_op = tf.layers.Conv2D(dh['num_filters'], dh['filter_width'],
+            dh['stride'], use_bias=dh['use_bias'],
+            dilation_rate=dh['dilation_rate'], padding='SAME')
         def fn(di):
             return {'Out' : conv_op(di['In'])}
         return fn
@@ -13,12 +15,41 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
         'filter_width' : h_filter_width,
         'stride' : h_stride,
         'use_bias' : h_use_bias,
+        'dilation_rate' : h_dilation_rate,
+        })
+
+def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
+                     h_depth_multiplier, h_use_bias):
+    def cfn(di, dh):
+        conv_op = tf.layers.SeparableConv2D(dh['num_filters'], dh['filter_width'],
+            strides=dh['stride'], dilation_rate=dh['dilation_rate'],
+            depth_multiplier=dh['depth_multiplier'], use_bias=dh['use_bias'],
+            padding='SAME')
+        def fn(di):
+            return {'Out' : conv_op(di['In'])}
+        return fn
+    return siso_tensorflow_module('SeparableConv2D', cfn, {
+        'num_filters' : h_num_filters,
+        'filter_width' : h_filter_width,
+        'stride' : h_stride,
+        'use_bias' : h_use_bias,
+        'dilation_rate' : h_dilation_rate,
+        'depth_multiplier' : h_depth_multiplier,
         })
 
 def max_pool2d(h_kernel_size, h_stride):
     def cfn(di, dh):
         def fn(di):
             return {'Out' : tf.nn.max_pool(di['In'],
+                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
+        return fn
+    return siso_tensorflow_module('MaxPool2D', cfn, {
+        'kernel_size' : h_kernel_size, 'stride' : h_stride,})
+
+def avg_pool2d(h_kernel_size, h_stride):
+    def cfn(di, dh):
+        def fn(di):
+            return {'Out' : tf.nn.avg_pool(di['In'],
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
     return siso_tensorflow_module('MaxPool2D', cfn, {
@@ -42,6 +73,11 @@ def batch_normalization():
 
 def relu():
     return siso_tensorflow_module('ReLU', lambda di, dh: lambda di: {'Out' : tf.nn.relu(di['In'])}, {})
+
+def add():
+    return TensorflowModule('Add', {},
+        lambda: lambda In0, In1: tf.add(In0, In1),
+        ['In0', 'In1'], ['Out']).get_io()
 
 def global_pool2d():
     def cfn(di, dh):
