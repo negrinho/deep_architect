@@ -1,9 +1,9 @@
 import deep_architect.searchers as se
-import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as css_dnn
 from create_sentiment_featuresets import create_feature_sets_and_labels
-from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D
 import deep_architect.core as co
 import numpy as np
 

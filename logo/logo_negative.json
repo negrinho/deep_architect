@@ -1,0 +1,21 @@
+{
+    "D_height" : 6.472,
+    "D_width" : 3.7,
+    "A_height" : 6.472,
+    "A_width" : 3.7,
+    "center_node_height" : 3.236,
+    "bbox_round_corners" : 0,
+    "bbox_margin" : 1,
+    "bbox_line_width" : 0.125,
+    "bbox_fill_color" : [64, 64, 64],
+    "bbox_line_color" : [255, 255, 255],
+    "node_diameter" : 1,
+    "node_line_width" : 0.25,
+    "node_line_color" : [255, 255, 255],
+    "node_fill_color" : [64, 64, 64],
+    "arrow_line_color" : [255, 255, 255],
+    "arrow_line_width" : 0.25,
+    "arrow_head_length" : 0.5,
+    "arrow_head_width" : 0.5,
+    "arrow_margin" : 0.112
+}

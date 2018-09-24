@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import graphviz
 from six import itervalues, iteritems
 import deep_architect.core as co
-import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 import deep_architect.searchers as se
 import numpy as np
 
@@ -190,14 +190,14 @@ def draw_graph_evolution(output_lst, hyperp_value_lst, out_folderpath, graph_nam
         h.assign_value(v)
         draw_fn(i + 1)
 
-    in_filepath_expr = sl.join_paths([
+    in_filepath_expr = ut.join_paths([
         out_folderpath, graph_name + '-{0..%d}.pdf' % len(hyperp_value_lst)])
-    out_filepath = sl.join_paths([out_folderpath, graph_name + '.pdf'])
-    sl.run_bash_command('pdftk %s cat output %s' % (in_filepath_expr, out_filepath))
+    out_filepath = ut.join_paths([out_folderpath, graph_name + '.pdf'])
+    ut.run_bash_command('pdftk %s cat output %s' % (in_filepath_expr, out_filepath))
 
     for i in xrange(len(hyperp_value_lst) + 1):
-        filepath = sl.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
-        sl.delete_file(filepath)
+        filepath = ut.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
+        ut.delete_file(filepath)
 
 class LinePlot:
     def __init__(self, title=None, xlabel=None, ylabel=None):

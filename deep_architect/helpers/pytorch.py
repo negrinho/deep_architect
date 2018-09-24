@@ -2,7 +2,7 @@ from six import iteritems
 import deep_architect.core as co
 import torch.nn as nn
 
-class PyTModule(co.Module):
+class PyTorchModule(co.Module):
     """Class for taking Pytorch code and wrapping it in a darch module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
@@ -17,7 +17,7 @@ class PyTModule(co.Module):
     operation and constructs the actual computational graph fragment associated
     to this module.
 
-    See :class:`deep_architect.helpers.tensorflow.TFModule` for a similar class for
+    See :class:`deep_architect.helpers.tensorflow.TensorflowModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
     static computational graphs, so the forward functionality is usually only
     called once per creation for the graph creation. Pytorch requires calling
@@ -78,6 +78,17 @@ class PyTModule(co.Module):
     def _update(self):
         pass
 
+def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
+    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+
+def siso_pytorch_module_from_pytorch_layer_fn(layer_fn, name_to_hyperp, scope=None):
+    def compile_fn(di, dh):
+        m = layer_fn(**dh)
+        def forward_fn(di):
+            return {"Out" : m(di["In"])}
+        return forward_fn, [m]
+    return siso_pytorch_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)
+
 # NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
 def _call_fn_on_pytorch_module(output_lst, fn):
@@ -116,8 +127,8 @@ def parameters(output_lst):
         ps.update(pyth_m.parameters())
     return ps
 
-class PyTNetContainer(nn.Module):
-    """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch.PyTModule`
+class PyTorchModel(nn.Module):
+    """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch.PyTorchModule`
     in a way that they can be used as :class:`torch.nn.Module`, e.g.,
     functionality to move the computation of the GPU or to get all the parameters
     involved in the computation are available.

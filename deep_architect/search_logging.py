@@ -40,7 +40,7 @@ def create_search_folderpath(folderpath, search_name,
     all_evaluations_folderpath = get_all_evaluations_folderpath(folderpath, search_name)
 
     if delete_if_exists:
-        ut.delete_folder(search_folderpath, False, True)
+        ut.delete_folder(search_folderpath, False, False)
     assert not (abort_if_exists and ut.folder_exists(search_folderpath))
 
     if not ut.folder_exists(search_folderpath):
@@ -88,9 +88,9 @@ class EvaluationLogger:
         assert (not abort_if_exists) or (not ut.folder_exists(self.evaluation_folderpath))
         assert (not abort_if_notexists) or ut.folder_exists(self.evaluation_folderpath)
         ut.create_folder(self.evaluation_folderpath,
-            abort_if_exists=abort_if_exists)
+            abort_if_exists=abort_if_exists, create_parent_folders=True)
         ut.create_folder(self.evaluation_data_folderpath,
-            abort_if_exists=abort_if_exists)
+            abort_if_exists=abort_if_exists, create_parent_folders=True)
 
         self.config_filepath = ut.join_paths([self.evaluation_folderpath, 'config.json'])
         self.features_filepath = ut.join_paths([self.evaluation_folderpath, 'features.json'])

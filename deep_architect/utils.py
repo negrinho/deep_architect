@@ -4,9 +4,7 @@ import shutil
 import time
 import subprocess
 import argparse
-
 from six import iteritems, itervalues
-
 
 def run_bash_command(cmd):
     str_output = subprocess.check_output(cmd, shell=True)
@@ -167,7 +165,7 @@ class SequenceTracker:
                 sequences, and values are the additional data point to add to
                 the sequence.
         """
-        for k, v in d.iteritems():
+        for k, v in iteritems(d):
             assert type(k) == str and len(k) > 0
             if k not in self.d:
                 self.d[k] = []

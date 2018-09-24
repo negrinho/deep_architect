@@ -6,15 +6,15 @@ import deep_architect.utils as ut
 if __name__ == '__main__':
     cfg = ut.get_config()
     if cfg['use_gpu']:
-        import deep_architect.contrib.useful.gpu_utils as gpu_utils
+        import deep_architect.contrib.misc.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
         print "Using GPU %d" % gpu_id
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
-from deep_architect.contrib.useful.datasets.loaders import load_mnist
-from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 import deep_architect.visualization as vi
 
 import searchers as local_se
@@ -40,7 +40,7 @@ def main():
     test_dataset = InMemoryDataset(Xtest, ytest, False)
 
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-        sl.join_paths(['temp', 'benchmarks', cfg['search_name']]),
+        ut.join_paths(['temp', 'benchmarks', cfg['search_name']]),
         max_eval_time_in_minutes=cfg['max_eval_time_in_minutes'],
         log_output_to_terminal=True, test_dataset=test_dataset)
 
@@ -48,7 +48,7 @@ def main():
         for search_space_name in cfg['search_space_name_lst']:
             for searcher_name in cfg['searcher_name_lst']:
 
-                folderpath = sl.join_paths([cfg['logs_folderpath'],
+                folderpath = ut.join_paths([cfg['logs_folderpath'],
                     cfg['search_name'], search_space_name, searcher_name])
 
                 search_logger = sl.SearchLogger(folderpath, 'rep%d' % rep_i,

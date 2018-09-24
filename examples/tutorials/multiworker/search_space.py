@@ -1,26 +1,26 @@
-# Using TensorFlow Backend 
+# Using TensorFlow Backend
 
-# Search Space 
-import keras 
+# Search Space
+import keras
 import numpy as np
 
-import deep_architect.modules as mo  
-import deep_architect.hyperparameters as hp 
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import siso_tfm
+import deep_architect.modules as mo
+import deep_architect.hyperparameters as hp
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tfm
 
 D = hp.Discrete # Discrete Hyperparameter
 
-def flatten(): 
-    def cfn(di, dh): 
-        Flatten = keras.layers.Flatten()
-        def fn(di): 
-            return {'Out': Flatten(di['In'])} 
-        return fn
-    return siso_tfm('Flatten', cfn, {}) # use siso_tfm for now 
-
-def dense(h_units): 
+def flatten():
     def cfn(di, dh):
-        Dense = keras.layers.Dense(dh['units']) 
+        Flatten = keras.layers.Flatten()
+        def fn(di):
+            return {'Out': Flatten(di['In'])}
+        return fn
+    return siso_tfm('Flatten', cfn, {}) # use siso_tfm for now
+
+def dense(h_units):
+    def cfn(di, dh):
+        Dense = keras.layers.Dense(dh['units'])
         def fn(di):
             return {'Out' : Dense(di['In'])}
         return fn
@@ -73,7 +73,7 @@ def dnn_net(num_classes):
     h_opt_drop = D([0, 1])
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
-        flatten(), 
+        flatten(),
         mo.siso_repeat(lambda: dnn_cell(
             D([64, 128, 256, 512, 1024]),
             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,

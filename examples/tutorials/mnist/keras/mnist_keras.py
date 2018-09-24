@@ -1,26 +1,26 @@
-# Using TensorFlow Backend 
+# Using TensorFlow Backend
 
-# Search Space 
-import keras 
+# Search Space
+import keras
 import numpy as np
 
-import deep_architect.modules as mo  
-import deep_architect.hyperparameters as hp 
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import siso_tfm
+import deep_architect.modules as mo
+import deep_architect.hyperparameters as hp
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tfm
 
 D = hp.Discrete # Discrete Hyperparameter
 
-def flatten(): 
-    def cfn(di, dh): 
-        Flatten = keras.layers.Flatten()
-        def fn(di): 
-            return {'Out': Flatten(di['In'])} 
-        return fn
-    return siso_tfm('Flatten', cfn, {}) # use siso_tfm for now 
-
-def dense(h_units): 
+def flatten():
     def cfn(di, dh):
-        Dense = keras.layers.Dense(dh['units']) 
+        Flatten = keras.layers.Flatten()
+        def fn(di):
+            return {'Out': Flatten(di['In'])}
+        return fn
+    return siso_tfm('Flatten', cfn, {}) # use siso_tfm for now
+
+def dense(h_units):
+    def cfn(di, dh):
+        Dense = keras.layers.Dense(dh['units'])
         def fn(di):
             return {'Out' : Dense(di['In'])}
         return fn
@@ -58,18 +58,18 @@ def batch_normalization():
         return fn
     return siso_tfm('BatchNormalization', cfn, {})
 
-def dnn_net_simple(num_classes): 
+def dnn_net_simple(num_classes):
 
         # defining hyperparameter
-        h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module 
+        h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module
         h_nonlin_name = D(['relu', 'tanh', 'elu']) # nonlinearity function names to choose from
-        h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include 
-        h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from 
+        h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include
+        h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from
         h_opt_bn = D([0, 1]) # batch_norm optional hyperparameter
-        h_swap = D([0, 1]) # order of swapping for permutation 
+        h_swap = D([0, 1]) # order of swapping for permutation
         h_num_repeats = D([1, 2]) # 1 is appearing once, 2 is appearing twice
-        
-        # defining search space topology 
+
+        # defining search space topology
         model = mo.siso_sequential([
             flatten(),
             mo.siso_repeat(lambda: mo.siso_sequential([
@@ -82,8 +82,8 @@ def dnn_net_simple(num_classes):
             ]), h_num_repeats),
             dense(D([num_classes]))
         ])
-        
-        return model 
+
+        return model
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([
@@ -100,20 +100,20 @@ def dnn_net(num_classes):
     h_opt_drop = D([0, 1])
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
-        flatten(), 
+        flatten(),
         mo.siso_repeat(lambda: dnn_cell(
             D([64, 128, 256, 512, 1024]),
             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
             D([0.25, 0.5, 0.75])), D([1, 2])),
         dense(D([num_classes]))])
 
-# Main/Searcher 
+# Main/Searcher
 import deep_architect.searchers.random as se
-import deep_architect.core as co 
+import deep_architect.core as co
 from keras.datasets import mnist
 
 def get_search_space(num_classes):
-    def fn(): 
+    def fn():
         co.Scope.reset_default_scope()
         inputs, outputs = dnn_net(num_classes)
         return inputs, outputs, {}
@@ -122,15 +122,15 @@ def get_search_space(num_classes):
 def main():
 
     num_classes = 10
-    num_samples = 3 # number of architecture to sample 
+    num_samples = 3 # number of architecture to sample
     best_val_acc, best_architecture = 0., -1
 
-    # load and normalize data 
+    # load and normalize data
     (x_train, y_train),(x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
-    # defining searcher and evaluator 
-    evaluator = SimpleClassifierEvaluator((x_train, y_train), num_classes, 
+    # defining searcher and evaluator
+    evaluator = SimpleClassifierEvaluator((x_train, y_train), num_classes,
                                         max_num_training_epochs=5)
     searcher = se.RandomSearcher(get_search_space(num_classes))
 
@@ -139,17 +139,17 @@ def main():
         inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
         val_acc = evaluator.evaluate(inputs, outputs, hs)['val_acc'] # evaluate and return validation accuracy
         print("Finished evaluating architecture %d, validation accuracy is %f" % (i, val_acc))
-        if val_acc > best_val_acc: 
+        if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_architecture = i
         searcher.update(val_acc, searcher_eval_token)
-    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture)) 
+    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture))
 
-# Evaluator 
+# Evaluator
 
 class SimpleClassifierEvaluator:
 
-    def __init__(self, train_dataset, num_classes, max_num_training_epochs=10, 
+    def __init__(self, train_dataset, num_classes, max_num_training_epochs=10,
                 batch_size=256, learning_rate=1e-3):
 
         self.train_dataset = train_dataset
@@ -160,7 +160,7 @@ class SimpleClassifierEvaluator:
         self.val_split = 0.1 # 10% of dataset for validation
 
     def evaluate(self, inputs, outputs, hs):
-        keras.backend.clear_session() 
+        keras.backend.clear_session()
 
         (x_train, y_train) = self.train_dataset
 
@@ -170,18 +170,18 @@ class SimpleClassifierEvaluator:
         probs = keras.layers.Softmax()(logits)
         model = keras.models.Model(inputs=[inputs['In'].val], outputs=[probs])
         optimizer = keras.optimizers.Adam(lr=self.learning_rate)
-        model.compile(optimizer=optimizer, 
-                    loss='sparse_categorical_crossentropy', 
+        model.compile(optimizer=optimizer,
+                    loss='sparse_categorical_crossentropy',
                     metrics=['accuracy'])
-        model.summary() 
-        history = model.fit(x_train, y_train, 
-                batch_size=self.batch_size, 
-                epochs=self.max_num_training_epochs, 
+        model.summary()
+        history = model.fit(x_train, y_train,
+                batch_size=self.batch_size,
+                epochs=self.max_num_training_epochs,
                 validation_split=self.val_split)
 
         results = {'val_acc': history.history['val_acc'][-1]}
-        return results 
-        
+        return results
 
-if __name__ == "__main__": 
-    main() 
+
+if __name__ == "__main__":
+    main()

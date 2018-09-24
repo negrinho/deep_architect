@@ -1,0 +1,8 @@
+{
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "python.linting.mypyArgs": [
+        "--rcfile=.pylintrc"
+    ],
+    "files.trimTrailingWhitespace": true
+}

@@ -1,24 +1,24 @@
 # Search Space for DyNet
-# NOTE: No Batch_norm since DyNet has not supported batch norm 
+# NOTE: No Batch_norm since DyNet has not supported batch norm
 
-import dynet as dy 
-import numpy as np 
+import dynet as dy
+import numpy as np
 
-from dynet_tmp import DyParameterCollection, siso_dym
-import deep_architect.modules as mo 
+from  import DyParameterCollection, siso_dym
+import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 
-M = DyParameterCollection() 
+M = DyParameterCollection()
 D = hp.Discrete
 
-def flatten(): 
-    def cfn(di, dh): 
+def flatten():
+    def cfn(di, dh):
         shape = di['In'].dim()
         n = np.product(shape[0])
         Flatten = dy.reshape
-        def fn(di): 
-            return {'Out': Flatten(di['In'], (n,))} 
-        return fn 
+        def fn(di):
+            return {'Out': Flatten(di['In'], (n,))}
+        return fn
     return siso_dym('Flatten', cfn, {})
 
 def dense(h_u):
@@ -28,52 +28,52 @@ def dense(h_u):
         pW = M.get_collection().add_parameters((m, n))
         pb = M.get_collection().add_parameters((m, 1))
         Dense = dy.affine_transform
-        def fn(di): 
+        def fn(di):
             In = di['In']
             W, b = pW.expr(), pb.expr()
             # return {'Out': W*In + b}
             return {'Out': Dense([b, W, In])}
-        return fn 
+        return fn
     return siso_dym('Dense', cfn, {'units': h_u})
 
-# just put here to streamline everything 
-def nonlinearity(h_nonlin_name): 
-    def cfn(di, dh): 
-        def fn(di): 
+# just put here to streamline everything
+def nonlinearity(h_nonlin_name):
+    def cfn(di, dh):
+        def fn(di):
             nonlin_name = dh['nonlin_name']
-            if nonlin_name == 'relu': 
+            if nonlin_name == 'relu':
                 Out = dy.rectify(di['In'])
-            elif nonlin_name == 'elu': 
+            elif nonlin_name == 'elu':
                 Out = dy.elu(di['In'])
             elif nonlin_name == 'tanh':
                 Out = dy.tanh(di['In'])
-            else: 
+            else:
                 raise ValueError
             return {'Out': Out}
-        return fn 
+        return fn
     return siso_dym('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
 
-def dropout(h_keep_prob): 
-    def cfn(di, dh): 
+def dropout(h_keep_prob):
+    def cfn(di, dh):
         p = dh['keep_prop']
         Dropout = dy.dropout
-        def fn(di): 
+        def fn(di):
             return {'Out': Dropout(di['In'], p)}
-        return fn 
+        return fn
     return siso_dym('Dropout', cfn, {'keep_prop': h_keep_prob})
 
-def dnn_net_simple(num_classes): 
+def dnn_net_simple(num_classes):
 
         # declaring hyperparameter
         h_nonlin_name = D(['relu', 'tanh', 'elu']) # nonlinearity function names to choose from
-        h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include 
-        h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from 
-        h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module 
+        h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include
+        h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from
+        h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module
         h_num_repeats = D([1, 2]) # 1 is appearing once, 2 is appearing twice
-        
-        # defining search space topology 
+
+        # defining search space topology
         model = mo.siso_sequential([
-            flatten(), 
+            flatten(),
             mo.siso_repeat(lambda: mo.siso_sequential([
                 dense(h_num_hidden),
                 nonlinearity(h_nonlin_name),
@@ -81,8 +81,8 @@ def dnn_net_simple(num_classes):
             ]), h_num_repeats),
             dense(D([num_classes]))
         ])
-        
-        return model 
+
+        return model
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_opt_drop, h_drop_keep_prob):
     return mo.siso_sequential([
@@ -95,7 +95,7 @@ def dnn_net(num_classes):
     h_nonlin_name = D(['relu', 'tanh', 'elu'])
     h_opt_drop = D([0, 1])
     return mo.siso_sequential([
-        flatten(), 
+        flatten(),
         mo.siso_repeat(lambda: dnn_cell(
             D([64, 128, 256, 512, 1024]),
             h_nonlin_name, h_opt_drop,
@@ -103,14 +103,14 @@ def dnn_net(num_classes):
         dense(D([num_classes]))])
 
 # Main/Searcher
-# Getting and reading mnist data adapted from here: 
-# https://github.com/clab/dynet/blob/master/examples/mnist/mnist-autobatch.py 
+# Getting and reading mnist data adapted from here:
+# https://github.com/clab/dynet/blob/master/examples/mnist/mnist-autobatch.py
 import deep_architect.searchers.random as se
-import deep_architect.core as co 
-from deep_architect.contrib.useful.datasets.loaders import read_mnist, download_examples
+import deep_architect.core as co
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
 
 def get_search_space(num_classes):
-    def fn(): 
+    def fn():
         co.Scope.reset_default_scope()
         inputs, outputs = dnn_net(num_classes)
         return inputs, outputs, {}
@@ -119,18 +119,15 @@ def get_search_space(num_classes):
 def main():
 
     num_classes = 10
-    num_samples = 3 # number of architecture to sample 
-    data_path = './tmp_dynet/data/'
+    num_samples = 3 # number of architecture to sample
     best_val_acc, best_architecture = 0., -1
 
     # donwload and normalize data, using test as val for simplicity
-    download_examples(data_path)
-    train_dataset = [(label, img) for (label, img) in read_mnist('training', data_path)]
-    val_dataset = [(label, img) for (label, img) in read_mnist('testing', data_path)]
-    
-    # defining evaluator 
-    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-                max_num_training_epochs=5, log_output_to_terminal=True) 
+    X_train, y_train, X_val, y_val, _, _ = load_mnist('data/mnist', normalize_range=True)
+
+    # defining evaluator
+    evaluator = SimpleClassifierEvaluator((X_train, y_train), (X_val, y_val), num_classes,
+                max_num_training_epochs=5, log_output_to_terminal=True)
     searcher = se.RandomSearcher(get_search_space(num_classes))
     for i in xrange(num_samples):
         print("Sampling architecture %d" % i)
@@ -138,14 +135,14 @@ def main():
         inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
         val_acc = evaluator.evaluate(inputs, outputs, hs)['val_acc'] # evaluate and return validation accuracy
         print("Finished evaluating architecture %d, validation accuracy is %f" % (i, val_acc))
-        if val_acc > best_val_acc: 
+        if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_architecture = i
         searcher.update(val_acc, searcher_eval_token)
-    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture)) 
+    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture))
 
-# Evaluator 
-import random 
+# Evaluator
+import random
 
 class SimpleClassifierEvaluator:
 
@@ -162,9 +159,9 @@ class SimpleClassifierEvaluator:
         self.log_output_to_terminal = log_output_to_terminal
         self.display_step = display_step
 
-    def compute_accuracy(self, inputs, outputs): 
-        correct = 0 
-        for (label, img) in self.val_dataset: 
+    def compute_accuracy(self, inputs, outputs):
+        correct = 0
+        for (label, img) in self.val_dataset:
             dy.renew_cg()
             x = dy.inputVector(img)
             co.forward({inputs['In'] : x})
@@ -176,14 +173,14 @@ class SimpleClassifierEvaluator:
     def evaluate(self, inputs, outputs, hs):
         params = M.get_collection()
         optimizer = dy.SimpleSGDTrainer(params, self.learning_rate)
-        num_batches = int(len(self.train_dataset) / self.batch_size) 
-        for epoch in range(self.max_num_training_epochs): 
+        num_batches = int(len(self.train_dataset) / self.batch_size)
+        for epoch in range(self.max_num_training_epochs):
             random.shuffle(self.train_dataset)
             i = 0
-            total_loss = 0 
+            total_loss = 0
             while (i < len(self.train_dataset)):
                 dy.renew_cg()
-                mbsize = min(self.batch_size, len(self.train_dataset)-i) 
+                mbsize = min(self.batch_size, len(self.train_dataset)-i)
                 minibatch = self.train_dataset[i:i+mbsize]
                 losses = []
                 for (label, img) in minibatch:
@@ -192,22 +189,22 @@ class SimpleClassifierEvaluator:
                     logits = outputs['Out'].val
                     loss = dy.pickneglogsoftmax(logits, label)
                     losses.append(loss)
-                mbloss = dy.esum(losses)/mbsize 
+                mbloss = dy.esum(losses)/mbsize
                 mbloss.backward()
                 optimizer.update()
                 total_loss += mbloss.scalar_value()
                 i += mbsize
 
             val_acc = self.compute_accuracy(inputs, outputs)
-            if self.log_output_to_terminal and epoch % self.display_step == 0: 
+            if self.log_output_to_terminal and epoch % self.display_step == 0:
                 print("epoch:", '%d' % (epoch + 1),
                       "loss:", "{:.9f}".format(total_loss / num_batches),
                       "validation_accuracy:", "%.5f" % val_acc)
-    
-        
+
+
         val_acc = self.compute_accuracy(inputs, outputs)
         return {'val_acc': val_acc}
-        
 
-if __name__ == "__main__": 
-    main() 
+
+if __name__ == "__main__":
+    main()

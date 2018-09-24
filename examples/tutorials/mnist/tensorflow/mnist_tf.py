@@ -1,25 +1,25 @@
-# Search Space 
+# Search Space
 from __future__ import print_function
-import tensorflow as tf 
+import tensorflow as tf
 import numpy as np
 
-import deep_architect.modules as mo  
-import deep_architect.hyperparameters as hp 
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import siso_tfm
+import deep_architect.modules as mo
+import deep_architect.hyperparameters as hp
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tfm
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 
 D = hp.Discrete # Discrete Hyperparameter
 
 def flatten():
-    def cfn(di, dh): 
+    def cfn(di, dh):
         Flatten = tf.layers.flatten
-        def fn(di): 
+        def fn(di):
             return {'Out' : Flatten(di['In'])}
-        return fn 
+        return fn
     return siso_tfm('Flatten', cfn, {})
 
-def dense(h_units): 
+def dense(h_units):
     def cfn(di, dh):
         Dense = tf.layers.dense
         def fn(di):
@@ -61,20 +61,20 @@ def batch_normalization():
         return fn, {p_var : 1}, {p_var : 0}
     return siso_tfm('BatchNormalization', cfn, {})
 
-def dnn_net_simple(num_classes): 
+def dnn_net_simple(num_classes):
 
         # declaring hyperparameter
         h_nonlin_name = D(['relu', 'tanh', 'elu']) # nonlinearity function names to choose from
-        h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include 
-        h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from 
+        h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include
+        h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from
         h_opt_bn = D([0, 1]) # batch_norm optional hyperparameter
-        h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module 
-        h_swap = D([0, 1]) # order of swapping for permutation 
+        h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module
+        h_swap = D([0, 1]) # order of swapping for permutation
         h_num_repeats = D([1, 2]) # 1 is appearing once, 2 is appearing twice
-        
-        # defining search space topology 
+
+        # defining search space topology
         model = mo.siso_sequential([
-            flatten(), 
+            flatten(),
             mo.siso_repeat(lambda: mo.siso_sequential([
                 dense(h_num_hidden),
                 nonlinearity(h_nonlin_name),
@@ -85,8 +85,8 @@ def dnn_net_simple(num_classes):
             ]), h_num_repeats),
             dense(D([num_classes]))
         ])
-        
-        return model 
+
+        return model
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([
@@ -103,21 +103,21 @@ def dnn_net(num_classes):
     h_opt_drop = D([0, 1])
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
-        flatten(), 
+        flatten(),
         mo.siso_repeat(lambda: dnn_cell(
             D([64, 128, 256, 512, 1024]),
             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
             D([0.25, 0.5, 0.75])), D([1, 2])),
         dense(D([num_classes]))])
 
-# Main/Searcher 
-from deep_architect.contrib.useful.datasets.loaders import load_mnist
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
+# Main/Searcher
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 import deep_architect.searchers.random as se
-import deep_architect.core as co 
+import deep_architect.core as co
 
 def get_search_space(num_classes):
-    def fn(): 
+    def fn():
         co.Scope.reset_default_scope()
         inputs, outputs = dnn_net(num_classes)
         return inputs, outputs, {}
@@ -126,18 +126,18 @@ def get_search_space(num_classes):
 def main():
 
     num_classes = 10
-    num_samples = 20 # number of architecture to sample 
+    num_samples = 20 # number of architecture to sample
     best_val_acc, best_architecture = 0., -1
 
-    # load data 
+    # load data
     (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_mnist('data/mnist')
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
 
-    # defining evaluator and searcher 
+    # defining evaluator and searcher
     evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-                        max_num_training_epochs=5, log_output_to_terminal=True) 
+                        max_num_training_epochs=5, log_output_to_terminal=True)
     searcher = se.RandomSearcher(get_search_space(num_classes))
 
     for i in xrange(num_samples):
@@ -145,18 +145,18 @@ def main():
         inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
         val_acc = evaluator.evaluate(inputs, outputs, hs)['val_acc'] # evaluate and return validation accuracy
         print("Finished evaluating architecture %d, validation accuracy is %f" % (i, val_acc))
-        if val_acc > best_val_acc: 
+        if val_acc > best_val_acc:
             best_val_acc = val_acc
             best_architecture = i
         searcher.update(val_acc, searcher_eval_token)
-    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture)) 
+    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture))
 
-# Evaluator 
+# Evaluator
 import deep_architect.helpers.tensorflow as htf
 
 class SimpleClassifierEvaluator:
 
-    def __init__(self, train_dataset, val_dataset, num_classes, max_num_training_epochs=10, 
+    def __init__(self, train_dataset, val_dataset, num_classes, max_num_training_epochs=10,
             batch_size=256, learning_rate=1e-3, display_step=1, log_output_to_terminal=True):
 
         self.train_dataset = train_dataset
@@ -233,8 +233,8 @@ class SimpleClassifierEvaluator:
 
             results = {'val_acc' : val_acc,
                        'num_parameters' : float(htf.get_num_trainable_parameters())}
-        
+
         return results
 
-if __name__ == "__main__": 
-    main() 
+if __name__ == "__main__":
+    main()

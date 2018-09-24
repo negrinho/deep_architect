@@ -4,17 +4,17 @@ import deep_architect.search_logging as sl
 if __name__ == '__main__':
     cfg = ut.get_config()
     if cfg['use_gpu']:
-        import deep_architect.contrib.useful.gpu_utils as gpu_utils
+        import deep_architect.contrib.misc.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
         print "Using GPU %d" % gpu_id
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
-from deep_architect.contrib.useful.datasets.loaders import load_cifar10
-from deep_architect.contrib.useful.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.useful.datasets.dataset import InMemoryDataset
-import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
-import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
+from deep_architect.contrib.misc.datasets.loaders import load_cifar10
+from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as css_cnn2d
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as css_dnn
 import deep_architect.modules as mo
 from deep_architect.searchers.random import RandomSearcher
 import deep_architect.hyperparameters as hp

@@ -1,7 +1,7 @@
 
-import deep_architect.contrib.useful.search_spaces.tensorflow.dnn as css_dnn
-import deep_architect.contrib.useful.search_spaces.tensorflow.cnn2d as css_cnn2d
-from deep_architect.contrib.useful.search_spaces.tensorflow.common import D
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as css_cnn2d
+from deep_architect.contrib.misc.search_spaces.tensorflow.common import D
 import deep_architect.modules as mo
 
 def get_hyperps():

@@ -87,3 +87,6 @@ class OneOfKFactorial(Discrete):
     def __init__(self, k, scope=None, name=None):
         Discrete.__init__(self, range(np.product(np.arange(1, k + 1))), scope, name)
 
+# abbreviations
+D = Discrete
+
