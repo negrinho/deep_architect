@@ -91,7 +91,7 @@ def draw_logo(cfg):
     arrow_fn(a_top, a_mid_right)
     arrow_fn(a_mid_right, mid)
     arrow_fn(mid, a_left_bottom)
-    arrow_fn(a_right_bottom, a_mid_right)
+    arrow_fn(a_mid_right, a_right_bottom)
 
 # angles in degrees, lengths in cm.
 if __name__ == "__main__":
