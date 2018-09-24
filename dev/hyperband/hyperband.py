@@ -46,7 +46,8 @@ class HyperBandExtended(object):
                 configuration
             eta (int): the proportion of configurations discarded in each round of 
                 SucessiveHalving
-        Return: configuration with the smallest loss 
+        Return: configuration with the best performance, and the corresponding 
+                performance 
         """
         s_max = int(math.floor(math.log(R, eta))) # number of grid search, or "bracket"
         B = (s_max + 1) * R # total resources
@@ -73,7 +74,7 @@ class HyperBandExtended(object):
             (best_config, best_perf) = self.get_best_performance(T, P, best_config, best_perf)
 
         self.history.record_best_config(best_config, best_perf)
-        return best_config
+        return (best_config, best_perf)
 
     def graph_hyperband(self, save_dir='./tmp/hyperband.jpg'):
         """Extract from history and show Hyperband graph (best performance for 
@@ -154,12 +155,25 @@ class SimpleArchitectureSearchHyperBand(HyperBandExtended):
         """
         import pandas as pd 
         from plotnine import *  
-        pass 
+        data = self.history.convert_to_graph_hyperband_ready(self.metric, self.resource_type)
+        df = pd.DataFrame(data)
+        plot = ggplot(df, aes(x=self.resource_type, 
+                              y=self.metric, 
+                              color='factor(configuration)')
+                    ) + geom_line()
+        plot.save(save_dir)
 
     def graph_sucessiveHalving(self, bracket_id, save_dir='./tmp/sh.jpg'): 
         import pandas as pd 
         import plotnine as plot 
-        pass 
+        data = self.history.convert_a_bracket_to_graph_ready(bracket_id, self.metric, self.resource_type)
+        df = pd.DataFrame(data)
+        plot = ggplot(df, aes(x=self.resource_type, 
+                              y=self.metric, 
+                              color='factor(configuration)')
+                    ) + geom_line()
+        plot.save(save_dir)
+
 
 
 

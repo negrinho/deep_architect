@@ -116,6 +116,45 @@ class History(object):
         self.best_configuration = best_config
         self.best_performance = best_perf
 
+    def convert_to_graph_hyperband_ready(self, metric, resource):
+        """Convert to hyperband graph ready 
+        - For each bracket, extract the best config 
+        NOTE: This part makes certain assumption about the representations 
+        of configurations T and performance P 
+
+        Should have information about what type of resource and performance, 
+        otherwise can default in 'resource' and 'performance'
+
+        Right now only use for SimpleArchitectureSearchHyperband
+        """ 
+        data = {'configuration': [], metric: [], resource:[]}
+        for bracket in self.brackets: 
+            config, performance = self.brackets[bracket]
+            history = performance[1] 
+            config_id = config
+            n = len(history[metric])
+            data['configuration'] += [config_id for _ in range(n)]
+            data[metric] += history[metric]
+            data[resource] += history[resource]
+        return data 
+
+    def convert_a_bracket_to_graph_ready(self, bracket_id, metric, resource): 
+        """Convert history to produce a successiveHalving graph 
+        """
+        data = {'configuration': [], metric: [], resource:[]}
+        config, performance = self.brackets[bracket_id]
+        history = performance[1] 
+        config_id = config
+        n = len(history[metric])
+        data['configuration'] += [config_id for _ in range(n)]
+        data[metric] += history[metric]
+        data[resource] += history[resource]
+        return data  
+
+    def get_all_bracket_IDs(self): 
+        """Return a sorted IDs of all brackets"""
+        pass 
+
     def save(): 
         """Save to json file"""
         pass  

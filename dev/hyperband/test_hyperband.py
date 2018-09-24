@@ -108,59 +108,22 @@ def dnn_net(num_classes):
             D([0.25, 0.5, 0.75])), D([1, 2])),
         dense(D([num_classes]))])
 
-# Main/Searcher 
-import deep_architect.searchers.random as se
-import deep_architect.core as co 
-from keras.datasets import mnist
-
-def get_search_space(num_classes):
-    def fn(): 
-        co.Scope.reset_default_scope()
-        inputs, outputs = dnn_net(num_classes)
-        return inputs, outputs, {}
-    return fn
-
-def main():
-
-    num_classes = 10
-    num_samples = 3 # number of architecture to sample 
-    best_val_acc, best_architecture = 0., -1
-
-    # load and normalize data 
-    (x_train, y_train),(x_test, y_test) = mnist.load_data()
-    x_train, x_test = x_train / 255.0, x_test / 255.0
-
-    # defining searcher and evaluator 
-    evaluator = SimpleClassifierEvaluator((x_train, y_train), num_classes, 
-                                        max_num_training_epochs=5)
-    searcher = se.RandomSearcher(get_search_space(num_classes))
-
-    for i in xrange(num_samples):
-        print("Sampling architecture %d" % i)
-        inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
-        val_acc = evaluator.evaluate(inputs, outputs, hs)['val_accuracy'] # evaluate and return validation accuracy
-        print("Finished evaluating architecture %d, validation accuracy is %f" % (i, val_acc))
-        if val_acc > best_val_acc: 
-            best_val_acc = val_acc
-            best_architecture = i
-        searcher.update(val_acc, searcher_eval_token)
-    print("Best validation accuracy is %f with architecture %d" % (best_val_acc, best_architecture)) 
-
 # Evaluator 
 
 class SimpleClassifierEvaluator:
 
-    def __init__(self, train_dataset, num_classes, max_num_training_epochs=10, 
-                batch_size=256, learning_rate=1e-3):
+    def __init__(self, train_dataset, num_classes, batch_size=256, 
+                learning_rate=1e-3, metric='val_loss', resource_type='epoch'):
 
         self.train_dataset = train_dataset
         self.num_classes = num_classes
-        self.max_num_training_epochs = max_num_training_epochs
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.val_split = 0.1 # 10% of dataset for validation
+        self.metric = metric 
+        self.resource_type = resource_type
 
-    def evaluate(self, inputs, outputs, hs):
+    def evaluate(self, inputs, outputs, hs, resource):
         keras.backend.clear_session() 
 
         (x_train, y_train) = self.train_dataset
@@ -177,12 +140,48 @@ class SimpleClassifierEvaluator:
         model.summary() 
         history = model.fit(x_train, y_train, 
                 batch_size=self.batch_size, 
-                epochs=self.max_num_training_epochs, 
+                epochs=resource, 
                 validation_split=self.val_split)
-
-        results = {'val_accuracy': history.history['val_acc'][-1]}
+        final_val_acc = history.history['val_acc'][-1]
+        metric_values = history.history['val_acc'] if self.metric == 'val_accuracy' else history.history['loss']
+        info = {self.resource_type: [i for i in range(resource)], 
+                self.metric: metric_values}
+        results = {'val_accuracy': final_val_acc, 
+                   'history': info}
         return results 
         
+# Main/Searcher 
+import deep_architect.searchers.random as se
+import deep_architect.core as co 
+from keras.datasets import mnist
+from hyperband import SimpleArchitectureSearchHyperBand
+
+def get_search_space(num_classes):
+    def fn(): 
+        co.Scope.reset_default_scope()
+        inputs, outputs = dnn_net(num_classes)
+        return inputs, outputs, {}
+    return fn
+
+def main():
+
+    num_classes = 10
+    num_samples = 3 # number of architecture to sample 
+    metric = 'val_accuracy' # evaluation metric
+    resource_type = 'epoch' 
+    max_resource = 81 # max resource that a configuration can have
+
+    # load and normalize data 
+    (x_train, y_train),(x_test, y_test) = mnist.load_data()
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+
+    # defining searcher and evaluator 
+    evaluator = SimpleClassifierEvaluator((x_train, y_train), num_classes, 
+                                        max_num_training_epochs=5)
+    searcher = se.RandomSearcher(get_search_space(num_classes))
+    hyperband = SimpleArchitectureSearchHyperBand(searcher, hyperband, metric, resource_type)
+    (best_config, best_perf) = hyperband.evaluate(max_resource)
+    print("Best %s is %f with architecture %d" % (metric, best_perf[0], best_config[0])) 
 
 if __name__ == "__main__": 
     main() 
