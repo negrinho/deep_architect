@@ -67,8 +67,8 @@ class EvolutionSearcher(Searcher):
 
         # Population size
         self.P = P
-        self.S = S
         # Sample size
+        self.S = S
 
         self.population = deque(maxlen=P)
         self.processing = []
@@ -164,3 +164,8 @@ class EvolutionSearcher(Searcher):
                 max_acc = acc
                 max_acc_ind = i
         return sample_inds[max_acc_ind]
+    
+    def get_best(self, num_models):
+        ranked_population = sorted(self.population, reverse=True, key=lambda tup: tup[2])
+
+        return [(model[2], model[1]) for model in ranked_population[:num_models]]

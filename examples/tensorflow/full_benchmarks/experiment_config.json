@@ -59,5 +59,31 @@
       "communicator": "mpi",
       "search_folder": "logs",
       "search_name": "enas_debug"
+    },
+    "framework_random": {
+      "searcher": "random",
+      "dataset": "fashion_mnist",
+      "search_space": "dnn",
+      "evaluator": "simple_classification",
+      "epochs": 10,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 150,
+      "eager": false,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "framework_random"
+    },
+    "framework_evolution": {
+      "searcher": "evolution_pop=64_samp=16_reg=t",
+      "dataset": "fashion_mnist",
+      "search_space": "dnn",
+      "evaluator": "simple_classification",
+      "epochs": 10,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 150,
+      "eager": false,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "framework_evolution"
     }
   }

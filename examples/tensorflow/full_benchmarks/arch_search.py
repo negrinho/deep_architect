@@ -3,7 +3,8 @@ import tensorflow as tf
 import pickle
 import deep_architect.utils as ut
 
-from deep_architect.contrib.misc.datasets.loaders import load_cifar10, load_mnist
+from deep_architect.contrib.misc.datasets.loaders import (
+    load_cifar10, load_mnist, load_fashion_mnist)
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 
 from deep_architect.searchers import common as se
@@ -56,8 +57,8 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
 
                 eval_logger.log_config(vs, searcher_eval_token)
                 eval_logger.log_features(inputs, outputs, hs)
-                
-                comm.publish_architecture_to_worker(vs, models_sampled, 
+
+                comm.publish_architecture_to_worker(vs, models_sampled,
                                        searcher_eval_token)
 
                 models_sampled += 1
@@ -88,7 +89,11 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
                     }
                     ut.write_jsonfile(state, save_filepath)
 
-def start_worker(comm, evaluator, search_space_factory, folderpath, 
+    best_models = searcher.get_best(5)
+    print(best_models)
+    ut.write_jsonfile(best_models, save_filepath)
+
+def start_worker(comm, evaluator, search_space_factory, folderpath,
     search_name, resume=True, save_every=1):
     # set the available gpu for process
     print('WORKER %d' % comm.get_rank())
@@ -108,10 +113,10 @@ def start_worker(comm, evaluator, search_space_factory, folderpath,
     while(True):
         arch = comm.receive_architecture_in_worker()
 
-        # if a kill signal is received        
+        # if a kill signal is received
         if arch is None:
             break
-        
+
         vs, evaluation_id, searcher_eval_token = arch
 
         inputs, outputs, hs = search_space_factory.get_search_space()
@@ -150,7 +155,8 @@ def main():
 
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/'), 10),
-        'mnist': lambda: (load_mnist('data/mnist/'), 10)
+        'mnist': lambda: (load_mnist('data/mnist/'), 10),
+        'fashion_mnist': lambda: (load_fashion_mnist(), 10)
     }
 
     (Xtrain, ytrain, Xval, yval, Xtest, ytest), num_classes = datasets[config['dataset']]()
@@ -165,8 +171,8 @@ def main():
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
         start_searcher(
-            comm, searcher, options.resume, config['search_folder'], 
-            config['search_name'], config['searcher_file_name'], 
+            comm, searcher, options.resume, config['search_folder'],
+            config['search_name'], config['searcher_file_name'],
             num_samples=num_samples, num_epochs=num_epochs, save_every=save_every)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
@@ -184,7 +190,7 @@ def main():
         assert not config['evaluator'].startswith('enas') or hasattr(search_space_factory, 'weight_sharer')
         evaluator = evaluators[config['evaluator']]()
 
-        start_worker(comm, evaluator, search_space_factory, config['search_folder'], 
+        start_worker(comm, evaluator, search_space_factory, config['search_folder'],
             config['search_name'], resume=options.resume, save_every=save_every)
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from deep_architect.surrogates.hashing import HashingSurrogate
 import deep_architect.surrogates as su
 
 name_to_searcher_fn = {
-    'random': lambda ssf: ra.RandomSearcher(ssf),
+    'random': lambda ssf: ra.RandomSearcher(ssf, keep_best=5),
     'evolution_pop=100_samp=25_reg=t': lambda ssf: EvolutionSearcher(ssf, mutatable, 100, 25, regularized=True),
     'evolution_pop=64_samp=16_reg=t': lambda ssf: EvolutionSearcher(ssf, mutatable, 64, 16, regularized=True),
     'evolution_pop=20_samp=20_reg=t': lambda ssf: EvolutionSearcher(ssf, mutatable, 20, 20, regularized=True),

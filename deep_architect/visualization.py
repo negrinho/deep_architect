@@ -11,7 +11,8 @@ def running_max(vs):
 
 def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
         draw_module_hyperparameter_info=True,
-        out_folderpath=None, graph_name='graph', print_to_screen=True):
+        out_folderpath=None, graph_name='graph', print_to_screen=True,
+        format='pdf'):
     """Draws a graph representation of the current state of the search space.
 
     All edges are directed. An edge between two modules represents the output of
@@ -58,11 +59,10 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
     """
     assert print_to_screen or out_folderpath is not None
 
-    g = graphviz.Digraph()
+    g = graphviz.Digraph(format=format)
     edge_fs = '10'
     h_fs = '10'
     penwidth = '1'
-
     def _draw_connected_input(ix_localname, ix):
         ox = ix.get_connected_output()
         if not draw_io_labels:
@@ -82,7 +82,8 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
             label=label, fontsize=edge_fs)
 
     def _draw_unconnected_input(ix_localname, ix):
-        g.node(ix.get_name(), shape='invhouse', penwidth=penwidth)
+        g.node(ix.get_name(), shape='invhouse', penwidth=penwidth,
+            fillcolor='skyblue', style='filled')
         g.edge(
             ix.get_name(),
             ix.get_module().get_name())
@@ -123,7 +124,8 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
                     for h_localname, h in iteritems(m.hyperps)]) + ">")
 
     def _draw_output_terminal(ox_localname, ox):
-        g.node(ox.get_name(), shape='house', penwidth=penwidth)
+        g.node(ox.get_name(), shape='house', penwidth=penwidth, 
+            fillcolor='skyblue', style='filled')
         g.edge(
             ox.get_module().get_name(),
             ox.get_name())
@@ -158,7 +160,8 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
             if isinstance(h, co.DependentHyperparameter):
                 _draw_dependent_hyperparameter_relations(h)
 
-            g.node(h.get_name(), fontsize=h_fs)
+            g.node(h.get_name(), fontsize=h_fs,
+                fillcolor='darkseagreen3', style='filled')
 
     # add the output terminals.
     for m in co.extract_unique_modules(output_lst):
@@ -167,28 +170,32 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
 
     # minor adjustments to attributes.
     for s in nodes:
-        g.node(s, shape='rectangle', penwidth=penwidth)
+        g.node(s, shape='rectangle', penwidth=penwidth, 
+            fillcolor='lightpink2', style='filled')
 
     if print_to_screen or out_folderpath is not None:
         g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
 def draw_graph_evolution(output_lst, hyperp_value_lst, out_folderpath, graph_name='graph',
-        draw_hyperparameters=True, draw_io_labels=True, draw_module_hyperparameter_info=True):
+        draw_hyperparameters=True, draw_io_labels=True, draw_module_hyperparameter_info=True, format='pdf'):
 
-    draw_fn = lambda i: draw_graph(output_lst,
+    draw_fn = lambda i, lst: draw_graph(lst,
             draw_hyperparameters=draw_hyperparameters,
             draw_io_labels=draw_io_labels,
             draw_module_hyperparameter_info=draw_module_hyperparameter_info,
             out_folderpath=out_folderpath,
             graph_name=graph_name + '-%d' % i,
-            print_to_screen=False)
+            print_to_screen=False,
+            format=format)
 
-    draw_fn(0)
+    draw_fn(0, [output_lst[0].module.inputs.values()[0].get_connected_output()])
     h_iter = co.unassigned_independent_hyperparameter_iterator(output_lst)
     for i, v in enumerate(hyperp_value_lst):
         h = h_iter.next()
         h.assign_value(v)
-        draw_fn(i + 1)
+        lst = [output_lst[0].module.inputs.values()[0].get_connected_output()]
+        draw_fn(i + 1, lst)
+        
 
     in_filepath_expr = ut.join_paths([
         out_folderpath, graph_name + '-{0..%d}.pdf' % len(hyperp_value_lst)])

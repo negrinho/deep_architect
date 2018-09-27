@@ -7,6 +7,32 @@ if sys.version_info[0] == 2:
 else:
     import pickle
 
+def load_fashion_mnist(flatten=False, one_hot=True, normalize_range=False, validation_size=5000):
+    from tensorflow import keras    
+    fashion_mnist = keras.datasets.fashion_mnist
+    train, val = fashion_mnist.load_data()
+
+    def _extract_fn(x):
+        X = x[0]
+        y = x[1]
+
+        if one_hot:
+            y_hot = np.zeros((y.size, y.max()+1))
+            y_hot[np.arange(y.size), y] = 1
+            y = y_hot
+
+        if normalize_range:
+            X = X / 255.0
+        return (X, y)
+
+    Xtrain, ytrain = _extract_fn(train)
+    Xtest, ytest = _extract_fn(val)
+    Xval = Xtrain[:validation_size]
+    yval = ytrain[:validation_size]
+    Xtrain = Xtrain[validation_size:]
+    ytrain = ytrain[validation_size:]
+    return (Xtrain, ytrain, Xval, yval, Xtest, ytest)
+
 def load_mnist(data_dir, flatten=False, one_hot=True, normalize_range=False):
     from tensorflow.examples.tutorials.mnist import input_data
     # print data_dir

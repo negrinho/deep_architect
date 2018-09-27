@@ -110,5 +110,5 @@ def dnn_net(num_classes):
         mo.siso_repeat(lambda: dnn_cell(
             D([64, 128, 256, 512, 1024]),
             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-            D([0.25, 0.5, 0.75])), D([1, 2])),
+            D([0.25, 0.5, 0.75])), D([1, 2, 3])),
         affine_simplified(D([num_classes]))])
