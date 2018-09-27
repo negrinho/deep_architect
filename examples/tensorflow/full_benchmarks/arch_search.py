@@ -44,7 +44,7 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
         models_sampled = state['models_finished']
         finished = state['models_finished']
 
-
+    best_accuracy = 0.
     while(finished < models_sampled or killed < comm.num_workers):
         # Search end conditions
         cont = num_samples == -1 or models_sampled < num_samples
@@ -79,8 +79,10 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
                     epochs = max(epochs, results['epoch'])
 
                 searcher.update(results['validation_accuracy'], searcher_eval_token)
+                best_accuracy = max(best_accuracy, results['validation_accuracy'])
                 finished += 1
                 if finished % save_every == 0:
+                    print('Models sampled: %d Best Accuracy: %f' % (finished, best_accuracy))
                     searcher.save_state(search_data_folder)
                     state = {
                         'models_finished': finished,

@@ -102,13 +102,13 @@ def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_k
         ], h_swap)])
 
 def dnn_net(num_classes):
-    h_nonlin_name = D(['relu', 'relu6', 'crelu', 'elu', 'softplus'])
-    h_swap = D([0, 1])
-    h_opt_drop = D([0, 1])
-    h_opt_bn = D([0, 1])
+    h_nonlin_name = D(['relu', 'relu6', 'crelu', 'elu', 'softplus'], name='Mutatable')
+    h_swap = D([0, 1], name='Mutatable')
+    h_opt_drop = D([0, 1], name='Mutatable')
+    h_opt_bn = D([0, 1], name='Mutatable')
     return mo.siso_sequential([
         mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]),
+            D([64, 128, 256, 512, 1024], name='Mutatable'),
             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-            D([0.25, 0.5, 0.75])), D([1, 2, 3])),
+            D([0.25, 0.5, 0.75], name='Mutatable')), D([1, 2, 3], name='Mutatable')),
         affine_simplified(D([num_classes]))])

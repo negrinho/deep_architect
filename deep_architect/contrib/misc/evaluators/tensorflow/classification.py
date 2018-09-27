@@ -1,13 +1,17 @@
 
 from __future__ import print_function
 
+import os
 import tensorflow as tf
+
 import numpy as np
 import deep_architect.core as co
 import deep_architect.helpers.tensorflow as htf
 import deep_architect.utils as ut
 import deep_architect.contrib.misc.gpu_utils as gpu_utils
 from six.moves import range
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
@@ -242,6 +246,6 @@ class SimpleClassifierEvaluator:
 
     def save_state(self, folder):
         pass
-    
+
     def load_state(self, folder):
         pass

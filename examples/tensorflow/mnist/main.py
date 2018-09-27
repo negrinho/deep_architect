@@ -1,5 +1,5 @@
 
-from deep_architect.contrib.misc.datasets.loaders import load_mnist
+from deep_architect.contrib.misc.datasets.loaders import load_fashion_mnist
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as css_dnn
@@ -18,7 +18,7 @@ class SSF0(mo.SearchSpaceFactory):
 def main():
     num_classes = 10
     num_samples = 16
-    (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_mnist('data/mnist')
+    (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_fashion_mnist('data/mnist')
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)
     test_dataset = InMemoryDataset(Xtest, ytest, False)
