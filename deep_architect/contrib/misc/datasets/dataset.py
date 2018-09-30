@@ -1,5 +1,5 @@
-
 import numpy as np
+
 
 class InMemoryDataset:
     """Wrapper around a dataset for iteration that allows cycling over the

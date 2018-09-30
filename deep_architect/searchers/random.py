@@ -1,5 +1,6 @@
 from deep_architect.searchers.common import random_specify, Searcher
 
+
 class RandomSearcher(Searcher):
     def __init__(self, search_space_fn):
         Searcher.__init__(self, search_space_fn)
@@ -16,5 +17,3 @@ class RandomSearcher(Searcher):
         if val > self.best_acc:
             self.best_acc = val
             self.best_vs = searcher_eval_token['vs']
-
-

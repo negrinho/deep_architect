@@ -3,8 +3,10 @@ import deep_architect.utils as ut
 import numpy as np
 import itertools
 
+
 def map_dict(d, fn):
-    return {k : fn(k, v) for (k, v) in d.iteritems()}
+    return {k: fn(k, v) for (k, v) in d.iteritems()}
+
 
 def zip_toggle(xs):
     """[[x1, ...], [x2, ...], [x3, ...]] --> [(x1, x2, .., xn) ...];
@@ -12,32 +14,40 @@ def zip_toggle(xs):
     assert isinstance(xs, list)
     return zip(*xs)
 
+
 def argsort(xs, fns, increasing=True):
     """The functions in fns are used to compute a key which are then used to
     construct a tuple which is then used to sort. The earlier keys are more
     important than the later ones.
     """
+
     def key_fn(x):
         return tuple([f(x) for f in fns])
 
     idxs, _ = zip_toggle(
-        sorted(enumerate(xs),
-            key=lambda x: key_fn(x[1]),
-            reverse=not increasing))
+        sorted(
+            enumerate(xs), key=lambda x: key_fn(x[1]), reverse=not increasing))
     return idxs
+
 
 def sort(xs, fns, increasing=True):
     idxs = argsort(xs, fns, increasing)
     return apply_permutation(xs, idxs)
 
+
 def apply_permutation(xs, idxs):
     assert len(set(idxs).intersection(range(len(xs)))) == len(xs)
     return [xs[i] for i in idxs]
 
+
 def keep_top_k(ds, fn, k, maximizing=True):
     return sort(ds, [fn], increasing=not maximizing)[:k]
 
-def generate_indices(num_items, max_num_indices=32, increase_factor=2, use_multiplicative_increases=True):
+
+def generate_indices(num_items,
+                     max_num_indices=32,
+                     increase_factor=2,
+                     use_multiplicative_increases=True):
     assert not (use_multiplicative_increases and increase_factor == 1)
     idxs = []
     v = 0
@@ -51,6 +61,7 @@ def generate_indices(num_items, max_num_indices=32, increase_factor=2, use_multi
             break
     return idxs
 
+
 def sort_sequences(sequence_lst_lst, value_lst, maximizing):
     """Sorts a list of lists of sequences according to value_lst.
 
@@ -58,12 +69,22 @@ def sort_sequences(sequence_lst_lst, value_lst, maximizing):
     """
     assert all(len(seq) == len(value_lst) for seq in sequence_lst_lst)
     idxs = argsort(value_lst, [lambda x: x], increasing=not maximizing)
-    sorted_sequence_lst = [apply_permutation(seq, idxs) for seq in sequence_lst_lst]
+    sorted_sequence_lst = [
+        apply_permutation(seq, idxs) for seq in sequence_lst_lst
+    ]
     return sorted_sequence_lst
 
-def time_calibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True,
-        max_num_plots=8, increase_factor=2, use_multiplicative_increases=True,
-        time_axis_label=None, value_axis_label=None, show=True, plot_filepath=None):
+
+def time_calibration_plot(time_sequence_lst,
+                          value_sequence_lst,
+                          maximizing=True,
+                          max_num_plots=8,
+                          increase_factor=2,
+                          use_multiplicative_increases=True,
+                          time_axis_label=None,
+                          value_axis_label=None,
+                          show=True,
+                          plot_filepath=None):
     """Given two lists encoding the evaluation performance across time of different models,
     generates a graph showing the performance across time of models at different
     ranks.
@@ -114,24 +135,30 @@ def time_calibration_plot(time_sequence_lst, value_sequence_lst, maximizing=True
         [time_sequence_lst, value_sequence_lst], value_lst, maximizing)
 
     num_sequences = len(time_sequence_lst)
-    indices = generate_indices(num_sequences, max_num_plots,
-        increase_factor, use_multiplicative_increases)
+    indices = generate_indices(num_sequences, max_num_plots, increase_factor,
+                               use_multiplicative_increases)
 
-    plotter = vi.LinePlot(title='Total number of sequences: %d' % num_sequences,
-        xlabel=time_axis_label, ylabel=value_axis_label)
+    plotter = vi.LinePlot(
+        title='Total number of sequences: %d' % num_sequences,
+        xlabel=time_axis_label,
+        ylabel=value_axis_label)
     for idx in indices:
         plotter.add_line(sorted_time_sequence_lst[idx],
-            sorted_value_sequence_lst[idx], str(idx))
+                         sorted_value_sequence_lst[idx], str(idx))
     plotter.plot(show=show, fpath=plot_filepath)
 
-def get_value_at_time(query_time, time_sequence, value_sequence, maximizing=True):
+
+def get_value_at_time(query_time,
+                      time_sequence,
+                      value_sequence,
+                      maximizing=True):
     """Gets the value at a specific time step.
 
     It is assume that `time_sequence` is ordered in increasing order of time.
     """
     assert len(time_sequence) == len(value_sequence)
     if query_time < time_sequence[0]:
-        v = - np.inf if maximizing else np.inf
+        v = -np.inf if maximizing else np.inf
     elif query_time == time_sequence[0]:
         v = value_sequence[0]
     elif query_time >= time_sequence[-1]:
@@ -156,10 +183,21 @@ def get_value_at_time(query_time, time_sequence, value_sequence, maximizing=True
                     assert False
     return v
 
-def calibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
-        max_num_ranks=8, rank_increase_factor=2, rank_multiplicative_increases=True,
-        start_time=1e-3, num_time_instants=16, time_increase_factor=2, time_multiplicative_increases=True,
-        time_label=None, value_label=None, show=True, table_filepath=None):
+
+def calibration_table(time_sequence_lst,
+                      value_sequence_lst,
+                      maximizing=True,
+                      max_num_ranks=8,
+                      rank_increase_factor=2,
+                      rank_multiplicative_increases=True,
+                      start_time=1e-3,
+                      num_time_instants=16,
+                      time_increase_factor=2,
+                      time_multiplicative_increases=True,
+                      time_label=None,
+                      value_label=None,
+                      show=True,
+                      table_filepath=None):
     """Gets the rank of different models at different time steps.
 
     The true rank of a model is determined by the best performance that it
@@ -181,22 +219,29 @@ def calibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
 
     num_sequences = len(time_sequence_lst)
     indices = generate_indices(num_sequences, max_num_ranks,
-        rank_increase_factor, rank_multiplicative_increases)
+                               rank_increase_factor,
+                               rank_multiplicative_increases)
 
     if time_multiplicative_increases:
-        time_instants = [start_time * (time_increase_factor ** i)
-            for i in xrange(num_time_instants)]
+        time_instants = [
+            start_time * (time_increase_factor**i)
+            for i in xrange(num_time_instants)
+        ]
     else:
-        time_instants = [start_time + i * time_increase_factor
-            for i in xrange(num_time_instants)]
+        time_instants = [
+            start_time + i * time_increase_factor
+            for i in xrange(num_time_instants)
+        ]
 
     rows = []
     for t in time_instants:
         values_at_t = []
         for i in xrange(num_sequences):
-            v = get_value_at_time(t,
-                    sorted_time_sequence_lst[i], sorted_value_sequence_lst[i],
-                    maximizing=maximizing)
+            v = get_value_at_time(
+                t,
+                sorted_time_sequence_lst[i],
+                sorted_value_sequence_lst[i],
+                maximizing=maximizing)
             values_at_t.append(v)
 
         ranks = argsort(values_at_t, [lambda x: x], increasing=not maximizing)
@@ -225,12 +270,20 @@ def calibration_table(time_sequence_lst, value_sequence_lst, maximizing=True,
     if show:
         print "\n".join(table_lines)
 
+
 # TODO: write the documentation.
 # TODO: make the corresponding change in the other one.
-def budget_calibration_plot(reference_value_sequence, other_value_sequence_lst,
-        maximizing=True, reference_label=None, other_label_lst=None,
-        max_num_guidelines=8, increase_factor=2, use_multiplicative_increases=True,
-        value_axis_label=None, show=True, plot_filepath=None):
+def budget_calibration_plot(reference_value_sequence,
+                            other_value_sequence_lst,
+                            maximizing=True,
+                            reference_label=None,
+                            other_label_lst=None,
+                            max_num_guidelines=8,
+                            increase_factor=2,
+                            use_multiplicative_increases=True,
+                            value_axis_label=None,
+                            show=True,
+                            plot_filepath=None):
     """In comparison to ``time_calibration_plot``, this function is helpful to
     determine an appropriate resource budget to evaluate models, i.e., not just a
     time budget. To do so, this function requires that the same models be
@@ -241,18 +294,23 @@ def budget_calibration_plot(reference_value_sequence, other_value_sequence_lst,
     budget.
     """
 
-    assert all(len(reference_value_sequence) == len(seq) for seq in other_value_sequence_lst)
-    assert other_label_lst is None or (len(other_value_sequence_lst) == len(other_label_lst))
+    assert all(
+        len(reference_value_sequence) == len(seq)
+        for seq in other_value_sequence_lst)
+    assert other_label_lst is None or (
+        len(other_value_sequence_lst) == len(other_label_lst))
 
     argsort_fn = lambda seq: argsort(seq, [lambda x: x], increasing=not maximizing)
 
     num_evals = len(reference_value_sequence)
     ref_sorting_idxs = argsort_fn(reference_value_sequence)
-    sorted_ref_seq = apply_permutation(reference_value_sequence, ref_sorting_idxs)
+    sorted_ref_seq = apply_permutation(reference_value_sequence,
+                                       ref_sorting_idxs)
 
     # creating the initial values for the guidelines.
     guideline_idxs = generate_indices(num_evals, max_num_guidelines,
-        increase_factor, use_multiplicative_increases)
+                                      increase_factor,
+                                      use_multiplicative_increases)
     guideline_values_lst = [[sorted_ref_seq[idx]] for idx in guideline_idxs]
     guideline_idxs_lst = [[idx] for idx in guideline_idxs]
 

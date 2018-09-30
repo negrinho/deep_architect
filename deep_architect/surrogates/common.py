@@ -1,9 +1,11 @@
 import deep_architect.core as co
 from six import iteritems
 
+
 class SurrogateModel:
     """Abstract class for a surrogate model.
     """
+
     def eval(self, feats):
         """ Returns a prediction of performance (or other relevant metrics),
         given a feature representation of the architecture.
@@ -22,6 +24,7 @@ class SurrogateModel:
             the configuration of the surrogate model instance.
         """
         raise NotImplementedError
+
 
 # extract some simple features from the network. useful for smbo surrogate models.
 def extract_features(inputs, outputs, hs):
@@ -56,8 +59,10 @@ def extract_features(inputs, outputs, hs):
 
     # getting all the modules
     module_memo = []
+
     def fn(m):
         module_memo.append(m)
+
     co.traverse_backward(outputs.values(), fn)
 
     for m in module_memo:
@@ -75,8 +80,8 @@ def extract_features(inputs, outputs, hs):
 
         # module hyperparameters
         for h_localname, h in iteritems(m.hyperps):
-            mh_feats = "%s/%s : %s = %s" % (
-                m.get_name(), h_localname, h.get_name(), h.get_value())
+            mh_feats = "%s/%s : %s = %s" % (m.get_name(), h_localname,
+                                            h.get_name(), h.get_value())
             module_hyperp_feats.append(mh_feats)
 
     # other features
@@ -84,7 +89,9 @@ def extract_features(inputs, outputs, hs):
         oh_feats = "%s : %s = %s" % (h_localname, h.get_name(), h.get_value())
         other_hyperps_feats.append(oh_feats)
 
-    return {'module_feats' : module_feats,
-            'connection_feats' : connection_feats,
-            'module_hyperp_feats' : module_hyperp_feats,
-            'other_hyperp_feats' : other_hyperps_feats }
+    return {
+        'module_feats': module_feats,
+        'connection_feats': connection_feats,
+        'module_hyperp_feats': module_hyperp_feats,
+        'other_hyperp_feats': other_hyperps_feats
+    }

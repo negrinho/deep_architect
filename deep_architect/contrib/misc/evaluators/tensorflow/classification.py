@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 import tensorflow as tf
@@ -9,6 +8,7 @@ import deep_architect.utils as ut
 import deep_architect.contrib.misc.gpu_utils as gpu_utils
 from six.moves import range
 
+
 class SimpleClassifierEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
@@ -17,13 +17,24 @@ class SimpleClassifierEvaluator:
     epochs.
     """
 
-    def __init__(self, train_dataset, val_dataset, num_classes, model_path,
-            max_num_training_epochs=200, max_eval_time_in_minutes=180.0,
-            stop_patience=20, save_patience=2,
-            optimizer_type='adam', batch_size=256,
-            learning_rate_patience=7, learning_rate_init=1e-3,
-            learning_rate_min=1e-6, learning_rate_mult=0.1,
-            display_step=1, log_output_to_terminal=True, test_dataset=None):
+    def __init__(self,
+                 train_dataset,
+                 val_dataset,
+                 num_classes,
+                 model_path,
+                 max_num_training_epochs=200,
+                 max_eval_time_in_minutes=180.0,
+                 stop_patience=20,
+                 save_patience=2,
+                 optimizer_type='adam',
+                 batch_size=256,
+                 learning_rate_patience=7,
+                 learning_rate_init=1e-3,
+                 learning_rate_min=1e-6,
+                 learning_rate_mult=0.1,
+                 display_step=1,
+                 log_output_to_terminal=True,
+                 test_dataset=None):
 
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
@@ -45,7 +56,8 @@ class SimpleClassifierEvaluator:
         self.model_path = model_path
         self.test_dataset = test_dataset
 
-    def _compute_accuracy(self, sess, X_pl, y_pl, num_correct, dataset, eval_feed):
+    def _compute_accuracy(self, sess, X_pl, y_pl, num_correct, dataset,
+                          eval_feed):
         nc = 0
         num_left = dataset.get_num_examples()
         while num_left > 0:
@@ -64,7 +76,7 @@ class SimpleClassifierEvaluator:
         X_pl = tf.placeholder("float", [None] + self.in_dim)
         y_pl = tf.placeholder("float", [None, self.num_classes])
         lr_pl = tf.placeholder("float")
-        co.forward({inputs['In'] : X_pl})
+        co.forward({inputs['In']: X_pl})
         logits = outputs['Out'].val
         train_feed, eval_feed = htf.get_feed_dicts(outputs.values())
         saver = tf.train.Saver()
@@ -78,7 +90,8 @@ class SimpleClassifierEvaluator:
         elif self.optimizer_type == 'sgd':
             optimizer = tf.train.GradientDescentOptimizer(learning_rate=lr_pl)
         elif self.optimizer_type == 'sgd_mom':
-            optimizer = tf.train.MomentumOptimizer(learning_rate=lr_pl, momentum=0.99)
+            optimizer = tf.train.MomentumOptimizer(
+                learning_rate=lr_pl, momentum=0.99)
         else:
             raise ValueError("Unknown optimizer.")
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -97,15 +110,21 @@ class SimpleClassifierEvaluator:
         with tf.Session(config=config) as sess:
             sess.run(init)
 
-            learning_rate_init = self.learning_rate_init if 'learning_rate_init' not in hs else hs['learning_rate_init'].val
-            learning_rate_mult = self.learning_rate_mult if 'learning_rate_mult' not in hs else hs['learning_rate_mult'].val
-            learning_rate_min = self.learning_rate_min if 'learning_rate_min' not in hs else hs['learning_rate_min'].val
-            stop_patience = self.stop_patience if 'stop_patience' not in hs else hs['stop_patience'].val
-            learning_rate_patience = self.learning_rate_patience if 'learning_rate_patience' not in hs else hs['learning_rate_patience'].val
-            save_patience = self.save_patience if 'save_patience' not in hs else hs['save_patience'].val
+            learning_rate_init = self.learning_rate_init if 'learning_rate_init' not in hs else hs[
+                'learning_rate_init'].val
+            learning_rate_mult = self.learning_rate_mult if 'learning_rate_mult' not in hs else hs[
+                'learning_rate_mult'].val
+            learning_rate_min = self.learning_rate_min if 'learning_rate_min' not in hs else hs[
+                'learning_rate_min'].val
+            stop_patience = self.stop_patience if 'stop_patience' not in hs else hs[
+                'stop_patience'].val
+            learning_rate_patience = self.learning_rate_patience if 'learning_rate_patience' not in hs else hs[
+                'learning_rate_patience'].val
+            save_patience = self.save_patience if 'save_patience' not in hs else hs[
+                'save_patience'].val
 
-            best_val_acc = - np.inf
-            best_val_acc_saved = - np.inf
+            best_val_acc = -np.inf
+            best_val_acc_saved = -np.inf
             stop_counter = stop_patience
             rate_counter = learning_rate_patience
             save_counter = save_patience
@@ -113,7 +132,8 @@ class SimpleClassifierEvaluator:
             timer_manager.create_timer('eval')
 
             # getting the gpu_id based on the environment.
-            if gpu_utils.is_environment_variable_defined('CUDA_VISIBLE_DEVICES'):
+            if gpu_utils.is_environment_variable_defined(
+                    'CUDA_VISIBLE_DEVICES'):
                 s = gpu_utils.get_environment_variable('CUDA_VISIBLE_DEVICES')
                 s_lst = s.split(',')
                 if len(s_lst) == 1 and len(s_lst[0]) > 0:
@@ -128,11 +148,13 @@ class SimpleClassifierEvaluator:
                     gpu_id = None
 
             lr = learning_rate_init
-            num_batches = int(self.train_dataset.get_num_examples() / self.batch_size)
+            num_batches = int(
+                self.train_dataset.get_num_examples() / self.batch_size)
             for epoch in range(self.max_num_training_epochs):
                 avg_loss = 0.
                 for _ in range(num_batches):
-                    X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
+                    X_batch, y_batch = self.train_dataset.next_batch(
+                        self.batch_size)
                     train_feed.update({X_pl: X_batch, y_pl: y_batch, lr_pl: lr})
 
                     _, c = sess.run([optimizer, loss], feed_dict=train_feed)
@@ -140,34 +162,43 @@ class SimpleClassifierEvaluator:
 
                     # if spent more time than budget, exit.
                     if (timer_manager.get_time_since_event(
-                        'eval', 'start', 'minutes') > self.max_eval_time_in_minutes):
+                            'eval', 'start', 'minutes') >
+                            self.max_eval_time_in_minutes):
                         break
 
                 # early stopping
                 val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
-                    self.val_dataset, eval_feed)
+                                                 self.val_dataset, eval_feed)
 
                 # Display logs per epoch step
                 if self.log_output_to_terminal and epoch % self.display_step == 0:
-                    print("time:", "%7.1f" % timer_manager.get_time_since_event('eval', 'start'),
-                          "epoch:", '%04d' % (epoch + 1),
+                    print("time:", "%7.1f" % timer_manager.get_time_since_event(
+                        'eval', 'start'), "epoch:", '%04d' % (epoch + 1),
                           "loss:", "{:.9f}".format(avg_loss),
                           "validation_accuracy:", "%.5f" % val_acc,
                           "learning_rate:", '%.3e' % lr)
 
                 d = {
-                    'validation_accuracy' : val_acc,
-                    'training_loss' : avg_loss,
-                    'epoch_number' : epoch + 1,
-                    'learning_rate' : lr,
-                    'time_in_minutes' : timer_manager.get_time_since_event('eval', 'start', units='minutes'),
+                    'validation_accuracy':
+                    val_acc,
+                    'training_loss':
+                    avg_loss,
+                    'epoch_number':
+                    epoch + 1,
+                    'learning_rate':
+                    lr,
+                    'time_in_minutes':
+                    timer_manager.get_time_since_event(
+                        'eval', 'start', units='minutes'),
                 }
                 # adding information about gpu utilization if available.
                 if gpu_id is not None:
                     gpus = gpu_utils.get_gpu_information()
                     d.update({
-                        'gpu_utilization_in_percent' : gpus[gpu_id]['gpu_utilization_in_percent'],
-                        'gpu_memory_utilization_in_gigabytes' : gpus[gpu_id]['gpu_memory_utilization_in_gigabytes']
+                        'gpu_utilization_in_percent':
+                        gpus[gpu_id]['gpu_utilization_in_percent'],
+                        'gpu_memory_utilization_in_gigabytes':
+                        gpus[gpu_id]['gpu_memory_utilization_in_gigabytes']
                     })
                 seqs.append(d)
 
@@ -198,8 +229,9 @@ class SimpleClassifierEvaluator:
                             best_val_acc_saved = val_acc
 
                 # if spent more time than budget, exit.
-                if (timer_manager.get_time_since_event(
-                    'eval', 'start', 'minutes') > self.max_eval_time_in_minutes):
+                if (timer_manager.get_time_since_event('eval', 'start',
+                                                       'minutes') >
+                        self.max_eval_time_in_minutes):
                     break
 
             # if the model saved has better performance than the current model,
@@ -212,27 +244,29 @@ class SimpleClassifierEvaluator:
 
             timer_manager.tick_timer('eval')
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
-                self.val_dataset, eval_feed)
+                                             self.val_dataset, eval_feed)
             t_infer = (timer_manager.get_time_since_last_tick(
                 'eval', 'miliseconds') / self.val_dataset.get_num_examples())
 
             print("Validation accuracy: %f" % val_acc)
             seqs_dict = seqs.get_dict()
-            results = {'validation_accuracy' : val_acc,
-                       'num_parameters' : float(htf.get_num_trainable_parameters()),
-                       'inference_time_per_example_in_miliseconds' : t_infer,
-                       'num_training_epochs' : seqs_dict['epoch_number'],
-                       'sequences' : seqs_dict
-                       }
+            results = {
+                'validation_accuracy': val_acc,
+                'num_parameters': float(htf.get_num_trainable_parameters()),
+                'inference_time_per_example_in_miliseconds': t_infer,
+                'num_training_epochs': seqs_dict['epoch_number'],
+                'sequences': seqs_dict
+            }
             if 'gpu_utilization_in_percent' in seqs_dict:
                 results['average_gpu_utilization_in_percent'] = np.mean(
                     seqs_dict['gpu_utilization_in_percent'])
-                results['average_gpu_memory_utilization_in_gigabytes'] = np.mean(
-                    seqs_dict['gpu_memory_utilization_in_gigabytes'])
+                results[
+                    'average_gpu_memory_utilization_in_gigabytes'] = np.mean(
+                        seqs_dict['gpu_memory_utilization_in_gigabytes'])
 
             if self.test_dataset != None:
                 test_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
-                    self.test_dataset, eval_feed)
+                                                  self.test_dataset, eval_feed)
                 print("Test accuracy: %f" % test_acc)
                 results['test_accuracy'] = test_acc
 
@@ -242,6 +276,6 @@ class SimpleClassifierEvaluator:
 
     def save_state(self, folder):
         pass
-    
+
     def load_state(self, folder):
         pass

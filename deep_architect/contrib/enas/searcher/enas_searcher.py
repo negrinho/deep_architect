@@ -16,6 +16,7 @@ from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 tfe = tf.contrib.eager
 
+
 class ENASSearcher(Searcher):
     def __init__(self,
                  search_space_fn,
@@ -61,7 +62,7 @@ class ENASSearcher(Searcher):
                                     use_locking=True)
         self.train_step = tfe.Variable(
             0, dtype=tf.int32, trainable=False, name="train_step")
-        
+
         all_variables = self.variables + self.opt.variables() + [self.train_step]
         self.saver = tfe.Saver(all_variables)
 
@@ -94,7 +95,7 @@ class ENASSearcher(Searcher):
             loss = self._train(val, cfg_d['arc'])
             if self.train_step % 1 == 0:
                 print("Step: %d,    Reward: %f,    Loss:%f" % (self.train_step, val, loss.numpy()))
-            
+
 
     def save_state(self, folder_name):
         checkpoint_prefix = os.path.join(folder_name, "enas_searcher")
@@ -195,9 +196,9 @@ class ENASSearcher(Searcher):
 
     def _train(self, valid_acc, prev_arc):
         with tf.device('/gpu:0'):
-            with tf.GradientTape() as tape:    
+            with tf.GradientTape() as tape:
                 reward = valid_acc
-                
+
                 anchors = []
                 anchors_w_1 = []
 
@@ -272,12 +273,12 @@ class ENASSearcher(Searcher):
 
                 entropys = tf.stack(entropys)
                 sample_entropy = tf.reduce_sum(entropys)
-                
+
                 skip_penaltys = tf.stack(skip_penaltys)
                 skip_penaltys = tf.reduce_mean(skip_penaltys)
-                
+
                 reward += self.entropy_weight * sample_entropy
-                
+
                 self.baseline.assign_sub((1 - self.bl_dec) * (self.baseline - reward))
 
                 loss = sample_log_prob * (reward - self.baseline)

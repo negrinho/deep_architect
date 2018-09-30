@@ -2,6 +2,7 @@ import numpy as np
 import deep_architect.core as co
 import deep_architect.hyperparameters as hp
 
+
 class Searcher:
     """Abstract base class from which new searchers should inherit from.
 
@@ -21,6 +22,7 @@ class Searcher:
             specifying all hyperparameters (i.e., both those arising in the
             graph part and those in the dictionary of hyperparameters).
     """
+
     def __init__(self, search_space_fn):
         self.search_space_fn = search_space_fn
 
@@ -80,6 +82,7 @@ def random_specify_hyperparameter(hyperp):
         raise ValueError
     return v
 
+
 def random_specify(output_lst, hyperp_lst=None):
     """Chooses random values to all the unspecified hyperparameters.
 
@@ -97,10 +100,12 @@ def random_specify(output_lst, hyperp_lst=None):
             rate.
     """
     vs = []
-    for h in co.unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst):
+    for h in co.unassigned_independent_hyperparameter_iterator(
+            output_lst, hyperp_lst):
         v = random_specify_hyperparameter(h)
         vs.append(v)
     return vs
+
 
 def specify(output_lst, hyperp_lst, vs):
     """Specify the parameters in the search space using the sequence of values
@@ -125,5 +130,7 @@ def specify(output_lst, hyperp_lst, vs):
             rate.
         vs (list[object]): List of values used to specify the hyperparameters.
     """
-    for i, h in enumerate(co.unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst)):
+    for i, h in enumerate(
+            co.unassigned_independent_hyperparameter_iterator(
+                output_lst, hyperp_lst)):
         h.assign_value(vs[i])

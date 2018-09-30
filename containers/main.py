@@ -2,10 +2,12 @@ import subprocess
 import os
 from six import iteritems
 
+
 ### Auxiliary functions.
 def run_bash_command(cmd):
     str_output = subprocess.check_output(cmd, shell=True)
     return str_output
+
 
 def write_textfile(filepath, lines, append=False, with_newline=True):
     mode = 'a' if append else 'w'
@@ -16,17 +18,22 @@ def write_textfile(filepath, lines, append=False, with_newline=True):
             if with_newline:
                 f.write("\n")
 
+
 def file_exists(path):
     return os.path.isfile(path)
+
 
 def folder_exists(path):
     return os.path.isdir(path)
 
+
 def path_prefix(path):
     return os.path.split(path)[0]
 
+
 def create_folder(folderpath,
-        abort_if_exists=True, create_parent_folders=False):
+                  abort_if_exists=True,
+                  create_parent_folders=False):
     assert not file_exists(folderpath)
     assert create_parent_folders or folder_exists(path_prefix(folderpath))
     assert not (abort_if_exists and folder_exists(folderpath))
@@ -34,49 +41,54 @@ def create_folder(folderpath,
     if not folder_exists(folderpath):
         os.makedirs(folderpath)
 
+
 def join_paths(paths):
     return os.path.join(*paths)
+
 
 def create_bash_script(cmd_lines, filepath):
     script_lines = ['#!/bin/bash'] + cmd_lines
     write_textfile(filepath, script_lines)
     run_bash_command('chmod +x %s' % filepath)
 
+
 ### Configurations for building the containers.
 def get_key(is_py27, is_gpu):
-    return  ('py27' if is_py27 else 'py36', 'gpu' if is_gpu else 'cpu')
+    return ('py27' if is_py27 else 'py36', 'gpu' if is_gpu else 'cpu')
+
 
 def get_config(is_py27, is_gpu):
     """Gets the config dictionary associated to the type of container to be built.
     """
     config_d = {
-        ('py27', 'cpu') : {
-            'tag' : 'all-py27-cpu',
-            'extra_py_packages' : [],
-            'extra_apt_packages' : [],
-            'extra_bash_commands' : [],
-            },
-        ('py27', 'gpu') : {
-            'tag' : 'all-py27',
-            'extra_py_packages' : [],
-            'extra_apt_packages' : [],
-            'extra_bash_commands' : [],
-            },
-        ('py36', 'cpu') : {
-            'tag' : 'all-py36-cpu',
-            'extra_py_packages' : [],
-            'extra_apt_packages' : [],
-            'extra_bash_commands' : [],
-            },
-        ('py36', 'gpu') : {
-            'tag' : 'all-py36',
-            'extra_py_packages' : [],
-            'extra_apt_packages' : [],
-            'extra_bash_commands' : [],
-            }
+        ('py27', 'cpu'): {
+            'tag': 'all-py27-cpu',
+            'extra_py_packages': [],
+            'extra_apt_packages': [],
+            'extra_bash_commands': [],
+        },
+        ('py27', 'gpu'): {
+            'tag': 'all-py27',
+            'extra_py_packages': [],
+            'extra_apt_packages': [],
+            'extra_bash_commands': [],
+        },
+        ('py36', 'cpu'): {
+            'tag': 'all-py36-cpu',
+            'extra_py_packages': [],
+            'extra_apt_packages': [],
+            'extra_bash_commands': [],
+        },
+        ('py36', 'gpu'): {
+            'tag': 'all-py36',
+            'extra_py_packages': [],
+            'extra_apt_packages': [],
+            'extra_bash_commands': [],
         }
+    }
     key = ('py27' if is_py27 else 'py36', 'gpu' if is_gpu else 'cpu')
     return key, config_d[key]
+
 
 extra_py_packages = [
     # for documentation.
@@ -108,6 +120,7 @@ extra_apt_packages = [
     'python-tk',
 ]
 
+
 def create_singularity_container(config_d, out_folderpath):
     header_lines = [
         'Bootstrap: docker',
@@ -126,7 +139,7 @@ def create_singularity_container(config_d, out_folderpath):
         '    PIP_INSTALL="python -m pip --no-cache-dir install --upgrade"',
         '    APT_INSTALL="apt-get install -y --no-install-recommends"',
         '    apt-get update',
-        '    echo > /bin/nvidia-smi', # necessary for the --nv flag in some cases.
+        '    echo > /bin/nvidia-smi',  # necessary for the --nv flag in some cases.
     ]
     for cmd in extra_bash_commands + config_d['extra_bash_commands']:
         post_lines.append('    %s' % cmd)
@@ -158,21 +171,21 @@ def create_singularity_container(config_d, out_folderpath):
 
     # script for creating the container.
     container_filepath = join_paths([out_folderpath, 'deep_architect.img'])
-    create_bash_script(
-        ['sudo singularity build %s %s' % (container_filepath, recipe_filepath)],
-        join_paths([out_folderpath, 'build.sh'])
-    )
+    create_bash_script([
+        'sudo singularity build %s %s' % (container_filepath, recipe_filepath)
+    ], join_paths([out_folderpath, 'build.sh']))
+
 
 # TODO: create the equivalent docker containers.
 def create_docker_container(config_d, recipe_filepath):
     raise NotImplementedError
 
+
 # TODO: change to a make file later.
 def create_build_all_script(out_folderpath, folderpath_lst):
-    create_bash_script(
-        ['./%s/build.sh' % path for path in folderpath_lst],
-        join_paths([out_folderpath, 'build.sh'])
-    )
+    create_bash_script(['./%s/build.sh' % path for path in folderpath_lst],
+                       join_paths([out_folderpath, 'build.sh']))
+
 
 def create_makefile(out_folderpath, container_config_lst):
     fn = lambda rule_name: {
@@ -180,12 +193,13 @@ def create_makefile(out_folderpath, container_config_lst):
         'target_lst' : [],
         'command_lst' : []}
     rule_name_to_config = {
-        'py27' : fn('py27'),
-        'py36' : fn('py36'),
-        'cpu' : fn('cpu'),
-        'gpu' : fn('gpu'),
-        'all' : fn('all')
+        'py27': fn('py27'),
+        'py36': fn('py36'),
+        'cpu': fn('cpu'),
+        'gpu': fn('gpu'),
+        'all': fn('all')
     }
+
     def add_to_lists(cfg):
         lst = [rule_name_to_config['all']]
         lst.append(rule_name_to_config['py27' if cfg['is_py27'] else 'py36'])
@@ -195,20 +209,22 @@ def create_makefile(out_folderpath, container_config_lst):
             x['command_lst'].append(cfg['command'])
 
     for cfg in container_config_lst:
-        assert cfg['is_singularity'] # only for singularity for now.
+        assert cfg['is_singularity']  # only for singularity for now.
         cfg['target'] = join_paths([cfg['folderpath'], 'deep_architect.img'])
-        cfg['command'] = join_paths(['./%s' % join_paths([cfg['folderpath'], 'build.sh'])])
+        cfg['command'] = join_paths(
+            ['./%s' % join_paths([cfg['folderpath'], 'build.sh'])])
         add_to_lists(cfg)
 
     # create scripts for all commands.
     for k, d in iteritems(rule_name_to_config):
-        create_bash_script(
-            d['command_lst'],
-            join_paths([out_folderpath, 'build_%s.sh' % k]))
+        create_bash_script(d['command_lst'],
+                           join_paths([out_folderpath,
+                                       'build_%s.sh' % k]))
 
     create_bash_script(
         ['rm %s' % t for t in rule_name_to_config['all']['target_lst']],
         join_paths([out_folderpath, 'clean.sh']))
+
 
 def main():
     container_folderpath_lst = []
@@ -216,22 +232,25 @@ def main():
     for is_py27 in [False, True]:
         for is_gpu in [False, True]:
             key, config_d = get_config(is_py27, is_gpu)
-            out_folderpath = join_paths([
-                'containers', 'singularity', '-'.join(['darch'] + list(key))])
-            create_folder(out_folderpath,
-                abort_if_exists=False, create_parent_folders=True)
+            out_folderpath = join_paths(
+                ['containers', 'singularity', '-'.join(['darch'] + list(key))])
+            create_folder(
+                out_folderpath,
+                abort_if_exists=False,
+                create_parent_folders=True)
             create_singularity_container(config_d, out_folderpath)
             container_folderpath_lst.append(out_folderpath)
             container_config_lst.append({
-                'folderpath' : out_folderpath,
-                'is_singularity' : True,
-                'is_py27' : is_py27,
-                'is_gpu' : is_gpu
+                'folderpath': out_folderpath,
+                'is_singularity': True,
+                'is_py27': is_py27,
+                'is_gpu': is_gpu
             })
     create_build_all_script('containers', container_folderpath_lst)
     create_makefile('containers', container_config_lst)
 
-if __name__== '__main__':
+
+if __name__ == '__main__':
     main()
 
 # TODO: do the generation of the Docker containers. Should be similar to the singularity ones.

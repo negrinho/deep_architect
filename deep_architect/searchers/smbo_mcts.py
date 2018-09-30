@@ -1,16 +1,15 @@
-
-
 from deep_architect.searchers.common import random_specify, specify, Searcher
 from deep_architect.searchers.mcts import MCTSSearcher
 from deep_architect.surrogates.common import extract_features
 import numpy as np
 
+
 # surrogate with MCTS optimization.
 # TODO: make sure that can keep the tree while the surrogate changes below me.
 # TODO: I would just compute the std for the scores.
 class SMBOSearcherWithMCTSOptimizer(Searcher):
-    def __init__(self, search_space_fn, surrogate_model, num_samples,
-        eps_prob, tree_refit_interval):
+    def __init__(self, search_space_fn, surrogate_model, num_samples, eps_prob,
+                 tree_refit_interval):
         Searcher.__init__(self, search_space_fn)
         self.surr_model = surrogate_model
         self.mcts = MCTSSearcher(self.search_space_fn)
@@ -28,7 +27,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
         else:
             best_model = None
             best_vs = None
-            best_score = - np.inf
+            best_score = -np.inf
             for _ in range(self.num_samples):
                 (inputs, outputs, hyperps, vs, m_cfg_d) = self.mcts.sample()
                 feats = extract_features(inputs, outputs, hyperps)
@@ -41,7 +40,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
                 self.mcts.update(score, m_cfg_d)
             inputs, outputs, hyperps = best_model
 
-        searcher_eval_token = {'vs' : best_vs}
+        searcher_eval_token = {'vs': best_vs}
         return inputs, outputs, hyperps, best_vs, searcher_eval_token
 
     def update(self, val, searcher_eval_token):

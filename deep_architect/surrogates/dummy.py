@@ -1,6 +1,7 @@
 from deep_architect.surrogates.common import SurrogateModel
 import numpy as np
 
+
 class DummySurrogate(SurrogateModel):
     def __init__(self):
         self.val_lst = []

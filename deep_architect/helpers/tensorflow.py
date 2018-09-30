@@ -3,6 +3,7 @@ import deep_architect.core as co
 import tensorflow as tf
 import numpy as np
 
+
 class TensorflowModule(co.Module):
     """Class for taking Tensorflow code and wrapping it in a darch module.
 
@@ -55,8 +56,14 @@ class TensorflowModule(co.Module):
         scope (deep_architect.core.Scope, optional): Scope where the module will be
             registered.
     """
-    def __init__(self, name, name_to_hyperp, compile_fn,
-            input_names, output_names, scope=None):
+
+    def __init__(self,
+                 name,
+                 name_to_hyperp,
+                 compile_fn,
+                 input_names,
+                 output_names,
+                 scope=None):
         co.Module.__init__(self, scope, name)
 
         self._register(input_names, output_names, name_to_hyperp)
@@ -80,16 +87,26 @@ class TensorflowModule(co.Module):
     def _update(self):
         pass
 
-def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
-    return TensorflowModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
 
-def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn, name_to_hyperp, scope=None):
+def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
+    return TensorflowModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
+                            scope).get_io()
+
+
+def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn,
+                                                 name_to_hyperp,
+                                                 scope=None):
     def compile_fn(di, dh):
         m = layer_fn(**dh)
+
         def forward_fn(di):
-            return {"Out" : m(di["In"])}
+            return {"Out": m(di["In"])}
+
         return forward_fn
-    return siso_tensorflow_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)
+
+    return siso_tensorflow_module(layer_fn.__name__, compile_fn,
+                                  name_to_hyperp, scope)
+
 
 def get_feed_dicts(output_lst):
     """Get the training and evaluation dictionaries that map placeholders to the
@@ -116,9 +133,11 @@ def get_feed_dicts(output_lst):
         if hasattr(x, 'eval_feed'):
             eval_feed.update(x.eval_feed)
         return False
+
     co.traverse_backward(output_lst, fn)
     return (train_feed, eval_feed)
 
-def get_num_trainable_parameters():
-    return np.sum([np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])
 
+def get_num_trainable_parameters():
+    return np.sum(
+        [np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])

@@ -6,6 +6,7 @@ KERAS = 3
 _backend = None
 _func_dict = None
 
+
 # only set backend once
 def set_backend(backend):
     global _backend, _func_dict
@@ -13,7 +14,7 @@ def set_backend(backend):
         raise RuntimeError('Backend is already specified')
     if type(backend) is not int or backend < 0 or backend > 3:
         raise ValueError('value of backend not valid')
-    
+
     _backend = backend
     if backend is TENSORFLOW:
         from tf_ops import func_dict
@@ -34,10 +35,12 @@ def set_backend(backend):
     if _func_dict is None:
         raise RuntimeError('Backend %s is not supported' % backend)
 
+
 def get_backend():
     if _backend is None:
         raise RuntimeError('Backend is not set yet')
     return _backend
+
 
 def get_func(fname):
     global _backend, _func_dict
@@ -45,5 +48,6 @@ def get_func(fname):
         raise RuntimeError('Backend is not set yet')
     if fname not in _func_dict:
         raise NotImplementedError(
-            'Function %s has not been implemented for backend %s' (fname, _backend))
+            'Function %s has not been implemented for backend %s' (fname,
+                                                                   _backend))
     return _func_dict[fname]

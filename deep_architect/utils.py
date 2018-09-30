@@ -6,18 +6,22 @@ import subprocess
 import argparse
 from six import iteritems, itervalues
 
+
 def run_bash_command(cmd):
     str_output = subprocess.check_output(cmd, shell=True)
     return str_output
+
 
 def read_jsonfile(filepath):
     with open(filepath, 'r') as f:
         d = json.load(f)
         return d
 
+
 def write_jsonfile(d, filepath, sort_keys=False):
     with open(filepath, 'w') as f:
         json.dump(d, f, indent=4, sort_keys=sort_keys)
+
 
 def read_textfile(filepath, strip=True):
     with open(filepath, 'r') as f:
@@ -25,6 +29,7 @@ def read_textfile(filepath, strip=True):
         if strip:
             lines = [line.strip() for line in lines]
         return lines
+
 
 def write_textfile(filepath, lines, append=False, with_newline=True):
     mode = 'a' if append else 'w'
@@ -34,33 +39,43 @@ def write_textfile(filepath, lines, append=False, with_newline=True):
             if with_newline:
                 f.write("\n")
 
+
 def path_prefix(path):
     return os.path.split(path)[0]
+
 
 def join_paths(paths):
     return os.path.join(*paths)
 
+
 def path_exists(path):
     return os.path.exists(path)
 
+
 def file_exists(path):
     return os.path.isfile(path)
+
 
 def delete_file(filepath, abort_if_notexists=True):
     assert file_exists(filepath) or (not abort_if_notexists)
     if file_exists(filepath):
         os.remove(filepath)
 
+
 def folder_exists(path):
     return os.path.isdir(path)
 
-def create_folder(folderpath, abort_if_exists=True, create_parent_folders=False):
+
+def create_folder(folderpath,
+                  abort_if_exists=True,
+                  create_parent_folders=False):
     assert not file_exists(folderpath)
     assert create_parent_folders or folder_exists(path_prefix(folderpath))
     assert not (abort_if_exists and folder_exists(folderpath))
 
     if not folder_exists(folderpath):
         os.makedirs(folderpath)
+
 
 def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
     assert folder_exists(folderpath) or (not abort_if_notexists)
@@ -71,10 +86,15 @@ def delete_folder(folderpath, abort_if_nonempty=True, abort_if_notexists=True):
     else:
         assert not abort_if_notexists
 
+
 def list_paths(folderpath,
-        ignore_files=False, ignore_dirs=False,
-        ignore_hidden_folders=True, ignore_hidden_files=True, ignore_file_exts=None,
-        recursive=False, use_relative_paths=False):
+               ignore_files=False,
+               ignore_dirs=False,
+               ignore_hidden_folders=True,
+               ignore_hidden_files=True,
+               ignore_file_exts=None,
+               recursive=False,
+               use_relative_paths=False):
 
     assert folder_exists(folderpath)
 
@@ -86,8 +106,10 @@ def list_paths(folderpath,
         if ignore_hidden_files:
             files = [f for f in files if not f[0] == '.']
         if ignore_file_exts != None:
-            files = [f for f in files if not any([
-                f.endswith(ext) for ext in ignore_file_exts])]
+            files = [
+                f for f in files
+                if not any([f.endswith(ext) for ext in ignore_file_exts])
+            ]
 
         # get only the path relative to this path.
         if not use_relative_paths:
@@ -104,21 +126,36 @@ def list_paths(folderpath,
             break
     return path_list
 
+
 def list_files(folderpath,
-        ignore_hidden_folders=True, ignore_hidden_files=True, ignore_file_exts=None,
-        recursive=False, use_relative_paths=False):
+               ignore_hidden_folders=True,
+               ignore_hidden_files=True,
+               ignore_file_exts=None,
+               recursive=False,
+               use_relative_paths=False):
 
-    return list_paths(folderpath, ignore_dirs=True,
+    return list_paths(
+        folderpath,
+        ignore_dirs=True,
         ignore_hidden_folders=ignore_hidden_folders,
-        ignore_hidden_files=ignore_hidden_files, ignore_file_exts=ignore_file_exts,
-        recursive=recursive, use_relative_paths=use_relative_paths)
+        ignore_hidden_files=ignore_hidden_files,
+        ignore_file_exts=ignore_file_exts,
+        recursive=recursive,
+        use_relative_paths=use_relative_paths)
 
-def list_folders(folderpath, ignore_hidden_folders=True,
-        recursive=False, use_relative_paths=False):
 
-    return list_paths(folderpath, ignore_files=True,
+def list_folders(folderpath,
+                 ignore_hidden_folders=True,
+                 recursive=False,
+                 use_relative_paths=False):
+
+    return list_paths(
+        folderpath,
+        ignore_files=True,
         ignore_hidden_folders=ignore_hidden_folders,
-        recursive=recursive, use_relative_paths=use_relative_paths)
+        recursive=recursive,
+        use_relative_paths=use_relative_paths)
+
 
 def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
     d = {}
@@ -132,11 +169,13 @@ def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
     d['nanoseconds'] = d['seconds'] * 1e-9
     return (x * d[src_units]) / d[dst_units]
 
+
 def convert_between_byte_units(x, src_units='bytes', dst_units='megabytes'):
     units = ['bytes', 'kilobytes', 'megabytes', 'gigabytes', 'terabytes']
     assert (src_units in units) and (dst_units in units)
-    return x / float(
-        2 ** (10 * (units.index(dst_units) - units.index(src_units))))
+    return x / float(2**
+                     (10 * (units.index(dst_units) - units.index(src_units))))
+
 
 class SequenceTracker:
     """Useful to keep track of sequences for logging.
@@ -145,6 +184,7 @@ class SequenceTracker:
         abort_if_different_lengths (bool, optional): If ``True``, the sequences
             being tracked must have the same length at all times.
     """
+
     def __init__(self, abort_if_different_lengths=False):
         self.abort_if_different_lengths = abort_if_different_lengths
         self.d = {}
@@ -185,12 +225,14 @@ class SequenceTracker:
         """
         return dict(self.d)
 
+
 class TimerManager:
     """Timer management class to create and extract information from multiple
     timers.
 
     Useful for getting time information for various timing events.
     """
+
     def __init__(self):
         self.init_time = time.time()
         self.last_registered = self.init_time
@@ -210,9 +252,15 @@ class TimerManager:
         """
         assert not abort_if_timer_exists or timer_name not in self.name_to_timer
         start_time = time.time()
-        self.name_to_timer[timer_name] = {'start' : start_time, 'tick' : start_time}
+        self.name_to_timer[timer_name] = {
+            'start': start_time,
+            'tick': start_time
+        }
 
-    def create_timer_event(self, timer_name, event_name, abort_if_event_exists=True):
+    def create_timer_event(self,
+                           timer_name,
+                           event_name,
+                           abort_if_event_exists=True):
         """Creates a named timer event associated to an existing timer.
 
         The named timer in which to register the event must exist. The
@@ -256,8 +304,11 @@ class TimerManager:
         delta = time.time() - self.name_to_timer[timer_name][event_name]
         return convert_between_time_units(delta, dst_units=units)
 
-    def get_time_between_events(self, timer_name,
-            earlier_event_name, later_event_name, units='seconds'):
+    def get_time_between_events(self,
+                                timer_name,
+                                earlier_event_name,
+                                later_event_name,
+                                units='seconds'):
         """Gets the time interval between two specific events in the same timer.
 
         Asserts ``False`` if the order of the events is not respected.
@@ -294,28 +345,41 @@ class TimerManager:
         delta = time.time() - self.name_to_timer[timer_name]['tick']
         return convert_between_time_units(delta, dst_units=units)
 
+
 class CommandLineArgs:
     def __init__(self, argname_prefix=''):
         self.parser = argparse.ArgumentParser()
         self.argname_prefix = argname_prefix
 
-    def add(self, argname, argtype, default_value=None, optional=False, help=None,
-            valid_value_lst=None, list_valued=False):
-        valid_types = {'int' : int, 'str' : str, 'float' : float}
+    def add(self,
+            argname,
+            argtype,
+            default_value=None,
+            optional=False,
+            help=None,
+            valid_value_lst=None,
+            list_valued=False):
+        valid_types = {'int': int, 'str': str, 'float': float}
         assert argtype in valid_types
 
         nargs = None if not list_valued else '*'
         argtype = valid_types[argtype]
 
-        self.parser.add_argument('--' + self.argname_prefix + argname,
-            required=not optional, default=default_value, nargs=nargs,
-            type=argtype, choices=valid_value_lst, help=help)
+        self.parser.add_argument(
+            '--' + self.argname_prefix + argname,
+            required=not optional,
+            default=default_value,
+            nargs=nargs,
+            type=argtype,
+            choices=valid_value_lst,
+            help=help)
 
     def parse(self):
         return vars(self.parser.parse_args())
 
     def get_parser(self):
         return self.parser
+
 
 def get_config():
     cmd = CommandLineArgs()

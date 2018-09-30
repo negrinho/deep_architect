@@ -1,5 +1,6 @@
 import deep_architect.core as co
 
+
 class TFEModule(co.Module):
     """Class for taking TFEager code and wrapping it in a darch module.
 
@@ -50,8 +51,14 @@ class TFEModule(co.Module):
         scope (deep_architect.core.Scope, optional): Scope where the module will be
             registered.
     """
-    def __init__(self, name, name_to_hyperp, compile_fn,
-            input_names, output_names, scope=None):
+
+    def __init__(self,
+                 name,
+                 name_to_hyperp,
+                 compile_fn,
+                 input_names,
+                 output_names,
+                 scope=None):
         co.Module.__init__(self, scope, name)
         self._register(input_names, output_names, name_to_hyperp)
         self._compile_fn = compile_fn
@@ -64,17 +71,22 @@ class TFEModule(co.Module):
 
     def _forward(self):
         input_name_to_val = self._get_input_values()
-        output_name_to_val = self._fn(input_name_to_val, isTraining=self.isTraining)
+        output_name_to_val = self._fn(
+            input_name_to_val, isTraining=self.isTraining)
         self._set_output_values(output_name_to_val)
 
     def _update(self):
         pass
 
+
 def setTraining(output_lst, isTraining):
     def fn(mx):
         if hasattr(mx, 'isTraining'):
             mx.isTraining = isTraining
+
     co.traverse_backward(output_lst, fn)
 
+
 def siso_tfeager_module(name, compile_fn, name_to_hyperp, scope=None):
-    return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
+    return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
+                     scope).get_io()

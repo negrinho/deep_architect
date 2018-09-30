@@ -1,9 +1,11 @@
 import portalocker
 import pickle
 
+
 def clear_file(fh):
     fh.seek(0)
     fh.truncate(0)
+
 
 def consume_file(filename):
     lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
@@ -21,6 +23,7 @@ def consume_file(filename):
     lock.release()
     return file_data
 
+
 def read_file(filename):
     lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
     lock.acquire()
@@ -34,10 +37,12 @@ def read_file(filename):
     lock.release()
     return file_data
 
+
 def write_file(filename, obj):
     file_data = 0
     while file_data is not None:
-        lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
+        lock = portalocker.Lock(
+            filename, mode='a+b', flags=portalocker.LOCK_EX)
         lock.acquire()
         fh = lock.fh
         fh.seek(0)

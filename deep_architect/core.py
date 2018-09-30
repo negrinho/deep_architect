@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
 
+
 class OrderedSet:
     def __init__(self):
         self.d = OrderedDict()
@@ -24,11 +25,13 @@ class OrderedSet:
     def __contains__(self, item):
         return item in self.d
 
+
 class Scope:
     """A scope is used to help assign unique readable names to addressable objects.
 
     A scope keeps references to modules, hyperparameters, inputs, and outputs.
     """
+
     def __init__(self):
         self.name_to_elem = OrderedDict()
         self.elem_to_name = OrderedDict()
@@ -95,7 +98,10 @@ class Scope:
         """Replaces the current default scope with a new empty scope."""
         Scope.default_scope = Scope()
 
+
+# NOTE: is this called once for each time core is imported?
 Scope.default_scope = Scope()
+
 
 class Addressable:
     """Base class for classes whose objects have to be registered in a scope.
@@ -107,6 +113,7 @@ class Addressable:
             be registered.
         name (str): Unique name used to register the addressable object.
     """
+
     def __init__(self, scope, name):
         scope.register(name, self)
         self.scope = scope
@@ -132,6 +139,7 @@ class Addressable:
         """
         return self.__class__.__name__
 
+
 class Hyperparameter(Addressable):
     """Base hyperparameter class.
 
@@ -151,10 +159,12 @@ class Hyperparameter(Addressable):
             hyperparameter. If none is given, uses the class name to derive
             the name.
     """
+
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
-            ['H', (name if name is not None else self._get_base_name()) + '-']))
+            ['H',
+             (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
 
         self.assign_done = False
@@ -234,6 +244,7 @@ class Hyperparameter(Addressable):
         """
         raise NotImplementedError
 
+
 class DependentHyperparameter(Hyperparameter):
     """Hyperparameter that depends on other hyperparameters.
 
@@ -254,6 +265,7 @@ class DependentHyperparameter(Hyperparameter):
         name (str, optional): Name from which the name of the hyperparameter
             in the scope is derived.
     """
+
     def __init__(self, fn, hyperps, scope=None, name=None):
         Hyperparameter.__init__(self, scope, name)
         # NOTE: this assert may or may not be necessary.
@@ -273,11 +285,15 @@ class DependentHyperparameter(Hyperparameter):
         """
         # assert not self.has_value_assigned()
         if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
-            kwargs = {name: h.get_value() for name, h in iteritems(self._hyperps)}
+            kwargs = {
+                name: h.get_value()
+                for name, h in iteritems(self._hyperps)
+            }
             self.assign_value(self._fn(**kwargs))
 
     def _check_value(self, val):
         pass
+
 
 class Input(Addressable):
     """Manages input connections.
@@ -293,6 +309,7 @@ class Input(Addressable):
             registered in.
         name (str): Unique name with which to register the input object.
     """
+
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'I', name])
         Addressable.__init__(self, scope, name)
@@ -369,6 +386,7 @@ class Input(Addressable):
         self.disconnect()
         old_ox.connect(to_input)
 
+
 class Output(Addressable):
     """Manages output connections.
 
@@ -383,6 +401,7 @@ class Output(Addressable):
             registered in.
         name (str): Unique name with which to register the output object.
     """
+
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'O', name])
         Addressable.__init__(self, scope, name)
@@ -451,6 +470,7 @@ class Output(Addressable):
             ix.disconnect()
             ix.connect(from_output)
 
+
 class Module(Addressable):
     """Modules inputs and outputs, and depend on hyperparameters.
 
@@ -469,10 +489,12 @@ class Module(Addressable):
             registered in.
         name (str, optional): Unique name with which to register the module.
     """
+
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
-            ['M', (name if name is not None else self._get_base_name()) + '-']))
+            ['M',
+             (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
 
         self.inputs = OrderedDict()
@@ -620,6 +642,7 @@ class Module(Addressable):
             self._is_compiled = True
         self._forward()
 
+
 def extract_unique_modules(input_or_output_lst):
     """Get the modules associated to the inputs and outputs in the list.
 
@@ -639,9 +662,12 @@ def extract_unique_modules(input_or_output_lst):
         ms.add(x.get_module())
     return list(ms)
 
+
 # assumes that the inputs provided are sufficient to evaluate all the network.
 # TODO: add the more general functionality that allows us to compute the sequence
 # of forward operations for a subgraph of the full computational graph.
+
+
 def determine_module_eval_seq(input_lst):
     """Computes the module forward evaluation sequence necessary to evaluate
     the computational graph starting from the provided inputs.
@@ -665,7 +691,8 @@ def determine_module_eval_seq(input_lst):
     input_memo = set(input_lst)
     ms = extract_unique_modules(input_lst)
     for m in ms:
-        if m not in module_memo and all(ix in input_memo for ix in itervalues(m.inputs)):
+        if m not in module_memo and all(
+                ix in input_memo for ix in itervalues(m.inputs)):
             module_seq.append(m)
             module_memo.add(m)
 
@@ -675,6 +702,7 @@ def determine_module_eval_seq(input_lst):
                 m_lst = [ix.get_module() for ix in ix_lst]
                 ms.extend(m_lst)
     return module_seq
+
 
 def traverse_backward(output_lst, fn):
     """Backward traversal function through the graph.
@@ -703,6 +731,7 @@ def traverse_backward(output_lst, fn):
                     if m_prev not in memo:
                         memo.add(m_prev)
                         ms.append(m_prev)
+
 
 def traverse_forward(input_lst, fn):
     """Forward traversal function through the graph.
@@ -733,6 +762,7 @@ def traverse_forward(input_lst, fn):
                             memo.add(m_next)
                             ms.append(m_next)
 
+
 def is_specified(output_lst):
     """Checks if all the hyperparameters reachable by traversing backward from
     the outputs have been set.
@@ -744,14 +774,17 @@ def is_specified(output_lst):
         bool: ``True`` if all the hyperparameters have been set. ``False`` otherwise.
     """
     is_spec = [True]
+
     def fn(module):
         for h in itervalues(module.hyperps):
             if not h.has_value_assigned():
                 is_spec[0] = False
                 return True
         return False
+
     traverse_backward(output_lst, fn)
     return is_spec[0]
+
 
 def forward(input_to_val, _module_seq=None):
     """Forward pass through the graph starting with the provided inputs.
@@ -785,6 +818,7 @@ def forward(input_to_val, _module_seq=None):
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
 
+
 def get_unconnected_inputs(output_lst):
     """Get the inputs that are reachable going backward from the provided outputs,
     but are not connected to any outputs.
@@ -808,8 +842,10 @@ def get_unconnected_inputs(output_lst):
             if not ix.is_connected():
                 ix_lst.append(ix)
         return False
+
     traverse_backward(output_lst, fn)
     return ix_lst
+
 
 def get_unconnected_outputs(input_lst):
     """Get the outputs that are reachable going forward from the provided inputs,
@@ -833,8 +869,10 @@ def get_unconnected_outputs(input_lst):
             if not ox.is_connected():
                 ox_lst.append(ox)
         return False
+
     traverse_forward(input_lst, fn)
     return ox_lst
+
 
 def get_all_hyperparameters(output_lst):
     """Going backward from the outputs provided, gets all hyperparameters.
@@ -908,13 +946,18 @@ def get_unassigned_independent_hyperparameters(output_lst):
     assert not is_specified(output_lst)
     unassigned_indep_hs = OrderedSet()
     for h in get_all_hyperparameters(output_lst):
-        if not isinstance(h, DependentHyperparameter) and not h.has_value_assigned():
+        if not isinstance(
+                h, DependentHyperparameter) and not h.has_value_assigned():
             unassigned_indep_hs.add(h)
     return unassigned_indep_hs
 
+
 # TODO: perhaps change to not have to work until everything is specified.
 # this can be done through a flag.
-def unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst=None):
+
+
+def unassigned_independent_hyperparameter_iterator(output_lst,
+                                                   hyperp_lst=None):
     """Returns an iterator over the hyperparameters that are not specified in
     the current search space.
 

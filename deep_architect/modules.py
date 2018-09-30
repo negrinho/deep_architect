@@ -2,6 +2,7 @@ import deep_architect.core as co
 from six import itervalues, iteritems, itertools
 from six.moves import range
 
+
 class Identity(co.Module):
     """Module passes the input to the output without changes.
     Args:
@@ -11,6 +12,7 @@ class Identity(co.Module):
             module. If none is given, uses the class name to derive
             the name.
     """
+
     def __init__(self, scope=None, name=None):
         co.Module.__init__(self, scope, name)
         self._register_input("In")
@@ -28,7 +30,7 @@ class Identity(co.Module):
     def _forward(self):
         pass
 
-# NOTE: perhaps refactor to capture similarities between modules.
+
 class SubstitutionModule(co.Module):
     """Substitution modules are replaced by other modules when the all the
     hyperparameters that the module depends on are specified.
@@ -58,8 +60,14 @@ class SubstitutionModule(co.Module):
         scope ((deep_architect.core.Scope, optional)) Scope in which the module will be
             registered. If none is given, uses the default scope.
     """
-    def __init__(self, name, name_to_hyperp, substitution_fn,
-                 input_names, output_names, scope=None):
+
+    def __init__(self,
+                 name,
+                 name_to_hyperp,
+                 substitution_fn,
+                 input_names,
+                 output_names,
+                 scope=None):
         co.Module.__init__(self, scope, name)
 
         self._register(input_names, output_names, name_to_hyperp)
@@ -74,7 +82,8 @@ class SubstitutionModule(co.Module):
         the substitution operation is triggered, and the substitution operation
         is done.
         """
-        if (not self._is_done) and all(h.has_value_assigned() for h in itervalues(self.hyperps)):
+        if (not self._is_done) and all(
+                h.has_value_assigned() for h in itervalues(self.hyperps)):
             argnames = self._substitution_fn.__code__.co_varnames
 
             kwargs = {}
@@ -88,7 +97,8 @@ class SubstitutionModule(co.Module):
 
             new_inputs, new_outputs = self._substitution_fn(**kwargs)
             assert frozenset(new_inputs.keys()) == frozenset(self.inputs.keys())
-            assert frozenset(new_outputs.keys()) == frozenset(self.outputs.keys())
+            assert frozenset(new_outputs.keys()) == frozenset(
+                self.outputs.keys())
 
             for name, new_ix in iteritems(new_inputs):
                 old_ix = self.inputs[name]
@@ -113,6 +123,7 @@ class SubstitutionModule(co.Module):
     def _forward(self):
         assert False
 
+
 def identity(scope=None, name=None):
     """Same as the Empty module, but directly works with dictionaries of
     inputs and outputs of the module.
@@ -123,9 +134,11 @@ def identity(scope=None, name=None):
         (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
             Tuple with dictionaries with the inputs and outputs of the module.
     """
-    return Identity(num_connections, scope=scope, name=name).get_io()
+    return Identity(scope=scope, name=name).get_io()
 
-def substitution_module(name, name_to_hyperp, substitution_fn, input_names, output_names, scope):
+
+def substitution_module(name, name_to_hyperp, substitution_fn, input_names,
+                        output_names, scope):
     """Same as the substitution module, but directly works with the dictionaries of
     inputs and outputs.
 
@@ -158,14 +171,18 @@ def substitution_module(name, name_to_hyperp, substitution_fn, input_names, outp
             Tuple with dictionaries with the inputs and outputs of the module.
     """
     return SubstitutionModule(name, name_to_hyperp, substitution_fn,
-        input_names, output_names, scope).get_io()
+                              input_names, output_names, scope).get_io()
+
 
 def _get_name(name, default_name):
     # the default name is chosen if name is None
     return name if name is not None else default_name
 
+
 # TODO: perhaps make the most general behavior with fn_lst being a general
 # indexable object more explicit.
+
+
 def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     """Implements an or substitution operation.
 
@@ -199,15 +216,25 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
+
     def substitution_fn(idx):
         return fn_lst[idx]()
 
-    return substitution_module(_get_name(name, "Or"), {'idx': h_or},
-        substitution_fn, input_names, output_names, scope)
+    return substitution_module(
+        _get_name(name, "Or"), {'idx': h_or}, substitution_fn, input_names,
+        output_names, scope)
+
 
 # TODO: perhaps change slightly the semantics of the repeat parameter.
-def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, input_names, output_names,
-        scope=None, name=None):
+
+
+def mimo_nested_repeat(fn_first,
+                       fn_iter,
+                       h_num_repeats,
+                       input_names,
+                       output_names,
+                       scope=None,
+                       name=None):
     """Nested repetition substitution module.
 
     The first function function returns a dictionary of inputs and a dictionary
@@ -242,6 +269,7 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, input_names, output_nam
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
+
     def substitution_fn(num_reps):
         assert num_reps > 0
         inputs, outputs = fn_first()
@@ -249,8 +277,10 @@ def mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, input_names, output_nam
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
-    return substitution_module(_get_name(name, "NestedRepeat"),
-        {'num_reps': h_num_repeats}, substitution_fn, input_names, output_names, scope)
+    return substitution_module(
+        _get_name(name, "NestedRepeat"), {'num_reps': h_num_repeats},
+        substitution_fn, input_names, output_names, scope)
+
 
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     """Nested repetition substitution module.
@@ -287,8 +317,13 @@ def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    return mimo_nested_repeat(fn_first, fn_iter, h_num_repeats, ['In'], ['Out'],
-        scope=scope, name=_get_name(name, "SISONestedRepeat"))
+    return mimo_nested_repeat(
+        fn_first,
+        fn_iter,
+        h_num_repeats, ['In'], ['Out'],
+        scope=scope,
+        name=_get_name(name, "SISONestedRepeat"))
+
 
 def siso_or(fn_lst, h_or, scope=None, name=None):
     """Implements an or substitution operation.
@@ -321,10 +356,16 @@ def siso_or(fn_lst, h_or, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    return mimo_or(fn_lst, h_or, ['In'], ['Out'],
-        scope=scope, name=_get_name(name, "SISOOr"))
+    return mimo_or(
+        fn_lst,
+        h_or, ['In'], ['Out'],
+        scope=scope,
+        name=_get_name(name, "SISOOr"))
+
 
 # NOTE: how to do repeat in the general mimo case.
+
+
 def siso_repeat(fn, h_num_repeats, scope=None, name=None):
     """Calls the function multiple times and connects the resulting graph
     fragments sequentially.
@@ -344,6 +385,7 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
+
     def substitution_fn(num_reps):
         assert num_reps > 0
         # instantiating all the graph fragments.
@@ -361,8 +403,10 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISORepeat"),
-        {'num_reps': h_num_repeats}, substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISORepeat"), {'num_reps': h_num_repeats},
+        substitution_fn, ['In'], ['Out'], scope)
+
 
 def siso_optional(fn, h_opt, scope=None, name=None):
     """Substitution module that determines to include or not the search
@@ -389,13 +433,18 @@ def siso_optional(fn, h_opt, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
+
     def substitution_fn(opt):
         return fn() if opt else identity()
 
-    return substitution_module(_get_name(name, "SISOOptional"),
-        {'opt': h_opt}, substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOOptional"), {'opt': h_opt}, substitution_fn,
+        ['In'], ['Out'], scope)
+
 
 # TODO: improve by not enumerating permutations
+
+
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     """Substitution module that permutes the sub-search spaces returned by the
     functions in the list and connects them sequentially.
@@ -421,6 +470,7 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
+
     def substitution_fn(perm_idx):
         g = itertools.permutations(range(len(fn_lst)))
         for _ in range(perm_idx + 1):
@@ -441,8 +491,10 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISOPermutation"),
-        {'perm_idx': h_perm}, substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOPermutation"), {'perm_idx': h_perm},
+        substitution_fn, ['In'], ['Out'], scope)
+
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     """Substitution module that create a number of parallel single-input
@@ -477,6 +529,7 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             resulting search space graph.
     """
+
     def substitution_fn(num_splits):
         inputs_lst, outputs_lst = zip(*[fn() for _ in range(num_splits)])
         c_inputs, c_outputs = combine_fn(num_splits)
@@ -487,8 +540,10 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
             c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
         return i_inputs, c_outputs
 
-    return substitution_module(_get_name(name, "SISOSplitCombine"),
-        {'num_splits': h_num_splits}, substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(
+        _get_name(name, "SISOSplitCombine"), {'num_splits': h_num_splits},
+        substitution_fn, ['In'], ['Out'], scope)
+
 
 def siso_residual(main_fn, residual_fn, combine_fn):
     """Residual connection of two functions returning search spaces encoded
@@ -534,6 +589,7 @@ def siso_residual(main_fn, residual_fn, combine_fn):
 
     return i_inputs, c_outputs
 
+
 def siso_sequential(io_lst):
     """Connects in a serial connection a list of dictionaries of the inputs and
     outputs encoding single-input single-output search spaces.
@@ -555,9 +611,12 @@ def siso_sequential(io_lst):
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
 
+
 # NOTE: this can be done more generally in terms of the scope to use.
 # there is probably a better way of doing this, as _get_search_space versus
 # get_search_space is confusing.
+
+
 class SearchSpaceFactory:
     """Helper used to provide a nicer interface to create search spaces.
 
@@ -569,6 +628,7 @@ class SearchSpaceFactory:
         reset_scope_upon_get (bool): Whether to clean the scope upon getting
             a new search space. Should be ``True`` in most cases.
     """
+
     def __init__(self, reset_scope_upon_get=True):
         self.reset_scope_upon_get = reset_scope_upon_get
 

@@ -286,6 +286,7 @@ def selector(h_selection, available, scope=None):
         return ins, outs
     return mo.substitution_module('Selector', {'selection': h_selection}, sub_fn, ['In'], ['Out'], scope)
 
+
 # This module takes in a list of cell inputs, a list of hyperparameters that
 # will specify which cell inputs are used, and then adds up the unused inputs.
 # It is a substitution module that results in only the unused inputs being
@@ -336,6 +337,7 @@ def pad_and_shift():
             return {'Out': tf.pad(di['In'], pad_arr)[:, 1:, 1:, :]}
         return fn
     return htf.siso_tensorflow_module('Pad', compile_fn, {})
+
 
 # This is a module used to concatenate two inputs along the channel dimension.
 # This is used as part of the factorized reduction operation in the amoebanet

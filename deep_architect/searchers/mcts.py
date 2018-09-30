@@ -3,12 +3,14 @@ import deep_architect.hyperparameters as hp
 from deep_architect.searchers.common import Searcher
 import numpy as np
 
+
 # keeps the statistics and knows how to update information related to a node.
 class MCTSTreeNode:
     """Encapsulates the information contained in a single node of the MCTS tree.
 
     See also :class:`deep_architect.searchers.MCTSSearcher`.
     """
+
     def __init__(self, parent_node):
         self.num_trials = 0
         self.sum_scores = 0.0
@@ -41,9 +43,8 @@ class MCTSTreeNode:
             # rollout policy based on surrogate functions says.
             # think about how to extend this.
             if node.num_trials > 0:
-                score = (node.sum_scores / node.num_trials +
-                         exploration_bonus * np.sqrt(
-                             2.0 * parent_log_nt / node.num_trials))
+                score = (node.sum_scores / node.num_trials + exploration_bonus
+                         * np.sqrt(2.0 * parent_log_nt / node.num_trials))
             else:
                 score = np.inf
 
@@ -65,6 +66,7 @@ class MCTSTreeNode:
     def expand(self, num_children):
         self.children = [MCTSTreeNode(self) for _ in range(num_children)]
 
+
 class MCTSSearcher(Searcher):
     def __init__(self, search_space_fn, exploration_bonus=1.0):
         Searcher.__init__(self, search_space_fn)
@@ -75,11 +77,15 @@ class MCTSSearcher(Searcher):
     def sample(self):
         inputs, outputs, hyperps = self.search_space_fn()
 
-        h_it = co.unassigned_independent_hyperparameter_iterator(outputs.values(), hyperps.values())
+        h_it = co.unassigned_independent_hyperparameter_iterator(
+            outputs.values(), hyperps.values())
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
-        searcher_eval_token = {'tree_hist' : tree_hist, 'rollout_hist' : rollout_hist}
+        searcher_eval_token = {
+            'tree_hist': tree_hist,
+            'rollout_hist': rollout_hist
+        }
 
         return inputs, outputs, hyperps, vs, searcher_eval_token
 

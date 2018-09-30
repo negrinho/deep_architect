@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 from __future__ import division
 
@@ -14,6 +13,7 @@ from deep_architect.helpers.tfeager import setTraining
 
 tfe = tf.contrib.eager
 
+
 class ENASEvaluator(object):
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
@@ -22,10 +22,18 @@ class ENASEvaluator(object):
     epochs.
     """
 
-    def __init__(self, train_dataset, val_dataset, num_classes, weight_sharer,
-            optimizer_type='adam', batch_size=128,
-            learning_rate_init=1e-3, display_step=50, log_output_to_terminal=True,
-            test_dataset=None, max_controller_steps=50):
+    def __init__(self,
+                 train_dataset,
+                 val_dataset,
+                 num_classes,
+                 weight_sharer,
+                 optimizer_type='adam',
+                 batch_size=128,
+                 learning_rate_init=1e-3,
+                 display_step=50,
+                 log_output_to_terminal=True,
+                 test_dataset=None,
+                 max_controller_steps=50):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.num_classes = num_classes
@@ -37,7 +45,8 @@ class ENASEvaluator(object):
         self.optimizer_type = optimizer_type
         self.log_output_to_terminal = log_output_to_terminal
         self.test_dataset = test_dataset
-        self.num_batches = int(old_div(self.train_dataset.get_num_examples(), self.batch_size))
+        self.num_batches = int(
+            old_div(self.train_dataset.get_num_examples(), self.batch_size))
         self.batch_counter = 0
         self.epoch = 0
 
@@ -49,11 +58,14 @@ class ENASEvaluator(object):
         self.weight_sharer = weight_sharer
 
         if self.optimizer_type == 'adam':
-            self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate_init)
+            self.optimizer = tf.train.AdamOptimizer(
+                learning_rate=self.learning_rate_init)
         elif self.optimizer_type == 'sgd':
-            self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.learning_rate_init)
+            self.optimizer = tf.train.GradientDescentOptimizer(
+                learning_rate=self.learning_rate_init)
         elif self.optimizer_type == 'sgd_mom':
-            self.optimizer = tf.train.MomentumOptimizer(learning_rate=self.learning_rate_init, momentum=0.99)
+            self.optimizer = tf.train.MomentumOptimizer(
+                learning_rate=self.learning_rate_init, momentum=0.99)
         else:
             raise ValueError("Unknown optimizer.")
 
@@ -81,7 +93,8 @@ class ENASEvaluator(object):
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
             loss += tf.reduce_sum(
-                tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
+                tf.nn.softmax_cross_entropy_with_logits(
+                    logits=logits, labels=y))
             nc += num_correct
 
             # update the number of examples left.
@@ -102,17 +115,17 @@ class ENASEvaluator(object):
         loss_metric(loss)
         return loss
 
-
     def eval(self, inputs, outputs, hs):
         results = {}
         if self.controller_mode:
             # Compute accuracy of model
-            val_acc, loss = self._compute_accuracy(inputs, outputs, self.val_dataset)
+            val_acc, loss = self._compute_accuracy(inputs, outputs,
+                                                   self.val_dataset)
             results['validation_accuracy'] = val_acc
 
             # Log validation info
             self.controller_step += 1
-            if self.log_output_to_terminal:# and self.controller_step % self.display_step == 0:
+            if self.log_output_to_terminal:  # and self.controller_step % self.display_step == 0:
                 log_string = ""
                 log_string += "ctrl_step={:<6d}".format(self.controller_step)
                 log_string += " loss={:<7.3f}".format(loss)
@@ -133,7 +146,9 @@ class ENASEvaluator(object):
             setTraining(list(outputs.values()), True)
             with tf.device('/gpu:0'):
                 loss_metric = tfe.metrics.Mean('loss')
-                self.optimizer.minimize(lambda: self._compute_loss(inputs, outputs, X_batch, y_batch, loss_metric))
+                self.optimizer.minimize(
+                    lambda: self._compute_loss(inputs, outputs, X_batch, y_batch, loss_metric)
+                )
 
             # Log batch info
             self.child_step += 1

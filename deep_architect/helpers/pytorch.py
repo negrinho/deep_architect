@@ -2,6 +2,7 @@ from six import iteritems
 import deep_architect.core as co
 import torch.nn as nn
 
+
 class PyTorchModule(co.Module):
     """Class for taking Pytorch code and wrapping it in a darch module.
 
@@ -57,8 +58,14 @@ class PyTorchModule(co.Module):
         scope (deep_architect.core.Scope, optional): Scope where the module will be
             registered.
     """
-    def __init__(self, name, name_to_hyperp, compile_fn,
-            input_names, output_names, scope=None):
+
+    def __init__(self,
+                 name,
+                 name_to_hyperp,
+                 compile_fn,
+                 input_names,
+                 output_names,
+                 scope=None):
         co.Module.__init__(self, scope, name)
         self._register(input_names, output_names, name_to_hyperp)
         self._compile_fn = compile_fn
@@ -66,7 +73,8 @@ class PyTorchModule(co.Module):
     def _compile(self):
         input_name_to_val = self._get_input_values()
         hyperp_name_to_val = self._get_hyperp_values()
-        self._fn, self.pyth_modules = self._compile_fn(input_name_to_val, hyperp_name_to_val)
+        self._fn, self.pyth_modules = self._compile_fn(input_name_to_val,
+                                                       hyperp_name_to_val)
         for pyth_m in self.pyth_modules:
             assert isinstance(pyth_m, nn.Module)
 
@@ -78,16 +86,26 @@ class PyTorchModule(co.Module):
     def _update(self):
         pass
 
-def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
-    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'], scope).get_io()
 
-def siso_pytorch_module_from_pytorch_layer_fn(layer_fn, name_to_hyperp, scope=None):
+def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
+    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
+                         scope).get_io()
+
+
+def siso_pytorch_module_from_pytorch_layer_fn(layer_fn,
+                                              name_to_hyperp,
+                                              scope=None):
     def compile_fn(di, dh):
         m = layer_fn(**dh)
+
         def forward_fn(di):
-            return {"Out" : m(di["In"])}
+            return {"Out": m(di["In"])}
+
         return forward_fn, [m]
-    return siso_pytorch_module(layer_fn.__name__, compile_fn, name_to_hyperp, scope)
+
+    return siso_pytorch_module(layer_fn.__name__, compile_fn, name_to_hyperp,
+                               scope)
+
 
 # NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
@@ -97,28 +115,36 @@ def _call_fn_on_pytorch_module(output_lst, fn):
             for pyth_m in mx.pyth_modules:
                 fn(pyth_m)
         return False
+
     co.traverse_backward(output_lst, fn_iter)
+
 
 def get_pytorch_modules(output_lst):
     all_modules = set()
     _call_fn_on_pytorch_module(output_lst, all_modules.add)
     return all_modules
 
+
 def train(output_lst):
     """Applies :meth:`torch.nn.Module.train` to all modules needed to compute the outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.train())
+
 
 def eval(output_lst):
     """Applies :meth:`torch.nn.Module.eval` to all modules needed to compute the outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.eval())
 
+
 # TODO: this needs to be changed.
 def cuda(output_lst, *args, **kwargs):
-    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cuda(*args, **kwargs))
+    _call_fn_on_pytorch_module(output_lst,
+                               lambda pyth_m: pyth_m.cuda(*args, **kwargs))
+
 
 def cpu(output_lst):
     """Applies :meth:`torch.nn.Module.cpu` to all modules needed to compute the outputs."""
     _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cpu())
+
 
 def parameters(output_lst):
     pyth_modules = get_pytorch_modules(output_lst)
@@ -126,6 +152,7 @@ def parameters(output_lst):
     for pyth_m in pyth_modules:
         ps.update(pyth_m.parameters())
     return ps
+
 
 class PyTorchModel(nn.Module):
     """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch.PyTorchModule`
@@ -142,6 +169,7 @@ class PyTorchModel(nn.Module):
         inputs (dict[str,deep_architect.core.Input]): Dictionary of names to inputs.
         outputs (dict[str,deep_architect.core.Output]): Dictionary of names to outputs.
     """
+
     def __init__(self, inputs, outputs):
         nn.Module.__init__(self)
 
@@ -160,11 +188,18 @@ class PyTorchModel(nn.Module):
         graph of darch modules.
         """
         if self._module_seq is None:
-            self._module_seq = co.determine_module_eval_seq(self.inputs.values())
+            self._module_seq = co.determine_module_eval_seq(
+                self.inputs.values())
 
-        input_to_val = {ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)}
+        input_to_val = {
+            ix: input_name_to_val[name]
+            for name, ix in iteritems(self.inputs)
+        }
         co.forward(input_to_val, self._module_seq)
-        output_name_to_val = {name: ox.val for name, ox in iteritems(self.outputs)}
+        output_name_to_val = {
+            name: ox.val
+            for name, ox in iteritems(self.outputs)
+        }
 
         if not self._is_compiled:
             modules = get_pytorch_modules(self.outputs.values())
