@@ -31,6 +31,7 @@ predictions = Dense(10, activation='softmax')(x)
 
 # The above code is an example of a fixed two-layer perceptron defined in Keras.
 # The problem with the above code is that it requires the expert to commit to
+# specific values for 
 # There are many opportunities in the code above to be less specific about the
 # For example, we commit to a neural network with two layers, each with 64 hidden
 # units and ReLU activations.
@@ -39,7 +40,7 @@ predictions = Dense(10, activation='softmax')(x)
 # activations of each layer.
 # We defined a few simple helper functions that, for simple cases, allow us
 # to take a function that returns a Keras layer and wraps it in a DeepArchitect module.
-# A minimal adaptation of the above example in DeepArchitect would look like
+# A minimal adaptation of the above example in DeepArchitect looks like
 
 import deep_architect.core as co
 import deep_architect.modules as mo
