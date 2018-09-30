@@ -35,14 +35,14 @@ weight_sharer = WeightSharer()
 # time the function is called, the convolution layer will be created. Subsequent
 # calls will simply retrieve the layer from the WeightSharer object.
 def conv2D(filter_size, channels, name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         conv_fn = lambda: tf.keras.layers.Conv2D(channels, filter_size)
         conv = weight_sharer.get(name, conv_fn)
         def fn(di, isTraining=True):
             return {'Out' : conv(di['In'])}
         return fn
 
-    return siso_tfeager_module('Conv2D', cfn, {})
+    return siso_tfeager_module('Conv2D', compile_fn, {})
 
 conv_original = conv2D(3, 32, 'conv_layer')
 

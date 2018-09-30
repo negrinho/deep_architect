@@ -12,7 +12,7 @@ M = DyParameterCollection()
 
 # just put here to streamline everything
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
@@ -27,18 +27,18 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {'Out': Out}
         return fn
-    return siso_dym('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+    return siso_dym('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p = dh['keep_prop']
         def fn(di):
             return {'Out': dy.dropout(di['In'], p)}
         return fn
-    return siso_dym('Dropout', cfn, {'keep_prop': h_keep_prob})
+    return siso_dym('Dropout', compile_fn, {'keep_prop': h_keep_prob})
 
 def affine(h_u):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         shape = di['In'].dim() # ((r, c), batch_dim)
         m, n = dh['units'], shape[0][0]
         pW = M.get_collection().add_parameters((m, n))
@@ -48,7 +48,7 @@ def affine(h_u):
             W, b = pW.expr(), pb.expr()
             return {'Out': W*In + b}
         return fn
-    return siso_dym('Affine', cfn, {'units': h_u})
+    return siso_dym('Affine', compile_fn, {'units': h_u})
 
 
 def test_search_space(num_classes):

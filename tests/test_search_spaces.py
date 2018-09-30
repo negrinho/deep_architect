@@ -14,9 +14,9 @@ def get_search_space():
     co.Scope.reset_default_scope()
     h_num_spatial_reductions = D([1, 2, 4])
     inputs, outputs = mo.siso_sequential([
-        mo.empty(),
+        mo.identity(),
         css_cnn2d.conv_net(h_num_spatial_reductions),
-        mo.empty()
+        mo.identity()
         ])
     return inputs, outputs, {}
 

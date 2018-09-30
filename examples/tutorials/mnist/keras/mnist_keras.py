@@ -11,23 +11,23 @@ from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tfm
 D = hp.Discrete # Discrete Hyperparameter
 
 def flatten():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         Flatten = keras.layers.Flatten()
         def fn(di):
             return {'Out': Flatten(di['In'])}
         return fn
-    return siso_tfm('Flatten', cfn, {}) # use siso_tfm for now
+    return siso_tfm('Flatten', compile_fn, {}) # use siso_tfm for now
 
 def dense(h_units):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         Dense = keras.layers.Dense(dh['units'])
         def fn(di):
             return {'Out' : Dense(di['In'])}
         return fn
-    return siso_tfm('Dense', cfn, {'units' : h_units})
+    return siso_tfm('Dense', compile_fn, {'units' : h_units})
 
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
@@ -40,23 +40,23 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {"Out" : Out}
         return fn
-    return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+    return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         Dropout = keras.layers.Dropout(dh['keep_prob'])
         def fn(di):
             return {'Out' : Dropout(di['In'])}
         return fn
-    return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_tfm('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         bn = keras.layers.BatchNormalization()
         def fn(di):
             return {'Out' : bn(di['In'])}
         return fn
-    return siso_tfm('BatchNormalization', cfn, {})
+    return siso_tfm('BatchNormalization', compile_fn, {})
 
 def dnn_net_simple(num_classes):
 

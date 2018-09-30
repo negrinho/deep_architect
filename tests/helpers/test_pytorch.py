@@ -9,20 +9,20 @@ class EmptyNet(nn.Module):
         return x
 
 
-def get_empty_cfn():
-    def cfn(_, __):
+def get_empty_compile_fn():
+    def compile_fn(_, __):
         net = EmptyNet()
         return lambda inp_dict: {'Out': net(inp_dict['In'])}, [net]
-    return cfn
+    return compile_fn
 
 
 def test_pytmodule():
     from deep_architect.helpers.pytorch import PyTorchModule
 
-    cfn = get_empty_cfn()
+    compile_fn = get_empty_compile_fn()
     mod = PyTorchModule(name='test',
                     name_to_hyperp={},
-                    compile_fn=cfn,
+                    compile_fn=compile_fn,
                     input_names=['In'],
                     output_names=['Out'],
                     scope=None)

@@ -11,25 +11,25 @@ from deep_architect.contrib.misc.search_spaces.pytorch.common import siso_torchm
 D = hp.Discrete # Discrete Hyperparameter
 
 def flatten():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         shape = di['In'].size()
         n = np.product(shape[1:])
         def fn(di):
             return {'Out': (di['In']).view(-1, n)}
         return fn, []
-    return siso_torchm('Flatten', cfn, {})
+    return siso_torchm('Flatten', compile_fn, {})
 
 def dense(h_units):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         (_, in_dim) = di['In'].size()
         Dense = nn.Linear(in_dim, dh['units'])
         def fn(di):
             return {'Out' : Dense(di['In'])}
         return fn, [Dense]
-    return siso_torchm('Dense', cfn, {'units' : h_units})
+    return siso_torchm('Dense', compile_fn, {'units' : h_units})
 
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
@@ -42,24 +42,24 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {"Out" : Out}
         return fn, []
-    return siso_torchm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+    return siso_torchm('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         Dropout = nn.Dropout(p=dh['keep_prob'])
         def fn(di):
             return {'Out' : Dropout(di['In'])}
         return fn, [Dropout]
-    return siso_torchm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_torchm('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         (_, L) = di['In'].size()
         bn = nn.BatchNorm1d(L)
         def fn(di):
             return {'Out' : bn(di['In'])}
         return fn, [bn]
-    return siso_torchm('BatchNormalization', cfn, {})
+    return siso_torchm('BatchNormalization', compile_fn, {})
 
 def dnn_net_simple(num_classes):
 
@@ -196,7 +196,7 @@ class SimpleClassifierEvaluator:
     def evaluate(self, inputs, outputs, hs):
 
         self.network = PyTNetContainer(inputs, outputs)
-        X = torch.ones(()).new_empty((self.batch_size, ) + self.train_dataset.dataset[0][0].size())
+        X = torch.ones(()).new_identity((self.batch_size, ) + self.train_dataset.dataset[0][0].size())
         self.network.forward({'In': X}) # to extract parameters
         optimizer = optim.Adam(self.network.parameters(), lr=self.learning_rate)
         for epoch in range(self.max_num_training_epochs):

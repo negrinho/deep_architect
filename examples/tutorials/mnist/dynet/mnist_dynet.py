@@ -12,17 +12,17 @@ M = DyParameterCollection()
 D = hp.Discrete
 
 def flatten():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         shape = di['In'].dim()
         n = np.product(shape[0])
         Flatten = dy.reshape
         def fn(di):
             return {'Out': Flatten(di['In'], (n,))}
         return fn
-    return siso_dym('Flatten', cfn, {})
+    return siso_dym('Flatten', compile_fn, {})
 
 def dense(h_u):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         shape = di['In'].dim() # ((r, c), batch_dim)
         m, n = dh['units'], shape[0][0]
         pW = M.get_collection().add_parameters((m, n))
@@ -34,11 +34,11 @@ def dense(h_u):
             # return {'Out': W*In + b}
             return {'Out': Dense([b, W, In])}
         return fn
-    return siso_dym('Dense', cfn, {'units': h_u})
+    return siso_dym('Dense', compile_fn, {'units': h_u})
 
 # just put here to streamline everything
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
@@ -51,16 +51,16 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {'Out': Out}
         return fn
-    return siso_dym('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+    return siso_dym('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p = dh['keep_prop']
         Dropout = dy.dropout
         def fn(di):
             return {'Out': Dropout(di['In'], p)}
         return fn
-    return siso_dym('Dropout', cfn, {'keep_prop': h_keep_prob})
+    return siso_dym('Dropout', compile_fn, {'keep_prop': h_keep_prob})
 
 def dnn_net_simple(num_classes):
 

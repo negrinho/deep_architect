@@ -53,7 +53,7 @@ class WeightSharer(object):
 # Take in array of boolean hyperparams, concatenate layers corresponding to true
 # to form skip connections
 def concatenate_skip_layers(h_connects, weight_sharer):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di, isTraining=True):
             inputs = [di['In' + str(i)] for i in range(len(dh)) if dh['select_' + str(i)]]
             inputs.append(di['In' + str(len(dh))])
@@ -64,7 +64,7 @@ def concatenate_skip_layers(h_connects, weight_sharer):
         return fn
     return TFEM('SkipConcat',
                {'select_' + str(i) : h_connects[i] for i in range(len(h_connects))},
-               cfn, ['In' + str(i) for i in range(len(h_connects) + 1)], ['Out']).get_io()
+               compile_fn, ['In' + str(i) for i in range(len(h_connects) + 1)], ['Out']).get_io()
 
 def enas_conv(out_filters, filter_size, separable, weight_sharer, name):
     io_pair = (conv2D_depth_separable(filter_size, name, weight_sharer) if separable

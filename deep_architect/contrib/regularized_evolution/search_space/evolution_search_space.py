@@ -232,7 +232,7 @@ def sp2_operation(h_op_name, h_stride, h_filters):
 # This module takes in a specifiable number of inputs, uses 1x1 convolutions to
 # make the number filters match, and then adds the inputs together
 def mi_add(num_terms, name=None):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         (_, _, _, min_channels) = di['In0'].get_shape().as_list()
         for i in range(num_terms):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
@@ -260,7 +260,7 @@ def mi_add(num_terms, name=None):
                 total_sum = tf.add(total_sum, trans[i])
             return {'Out' : total_sum}
         return fn
-    return TFM('MultiInputAdd' if name is None else name, {}, cfn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
+    return TFM('MultiInputAdd' if name is None else name, {}, compile_fn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
 
 # This module applies a sp1_operation to two inputs, and adds them together
 def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
@@ -302,7 +302,7 @@ def selector(h_selection, available, scope=None):
 # substitution function.
 def add_unused(h_selections, available, normal, name=None, scope=None):
     def dummy_func(**dummy_hs):
-        return mo.empty()
+        return mo.identity()
     module = mo.SubstitutionModule('AddUnused', {'selection' + str(i): h_selections[i] for i in range(len(h_selections))}, dummy_func, ['In'], ['Out'], scope)
 
     def sub_fn(**selections):
@@ -330,22 +330,22 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
 # This is a module used to pad and shift the input. This is used as part of the
 # factorized reduction operation in the amoebanet code.
 def pad_and_shift():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         pad_arr = [[0, 0], [0, 1], [0, 1], [0, 0]]
         def fn(di):
             return {'Out': tf.pad(di['In'], pad_arr)[:, 1:, 1:, :]}
         return fn
-    return htf.siso_tensorflow_module('Pad', cfn, {})
+    return htf.siso_tensorflow_module('Pad', compile_fn, {})
 
 # This is a module used to concatenate two inputs along the channel dimension.
 # This is used as part of the factorized reduction operation in the amoebanet
 # code.
 def concat(axis):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             return {'Out': tf.concat(values=[di['In0'], di['In1']], axis=axis)}
         return fn
-    return TFM('Concat', {}, cfn, ['In0', 'In1'], ['Out']).get_io()
+    return TFM('Concat', {}, compile_fn, ['In0', 'In1'], ['Out']).get_io()
 
 # This operation is used to reduce the size of the input, either by striding
 # ir reducing the number of filters, without losing information. It is specified
@@ -357,7 +357,7 @@ def concat(axis):
 def factorized_reduction(h_num_filters, h_stride):
     is_stride_2 = co.DependentHyperparameter(lambda stride: int(stride == 2), {'stride': h_stride})
     reduced_filters = co.DependentHyperparameter(lambda filters: filters / 2, {'filters': h_num_filters})
-    ins, outs = mo.empty()
+    ins, outs = mo.identity()
     path1_ins, path1_outs = mo.siso_sequential([
         avg_pool2d(D([1]), h_stride),
         conv2d(reduced_filters, D([1]), D([1]), D([1]), D([True]))
@@ -488,7 +488,7 @@ def get_search_space_small(num_classes, C):
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
     o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
-    return mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
+    return mo.siso_sequential([mo.identity(), (i_inputs, o_outputs), mo.identity()])
 
 # This function creates search space 1 from the regularized evolution paper
 def get_search_space_1(num_classes):
@@ -527,7 +527,7 @@ def get_search_space_2(num_classes):
         h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
     o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
-    return mo.siso_sequential([mo.empty(), (i_inputs, o_outputs), mo.empty()])
+    return mo.siso_sequential([mo.identity(), (i_inputs, o_outputs), mo.identity()])
 
 # A simple search space factory to create the appropriate search space after
 # getting the search space name.

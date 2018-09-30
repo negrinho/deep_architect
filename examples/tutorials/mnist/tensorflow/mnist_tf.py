@@ -12,23 +12,23 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 D = hp.Discrete # Discrete Hyperparameter
 
 def flatten():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         Flatten = tf.layers.flatten
         def fn(di):
             return {'Out' : Flatten(di['In'])}
         return fn
-    return siso_tfm('Flatten', cfn, {})
+    return siso_tfm('Flatten', compile_fn, {})
 
 def dense(h_units):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         Dense = tf.layers.dense
         def fn(di):
             return {'Out' : Dense(di['In'], dh['units'])}
         return fn
-    return siso_tfm('Dense', cfn, {'units' : h_units})
+    return siso_tfm('Dense', compile_fn, {'units' : h_units})
 
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
@@ -41,25 +41,25 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {"Out" : Out}
         return fn
-    return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+    return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p = tf.placeholder(tf.float32)
         Dropout = tf.nn.dropout
         def fn(di):
             return {'Out' : Dropout(di['In'], p)}
         return fn, {p : dh['keep_prob']}, {p : 1.0}
-    return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+    return siso_tfm('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
 def batch_normalization():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p_var = tf.placeholder(tf.bool)
         bn = tf.layers.batch_normalization
         def fn(di):
             return {'Out' : bn(di['In'], training=p_var)}
         return fn, {p_var : 1}, {p_var : 0}
-    return siso_tfm('BatchNormalization', cfn, {})
+    return siso_tfm('BatchNormalization', compile_fn, {})
 
 def dnn_net_simple(num_classes):
 

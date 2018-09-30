@@ -2,33 +2,22 @@ import deep_architect.core as co
 from six import itervalues, iteritems, itertools
 from six.moves import range
 
-class Empty(co.Module):
+class Identity(co.Module):
     """Module passes the input to the output without changes.
     Args:
-        num_connections (int, optional): Number of input and outputs.
         scope (deep_architect.core.Scope, optional): Scope in which the module will be
             registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive
             the name.
     """
-    def __init__(self, num_connections=1, scope=None, name=None):
+    def __init__(self, scope=None, name=None):
         co.Module.__init__(self, scope, name)
-        self.num_connections = num_connections
-        if self.num_connections == 1:
-            self._register_input("In")
-            self._register_output("Out")
-        else:
-            for i in range(self.num_connections):
-                self._register_input("In" + str(i))
-                self._register_output("Out" + str(i))
+        self._register_input("In")
+        self._register_output("Out")
 
     def forward(self):
-        if self.num_connections == 1:
-            self.outputs['Out'].val = self.inputs['In'].val
-        else:
-            for i in range(self.num_connections):
-                self.outputs['Out' + str(i)].val = self.inputs['In' + str(i)].val
+        self.outputs['Out'].val = self.inputs['In'].val
 
     def _update(self):
         pass
@@ -124,7 +113,7 @@ class SubstitutionModule(co.Module):
     def _forward(self):
         assert False
 
-def empty(num_connections=1):
+def identity(scope=None, name=None):
     """Same as the Empty module, but directly works with dictionaries of
     inputs and outputs of the module.
 
@@ -134,7 +123,7 @@ def empty(num_connections=1):
         (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
             Tuple with dictionaries with the inputs and outputs of the module.
     """
-    return Empty(num_connections).get_io()
+    return Identity(num_connections, scope=scope, name=name).get_io()
 
 def substitution_module(name, name_to_hyperp, substitution_fn, input_names, output_names, scope):
     """Same as the substitution module, but directly works with the dictionaries of
@@ -401,7 +390,7 @@ def siso_optional(fn, h_opt, scope=None, name=None):
             substitution module.
     """
     def substitution_fn(opt):
-        return fn() if opt else empty()
+        return fn() if opt else identity()
 
     return substitution_module(_get_name(name, "SISOOptional"),
         {'opt': h_opt}, substitution_fn, ['In'], ['Out'], scope)
@@ -492,7 +481,7 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
         inputs_lst, outputs_lst = zip(*[fn() for _ in range(num_splits)])
         c_inputs, c_outputs = combine_fn(num_splits)
 
-        i_inputs, i_outputs = empty()
+        i_inputs, i_outputs = identity()
         for i in range(num_splits):
             i_outputs['Out'].connect(inputs_lst[i]['In'])
             c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
@@ -536,7 +525,7 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     (r_inputs, r_outputs) = residual_fn()
     (c_inputs, c_outputs) = combine_fn()
 
-    i_inputs, i_outputs = empty()
+    i_inputs, i_outputs = identity()
     i_outputs['Out'].connect(m_inputs['In'])
     i_outputs['Out'].connect(r_inputs['In'])
 
@@ -565,13 +554,6 @@ def siso_sequential(io_lst):
         prev_outputs['Out'].connect(next_inputs['In'])
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
-
-def simo_split(num_split):
-    i_inputs, i_outputs = empty()
-    o_inputs, o_outputs = empty(num_split)
-    for i in range(num_split):
-        i_outputs['Out'].connect(o_inputs['In' + str(i)])
-    return (i_inputs, o_outputs)
 
 # NOTE: this can be done more generally in terms of the scope to use.
 # there is probably a better way of doing this, as _get_search_space versus
@@ -603,13 +585,13 @@ class SearchSpaceFactory:
         # modules guarantees that the behavior is correct throughout specification.
         buffered_inputs = {}
         for name, ix in iteritems(inputs):
-            b_inputs, b_outputs = empty()
+            b_inputs, b_outputs = identity()
             b_outputs['Out'].connect(ix)
             buffered_inputs[name] = b_inputs['In']
 
         buffered_outputs = {}
         for name, ox in iteritems(outputs):
-            b_inputs, b_outputs = empty()
+            b_inputs, b_outputs = identity()
             ox.connect(b_inputs['In'])
             buffered_outputs[name] = b_outputs['Out']
 

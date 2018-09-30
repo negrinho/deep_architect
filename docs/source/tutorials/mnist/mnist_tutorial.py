@@ -120,7 +120,7 @@ from darch.contrib.search_spaces.tensorflow.common import siso_tfm, D
 ### ${CODE} 
 
 def affine_simplified(h_m): 
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         shape = di['In'].get_shape().as_list()
         n = np.product(shape[1:])
             def fn(di):
@@ -129,7 +129,7 @@ def affine_simplified(h_m):
                     In = tf.reshape(In, [-1, n])
                 return {'Out' : tf.layers.dense(In, dh['m'])}
         return fn
-    return siso_tfm('AffineSimplified', cfn, {'m' : h_m})
+    return siso_tfm('AffineSimplified', compile_fn, {'m' : h_m})
 
 ### ${MARKDOWN}
 
@@ -139,7 +139,7 @@ def affine_simplified(h_m):
 ### ${CODE} 
 
 def nonlinearity(h_nonlin_name):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
@@ -156,7 +156,7 @@ def nonlinearity(h_nonlin_name):
                 raise ValueError
             return {"Out" : Out}
     return fn
-return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
+return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
 ### ${MARKDOWN}
 
@@ -165,12 +165,12 @@ return siso_tfm('Nonlinearity', cfn, {'nonlin_name' : h_nonlin_name})
 ### ${CODE} 
 
 def dropout(h_keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p = tf.placeholder(tf.float32)
         def fn(di):
             return {'Out' : tf.nn.dropout(di['In'], p)}
     return fn, {p : dh['keep_prob']}, {p : 1.0}
-return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
+return siso_tfm('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
 ### ${MARKDOWN}
 
@@ -179,12 +179,12 @@ return siso_tfm('Dropout', cfn, {'keep_prob' : h_keep_prob})
 ### ${CODE} 
 
 def batch_normalization():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         p_var = tf.placeholder(tf.bool)
         def fn(di):
             return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
     return fn, {p_var : 1}, {p_var : 0}
-return siso_tfm('BatchNormalization', cfn, {})
+return siso_tfm('BatchNormalization', compile_fn, {})
 
 ### ${MARKDOWN}
 

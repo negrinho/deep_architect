@@ -1,8 +1,8 @@
-def test_empty():
+def test_identity():
     from deep_architect.modules import Empty
     from deep_architect.core import Input
 
-    empty = Empty()
+    empty = identity()
     assert isinstance(empty.outputs, dict) and isinstance(empty.inputs, dict)
     assert 'Out' in empty.outputs
     assert 'In' in empty.inputs

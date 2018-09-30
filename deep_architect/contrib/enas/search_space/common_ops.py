@@ -6,30 +6,30 @@ from deep_architect.helpers import tfeager as htfe
 TFEM = htfe.TFEModule
 
 def avg_pool(h_kernel_size, h_stride):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di, isTraining=True):
             with tf.device('/gpu:0'):
                 return {'Out' : tf.nn.avg_pool(di['In'],
                     [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return htfe.siso_tfeager_module('AvgPool', cfn, {
+    return htfe.siso_tfeager_module('AvgPool', compile_fn, {
         'kernel_size' : h_kernel_size,
         'stride' : h_stride,
         })
 
 def max_pool(h_kernel_size, h_stride):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di, isTraining=True):
             with tf.device('/gpu:0'):
                 return {'Out' : tf.nn.max_pool(di['In'],
                     [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
-    return htfe.siso_tfeager_module('MaxPool2D', cfn, {
+    return htfe.siso_tfeager_module('MaxPool2D', compile_fn, {
         'kernel_size' : h_kernel_size, 'stride' : h_stride,})
 
 def keras_batch_normalization(name='default', weight_sharer=None):
     name = name + '_bn'
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         bn = weight_sharer.get(name, tf.keras.layers.BatchNormalization,
             lambda layer: layer.get_weights())
         if not bn.built:
@@ -42,18 +42,18 @@ def keras_batch_normalization(name='default', weight_sharer=None):
             with tf.device('/gpu:0'):
                 return {'Out' : bn(di['In'], training=isTraining) }
         return fn
-    return htfe.siso_tfeager_module('BatchNormalization', cfn, {})
+    return htfe.siso_tfeager_module('BatchNormalization', compile_fn, {})
 
 def relu():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di, isTraining=True):
             with tf.device('/gpu:0'):
                 return {'Out' : tf.nn.relu(di['In'])}
         return fn
-    return htfe.siso_tfeager_module('ReLU', cfn, {})
+    return htfe.siso_tfeager_module('ReLU', compile_fn, {})
 
 def conv2D(filter_size, name, weight_sharer, out_filters=None):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
 
@@ -71,10 +71,10 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
                 return {'Out' : conv(di['In'])}
         return fn
 
-    return htfe.siso_tfeager_module('Conv2D', cfn, {})
+    return htfe.siso_tfeager_module('Conv2D', compile_fn, {})
 
 def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
         conv_fn = lambda: tf.keras.layers.SeparableConv2D(channels, filter_size, padding='same')
@@ -92,18 +92,18 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
                 return {'Out' : conv(di['In'])}
         return fn
 
-    return htfe.siso_tfeager_module('Conv2DSeparable', cfn, {})
+    return htfe.siso_tfeager_module('Conv2DSeparable', compile_fn, {})
 
 def global_pool():
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di, isTraining):
             with tf.device('/gpu:0'):
                 return {'Out': tf.reduce_mean(di['In'], [1, 2])}
         return fn
-    return htfe.siso_tfeager_module('GlobalPool', cfn, {})
+    return htfe.siso_tfeager_module('GlobalPool', compile_fn, {})
 
 def dropout(keep_prob):
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         def fn(di, isTraining=True):
             if isTraining:
                 with tf.device('/gpu:0'):
@@ -112,11 +112,11 @@ def dropout(keep_prob):
                 out = di['In']
             return {'Out': out}
         return fn
-    return htfe.siso_tfeager_module('Dropout', cfn, {}) 
+    return htfe.siso_tfeager_module('Dropout', compile_fn, {}) 
 
 def fc_layer(num_classes, name, weight_sharer):
     name = name + '_fc_layer_' + str(num_classes)
-    def cfn(di, dh):
+    def compile_fn(di, dh):
         fc = weight_sharer.get(name, lambda: tf.keras.layers.Dense(num_classes), 
             lambda layer: layer.get_weights())
         if not fc.built:
@@ -129,7 +129,7 @@ def fc_layer(num_classes, name, weight_sharer):
             with tf.device('/gpu:0'):
                 return {'Out' : fc(di['In'])}
         return fn
-    return htfe.siso_tfeager_module('FC_Layer', cfn, {}) 
+    return htfe.siso_tfeager_module('FC_Layer', compile_fn, {}) 
 
 def wrap_relu_batch_norm(io_pair, add_relu=True, add_bn=True, weight_sharer=None, name=None):
     assert add_relu or add_bn

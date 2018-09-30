@@ -24,11 +24,11 @@ def multiply_search_space_fn():
         def _update(self):
             pass
 
-    def multiply_cfn(_, dh):
+    def multiply_compile_fn(_, dh):
         multiplier = dh['multiplier']
         return lambda di: {'Out': multiplier * di['In']}
 
-    module = Multiply(multiply_cfn)
+    module = Multiply(multiply_compile_fn)
 
     inp, out = module.get_io()
     return inp, out, module.get_hyperps()
