@@ -135,7 +135,7 @@ class Evaluator:
 
         num_val = 10000
 
-    def eval(self, inputs, outputs, hs):
+    def eval(self, inputs, outputs):
         x = Input((784,) dtype='float32')
         co.forward({inputs["In"] : x})
         y = outputs["Out"].val

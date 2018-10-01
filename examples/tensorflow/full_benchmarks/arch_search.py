@@ -52,12 +52,12 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
             # See whether workers are ready to consume architectures
             if comm.is_ready_to_publish_architecture():
                 eval_logger = sl.EvaluationLogger(folderpath, search_name, models_sampled)
-                inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
+                inputs, outputs, searcher_eval_token = searcher.sample()
 
                 eval_logger.log_config(vs, searcher_eval_token)
-                eval_logger.log_features(inputs, outputs, hs)
-                
-                comm.publish_architecture_to_worker(vs, models_sampled, 
+                eval_logger.log_features(inputs, outputs
+
+                comm.publish_architecture_to_worker(vs, models_sampled,
                                        searcher_eval_token)
 
                 models_sampled += 1
@@ -88,7 +88,7 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
                     }
                     ut.write_jsonfile(state, save_filepath)
 
-def start_worker(comm, evaluator, search_space_factory, folderpath, 
+def start_worker(comm, evaluator, search_space_factory, folderpath,
     search_name, resume=True, save_every=1):
     # set the available gpu for process
     print('WORKER %d' % comm.get_rank())
@@ -108,15 +108,15 @@ def start_worker(comm, evaluator, search_space_factory, folderpath,
     while(True):
         arch = comm.receive_architecture_in_worker()
 
-        # if a kill signal is received        
+        # if a kill signal is received
         if arch is None:
             break
-        
+
         vs, evaluation_id, searcher_eval_token = arch
 
-        inputs, outputs, hs = search_space_factory.get_search_space()
+        inputs, outputsearch_space_factory.get_search_space()
         se.specify(outputs.values(), hs, vs)
-        results = evaluator.eval(inputs, outputs, hs)
+        results = evaluator.eval(inputs, outputs
         step += 1
         if step % save_every == 0:
             evaluator.save_state(search_data_folder)
@@ -165,8 +165,8 @@ def main():
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
         start_searcher(
-            comm, searcher, options.resume, config['search_folder'], 
-            config['search_name'], config['searcher_file_name'], 
+            comm, searcher, options.resume, config['search_folder'],
+            config['search_name'], config['searcher_file_name'],
             num_samples=num_samples, num_epochs=num_epochs, save_every=save_every)
     else:
         train_dataset = InMemoryDataset(Xtrain, ytrain, True)
@@ -184,7 +184,7 @@ def main():
         assert not config['evaluator'].startswith('enas') or hasattr(search_space_factory, 'weight_sharer')
         evaluator = evaluators[config['evaluator']]()
 
-        start_worker(comm, evaluator, search_space_factory, config['search_folder'], 
+        start_worker(comm, evaluator, search_space_factory, config['search_folder'],
             config['search_name'], resume=options.resume, save_every=save_every)
 
 if __name__ == "__main__":

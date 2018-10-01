@@ -1,5 +1,3 @@
-
-
 from deep_architect.contrib.misc.datasets.loaders import load_mnist
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
@@ -8,6 +6,7 @@ import deep_architect.visualization as vi
 import deep_architect.utils as ut
 from deep_architect.searchers.common import specify
 import search_space as ss
+
 
 def main():
     cmd = ut.CommandLineArgs()
@@ -24,20 +23,29 @@ def main():
     test_dataset = InMemoryDataset(Xtest, ytest, False)
 
     # Creating up the evaluator.
-    evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, ss.num_classes,
+    evaluator = SimpleClassifierEvaluator(
+        train_dataset,
+        val_dataset,
+        ss.num_classes,
         './temp/worker%d' % out["worker_id"],
         max_eval_time_in_minutes=cfg['max_eval_time_in_minutes'],
-        log_output_to_terminal=True, test_dataset=test_dataset)
+        log_output_to_terminal=True,
+        test_dataset=test_dataset)
 
-    for evaluation_id in xrange(out["worker_id"], cfg["num_samples"], out["num_workers"]):
-        logger = sl.EvaluationLogger(cfg["folderpath"], cfg["search_name"], evaluation_id,
+    for evaluation_id in xrange(out["worker_id"], cfg["num_samples"],
+                                out["num_workers"]):
+        logger = sl.EvaluationLogger(
+            cfg["folderpath"],
+            cfg["search_name"],
+            evaluation_id,
             abort_if_notexists=True)
         if not logger.results_exist():
             eval_cfg = logger.read_config()
-            inputs, outputs, hs = ss.search_space_fn()
+            inputs, outputs = ss.search_space_fn()
             specify(outputs.values(), hs.values(), eval_cfg["hyperp_value_lst"])
-            results = evaluator.eval(inputs, outputs, hs)
+            results = evaluator.eval(inputs, outputs)
             logger.log_results(results)
+
 
 if __name__ == '__main__':
     main()

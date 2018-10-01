@@ -44,8 +44,7 @@ def create_search_folderpath(folderpath,
     assert not (abort_if_exists and delete_if_exists)
 
     search_folderpath = get_search_folderpath(folderpath, search_name)
-    search_data_folderpath = get_search_data_folderpath(
-        folderpath, search_name)
+    search_data_folderpath = get_search_data_folderpath(folderpath, search_name)
     all_evaluations_folderpath = get_all_evaluations_folderpath(
         folderpath, search_name)
 
@@ -63,17 +62,11 @@ def create_search_folderpath(folderpath,
 class EvaluationLogger:
     """Evaluation logger for a simple evaluation.
 
-    The logging is divided into three parts: config, features, and results.
-    All three parts are represented as JSON files in disk, i.e., dictionaries.
+    The logging is divided into config and results.
+    Both are represented as JSON files in disk, i.e., dictionaries.
     The config JSON encodes the architecture to be evaluated. This encoding is
     tied to the search space the evaluation was drawn from, and it can be used
     to reproduce the architecture to be evaluated given the search space.
-
-    The features JSON contains a string representation of the architecture that
-    we can use along with the information in the results to train a model that
-    predicts the performance of an architecture. This is useful if the
-    evaluation used to collect the results is very expensive. See also
-    :func:`deep_architect.surrogates.common.extract_features`.
 
     The results JSON contains the results of the evaluating the particular
     architecture. In the case of deep learning, this often involves training the
@@ -116,8 +109,6 @@ class EvaluationLogger:
 
         self.config_filepath = ut.join_paths(
             [self.evaluation_folderpath, 'config.json'])
-        self.features_filepath = ut.join_paths(
-            [self.evaluation_folderpath, 'features.json'])
         self.results_filepath = ut.join_paths(
             [self.evaluation_folderpath, 'results.json'])
 
@@ -174,8 +165,7 @@ class EvaluationLogger:
                 about the evaluated architecture.
         """
         assert (not ut.file_exists(self.results_filepath))
-        assert ut.file_exists(self.config_filepath) and ut.file_exists(
-            self.features_filepath)
+        assert ut.file_exists(self.config_filepath)
         assert isinstance(results, dict)
         ut.write_jsonfile(results, self.results_filepath)
 
@@ -188,8 +178,7 @@ class EvaluationLogger:
 
     def get_evaluation_folderpath(self):
         """Path to the evaluation folder where all the standard evaluation
-        logs (e.g., ``config.json``, ``features.json``, and ``results.json``)
-        are written to.
+        logs (e.g., ``config.json`` and ``results.json``) are written to.
 
         Only standard logging information about the evaluation should be written
         here. See
@@ -240,7 +229,7 @@ def read_evaluation_folder(evaluation_folderpath):
     assert ut.folder_exists(evaluation_folderpath)
 
     name_to_log = {}
-    for name in ['config', 'features', 'results']:
+    for name in ['config', 'results']:
         log_filepath = ut.join_paths([evaluation_folderpath, name + '.json'])
         name_to_log[name] = ut.read_jsonfile(log_filepath)
     return name_to_log
@@ -281,13 +270,12 @@ def read_search_folder(search_folderpath):
 
 # functionality below is useful to read search log folders that are nested.
 # non-nested folders are preferred though.
-
-
 def is_search_log_folder(folderpath):
     return ut.folder_exists(ut.join_paths([folderpath, 'evaluations', 'x0']))
 
 
 def recursive_list_log_folders(folderpath):
+
     def _iter(p, lst):
         if is_search_log_folder(p):
             lst.append(p)

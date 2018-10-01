@@ -86,6 +86,8 @@ def dnn_net_simple(num_classes):
 
         return model
 
+
+
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn, h_drop_keep_prob):
     return mo.siso_sequential([
         dense(h_num_hidden),
@@ -123,7 +125,7 @@ class SimpleClassifierEvaluator:
         self.metric = metric
         self.resource_type = resource_type
 
-    def evaluate(self, inputs, outputs, hs, resource):
+    def evaluate(self, inputs, outputs, resource):
         keras.backend.clear_session()
 
         (x_train, y_train) = self.train_dataset

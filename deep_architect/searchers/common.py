@@ -40,12 +40,10 @@ class Searcher:
                 The positional arguments have the following semantics:
                 1: Dictionary of names to inputs of the model.
                 2: Dictionary of names to outputs of the model.
-                3: Dictionary of names to hyperparameters (typically extra, i.e.,
-                not involved in the structural search space).
-                4: List with list of values that can be to replay the sequence
+                3: List with list of values that can be to replay the sequence
                 of values assigned to the hyperparameters, and therefore,
                 reproduce, given the search space, the model sampled.
-                5: Searcher evaluation token that is sufficient for the searcher
+                4: Searcher evaluation token that is sufficient for the searcher
                 to update its state when combined with the results of the
                 evaluation.
         """
@@ -83,7 +81,7 @@ def random_specify_hyperparameter(hyperp):
     return v
 
 
-def random_specify(output_lst, hyperp_lst=None):
+def random_specify(output_lst):
     """Chooses random values to all the unspecified hyperparameters.
 
     The hyperparameters will be specified after this call, meaning that the
@@ -94,20 +92,15 @@ def random_specify(output_lst, hyperp_lst=None):
             traversed back will reach all the modules in the search space, and
             correspondingly all the current unspecified hyperparameters of the
             search space.
-        hyperp_lst (list[deep_architect.core.Hyperparameter], optional): List of
-            additional hyperparameters that are not involved in the search space.
-            Often used to specify additional hyperparameters, e.g., learning
-            rate.
     """
     vs = []
-    for h in co.unassigned_independent_hyperparameter_iterator(
-            output_lst, hyperp_lst):
+    for h in co.unassigned_independent_hyperparameter_iterator(output_lst):
         v = random_specify_hyperparameter(h)
         vs.append(v)
     return vs
 
 
-def specify(output_lst, hyperp_lst, vs):
+def specify(output_lst, vs):
     """Specify the parameters in the search space using the sequence of values
     passed as argument.
 
@@ -124,13 +117,8 @@ def specify(output_lst, hyperp_lst, vs):
             traversed back will reach all the modules in the search space, and
             correspondingly all the current unspecified hyperparameters of the
             search space.
-        hyperp_lst (list[deep_architect.core.Hyperparameter], optional): List of
-            additional hyperparameters that are not involved in the search space.
-            Often used to specify additional hyperparameters, e.g., learning
-            rate.
         vs (list[object]): List of values used to specify the hyperparameters.
     """
     for i, h in enumerate(
-            co.unassigned_independent_hyperparameter_iterator(
-                output_lst, hyperp_lst)):
+            co.unassigned_independent_hyperparameter_iterator(output_lst)):
         h.assign_value(vs[i])

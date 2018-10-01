@@ -240,3 +240,10 @@ ut_install_packages() {
 # NOTE:
 
 # TODO: add a make logo config.
+
+ut_run_all_examples(){
+    export PYTHONPATH=".:$PYTHONPATH" &&
+    ut_run_example examples/tensorflow/mnist_with_logging/main.py debug &&
+    ut_run_example examples/tensorflow/cifar10/main.py debug &&
+    ut_run_example examples/tensorflow/benchmarks/main.py debug;
+}

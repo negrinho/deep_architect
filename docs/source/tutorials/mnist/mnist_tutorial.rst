@@ -43,10 +43,10 @@ https://www.tensorflow.org/tutorials/
 
    import tensorflow as tf
    mnist = tf.keras.datasets.mnist
-       
+
    (x_train, y_train),(x_test, y_test) = mnist.load_data()
    x_train, x_test = x_train / 255.0, x_test / 255.0
-       
+
    model = tf.keras.models.Sequential([
      tf.keras.layers.Flatten(),
      tf.keras.layers.Dense(512, activation=tf.nn.relu),
@@ -56,7 +56,7 @@ https://www.tensorflow.org/tutorials/
    model.compile(optimizer='adam',
                  loss='sparse_categorical_crossentropy',
                  metrics=['accuracy'])
-       
+
    model.fit(x_train, y_train, epochs=5)
    model.evaluate(x_test, y_test)
 
@@ -102,17 +102,17 @@ code tidbit):
    import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
    import darch.modules as mo
    import darch.searchers as se
-       
-   class SSF0(mo.SearchSpaceFactory): pass 
-       
+
+   class SSF0(mo.SearchSpaceFactory): pass
+
    def main():
-       num_classes = 10 # number of handwritten digits 
-       num_samples = 16 # number of architecture to sample 
+       num_classes = 10 # number of handwritten digits
+       num_samples = 16 # number of architecture to sample
        (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_mnist('data/mnist')
        train_dataset = InMemoryDataset(Xtrain, ytrain, True)
        val_dataset = InMemoryDataset(Xval, yval, False)
        test_dataset = InMemoryDataset(Xtest, ytest, False)
-           
+
    if __name__ == '__main__':
        main()
 
@@ -165,8 +165,8 @@ Search Space
 .. code:: python
 
 
-   import darch.modules as mo  
-   import tensorflow as tf 
+   import darch.modules as mo
+   import tensorflow as tf
    import numpy as np
    from darch.contrib.search_spaces.tensorflow.common import siso_tfm, D
 
@@ -192,7 +192,7 @@ Search Space
 .. code:: python
 
 
-   def affine_simplified(h_m): 
+   def affine_simplified(h_m):
        def compile_fn(di, dh):
            shape = di['In'].get_shape().as_list()
            n = np.product(shape[1:])
@@ -283,7 +283,7 @@ Search Space
        lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
        lambda: mo.siso_optional(batch_normalization, h_opt_bn),
    ], h_swap)]
-                   
+
 
 -  Search space: putting everything together (use dnn_net_simple for
    pedagogical purpose). You can see that this is very similar to the
@@ -292,18 +292,18 @@ Search Space
 .. code:: python
 
 
-   def dnn_net(num_classes): 
+   def dnn_net(num_classes):
 
            # declaring hyperparameter
            h_nonlin_name = D(['relu', 'relu6', 'crelu', 'elu', 'softplus']) # nonlinearity function names to choose from
-           h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include 
-           h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from 
-           h_opt_bn = D([0, 1]) 
-           h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module 
-           h_swap = D([0, 1]) # order of swapping for permutation 
+           h_opt_drop = D([0, 1]) # dropout optional hyperparameter; 0 is exclude, 1 is include
+           h_drop_keep_prob = D([0.25, 0.5, 0.75]) # dropout probability to choose from
+           h_opt_bn = D([0, 1])
+           h_num_hidden = D([64, 128, 256, 512, 1024]) # number of hidden units for affine transform module
+           h_swap = D([0, 1]) # order of swapping for permutation
            h_num_repeats = D([1, 2]) # 1 is appearing once, 2 is appearing twice
-           
-           # defining search space topology 
+
+           # defining search space topology
            model = mo.siso_sequential([
                    mo.siso_repeat(lambda: mo.siso_sequential([
                            affine_simplified(h_num_hidden),
@@ -315,8 +315,8 @@ Search Space
                            ]), h_num_repeats)
                    affine_simplified(D([num_classes]))])
            ])
-           
-           return model 
+
+           return model
 
 -  Can refactor into computation cell dnn_cell and end up with following
 
@@ -360,7 +360,7 @@ Search Space
            def __init__(self, num_classes):
                    mo.SearchSpaceFactory.__init__(self)
                    self.num_classes = num_classes
-                   
+
            def _get_search_space(self):
                    inputs, outputs = css_dnn.dnn_net(self.num_classes)
                    return inputs, outputs, {}
@@ -396,7 +396,7 @@ searcher together, we add the following code to main function:
    search_space_factory = SSF0(num_classes)
    searcher = se.RandomSearcher(search_space_factory.get_search_space)
            for _ in xrange(num_samples):
-           inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
+           inputs, outputs, _, searcher_eval_token = searcher.sample()
            val_acc = 0 # dummy holder for evaluation metric
            searcher.update(val_acc, searcher_eval_token)
 
@@ -435,9 +435,9 @@ Evaluator
 
 ::
 
-   * The rest are the same as when training model in tensorflow. We also used advance tricks like early stopping, patience, reduce step size, and GPU support. 
-   * Eval returns a dictionary contains training information, including validation and testing accuracy. 
-               
+   * The rest are the same as when training model in tensorflow. We also used advance tricks like early stopping, patience, reduce step size, and GPU support.
+   * Eval returns a dictionary contains training information, including validation and testing accuracy.
+
 
 Finally we define the evaluator and call eval at each sampling.
 
@@ -452,13 +452,13 @@ Finally we define the evaluator and call eval at each sampling.
        val_dataset = InMemoryDataset(Xval, yval, False)
        test_dataset = InMemoryDataset(Xtest, ytest, False)
        evaluator = SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
-           './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True) # defining evaluator 
+           './temp', max_eval_time_in_minutes=1.0, log_output_to_terminal=True) # defining evaluator
        search_space_factory = SSF0(num_classes)
 
        searcher = se.RandomSearcher(search_space_factory.get_search_space)
        for _ in xrange(num_samples):
-           inputs, outputs, hs, _, searcher_eval_token = searcher.sample()
-           val_acc = evaluator.eval(inputs, outputs, hs)['validation_accuracy'] # evaluate and return validation accuracy
+           inputs, outputs, _, searcher_eval_token = searcher.sample()
+           val_acc = evaluator.eval(inputs, outputs)['validation_accuracy'] # evaluate and return validation accuracy
            searcher.update(val_acc, searcher_eval_token)
 
 (Optional– Recommended) Logging

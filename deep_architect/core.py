@@ -3,6 +3,7 @@ from six import iterkeys, itervalues, iteritems
 
 
 class OrderedSet:
+
     def __init__(self):
         self.d = OrderedDict()
 
@@ -163,8 +164,7 @@ class Hyperparameter(Addressable):
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
-            ['H',
-             (name if name is not None else self._get_base_name()) + '-']))
+            ['H', (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
 
         self.assign_done = False
@@ -286,8 +286,7 @@ class DependentHyperparameter(Hyperparameter):
         # assert not self.has_value_assigned()
         if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
             kwargs = {
-                name: h.get_value()
-                for name, h in iteritems(self._hyperps)
+                name: h.get_value() for name, h in iteritems(self._hyperps)
             }
             self.assign_value(self._fn(**kwargs))
 
@@ -485,16 +484,15 @@ class Module(Addressable):
     operations to understand are compile and forward.
 
     Args:
-        scope (deep_architect.core.Scope, optional): Scope object where the module is going to be
-            registered in.
+        scope (deep_architect.core.Scope, optional): Scope object where the module
+            is going to be registered in.
         name (str, optional): Unique name with which to register the module.
     """
 
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
-            ['M',
-             (name if name is not None else self._get_base_name()) + '-']))
+            ['M', (name if name is not None else self._get_base_name()) + '-']))
         Addressable.__init__(self, scope, name)
 
         self.inputs = OrderedDict()
@@ -666,8 +664,6 @@ def extract_unique_modules(input_or_output_lst):
 # assumes that the inputs provided are sufficient to evaluate all the network.
 # TODO: add the more general functionality that allows us to compute the sequence
 # of forward operations for a subgraph of the full computational graph.
-
-
 def determine_module_eval_seq(input_lst):
     """Computes the module forward evaluation sequence necessary to evaluate
     the computational graph starting from the provided inputs.
@@ -956,8 +952,7 @@ def get_unassigned_independent_hyperparameters(output_lst):
 # this can be done through a flag.
 
 
-def unassigned_independent_hyperparameter_iterator(output_lst,
-                                                   hyperp_lst=None):
+def unassigned_independent_hyperparameter_iterator(output_lst):
     """Returns an iterator over the hyperparameters that are not specified in
     the current search space.
 
@@ -974,20 +969,11 @@ def unassigned_independent_hyperparameter_iterator(output_lst,
             traversed back will reach all the modules in the search space, and
             correspondingly all the current unspecified hyperparameters of the
             search space.
-        hyperp_lst (list[deep_architect.core.Hyperparameter], optional): List of
-            additional hyperparameter that are not involved in the search space.
-            Often used to specif additional hyperparameters, e.g., learning
-            rate.
 
     Yields:
         (deep_architect.core.Hyperparameter):
             Next unspecified hyperparameter of the search space.
     """
-    if hyperp_lst is not None:
-        for h in hyperp_lst:
-            if not h.has_value_assigned():
-                yield h
-
     while not is_specified(output_lst):
         hs = get_unassigned_independent_hyperparameters(output_lst)
         for h in hs:

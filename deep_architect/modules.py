@@ -18,17 +18,39 @@ class Identity(co.Module):
         self._register_input("In")
         self._register_output("Out")
 
-    def forward(self):
+    def _compile(self):
+        pass
+
+    def _forward(self):
         self.outputs['Out'].val = self.inputs['In'].val
 
-    def _update(self):
-        pass
+
+class HyperparameterAggregator(co.Module):
+
+    def __init__(self, name_to_hyperp, scope=None, name=None):
+        co.Module.__init__(self, scope, name)
+        self._register(["In"], ["Out"], name_to_hyperp)
 
     def _compile(self):
         pass
 
     def _forward(self):
+        self.outputs['Out'].val = self.inputs['In'].val
+
+
+class InputReplicator(co.Module):
+
+    def __init__(self, num_outputs, scope=None, name=None):
+        co.Module.__init__(self, scope, name)
+        self._register(["In"], ["Out%i" for i in range(num_outputs)], {})
+
+    def _compile(self):
         pass
+
+    def _forward(self):
+        ival = self.inputs['In'].val
+        for ox in itervalues(self.outputs):
+            ox.val = ival
 
 
 class SubstitutionModule(co.Module):
@@ -67,8 +89,12 @@ class SubstitutionModule(co.Module):
                  substitution_fn,
                  input_names,
                  output_names,
-                 scope=None):
+                 scope=None,
+                 allow_input_subset=False,
+                 allow_output_subset=False):
         co.Module.__init__(self, scope, name)
+        self.allow_input_subset = allow_input_subset
+        self.allow_output_subset = allow_output_subset
 
         self._register(input_names, output_names, name_to_hyperp)
         self._substitution_fn = substitution_fn
@@ -96,21 +122,45 @@ class SubstitutionModule(co.Module):
                     kwargs[name] = ix.val
 
             new_inputs, new_outputs = self._substitution_fn(**kwargs)
-            assert frozenset(new_inputs.keys()) == frozenset(self.inputs.keys())
-            assert frozenset(new_outputs.keys()) == frozenset(
-                self.outputs.keys())
 
-            for name, new_ix in iteritems(new_inputs):
+            # test for checking that the inputs and outputs returned by the
+            # substitution function are valid.
+            if self.allow_input_subset:
+                assert len(self.inputs) <= len(new_inputs) and all(
+                    name in self.inputs for name in new_inputs)
+            else:
+                assert len(self.inputs) == len(new_inputs) and all(
+                    name in self.inputs for name in new_inputs)
+
+            if self.allow_output_subset:
+                assert len(self.outputs) <= len(new_outputs) and all(
+                    name in self.outputs for name in new_outputs)
+            else:
+                assert len(self.outputs) == len(new_outputs) and all(
+                    name in self.outputs for name in new_outputs)
+
+            # performing the substitution.
+            for name, old_ix in iteritems(self.inputs):
                 old_ix = self.inputs[name]
-                if old_ix.is_connected():
-                    old_ix.reroute_connected_output(new_ix)
-                self.inputs[name] = new_ix
+                if name in new_inputs:
+                    new_ix = new_inputs[name]
+                    if old_ix.is_connected():
+                        old_ix.reroute_connected_output(new_ix)
+                    self.inputs[name] = new_ix
+                else:
+                    if old_ix.is_connected():
+                        old_ix.disconnect()
 
-            for name, new_ox in iteritems(new_outputs):
+            for name, old_ox in iteritems(self.outputs):
                 old_ox = self.outputs[name]
-                if old_ox.is_connected():
-                    old_ox.reroute_all_connected_inputs(new_ox)
-                self.outputs[name] = new_ox
+                if name in new_outputs:
+                    new_ox = new_outputs[name]
+                    if old_ox.is_connected():
+                        old_ox.reroute_all_connected_inputs(new_ox)
+                    self.outputs[name] = new_ox
+                else:
+                    if old_ox.is_connected():
+                        old_ox.disconnect_all()
 
             self._is_done = True
 
@@ -135,6 +185,14 @@ def identity(scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the module.
     """
     return Identity(scope=scope, name=name).get_io()
+
+
+def hyperparameter_aggregator(name_to_hyperp, scope=None, name=None):
+    return HyperparameterAggregator(name_to_hyperp, scope, name).get_io()
+
+
+def input_replicator(num_outputs, scope=None, name=None):
+    return InputReplicator(num_outputs, scope=scope, name=name).get_io()
 
 
 def substitution_module(name, name_to_hyperp, substitution_fn, input_names,
@@ -181,8 +239,6 @@ def _get_name(name, default_name):
 
 # TODO: perhaps make the most general behavior with fn_lst being a general
 # indexable object more explicit.
-
-
 def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     """Implements an or substitution operation.
 
@@ -226,8 +282,6 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
 
 
 # TODO: perhaps change slightly the semantics of the repeat parameter.
-
-
 def mimo_nested_repeat(fn_first,
                        fn_iter,
                        h_num_repeats,
@@ -443,8 +497,6 @@ def siso_optional(fn, h_opt, scope=None, name=None):
 
 
 # TODO: improve by not enumerating permutations
-
-
 def siso_permutation(fn_lst, h_perm, scope=None, name=None):
     """Substitution module that permutes the sub-search spaces returned by the
     functions in the list and connects them sequentially.
@@ -612,9 +664,28 @@ def siso_sequential(io_lst):
     return io_lst[0][0], io_lst[-1][1]
 
 
-# NOTE: this can be done more generally in terms of the scope to use.
-# there is probably a better way of doing this, as _get_search_space versus
-# get_search_space is confusing.
+def buffer_io(inputs, outputs):
+    buffered_inputs = {}
+    for name, ix in iteritems(inputs):
+        if isinstance(ix.get_module(), SubstitutionModule):
+            b_inputs, b_outputs = identity()
+            b_outputs['Out'].connect(ix)
+            buffered_ix = b_inputs['In']
+        else:
+            buffered_ix = ix
+        buffered_inputs[name] = buffered_ix
+
+    buffered_outputs = {}
+    for name, ox in iteritems(outputs):
+        if isinstance(ox.get_module(), SubstitutionModule):
+            b_inputs, b_outputs = identity()
+            ox.connect(b_inputs['In'])
+            buffered_ox = b_outputs['Out']
+        else:
+            buffered_ox = ox
+        buffered_outputs[name] = buffered_ox
+
+    return buffered_inputs, buffered_outputs
 
 
 class SearchSpaceFactory:
@@ -625,38 +696,21 @@ class SearchSpaceFactory:
     of the searcher.
 
     Args:
+        search_space_fn (() -> (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output])):
+            Returns the inputs and outputs of the search space, ready to be
+            specified.
         reset_scope_upon_get (bool): Whether to clean the scope upon getting
             a new search space. Should be ``True`` in most cases.
     """
 
-    def __init__(self, reset_scope_upon_get=True):
+    def __init__(self, search_space_fn, reset_scope_upon_get=True):
         self.reset_scope_upon_get = reset_scope_upon_get
+        self.search_space_fn = search_space_fn
 
     def get_search_space(self):
         """Returns the buffered search space."""
         if self.reset_scope_upon_get:
             co.Scope.reset_default_scope()
 
-        (inputs, outputs, hs) = self._get_search_space()
-
-        # buffering of inputs and outputs. this is related to the way the
-        # substitution are implemented right now, but the user should not concern
-        # itself with. buffering the inputs and outputs with empty (identity)
-        # modules guarantees that the behavior is correct throughout specification.
-        buffered_inputs = {}
-        for name, ix in iteritems(inputs):
-            b_inputs, b_outputs = identity()
-            b_outputs['Out'].connect(ix)
-            buffered_inputs[name] = b_inputs['In']
-
-        buffered_outputs = {}
-        for name, ox in iteritems(outputs):
-            b_inputs, b_outputs = identity()
-            ox.connect(b_inputs['In'])
-            buffered_outputs[name] = b_outputs['Out']
-
-        return buffered_inputs, buffered_outputs, hs
-
-    def _get_search_space(self):
-        """Implementation of the search space by the user."""
-        raise NotImplementedError
+        (inputs, outputs) = buffer_io(*self.search_space_fn())
+        return inputs, outputs

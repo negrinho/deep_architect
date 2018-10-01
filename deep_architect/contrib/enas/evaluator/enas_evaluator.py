@@ -115,7 +115,7 @@ class ENASEvaluator(object):
         loss_metric(loss)
         return loss
 
-    def eval(self, inputs, outputs, hs):
+    def eval(self, inputs, outputs):
         results = {}
         if self.controller_mode:
             # Compute accuracy of model

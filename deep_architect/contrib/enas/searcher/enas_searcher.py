@@ -18,6 +18,7 @@ tfe = tf.contrib.eager
 
 
 class ENASSearcher(Searcher):
+
     def __init__(self,
                  search_space_fn,
                  num_layers=12,
@@ -58,14 +59,15 @@ class ENASSearcher(Searcher):
         self.name = name
 
         self._create_params()
-        self.opt = tf.train.AdamOptimizer(self.learning_rate, beta1=0.0, epsilon=1e-3,
-                                    use_locking=True)
+        self.opt = tf.train.AdamOptimizer(
+            self.learning_rate, beta1=0.0, epsilon=1e-3, use_locking=True)
         self.train_step = tfe.Variable(
             0, dtype=tf.int32, trainable=False, name="train_step")
 
-        all_variables = self.variables + self.opt.variables() + [self.train_step]
+        all_variables = self.variables + self.opt.variables() + [
+            self.train_step
+        ]
         self.saver = tfe.Saver(all_variables)
-
 
     def sample(self):
         arc = self._sample()
@@ -78,9 +80,11 @@ class ENASSearcher(Searcher):
                 hyp_values['H.skip_' + str(j) + '_' + str(i) + '-0'] = arc[idx]
                 idx += 1
 
-        inputs, outputs, hs = self.search_space_fn()
+        inputs, outputs = self.search_space_fn()
         vs = []
-        for i, h in enumerate(unassigned_independent_hyperparameter_iterator(list(outputs.values()), list(hs.values()))):
+        for i, h in enumerate(
+                unassigned_independent_hyperparameter_iterator(
+                    list(outputs.values()), list(hs.values()))):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
                 h.assign_value(v)
@@ -88,14 +92,14 @@ class ENASSearcher(Searcher):
             else:
                 v = random_specify_hyperparameter(h)
                 vs.append(v)
-        return inputs, outputs, hs, vs, {'arc': arc}
+        return inputs, outputs, vs, {'arc': arc}
 
     def update(self, val, cfg_d):
         if val != -1:
             loss = self._train(val, cfg_d['arc'])
             if self.train_step % 1 == 0:
-                print("Step: %d,    Reward: %f,    Loss:%f" % (self.train_step, val, loss.numpy()))
-
+                print("Step: %d,    Reward: %f,    Loss:%f" %
+                      (self.train_step, val, loss.numpy()))
 
     def save_state(self, folder_name):
         checkpoint_prefix = os.path.join(folder_name, "enas_searcher")
@@ -113,30 +117,40 @@ class ENASSearcher(Searcher):
                     self.w_lstm = []
                     for layer_id in range(self.lstm_num_layers):
                         with tf.variable_scope("layer_{}".format(layer_id)):
-                            w = tfe.Variable(initializer([2 * self.lstm_size, 4 * self.lstm_size]),
+                            w = tfe.Variable(
+                                initializer(
+                                    [2 * self.lstm_size, 4 * self.lstm_size]),
                                 name="w")
                             self.w_lstm.append(w)
                     self.variables.extend(self.w_lstm)
 
-                self.g_emb = tfe.Variable(initializer([1, self.lstm_size]), name="g_emb")
+                self.g_emb = tfe.Variable(
+                    initializer([1, self.lstm_size]), name="g_emb")
                 with tf.variable_scope("emb"):
                     self.w_emb = tfe.Variable(
-                        initializer([self.num_branches, self.lstm_size]), name="w")
+                        initializer([self.num_branches, self.lstm_size]),
+                        name="w")
                 with tf.variable_scope("softmax"):
                     self.w_soft = tfe.Variable(
-                        initializer([self.lstm_size, self.num_branches]), name="w")
+                        initializer([self.lstm_size, self.num_branches]),
+                        name="w")
 
                 with tf.variable_scope("attention"):
                     self.w_attn_1 = tfe.Variable(
-                        initializer([self.lstm_size, self.lstm_size]), name="w_1")
+                        initializer([self.lstm_size, self.lstm_size]),
+                        name="w_1")
                     self.w_attn_2 = tfe.Variable(
-                        initializer([self.lstm_size, self.lstm_size]), name="w_2")
-                    self.v_attn = tfe.Variable(initializer([self.lstm_size, 1]), name="v")
+                        initializer([self.lstm_size, self.lstm_size]),
+                        name="w_2")
+                    self.v_attn = tfe.Variable(
+                        initializer([self.lstm_size, 1]), name="v")
                 self.variables.extend([
-                    self.g_emb, self.w_emb, self.w_soft, self.w_attn_1, self.w_attn_2,
-                    self.v_attn])
+                    self.g_emb, self.w_emb, self.w_soft, self.w_attn_1,
+                    self.w_attn_2, self.v_attn
+                ])
 
-                self.baseline = tfe.Variable(0.0, dtype=tf.float32, trainable=False)
+                self.baseline = tfe.Variable(
+                    0.0, dtype=tf.float32, trainable=False)
 
     def _sample(self):
         """Build the sampler ops and the log_prob ops."""
@@ -146,14 +160,17 @@ class ENASSearcher(Searcher):
         arc_seq = []
 
         with tf.device('/gpu:0'):
-            prev_c = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                    range(self.lstm_num_layers)]
-            prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                    range(self.lstm_num_layers)]
+            prev_c = [
+                tf.zeros([1, self.lstm_size], tf.float32)
+                for _ in range(self.lstm_num_layers)
+            ]
+            prev_h = [
+                tf.zeros([1, self.lstm_size], tf.float32)
+                for _ in range(self.lstm_num_layers)
+            ]
             inputs = self.g_emb
             for layer_id in range(self.num_layers):
-                next_c, next_h = stack_lstm(
-                    inputs, prev_c, prev_h, self.w_lstm)
+                next_c, next_h = stack_lstm(inputs, prev_c, prev_h, self.w_lstm)
                 prev_c, prev_h = next_c, next_h
                 logit = tf.matmul(next_h[-1], self.w_soft)
                 if self.tanh_constant is not None:
@@ -169,7 +186,8 @@ class ENASSearcher(Searcher):
 
                 if layer_id > 0:
                     query = tf.concat(anchors_w_1, axis=0)
-                    query = tf.tanh(query + tf.matmul(next_h[-1], self.w_attn_2))
+                    query = tf.tanh(query +
+                                    tf.matmul(next_h[-1], self.w_attn_2))
                     query = tf.matmul(query, self.v_attn)
                     logit = tf.concat([-query, query], axis=1)
                     if self.tanh_constant is not None:
@@ -206,17 +224,22 @@ class ENASSearcher(Searcher):
                 log_probs = []
                 skip_penaltys = []
 
-                prev_c = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                        range(self.lstm_num_layers)]
-                prev_h = [tf.zeros([1, self.lstm_size], tf.float32) for _ in
-                        range(self.lstm_num_layers)]
+                prev_c = [
+                    tf.zeros([1, self.lstm_size], tf.float32)
+                    for _ in range(self.lstm_num_layers)
+                ]
+                prev_h = [
+                    tf.zeros([1, self.lstm_size], tf.float32)
+                    for _ in range(self.lstm_num_layers)
+                ]
                 inputs = self.g_emb
-                skip_targets = tf.constant([1.0 - self.skip_target, self.skip_target],
-                                        dtype=tf.float32)
+                skip_targets = tf.constant(
+                    [1.0 - self.skip_target, self.skip_target],
+                    dtype=tf.float32)
                 idx = 0
                 for layer_id in range(self.num_layers):
-                    next_c, next_h = stack_lstm(
-                        inputs, prev_c, prev_h, self.w_lstm)
+                    next_c, next_h = stack_lstm(inputs, prev_c, prev_h,
+                                                self.w_lstm)
                     prev_c, prev_h = next_c, next_h
                     logit = tf.matmul(next_h[-1], self.w_soft)
                     if self.tanh_constant is not None:
@@ -233,30 +256,34 @@ class ENASSearcher(Searcher):
                     entropys.append(entropy)
                     inputs = tf.nn.embedding_lookup(self.w_emb, branch_id)
 
-                    next_c, next_h = stack_lstm(inputs, prev_c, prev_h, self.w_lstm)
+                    next_c, next_h = stack_lstm(inputs, prev_c, prev_h,
+                                                self.w_lstm)
                     prev_c, prev_h = next_c, next_h
 
                     if layer_id > 0:
                         query = tf.concat(anchors_w_1, axis=0)
-                        query = tf.tanh(query + tf.matmul(next_h[-1], self.w_attn_2))
+                        query = tf.tanh(query +
+                                        tf.matmul(next_h[-1], self.w_attn_2))
                         query = tf.matmul(query, self.v_attn)
                         logit = tf.concat([-query, query], axis=1)
                         if self.tanh_constant is not None:
                             logit = self.tanh_constant * tf.tanh(logit)
 
-                        skip = prev_arc[idx: idx + layer_id]
+                        skip = prev_arc[idx:idx + layer_id]
                         skip = tf.to_int32(skip)
                         skip = tf.reshape(skip, [layer_id])
                         idx += layer_id
 
                         skip_prob = tf.sigmoid(logit)
-                        kl = skip_prob * tf.log(old_div(skip_prob, skip_targets))
+                        kl = skip_prob * tf.log(
+                            old_div(skip_prob, skip_targets))
                         kl = tf.reduce_sum(kl)
                         skip_penaltys.append(kl)
 
                         log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
                             logits=logit, labels=skip)
-                        log_probs.append(tf.reduce_sum(log_prob, keep_dims=True))
+                        log_probs.append(
+                            tf.reduce_sum(log_prob, keep_dims=True))
 
                         skip = tf.to_float(skip)
                         skip = tf.reshape(skip, [1, layer_id])
@@ -279,11 +306,13 @@ class ENASSearcher(Searcher):
 
                 reward += self.entropy_weight * sample_entropy
 
-                self.baseline.assign_sub((1 - self.bl_dec) * (self.baseline - reward))
+                self.baseline.assign_sub(
+                    (1 - self.bl_dec) * (self.baseline - reward))
 
                 loss = sample_log_prob * (reward - self.baseline)
                 loss += self.skip_weight * skip_penaltys
 
             grads = tape.gradient(loss, self.variables)
-            self.opt.apply_gradients(list(zip(grads, self.variables)), global_step=self.train_step)
+            self.opt.apply_gradients(
+                list(zip(grads, self.variables)), global_step=self.train_step)
         return loss

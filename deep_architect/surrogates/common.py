@@ -27,7 +27,7 @@ class SurrogateModel:
 
 
 # extract some simple features from the network. useful for smbo surrogate models.
-def extract_features(inputs, outputs, hs):
+def extract_features(inputs, outputs):
     """Extract a feature representation of a model represented through inputs,
     outputs, and hyperparameters.
 

@@ -70,7 +70,7 @@ class SimpleClassifierEvaluator:
         acc = float(nc) / dataset.get_num_examples()
         return acc
 
-    def eval(self, inputs, outputs, hs):
+    def eval(self, inputs, outputs):
         tf.reset_default_graph()
 
         X_pl = tf.placeholder("float", [None] + self.in_dim)
@@ -110,18 +110,12 @@ class SimpleClassifierEvaluator:
         with tf.Session(config=config) as sess:
             sess.run(init)
 
-            learning_rate_init = self.learning_rate_init if 'learning_rate_init' not in hs else hs[
-                'learning_rate_init'].val
-            learning_rate_mult = self.learning_rate_mult if 'learning_rate_mult' not in hs else hs[
-                'learning_rate_mult'].val
-            learning_rate_min = self.learning_rate_min if 'learning_rate_min' not in hs else hs[
-                'learning_rate_min'].val
-            stop_patience = self.stop_patience if 'stop_patience' not in hs else hs[
-                'stop_patience'].val
-            learning_rate_patience = self.learning_rate_patience if 'learning_rate_patience' not in hs else hs[
-                'learning_rate_patience'].val
-            save_patience = self.save_patience if 'save_patience' not in hs else hs[
-                'save_patience'].val
+            learning_rate_init = self.learning_rate_init
+            learning_rate_mult = self.learning_rate_mult
+            learning_rate_min = self.learning_rate_min
+            stop_patience = self.stop_patience
+            learning_rate_patience = self.learning_rate_patience
+            save_patience = self.save_patience
 
             best_val_acc = -np.inf
             best_val_acc_saved = -np.inf

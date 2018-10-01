@@ -10,5 +10,6 @@
     "python.formatting.yapfArgs": [
         "--style",
         "{based_on_style: google}"
-    ]
+    ],
+    "editor.formatOnSaveTimeout": 60000,
 }

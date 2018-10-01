@@ -50,15 +50,14 @@ import deep_architect.helpers.tensorflow as htf
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
 from deep_architect.contrib.deep_learning_backend.tf_ops import (
-    relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d,
-    max_pool2d, fc_layer, global_pool2d
-)
+    relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
+    fc_layer, global_pool2d)
 
 from deep_architect.hyperparameters import Discrete as D
 
-
 TFM = htf.TensorflowModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
+
 
 # This is a module created using framework agnostic modules to perform spatially
 # separable convolutions (eg a 1x3 conv followed by a 3x1 conv). Dependent
@@ -66,10 +65,14 @@ const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 # h_stride parameters--which only take values of ints--into the necessary
 # parameters for the spatially separable convolution.
 def conv_spatial_separable(h_num_filters, h_filter_size, h_stride):
-    h_filter_size_1 = co.DependentHyperparameter(lambda size: [1, size], {'size': h_filter_size})
-    h_filter_size_2 = co.DependentHyperparameter(lambda size: [size, 1], {'size': h_filter_size})
-    h_stride_1 = co.DependentHyperparameter(lambda stride: [1, stride], {'stride': h_stride})
-    h_stride_2 = co.DependentHyperparameter(lambda stride: [stride, 1], {'stride': h_stride})
+    h_filter_size_1 = co.DependentHyperparameter(lambda size: [1, size],
+                                                 {'size': h_filter_size})
+    h_filter_size_2 = co.DependentHyperparameter(lambda size: [size, 1],
+                                                 {'size': h_filter_size})
+    h_stride_1 = co.DependentHyperparameter(lambda stride: [1, stride],
+                                            {'stride': h_stride})
+    h_stride_2 = co.DependentHyperparameter(lambda stride: [stride, 1],
+                                            {'stride': h_stride})
     return mo.siso_sequential([
         conv2d(h_num_filters, h_filter_size_1, h_stride_1, D([1]), D([True])),
         batch_normalization(),
@@ -77,14 +80,12 @@ def conv_spatial_separable(h_num_filters, h_filter_size, h_stride):
         conv2d(h_num_filters, h_filter_size_2, h_stride_2, D([1]), D([True]))
     ])
 
+
 # This is a simple convenience function used to wrap a conv module with relu
 # and batch norm
 def wrap_relu_batch_norm(conv):
-    return mo.siso_sequential([
-        relu(),
-        conv,
-        batch_normalization()
-    ])
+    return mo.siso_sequential([relu(), conv, batch_normalization()])
+
 
 # This function applies some of the convolution specific logic that is not
 # specified in the paper but is used in the code base. Essentially, it transforms
@@ -95,24 +96,24 @@ def wrap_relu_batch_norm(conv):
 def apply_conv_op(main_op, op_name, h_num_filter):
     if op_name is 's_sep3':
         reduced_filter_size = co.DependentHyperparameter(
-            lambda size: int(3 * size / 8),
-            {'size': h_num_filter}, name='reduced_filter_size')
+            lambda size: int(3 * size / 8), {'size': h_num_filter},
+            name='reduced_filter_size')
     else:
         reduced_filter_size = co.DependentHyperparameter(
-            lambda size: int(size / 4),
-            {'size': h_num_filter}, name='reduced_filter_size')
+            lambda size: int(size / 4), {'size': h_num_filter},
+            name='reduced_filter_size')
 
     bottleneck_too_thin = co.DependentHyperparameter(
-        lambda size: size < 1, {'size': reduced_filter_size}, name='bottleneck_too_thin'
-    )
+        lambda size: size < 1, {'size': reduced_filter_size},
+        name='bottleneck_too_thin')
 
     bottleneck_filters = co.DependentHyperparameter(
         lambda reduced_filter_size, num_filter: num_filter if reduced_filter_size < 1 else reduced_filter_size,
         {
             'reduced_filter_size': reduced_filter_size,
             'num_filter': h_num_filter
-        }, name='bottleneck_filters'
-    )
+        },
+        name='bottleneck_filters')
 
     return mo.siso_sequential([
         mo.siso_optional(
@@ -128,20 +129,25 @@ def apply_conv_op(main_op, op_name, h_num_filter):
         )
     ])
 
+
 # This module is used to encode the logic for 1x1 convolution and no op
 # operations. It essentially adds a stride by using a 1x1 convolution to the
 # no op layer if needed.
 def check_stride(h_stride, h_num_filter, h_op_name):
     need_stride = co.DependentHyperparameter(
         lambda name, stride: int(name is 'conv1' or stride > 1),
-        {'name': h_op_name, 'stride': h_stride},
+        {
+            'name': h_op_name,
+            'stride': h_stride
+        },
     )
     return mo.siso_or([
-        mo.empty,
+        mo.identity,
         lambda: wrap_relu_batch_norm(
             conv2d(h_num_filter, D([1]), h_stride, D([1]), D([True]))
         )
     ], need_stride)
+
 
 # This module is used to apply the pooling layer specific logic used for
 # striding by the amoebanet code.
@@ -160,6 +166,7 @@ def check_reduce(main_op, h_stride, h_num_filter):
         )
     ])
 
+
 # The regularized evolution paper mentions in the appendix that for the depth
 # separable convolutions, they applied them twice whenever selected. This
 # is the implementation of that scheme that is used in the amoebanet code.
@@ -167,16 +174,15 @@ def stacked_depth_separable_conv(h_filter_size, h_num_filters,
                                  h_depth_multiplier, h_stride):
     return mo.siso_sequential([
         relu(),
-        separable_conv2d(
-            h_num_filters, h_filter_size, D([1]), D([1]), h_depth_multiplier,
-            D([True])),
+        separable_conv2d(h_num_filters, h_filter_size, D([1]), D([1]),
+                         h_depth_multiplier, D([True])),
         batch_normalization(),
         relu(),
-        separable_conv2d(
-            h_num_filters, h_filter_size, h_stride, D([1]), h_depth_multiplier,
-            D([True])),
+        separable_conv2d(h_num_filters, h_filter_size, h_stride, D([1]),
+                         h_depth_multiplier, D([True])),
         batch_normalization()
     ])
+
 
 # This is simply an Or substitution module that chooses between the operations
 # used in search space 1 and search space 3 in the regularized evolution paper.
@@ -195,6 +201,7 @@ def sp1_operation(h_op_name, h_stride, h_filters):
             lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
             's_sep7', h_filters),
         }, h_op_name)
+
 
 # This is simply an Or substitution module that chooses between the operations
 # used in search space 2 in the regularized evolution paper.
@@ -229,9 +236,11 @@ def sp2_operation(h_op_name, h_stride, h_filters):
             's_sep7', h_stride),
         }, h_op_name)
 
+
 # This module takes in a specifiable number of inputs, uses 1x1 convolutions to
 # make the number filters match, and then adds the inputs together
 def mi_add(num_terms, name=None):
+
     def compile_fn(di, dh):
         (_, _, _, min_channels) = di['In0'].get_shape().as_list()
         for i in range(num_terms):
@@ -245,22 +254,30 @@ def mi_add(num_terms, name=None):
         for i in range(num_terms):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
             if channels != min_channels:
-                w_dict[i] = tf.Variable( W_init_fn( [1, 1, channels, min_channels]))
-                b_dict[i] = tf.Variable( b_init_fn( [min_channels]))
+                w_dict[i] = tf.Variable(
+                    W_init_fn([1, 1, channels, min_channels]))
+                b_dict[i] = tf.Variable(b_init_fn([min_channels]))
 
         def fn(di):
             trans = []
             for i in range(num_terms):
                 if i in w_dict:
-                    trans.append(tf.nn.bias_add(tf.nn.conv2d(di['In' + str(i)], w_dict[i], [1, 1, 1, 1], 'SAME'), b_dict[i]))
+                    trans.append(
+                        tf.nn.bias_add(
+                            tf.nn.conv2d(di['In' + str(i)], w_dict[i],
+                                         [1, 1, 1, 1], 'SAME'), b_dict[i]))
                 else:
                     trans.append(di['In' + str(i)])
             total_sum = trans[0]
             for i in range(1, num_terms):
                 total_sum = tf.add(total_sum, trans[i])
-            return {'Out' : total_sum}
+            return {'Out': total_sum}
+
         return fn
-    return TFM('MultiInputAdd' if name is None else name, {}, compile_fn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
+
+    return TFM('MultiInputAdd' if name is None else name, {}, compile_fn,
+               ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
+
 
 # This module applies a sp1_operation to two inputs, and adds them together
 def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
@@ -275,16 +292,20 @@ def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
         add_inputs['In' + str(i)].connect(ops[i][1]['Out'])
     return (i_inputs, add_outputs)
 
+
 # This module is a substitution module that selects a module from a list of
 # input modules.
 def selector(h_selection, available, scope=None):
-    def sub_fn(selection):
+
+    def substitution_fn(selection):
         ins, outs = available[selection]
         if len(ins) > 1:
             values = list(ins.values())
             ins = OrderedDict({'In': values[0]})
         return ins, outs
-    return mo.substitution_module('Selector', {'selection': h_selection}, sub_fn, ['In'], ['Out'], scope)
+
+    return mo.substitution_module('Selector', {'selection': h_selection},
+                                  substitution_fn, ['In'], ['Out'], scope)
 
 
 # This module takes in a list of cell inputs, a list of hyperparameters that
@@ -302,11 +323,15 @@ def selector(h_selection, available, scope=None):
 # Finally, we replace the dummy substitution module for our module with the true
 # substitution function.
 def add_unused(h_selections, available, normal, name=None, scope=None):
+
     def dummy_func(**dummy_hs):
         return mo.identity()
-    module = mo.SubstitutionModule('AddUnused', {'selection' + str(i): h_selections[i] for i in range(len(h_selections))}, dummy_func, ['In'], ['Out'], scope)
 
-    def sub_fn(**selections):
+    module = mo.SubstitutionModule('AddUnused', {
+        'selection' + str(i): h_selections[i] for i in range(len(h_selections))
+    }, dummy_func, ['In'], ['Out'], scope)
+
+    def substitution_fn(**selections):
         selected = [False] * len(selections)
         for k in selections:
             selected[selections[k]] = True
@@ -316,7 +341,9 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
             if selected[i] and not normal:
                 available[i][1]['Out'].module.inputs['In'].disconnect()
 
-        unused = [available[i] for i in range(len(available)) if not selected[i]]
+        unused = [
+            available[i] for i in range(len(available)) if not selected[i]
+        ]
         ins, outs = mi_add(len(unused), name=name)
 
         module.inputs = {}
@@ -325,17 +352,23 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
             unused[i][1]['Out'].connect(ins['In' + str(i)])
 
         return ins, outs
-    module._substitution_fn = sub_fn
+
+    module._substitution_fn = substitution_fn
     return module.get_io()
+
 
 # This is a module used to pad and shift the input. This is used as part of the
 # factorized reduction operation in the amoebanet code.
 def pad_and_shift():
+
     def compile_fn(di, dh):
         pad_arr = [[0, 0], [0, 1], [0, 1], [0, 0]]
+
         def fn(di):
             return {'Out': tf.pad(di['In'], pad_arr)[:, 1:, 1:, :]}
+
         return fn
+
     return htf.siso_tensorflow_module('Pad', compile_fn, {})
 
 
@@ -343,11 +376,16 @@ def pad_and_shift():
 # This is used as part of the factorized reduction operation in the amoebanet
 # code.
 def concat(axis):
+
     def compile_fn(di, dh):
+
         def fn(di):
             return {'Out': tf.concat(values=[di['In0'], di['In1']], axis=axis)}
+
         return fn
+
     return TFM('Concat', {}, compile_fn, ['In0', 'In1'], ['Out']).get_io()
+
 
 # This operation is used to reduce the size of the input, either by striding
 # ir reducing the number of filters, without losing information. It is specified
@@ -357,8 +395,10 @@ def concat(axis):
 # concatenated along the channel dimensions. We use the `is_stride_2` dependent
 # hyperparameter to decide whether we need to do the striding operations.
 def factorized_reduction(h_num_filters, h_stride):
-    is_stride_2 = co.DependentHyperparameter(lambda stride: int(stride == 2), {'stride': h_stride})
-    reduced_filters = co.DependentHyperparameter(lambda filters: filters / 2, {'filters': h_num_filters})
+    is_stride_2 = co.DependentHyperparameter(lambda stride: int(stride == 2),
+                                             {'stride': h_stride})
+    reduced_filters = co.DependentHyperparameter(lambda filters: filters / 2,
+                                                 {'filters': h_num_filters})
     ins, outs = mo.identity()
     path1_ins, path1_outs = mo.siso_sequential([
         avg_pool2d(D([1]), h_stride),
@@ -387,6 +427,7 @@ def factorized_reduction(h_num_filters, h_stride):
         ])
     ], is_stride_2, name='factor')
 
+
 # A module that outlines the basic cell structure in the transferable
 # architectures paper. It uses a hyperparameter sharer to get the same
 # architecture specification across cells. It takes in an array called
@@ -394,7 +435,8 @@ def factorized_reduction(h_num_filters, h_stride):
 # according to the process described at the top of this tutorial.
 def basic_cell(available, h_sharer, h_filters, C=5, normal=True):
     assert len(available) == 2
-    i_inputs = OrderedDict([('In' + str(idx), available[idx][1]['Out']) for idx in range(len(available))])
+    i_inputs = OrderedDict([('In' + str(idx), available[idx][1]['Out'])
+                            for idx in range(len(available))])
     selections = []
     for i in range(C):
         if normal:
@@ -415,25 +457,28 @@ def basic_cell(available, h_sharer, h_filters, C=5, normal=True):
 
         def is_stride_2(pos):
             return 1 if normal or pos > 1 else 2
-        h_stride_0 = co.DependentHyperparameter(is_stride_2, {'pos': h_in0_pos}, name='h_stride_0')
-        h_stride_1 = co.DependentHyperparameter(is_stride_2, {'pos': h_in1_pos}, name='h_stride_1')
-        comb_inputs, comb_outputs = sp1_combine(
-            h_op0, h_op1, h_stride_0, h_stride_1, h_filters)
+
+        h_stride_0 = co.DependentHyperparameter(
+            is_stride_2, {'pos': h_in0_pos}, name='h_stride_0')
+        h_stride_1 = co.DependentHyperparameter(
+            is_stride_2, {'pos': h_in1_pos}, name='h_stride_1')
+        comb_inputs, comb_outputs = sp1_combine(h_op0, h_op1, h_stride_0,
+                                                h_stride_1, h_filters)
         sel0_outputs['Out'].connect(comb_inputs['In0'])
         sel1_outputs['Out'].connect(comb_inputs['In1'])
         available.append((comb_inputs, comb_outputs))
 
     if not normal:
-        available[0] = mo.siso_sequential([
-            available[0],
-            factorized_reduction(h_filters, D([2]))
-        ])
-        available[1] = mo.siso_sequential([
-            available[1],
-            factorized_reduction(h_filters, D([2]))
-        ])
+        available[0] = mo.siso_sequential(
+            [available[0],
+             factorized_reduction(h_filters, D([2]))])
+        available[1] = mo.siso_sequential(
+            [available[1],
+             factorized_reduction(h_filters, D([2]))])
 
-    add_inputs, add_outputs = add_unused(selections, available[:], normal, 'NORMAL_CELL' if normal else 'REDUCTION_CELL')
+    add_inputs, add_outputs = add_unused(
+        selections, available[:], normal,
+        'NORMAL_CELL' if normal else 'REDUCTION_CELL')
     return i_inputs, add_outputs
 
 
@@ -441,34 +486,45 @@ def basic_cell(available, h_sharer, h_filters, C=5, normal=True):
 # according to the overall architecture parameter specification. It is a
 # substitution module, so it will not exist once the architecture is fully
 # specified.
-def ss_repeat(input_layers, h_N, h_sharer, h_filters, C, num_ov_repeat, num_classes, scope=None):
-    def sub_fn(N):
+def ss_repeat(input_layers,
+              h_N,
+              h_sharer,
+              h_filters,
+              C,
+              num_ov_repeat,
+              num_classes,
+              scope=None):
+
+    def substitution_fn(N):
         assert N > 0
 
         h_iter = h_filters
         for i in range(num_ov_repeat):
             for j in range(N):
                 available = input_layers[-2:]
-                norm_cell = basic_cell(available, h_sharer, h_iter, C=C, normal=True)
+                norm_cell = basic_cell(
+                    available, h_sharer, h_iter, C=C, normal=True)
                 input_layers.append(norm_cell)
             if i < num_ov_repeat - 1:
                 h_iter = co.DependentHyperparameter(
-                    lambda filters: filters*2,
-                    {'filters': h_iter}, name='h_iter')
+                    lambda filters: filters * 2, {'filters': h_iter},
+                    name='h_iter')
                 available = input_layers[-2:]
-                red_cell = basic_cell(available, h_sharer, h_iter, C=C, normal=False)
-                input_layers[-1] = mo.siso_sequential([
-                    input_layers[-1],
-                    factorized_reduction(h_iter, D([2]))
-                ])
+                red_cell = basic_cell(
+                    available, h_sharer, h_iter, C=C, normal=False)
+                input_layers[-1] = mo.siso_sequential(
+                    [input_layers[-1],
+                     factorized_reduction(h_iter, D([2]))])
                 input_layers.append(red_cell)
 
-        return mo.siso_sequential([
-            input_layers[-1],
-            global_pool2d(),
-            fc_layer(D([num_classes]))
-        ])
-    return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In0', 'In1'], ['Out'], scope)
+        return mo.siso_sequential(
+            [input_layers[-1],
+             global_pool2d(),
+             fc_layer(D([num_classes]))])
+
+    return mo.substitution_module('SS_repeat', {'N': h_N}, substitution_fn,
+                                  ['In0', 'In1'], ['Out'], scope)
+
 
 # This function creates a search space using operations from search spaces 1
 # and 3 from the regularized evolution paper
@@ -479,26 +535,49 @@ def get_search_space_small(num_classes, C):
     h_F = D([24])
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
-        h_sharer.register('h_norm_op0_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
-        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
-        h_sharer.register('h_norm_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
-        h_sharer.register('h_norm_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_norm_op0_' + str(i),
+            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
+        h_sharer.register(
+            'h_norm_op1_' + str(i),
+            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
+        h_sharer.register(
+            'h_norm_in0_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_norm_in1_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     for i in range(C):
-        h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
-        h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_red_op0_' + str(i),
+            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
+        h_sharer.register(
+            'h_red_op1_' + str(i),
+            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
+        h_sharer.register(
+            'h_red_in0_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_red_in1_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
-    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
-    return mo.siso_sequential([mo.identity(), (i_inputs, o_outputs), mo.identity()])
+    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs),
+                                     (i_inputs, i_outputs)], h_N, h_sharer, h_F,
+                                    C, 3, num_classes)
+    return mo.siso_sequential(
+        [mo.identity(), (i_inputs, o_outputs),
+         mo.identity()])
+
 
 # This function creates search space 1 from the regularized evolution paper
 def get_search_space_1(num_classes):
     return get_search_space_small(num_classes, 5)
 
+
 # This function creates search space 3 from the regularized evolution paper
 def get_search_space_3(num_classes):
     return get_search_space_small(num_classes, 15)
+
 
 # This function creates search space 2 from the regularized evolution paper
 def get_search_space_2(num_classes):
@@ -508,12 +587,18 @@ def get_search_space_2(num_classes):
     h_F = D([24])
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
-        h_sharer.register('h_norm_op0_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
-        h_sharer.register('h_norm_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-          'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
-        h_sharer.register('h_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
-        h_sharer.register('h_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_norm_op0_' + str(i),
+            lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+        h_sharer.register(
+            'h_norm_op1_' + str(i),
+            lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+        h_sharer.register(
+            'h_in0_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_in1_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     for i in range(C):
         if i == 0:
             h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
@@ -521,19 +606,30 @@ def get_search_space_2(num_classes):
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
             'min2', 'max2', 'max3', 's_sep3' 's_sep7'], name='Mutatable'))
         else:
-            h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+            h_sharer.register(
+                'h_red_op0_' + str(i),
+                lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
             h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
             'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
-        h_sharer.register('h_red_in0_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
-        h_sharer.register('h_red_in1_pos_' + str(i), lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_red_in0_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
+        h_sharer.register(
+            'h_red_in1_pos_' + str(i),
+            lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     i_inputs, i_outputs = conv2d(h_F, D([1]), D([1]), D([1]), D([True]))
-    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs), (i_inputs, i_outputs)], h_N, h_sharer, h_F, C, 3, num_classes)
-    return mo.siso_sequential([mo.identity(), (i_inputs, o_outputs), mo.identity()])
+    o_inputs, o_outputs = ss_repeat([(i_inputs, i_outputs),
+                                     (i_inputs, i_outputs)], h_N, h_sharer, h_F,
+                                    C, 3, num_classes)
+    return mo.siso_sequential(
+        [mo.identity(), (i_inputs, o_outputs),
+         mo.identity()])
+
 
 # A simple search space factory to create the appropriate search space after
 # getting the search space name.
 class SSFZoph17(mo.SearchSpaceFactory):
+
     def __init__(self, search_space, num_classes):
         mo.SearchSpaceFactory.__init__(self)
         self.num_classes = num_classes
