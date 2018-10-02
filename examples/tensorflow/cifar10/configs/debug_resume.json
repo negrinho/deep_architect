@@ -1,9 +1,0 @@
-{
-    "max_eval_time_in_minutes" : 0.01,
-    "num_samples" : 16,
-    "search_name" : "debug_resume",
-    "use_gpu" : 0,
-    "folderpath" : "logs/cifar10",
-    "delete_if_exists" : 0,
-    "resume_if_exists" : 1
-}
