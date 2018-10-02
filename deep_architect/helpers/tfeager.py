@@ -80,6 +80,7 @@ class TFEModule(co.Module):
 
 
 def setTraining(output_lst, isTraining):
+
     def fn(mx):
         if hasattr(mx, 'isTraining'):
             mx.isTraining = isTraining

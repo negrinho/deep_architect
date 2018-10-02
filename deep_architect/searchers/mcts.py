@@ -43,8 +43,8 @@ class MCTSTreeNode:
             # rollout policy based on surrogate functions says.
             # think about how to extend this.
             if node.num_trials > 0:
-                score = (node.sum_scores / node.num_trials + exploration_bonus
-                         * np.sqrt(2.0 * parent_log_nt / node.num_trials))
+                score = (node.sum_scores / node.num_trials + exploration_bonus *
+                         np.sqrt(2.0 * parent_log_nt / node.num_trials))
             else:
                 score = np.inf
 
@@ -68,6 +68,7 @@ class MCTSTreeNode:
 
 
 class MCTSSearcher(Searcher):
+
     def __init__(self, search_space_fn, exploration_bonus=1.0):
         Searcher.__init__(self, search_space_fn)
         self.exploration_bonus = exploration_bonus

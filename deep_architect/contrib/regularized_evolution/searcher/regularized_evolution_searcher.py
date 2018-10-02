@@ -38,15 +38,14 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
 
     inputs, outputs = search_space_fn()
     output_lst = list(outputs.values())
-    all_vs = specify_evolution(output_lst, mutatable_fn, new_vs, hs)
+    all_vs = specify_evolution(output_lst, mutatable_fn, new_vs)
     return inputs, outputs, new_vs, all_vs
 
 
-def random_specify_evolution(output_lst, mutatable_fn, hyperp_lst=None):
+def random_specify_evolution(output_lst, mutatable_fn):
     user_vs = []
     all_vs = []
-    for h in unassigned_independent_hyperparameter_iterator(
-            output_lst, hyperp_lst):
+    for h in unassigned_independent_hyperparameter_iterator(output_lst):
         v = random_specify_hyperparameter(h)
         if mutatable_fn(h):
             user_vs.append(v)
@@ -54,12 +53,11 @@ def random_specify_evolution(output_lst, mutatable_fn, hyperp_lst=None):
     return user_vs, all_vs
 
 
-def specify_evolution(output_lst, mutatable_fn, user_vs, hyperp_lst=None):
+def specify_evolution(output_lst, mutatable_fn, user_vs):
     vs_idx = 0
     vs = []
     for i, h in enumerate(
-            unassigned_independent_hyperparameter_iterator(
-                output_lst, hyperp_lst)):
+            unassigned_independent_hyperparameter_iterator(output_lst)):
         if mutatable_fn(h):
             h.assign_value(user_vs[vs_idx])
             vs.append(user_vs[vs_idx])

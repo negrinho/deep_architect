@@ -95,6 +95,7 @@ def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
 def siso_pytorch_module_from_pytorch_layer_fn(layer_fn,
                                               name_to_hyperp,
                                               scope=None):
+
     def compile_fn(di, dh):
         m = layer_fn(**dh)
 
@@ -110,6 +111,7 @@ def siso_pytorch_module_from_pytorch_layer_fn(layer_fn,
 # NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
 def _call_fn_on_pytorch_module(output_lst, fn):
+
     def fn_iter(mx):
         if hasattr(mx, 'pyth_modules'):
             for pyth_m in mx.pyth_modules:
@@ -192,13 +194,11 @@ class PyTorchModel(nn.Module):
                 self.inputs.values())
 
         input_to_val = {
-            ix: input_name_to_val[name]
-            for name, ix in iteritems(self.inputs)
+            ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)
         }
         co.forward(input_to_val, self._module_seq)
         output_name_to_val = {
-            name: ox.val
-            for name, ox in iteritems(self.outputs)
+            name: ox.val for name, ox in iteritems(self.outputs)
         }
 
         if not self._is_compiled:

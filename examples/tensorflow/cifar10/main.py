@@ -1,4 +1,5 @@
 import deep_architect.search_logging as sl
+import deep_architect.utils as ut
 
 # Make sure that only one GPU is visible.
 if __name__ == '__main__':

@@ -167,8 +167,7 @@ def draw_graph(output_lst,
         g.node(s, shape='rectangle', penwidth=penwidth)
 
     if print_to_screen or out_folderpath is not None:
-        g.render(
-            graph_name, out_folderpath, view=print_to_screen, cleanup=True)
+        g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
 
 def draw_graph_evolution(output_lst,
@@ -178,6 +177,7 @@ def draw_graph_evolution(output_lst,
                          draw_hyperparameters=True,
                          draw_io_labels=True,
                          draw_module_hyperparameter_info=True):
+
     def draw_fn(i):
         return draw_graph(
             output_lst,
@@ -207,6 +207,7 @@ def draw_graph_evolution(output_lst,
 
 
 class LinePlot:
+
     def __init__(self, title=None, xlabel=None, ylabel=None):
         self.data = []
         self.title = title
@@ -216,12 +217,7 @@ class LinePlot:
         self.color_to_str = {'black': 'k', 'red': 'r'}
         self.line_type_to_str = {'solid': '-', 'dotted': ':', 'dashed': '--'}
 
-    def add_line(self,
-                 xs,
-                 ys,
-                 label=None,
-                 err=None,
-                 color=None,
+    def add_line(self, xs, ys, label=None, err=None, color=None,
                  line_type=None):
         d = {
             "xs": xs,

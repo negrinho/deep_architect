@@ -85,8 +85,8 @@ def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
                        scope).get_io()
 
 
-def siso_keras_module_from_keras_layer_fn(layer_fn, name_to_hyperp,
-                                          scope=None):
+def siso_keras_module_from_keras_layer_fn(layer_fn, name_to_hyperp, scope=None):
+
     def compile_fn(di, dh):
         m = layer_fn(**dh)
 
