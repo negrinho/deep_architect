@@ -7,6 +7,10 @@ import argparse
 from six import iteritems, itervalues
 
 
+def sleep(time_in_seconds):
+    time.sleep(time_in_seconds)
+
+
 def run_bash_command(cmd):
     str_output = subprocess.check_output(cmd, shell=True)
     return str_output
@@ -66,8 +70,7 @@ def folder_exists(path):
     return os.path.isdir(path)
 
 
-def create_folder(folderpath,
-                  abort_if_exists=True,
+def create_folder(folderpath, abort_if_exists=True,
                   create_parent_folders=False):
     assert not file_exists(folderpath)
     assert create_parent_folders or folder_exists(path_prefix(folderpath))
@@ -347,6 +350,7 @@ class TimerManager:
 
 
 class CommandLineArgs:
+
     def __init__(self, argname_prefix=''):
         self.parser = argparse.ArgumentParser()
         self.argname_prefix = argname_prefix

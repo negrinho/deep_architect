@@ -7,6 +7,7 @@ from deep_architect.communicators.file_utils import (consume_file, read_file,
 
 
 class FileCommunicator(Communicator):
+
     def __init__(self,
                  num_procs,
                  dirname='file_comm',
@@ -20,9 +21,7 @@ class FileCommunicator(Communicator):
 
         # claim a rank for the process
         lock = portalocker.Lock(
-            os.path.join(dirname, 'init'),
-            mode='a+',
-            flags=portalocker.LOCK_EX)
+            os.path.join(dirname, 'init'), mode='a+', flags=portalocker.LOCK_EX)
         lock.acquire()
         fh = lock.fh
         fh.seek(0)

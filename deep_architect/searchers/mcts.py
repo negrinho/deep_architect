@@ -76,10 +76,10 @@ class MCTSSearcher(Searcher):
 
     # NOTE: this operation changes the state of the tree.
     def sample(self):
-        inputs, outputs, hyperps = self.search_space_fn()
+        inputs, outputs = self.search_space_fn()
 
         h_it = co.unassigned_independent_hyperparameter_iterator(
-            outputs.values(), hyperps.values())
+            outputs.values())
         tree_hist, tree_vs = self._tree_walk(h_it)
         rollout_hist, rollout_vs = self._rollout_walk(h_it)
         vs = tree_vs + rollout_vs
@@ -88,7 +88,7 @@ class MCTSSearcher(Searcher):
             'rollout_hist': rollout_hist
         }
 
-        return inputs, outputs, hyperps, vs, searcher_eval_token
+        return inputs, outputs, vs, searcher_eval_token
 
     def update(self, val, searcher_eval_token):
         node = self.mcts_root_node

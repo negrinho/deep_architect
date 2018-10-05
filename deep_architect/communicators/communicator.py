@@ -5,6 +5,7 @@ master-worker model.
 
 
 class Communicator(object):
+
     def __init__(self, num_workers, rank):
         self.num_workers = num_workers
         self.rank = rank

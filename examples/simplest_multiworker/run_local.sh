@@ -6,8 +6,10 @@ cfg_name="$1"
 num_workers=$2
 folderpath=dev/negrinho/multiworker/simplest
 cfg_filepath="$folderpath/configs/$cfg_name.json"
+# generate architectures
 ipython $folderpath/master.py -- \
     --config_filepath "$cfg_filepath"
+
 u=$(($num_workers - 1))
 for worker_id in $(seq 0 $u); do
     ipython $folderpath/worker.py -- \

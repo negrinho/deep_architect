@@ -41,8 +41,7 @@ def read_file(filename):
 def write_file(filename, obj):
     file_data = 0
     while file_data is not None:
-        lock = portalocker.Lock(
-            filename, mode='a+b', flags=portalocker.LOCK_EX)
+        lock = portalocker.Lock(filename, mode='a+b', flags=portalocker.LOCK_EX)
         lock.acquire()
         fh = lock.fh
         fh.seek(0)

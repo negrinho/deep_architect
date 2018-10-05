@@ -93,14 +93,14 @@ def random_specify(output_lst):
             correspondingly all the current unspecified hyperparameters of the
             search space.
     """
-    vs = []
+    hyperp_value_lst = []
     for h in co.unassigned_independent_hyperparameter_iterator(output_lst):
         v = random_specify_hyperparameter(h)
-        vs.append(v)
-    return vs
+        hyperp_value_lst.append(v)
+    return hyperp_value_lst
 
 
-def specify(output_lst, vs):
+def specify(output_lst, hyperp_value_lst):
     """Specify the parameters in the search space using the sequence of values
     passed as argument.
 
@@ -117,8 +117,8 @@ def specify(output_lst, vs):
             traversed back will reach all the modules in the search space, and
             correspondingly all the current unspecified hyperparameters of the
             search space.
-        vs (list[object]): List of values used to specify the hyperparameters.
+        hyperp_value_lst (list[object]): List of values used to specify the hyperparameters.
     """
     for i, h in enumerate(
             co.unassigned_independent_hyperparameter_iterator(output_lst)):
-        h.assign_value(vs[i])
+        h.assign_value(hyperp_value_lst[i])

@@ -101,6 +101,7 @@ class Scope:
 
 
 # NOTE: is this called once for each time core is imported?
+# TODO: check.
 Scope.default_scope = Scope()
 
 
@@ -757,6 +758,17 @@ def traverse_forward(input_lst, fn):
                         if m_next not in memo:
                             memo.add(m_next)
                             ms.append(m_next)
+
+
+def get_modules_with_cond(output_lst, cond_fn):
+    ms = OrderedSet()
+
+    def fn(m):
+        if cond_fn(m):
+            ms.add(m)
+
+    traverse_backward(output_lst, fn)
+    return ms
 
 
 def is_specified(output_lst):

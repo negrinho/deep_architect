@@ -191,6 +191,11 @@ def hyperparameter_aggregator(name_to_hyperp, scope=None, name=None):
     return HyperparameterAggregator(name_to_hyperp, scope, name).get_io()
 
 
+def get_hyperparameter_aggregators(output_lst):
+    co.get_modules_with_cond(output_lst,
+                             lambda m: isinstance(m, HyperparameterAggregator))
+
+
 def input_replicator(num_outputs, scope=None, name=None):
     return InputReplicator(num_outputs, scope=scope, name=name).get_io()
 

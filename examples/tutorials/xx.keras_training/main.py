@@ -12,11 +12,12 @@ from deep_architect.hyperparameters import Discrete as D
 from deep_architect.contrib.misc.datasets.loaders import load_mnist
 
 from deep_architect.contrib.deep_learning_backend.keras_ops import (
-    input_node, conv2d, max_pool2d, relu, batch_normalization,
-    global_pool2d, fc_layer)
+    input_node, conv2d, max_pool2d, relu, batch_normalization, global_pool2d,
+    fc_layer)
 
 # First, we load the data. For this tutorial, we will used the MNIST dataset.
-X_train, y_train, X_val, y_val, X_test, y_test = load_mnist('data/mnist', normalize_range=True)
+X_train, y_train, X_val, y_val, X_test, y_test = load_mnist(
+    'data/mnist', normalize_range=True)
 
 # Now we create the keras search space. In addition to the actual model
 # components, we need to add an input module at the beginning to accomodate for
@@ -37,17 +38,21 @@ ins, outs = mo.siso_sequential([
 # We will randomly specify the hyperparameters for this architecture and compile
 # it.
 random_specify(outs.values())
-co.forward({ins['In'] : X_train.shape[1:]})
+co.forward({ins['In']: X_train.shape[1:]})
 _, input_layer = in_node
 model = Model(
     inputs=[inp.val for inp in input_layer.values()],
     outputs=[out.val for out in outs.values()])
-model.compile(loss=keras.losses.categorical_crossentropy,
-                optimizer=keras.optimizers.Adadelta(),
-                metrics=['accuracy'])
+model.compile(
+    loss=keras.losses.categorical_crossentropy,
+    optimizer=keras.optimizers.Adadelta(),
+    metrics=['accuracy'])
 
 # Now, we can train the model as normal in Keras.
 model.fit(
-    X_train, y_train,
+    X_train,
+    y_train,
     validation_data=(X_val, y_val),
-    shuffle=True, batch_size=32, epochs=10)
+    shuffle=True,
+    batch_size=32,
+    epochs=10)

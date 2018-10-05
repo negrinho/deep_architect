@@ -1,5 +1,5 @@
 """
-Script that helps converting tutorials in .py format to md, rst, ipynb format
+Script convert tutorials in .py to .md, .rst, or .ipynb
 """
 import os
 import sys
@@ -8,11 +8,11 @@ import string
 input_file = sys.argv[1]
 output_file = sys.argv[2]
 target_format = sys.argv[3]
-supported_format = ["markdown", "rst", "ipynb"]
+supported_formats = ["markdown", "rst", "ipynb"]
 
 md_header = "### ${MARKDOWN}"
 rst_header = "### ${RST}"
-text_headers = {md_header, rst_header}  # can add more header in the future
+text_headers = {md_header, rst_header}  # can add more headers in the future
 code_header = "### ${CODE}"
 
 fin = open(input_file, 'r')
@@ -20,7 +20,7 @@ fin = open(input_file, 'r')
 if (target_format == "ipynb"):
     raise NotImplementedError()
 else:
-    assert (target_format in supported_format)
+    assert (target_format in supported_formats)
     content = ""
     code_block = ""
     mode = None  # ["text" or "code"]

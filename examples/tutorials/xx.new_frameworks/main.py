@@ -1,19 +1,15 @@
 
+###{MARKDOWN}
+# This tutorial aims to tell the reader how to support a new framework in
+# DeepArchitect.
+# By the end of this tutorial, you should understand what are the components
+# necessary to support a framework in DeepArchitect and and how to go about
+# supporting new ones on your own.
 
-### NOTE: supporting different frameworks.
-
-# NOTE: the purpose of these tutorials is to give a sense of the different
-# possibilities when implementing the model.
-# by the end of this tutorial, you should understand how the different
-# frameworks are supported and how to go about implementing your own.
-
-# talk about how to implement other types of frameworks.
-
-
-# two notions of compile and forward. I think that this is going to be
-# important.
-
-# DeepArchitect is not constrained to the frameworks that we currently support.
+# DeepArchitect is mostly a collection of wrapper 
+#
+#
+# not constrained to the frameworks that we currently support.
 # Supporting a new framework is a matter of implementing the compile and
 # forward behavior for modules of the desired type.
 # To exemplify this, we walk the reader over the implementation of existing

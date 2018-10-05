@@ -2,7 +2,9 @@ import deep_architect.search_logging as sl
 import deep_architect.visualization as vi
 import deep_architect.utils as ut
 from deep_architect.searchers.random import RandomSearcher
-# TODO: change this relative import.
+
+import deep_architect.modules as mo
+import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as css_dnn
 import search_space as ss
 
 
@@ -27,11 +29,9 @@ def main():
             )
             # Logging results (including graph).
             logger.log_config(hyperp_value_lst, searcher_eval_token)
-            logger.log_features(inputs, outputs)
             vi.draw_graph(
                 outputs.values(),
-                True,
-                True,
+                draw_module_hyperparameter_info=False,
                 print_to_screen=False,
                 out_folderpath=logger.get_evaluation_data_folderpath())
 

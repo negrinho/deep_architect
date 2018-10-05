@@ -13,6 +13,7 @@ non-blocking unless mentioned otherwise in comments.
 
 
 class MPICommunicator(Communicator):
+
     def __init__(self):
         self.comm = MPI.COMM_WORLD
         super(MPICommunicator, self).__init__(self.comm.Get_size() - 1,
@@ -90,10 +91,9 @@ class MPICommunicator(Communicator):
 
     def _publish_architecture_to_worker(self, vs, current_evaluation_id,
                                         searcher_eval_token):
-        self.comm.isend(
-            (vs, current_evaluation_id, searcher_eval_token, False),
-            dest=self.next_worker,
-            tag=MODEL_REQ)
+        self.comm.isend((vs, current_evaluation_id, searcher_eval_token, False),
+                        dest=self.next_worker,
+                        tag=MODEL_REQ)
         self.ready_requests[self.next_worker - 1] = (self.comm.irecv(
             source=self.next_worker, tag=READY_REQ))
 

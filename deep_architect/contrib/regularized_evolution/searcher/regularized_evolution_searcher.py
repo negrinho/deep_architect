@@ -89,7 +89,7 @@ class EvolutionSearcher(Searcher):
         if self.initializing:
             inputs, outputs = self.search_space_fn()
             user_vs, all_vs = random_specify_evolution(
-                list(outputs.values()), self.mutatable, list(hs.values()))
+                list(outputs.values()), self.mutatable)
             if len(self.population) >= self.P - 1:
                 self.initializing = False
             return inputs, outputs, all_vs, {

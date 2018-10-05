@@ -18,8 +18,7 @@ class HashingSurrogate(SurrogateModel):
                  weight_decay_coeff=1e-5,
                  use_module_feats=True,
                  use_connection_feats=True,
-                 use_module_hyperp_feats=True,
-                 use_other_hyperp_feats=True):
+                 use_module_hyperp_feats=True):
         self.hash_size = hash_size
         self.refit_interval = refit_interval
         self.weight_decay_coeff = weight_decay_coeff
@@ -27,7 +26,6 @@ class HashingSurrogate(SurrogateModel):
             'connection_feats': use_connection_feats,
             'module_hyperp_feats': use_module_hyperp_feats,
             'module_feats': use_module_feats,
-            'other_hyperp_feats': use_other_hyperp_feats
         }
         assert any(itervalues(self.feats_name_to_use_flag))
         self.vecs_lst = []
