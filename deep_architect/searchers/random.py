@@ -32,7 +32,7 @@ class RandomSearcher(Searcher):
 
         state = read_jsonfile(filepath)
         self.keep_best = state["keep_best"]
-        self.best_models = state["best_models"]
+        self.best_models = [tuple(model) for model in state["best_models"]]
 
     def get_best(self, num_models):
         return self.best_models[:min(num_models, len(self.best_models))]

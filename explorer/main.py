@@ -21,9 +21,9 @@ def process_logs(log_lst):
         ds.append(d)
     return ds
 
-logs_folderpath = "/home/renato/Desktop/darch/logs"
+logs_folderpath = "/home/darshan/darch/logs"
 # path_lst = ['logs/test_cifar10_short', 'logs/test_cifar10_medium', 'logs/test']
-path_lst = [ut.join_paths([logs_folderpath, p]) for p in ['cifar10_medium', 'cifar10_short']]
+path_lst = [ut.join_paths([logs_folderpath, p]) for p in ['framework_random']]
 print(path_lst)
 path_to_log = {p : process_logs(sl.read_search_folder(p)) for p in path_lst}
 keys = path_to_log.values()[0][0].keys()

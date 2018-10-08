@@ -196,7 +196,7 @@ class SimpleClassifierEvaluator:
                         save_counter -= 1
                         if save_counter == 0:
                             save_path = saver.save(sess, self.model_path)
-                            print("Model saved in file: %s" % save_path)
+                            # print("Model saved in file: %s" % save_path)
 
                             save_counter = save_patience
                             best_val_acc_saved = val_acc
@@ -210,9 +210,9 @@ class SimpleClassifierEvaluator:
             # load it.
             if best_val_acc_saved > val_acc:
                 saver.restore(sess, self.model_path)
-                print("Model restored from file: %s" % save_path)
+                # print("Model restored from file: %s" % save_path)
 
-            print("Optimization Finished!")
+            # print("Optimization Finished!")
 
             timer_manager.tick_timer('eval')
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,

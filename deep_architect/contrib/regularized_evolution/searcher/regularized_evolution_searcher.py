@@ -28,10 +28,13 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
     m_h = mutate_candidates[m_ind]
     v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
 
+
     # ensure that same value is not chosen again
     while v == user_vs[m_ind]:
         v = m_h.vs[random.randint(0, len(m_h.vs) - 1)]
     new_vs[m_ind] = v
+    if 'sub' in m_h.get_name():
+        new_vs = new_vs[:m_ind + 1]
 
     inputs, outputs, hs = search_space_fn()
     output_lst = list(outputs.values())
@@ -53,6 +56,8 @@ def specify_evolution(output_lst, mutatable_fn, user_vs, hyperp_lst=None):
     vs = []
     for i, h in enumerate(unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst)):
         if mutatable_fn(h):
+            if vs_idx >= len(user_vs):
+                user_vs.append(h.vs[random.randint(0, len(h.vs) - 1)])
             h.assign_value(user_vs[vs_idx])
             vs.append(user_vs[vs_idx])
             vs_idx += 1
@@ -75,7 +80,6 @@ class EvolutionSearcher(Searcher):
         self.regularized = regularized
         self.initializing = True
         self.mutatable = mutatable_fn
-        print(self.mutatable)
 
     def sample(self):
         if self.initializing:
@@ -96,7 +100,7 @@ class EvolutionSearcher(Searcher):
             user_vs, all_vs, _ = self.population[self.get_strongest_model_index(
                 sample_inds)]
             inputs, outputs, hs, new_user_vs, new_all_vs = mutate(
-                list(outputs.values()), user_vs, all_vs, self.mutatable, 
+                list(outputs.values()), user_vs, all_vs, self.mutatable,
                 self.search_space_fn)
 
             self.processing.append(self.population[weak_ind])
@@ -108,8 +112,8 @@ class EvolutionSearcher(Searcher):
         if arc in self.processing:
             self.processing.remove(arc)
         self.population.append((
-            cfg_d['user_vs'], 
-            cfg_d['all_vs'], 
+            cfg_d['user_vs'],
+            cfg_d['all_vs'],
             val))
 
     def get_searcher_state_token(self):
@@ -133,7 +137,7 @@ class EvolutionSearcher(Searcher):
         filepath = join_paths([folder_name, 'evolution_searcher.json'])
         if not file_exists(filepath):
             raise RuntimeError("Load file does not exist")
-        
+
         state = read_jsonfile(filepath)
         self.P = state["P"]
         self.S = state["S"]
@@ -164,7 +168,7 @@ class EvolutionSearcher(Searcher):
                 max_acc = acc
                 max_acc_ind = i
         return sample_inds[max_acc_ind]
-    
+
     def get_best(self, num_models):
         ranked_population = sorted(self.population, reverse=True, key=lambda tup: tup[2])
 

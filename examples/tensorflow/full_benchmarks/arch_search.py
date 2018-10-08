@@ -27,6 +27,7 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
 
     print('SEARCHER')
 
+    sl.create_search_folderpath(folderpath, search_name)
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
     save_filepath = ut.join_paths((search_data_folder, searcher_load_path))
 
@@ -34,6 +35,7 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
     epochs = 0
     finished = 0
     killed = 0
+    best_accuracy = 0.
 
     # Load previous searcher
     if resume_if_exists:
@@ -44,7 +46,6 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
         models_sampled = state['models_finished']
         finished = state['models_finished']
 
-    best_accuracy = 0.
     while(finished < models_sampled or killed < comm.num_workers):
         # Search end conditions
         cont = num_samples == -1 or models_sampled < num_samples
@@ -83,6 +84,8 @@ def start_searcher(comm, searcher, resume_if_exists, folderpath, search_name,
                 finished += 1
                 if finished % save_every == 0:
                     print('Models sampled: %d Best Accuracy: %f' % (finished, best_accuracy))
+                    best_accuracy = 0.
+
                     searcher.save_state(search_data_folder)
                     state = {
                         'models_finished': finished,
@@ -104,6 +107,7 @@ def start_worker(comm, evaluator, search_space_factory, folderpath,
         #https://github.com/tensorflow/tensorflow/issues/1888
         gpu_utils.set_visible_gpus([comm.get_rank() % gpu_utils.get_total_num_gpus()])
 
+    sl.create_search_folderpath(folderpath, search_name)
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
     save_filepath = ut.join_paths((search_data_folder, 'worker' + str(comm.get_rank()) + '.json'))
 
