@@ -602,6 +602,46 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
         substitution_fn, ['In'], ['Out'], scope)
 
 
+def preproc_apply_postproc(preproc_fn, apply_fn, postproc_fn):
+    return siso_sequential([preproc_fn(), apply_fn(), postproc_fn()])
+
+
+def dense_block(h_num_applies,
+                h_end_in_combine,
+                apply_fn,
+                combine_fn,
+                scope=None,
+                name=None):
+
+    def substitution_fn(num_applies, end_in_combine):
+        assert num_applies > 0
+        (i_inputs, i_outputs) = identity()
+        prev_a_outputs = [i_outputs]
+        prev_c_outputs = [i_outputs]
+        for idx in range(num_applies):
+            (a_inputs, a_outputs) = apply_fn()
+            a_inputs['In'].connect(prev_c_outputs[-1]["Out"])
+            prev_a_outputs.append(a_outputs)
+
+            if idx < num_applies - 1 or end_in_combine:
+                (c_inputs, c_outputs) = combine_fn(idx + 2)
+                for i, iter_outputs in enumerate(prev_a_outputs):
+                    c_inputs["In%d" % i].connect(iter_outputs["Out"])
+                prev_c_outputs.append(c_outputs)
+
+        if end_in_combine:
+            o_outputs = prev_c_outputs[-1]
+        else:
+            o_outputs = prev_a_outputs[-1]
+        return (i_inputs, o_outputs)
+
+    return substitution_module(
+        _get_name(name, "DenseBlock"), {
+            "num_applies": h_num_applies,
+            "end_in_combine": h_end_in_combine
+        }, substitution_fn, ["In"], ["Out"], scope)
+
+
 def siso_residual(main_fn, residual_fn, combine_fn):
     """Residual connection of two functions returning search spaces encoded
     as pairs of dictionaries of inputs and outputs.
