@@ -1,4 +1,3 @@
-
 ###${MARKDOWN}
 # One problem that often arises with architecture search research is that in papers
 # publishing results, the search spaces are underspecified or crucial implementation
@@ -27,6 +26,7 @@ from deep_architect.contrib.misc.datasets.loaders import load_cifar10
 from deep_architect.hyperparameters import Discrete as D
 from deep_architect.searchers.common import random_specify
 
+
 # This is a simple specification of a search space using only framework agnostic
 # parts. Each module used is single input, single output, and chained together
 # to form the architecture. Note, in this example, only framework agnostic modules
@@ -51,10 +51,11 @@ def get_search_space(num_classes):
         fc_layer(D([num_classes]))
     ])
 
+
 # First, you must set the backend framework to be used. DeepArchitect simply
 # uses the module implementations specific to the framework being used. If a
 # module is not implemented for a given framework, a RuntimeError is raised.
-# The implementations for the framework specific modules are 
+# The implementations for the framework specific modules are
 # [here](deep_architect/contrib/deep_learning_backend). The four backends
 # currently supported are TENSORFLOW, TENSORFLOW_EAGER, PYTORCH, and KERAS.
 backend.set_backend(backend.KERAS)
@@ -71,9 +72,9 @@ viz.draw_graph(outs.values())
 # it into memory. (Note, Pytorch expects the data to be formatted
 # channels first)
 if backend.get_backend() == backend.PYTORCH:
-    _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/', data_format='NCHW')
+    _, _, _, _, X, y = load_cifar10('data/cifar10/', data_format='NCHW')
 else:
-    _, _, _, _, X, y = load_cifar10('data/cifar10/cifar-10-batches-py/')
+    _, _, _, _, X, y = load_cifar10('data/cifar10/')
 dataset = InMemoryDataset(X, y, False)
 
 # The rest of the tutorial demonstrates how to run a batch of data through the
@@ -81,27 +82,27 @@ dataset = InMemoryDataset(X, y, False)
 X_batch, y_batch = dataset.next_batch(16)
 logit_vals = None
 
-# First the Tensorflow graph framework. 
+# First the Tensorflow graph framework.
 if backend.get_backend() == backend.TENSORFLOW:
     in_dim = list(X_batch.shape[1:])
     import tensorflow as tf
     import deep_architect.helpers.tensorflow as htf
 
-# In order to feed the data through, you need to create placeholders for the
-# data and compile the graph with the placeholders assigned to the input nodes
-# of the graph. The logits tensor is placed in the output dictionary by the
-# framework after the graph is compiled.
+    # In order to feed the data through, you need to create placeholders for the
+    # data and compile the graph with the placeholders assigned to the input nodes
+    # of the graph. The logits tensor is placed in the output dictionary by the
+    # framework after the graph is compiled.
     X_pl = tf.placeholder("float", [None] + in_dim)
     y_pl = tf.placeholder("float", [None, 10])
-    co.forward({ins['In'] : X_pl})
+    co.forward({ins['In']: X_pl})
     logits = outs['Out'].val
 
-# This gets all of the other placeholders needed during training, such as
-# indicators for batch norm and dropout layers
+    # This gets all of the other placeholders needed during training, such as
+    # indicators for batch norm and dropout layers
     train_feed, _ = htf.get_feed_dicts(outs.values())
     train_feed.update({X_pl: X_batch, y_pl: y_batch})
 
-# Now, simply run the graph as you normally would.
+    # Now, simply run the graph as you normally would.
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
         sess.run(init)
@@ -115,7 +116,7 @@ elif backend.get_backend() == backend.TENSORFLOW_EAGER:
     import deep_architect.helpers.tfeager as htfe
     tf.enable_eager_execution()
     htfe.setTraining(outs.values(), True)
-    co.forward({ins['In'] : tf.constant(X_batch)})
+    co.forward({ins['In']: tf.constant(X_batch)})
     logit_vals = outs['Out'].val
 
 # The usage of the Pytorch framework is almost identical to that of the Tensorflow
@@ -124,24 +125,25 @@ elif backend.get_backend() == backend.PYTORCH:
     import torch
     import deep_architect.helpers.pytorch as hpy
     hpy.train(outs.values())
-    co.forward({ins['In'] : torch.Tensor(X_batch)})
+    co.forward({ins['In']: torch.Tensor(X_batch)})
     logit_vals = outs['Out'].val
 
 # Finally, the Keras framework. This framework requires adding a special input
 # node to the start of the search space. This input node what is given to the
 # keras model builder. Also, note that this an example of mixing framework
-# agnostic and framework specific modules. 
+# agnostic and framework specific modules.
 elif backend.get_backend() == backend.KERAS:
     import keras
     in_node = input_node()
     ins, outs = mo.siso_sequential([in_node, (ins, outs)])
     _, input_layer = in_node
-    co.forward({ins['In'] : X.shape[1:]})
+    co.forward({ins['In']: X.shape[1:]})
     model = keras.Model(
         inputs=[inp.val for inp in input_layer.values()],
         outputs=[out.val for out in outs.values()])
-    model.compile(loss=keras.losses.categorical_crossentropy,
-            optimizer=keras.optimizers.Adadelta(),
-            metrics=['accuracy'])
+    model.compile(
+        loss=keras.losses.categorical_crossentropy,
+        optimizer=keras.optimizers.Adadelta(),
+        metrics=['accuracy'])
     logit_vals = model.predict(X_batch)
 print logit_vals

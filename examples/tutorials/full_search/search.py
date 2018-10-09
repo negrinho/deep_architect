@@ -31,19 +31,6 @@ parser.add_argument(
 parser.add_argument('--num-procs', '-n', type=int, default=2)
 args = parser.parse_args()
 
-
-# This is simply a wrapper for the function that returns a new search space.
-class SSF(mo.SearchSpaceFactory):
-
-    def __init__(self, num_classes):
-        mo.SearchSpaceFactory.__init__(self)
-        self.num_classes = num_classes
-
-    def _get_search_space(self):
-        inputs, outputs = dnn.dnn_net(self.num_classes)
-        return inputs, outputs, {}
-
-
 # First, create the communicator. This communicator is used by by to master to
 # send candidate architectures to the workers to evaluate, and by the workers
 # to send back the results for the architectures they evaluated. Currently,
@@ -59,7 +46,7 @@ X_train, y_train, X_val, y_val, _, _ = load_mnist(
     'data/mnist', normalize_range=True)
 train_dataset = InMemoryDataset(X_train, y_train, True)
 val_dataset = InMemoryDataset(X_val, y_val, False)
-ssf = SSF(10)
+ssf = mo.SearchSpaceFactory(lambda: dnn.dnn_net(10))
 
 # Each process should have a unique rank. The process with rank 0 will act as the
 # master process that is in charge of the searcher. Every other process acts
@@ -81,7 +68,7 @@ if comm.get_rank() == 0:
             # Now, we check the communicator to see if worker queue is ready for a new
             # architecture. If so, we publish an architecture to the worker queue.
             if comm.is_ready_to_publish_architecture():
-                _, _, _, vs, se_token = searcher.sample()
+                _, _, vs, se_token = searcher.sample()
                 comm.publish_architecture_to_worker(vs, models_sampled,
                                                     se_token)
                 models_sampled += 1
@@ -112,8 +99,8 @@ if comm.get_rank() == 0:
 
 # At this point, all of the workers should be killed, and the searcher should
 # have evaluated all the architectures it needed to finish its search.
-    print('Best architecture accuracy: %f' % searcher.best_acc)
-    print('Best architecture params: %r' % searcher.best_vs)
+# print('Best architecture accuracy: %f' % searcher.best_acc)
+# print('Best architecture params: %r' % searcher.best_vs)
 else:
     evaluator = SimpleClassifierEvaluator(
         train_dataset, val_dataset, 10, './temp', max_num_training_epochs=2)
@@ -132,7 +119,7 @@ else:
         # unspecified search space, and recreate the architecture using the values of
         # the hyperparameters received by the worker.
         inputs, outputs = ssf.get_search_space()
-        se.specify(outputs.values(), hs, vs)
+        se.specify(outputs.values(), vs)
         results = evaluator.eval(inputs, outputs)
         comm.publish_results_to_master(results, evaluation_id,
                                        searcher_eval_token)
