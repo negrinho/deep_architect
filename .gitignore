@@ -5,48 +5,4 @@ temp/
 .DS_Store
 containers/singularity/*
 containers/docker/*
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
-.pytest_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# IDEs
-.idea/
-.vscode/
-
-# temp and log files
-.temp/
-logs/
-checkpoint
-temp.*
+*.pyc
