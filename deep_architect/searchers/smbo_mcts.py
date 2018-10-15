@@ -9,18 +9,18 @@ import numpy as np
 # TODO: I would just compute the std for the scores.
 class SMBOSearcherWithMCTSOptimizer(Searcher):
 
-    def __init__(self, search_space_fn, surrogate_model, num_samples, eps_prob,
-                 tree_refit_interval):
+    def __init__(self, search_space_fn, surrogate_model, num_samples,
+                 exploration_prob, tree_refit_interval):
         Searcher.__init__(self, search_space_fn)
         self.surr_model = surrogate_model
         self.mcts = MCTSSearcher(self.search_space_fn)
         self.num_samples = num_samples
-        self.eps_prob = eps_prob
+        self.exploration_prob = exploration_prob
         self.tree_refit_interval = tree_refit_interval
         self.cnt = 0
 
     def sample(self):
-        if np.random.rand() < self.eps_prob:
+        if np.random.rand() < self.exploration_prob:
             inputs, outputs = self.search_space_fn()
             best_vs = random_specify(outputs.values())
         # TODO: ignoring the size of the model here.

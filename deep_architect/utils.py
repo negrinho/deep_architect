@@ -4,6 +4,7 @@ import shutil
 import time
 import subprocess
 import argparse
+import pickle
 from six import iteritems, itervalues
 
 
@@ -56,6 +57,16 @@ def write_textfile(filepath, lines, append=False, with_newline=True):
             f.write(line)
             if with_newline:
                 f.write("\n")
+
+
+def read_picklefile(filepath):
+    with open(filepath, 'rb') as f:
+        return pickle.load(f)
+
+
+def write_picklefile(x, filepath):
+    with open(filepath, 'wb') as f:
+        pickle.dump(x, f)
 
 
 def path_prefix(path):

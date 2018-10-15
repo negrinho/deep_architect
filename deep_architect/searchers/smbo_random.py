@@ -5,14 +5,15 @@ import numpy as np
 
 class SMBOSearcher(Searcher):
 
-    def __init__(self, search_space_fn, surrogate_model, num_samples, eps_prob):
+    def __init__(self, search_space_fn, surrogate_model, num_samples,
+                 exploration_prob):
         Searcher.__init__(self, search_space_fn)
         self.surr_model = surrogate_model
         self.num_samples = num_samples
-        self.eps_prob = eps_prob
+        self.exploration_prob = exploration_prob
 
     def sample(self):
-        if np.random.rand() < self.eps_prob:
+        if np.random.rand() < self.exploration_prob:
             inputs, outputs = self.search_space_fn()
             best_vs = random_specify(outputs.values())
         else:
