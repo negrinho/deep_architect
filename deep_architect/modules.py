@@ -91,10 +91,12 @@ class SubstitutionModule(co.Module):
                  output_names,
                  scope=None,
                  allow_input_subset=False,
-                 allow_output_subset=False):
+                 allow_output_subset=False,
+                 unpack_kwargs=True):
         co.Module.__init__(self, scope, name)
         self.allow_input_subset = allow_input_subset
         self.allow_output_subset = allow_output_subset
+        self.unpack_kwargs = unpack_kwargs
 
         self._register(input_names, output_names, name_to_hyperp)
         self._substitution_fn = substitution_fn
@@ -121,7 +123,10 @@ class SubstitutionModule(co.Module):
                 if name in argnames:
                     kwargs[name] = ix.val
 
-            new_inputs, new_outputs = self._substitution_fn(**kwargs)
+            if self.unpack_kwargs:
+                new_inputs, new_outputs = self._substitution_fn(**kwargs)
+            else:
+                new_inputs, new_outputs = self._substitution_fn(kwargs)
 
             # test for checking that the inputs and outputs returned by the
             # substitution function are valid.
@@ -200,8 +205,15 @@ def input_replicator(num_outputs, scope=None, name=None):
     return InputReplicator(num_outputs, scope=scope, name=name).get_io()
 
 
-def substitution_module(name, name_to_hyperp, substitution_fn, input_names,
-                        output_names, scope):
+def substitution_module(name,
+                        name_to_hyperp,
+                        substitution_fn,
+                        input_names,
+                        output_names,
+                        scope,
+                        allow_input_subset=False,
+                        allow_output_subset=False,
+                        unpack_kwargs=True):
     """Same as the substitution module, but directly works with the dictionaries of
     inputs and outputs.
 
@@ -233,8 +245,16 @@ def substitution_module(name, name_to_hyperp, substitution_fn, input_names,
         (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
             Tuple with dictionaries with the inputs and outputs of the module.
     """
-    return SubstitutionModule(name, name_to_hyperp, substitution_fn,
-                              input_names, output_names, scope).get_io()
+    return SubstitutionModule(
+        name,
+        name_to_hyperp,
+        substitution_fn,
+        input_names,
+        output_names,
+        scope,
+        allow_input_subset=allow_input_subset,
+        allow_output_subset=allow_output_subset,
+        unpack_kwargs=unpack_kwargs).get_io()
 
 
 def _get_name(name, default_name):

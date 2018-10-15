@@ -7,6 +7,20 @@ import argparse
 from six import iteritems, itervalues
 
 
+def json_object_to_json_string(d):
+    return json.dumps(d, sort_keys=True)
+
+
+def json_string_to_json_object(s):
+    return json.loads(s)
+
+
+def extract_simple_name(s):
+    start = s.index('.') + 1
+    end = len(s) - s[::-1].index('-') - 1
+    return s[start:end]
+
+
 def sleep(time_in_seconds):
     time.sleep(time_in_seconds)
 

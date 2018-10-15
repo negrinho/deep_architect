@@ -30,27 +30,25 @@ class MPICommunicator(Communicator):
             ]
             self.next_worker = -1
 
-    """
-    Called in worker process only.
-    Synchronously sends the results from worker to master. Returns nothing.
-    """
-
     def _publish_results_to_master(self, results, evaluation_id,
                                    searcher_eval_token):
+        """
+        Called in worker process only.
+        Synchronously sends the results from worker to master. Returns nothing.
+        """
         self.comm.ssend((results, evaluation_id, searcher_eval_token),
                         dest=0,
                         tag=RESULTS_REQ)
 
-    """
-    Called in worker process only.
-    Receives architecture from master. Synchronously sends a ready request to
-    master signalling that worker is ready to receive new architecture. Then
-    does a blocking receive of the architecture sent by master and returns the
-    architecure. If master instead sends a kill signal, returns None for that
-    and any future invocations of _receive_architecture_in_worker.
-    """
-
     def _receive_architecture_in_worker(self):
+        """
+        Called in worker process only.
+        Receives architecture from master. Synchronously sends a ready request to
+        master signalling that worker is ready to receive new architecture. Then
+        does a blocking receive of the architecture sent by master and returns the
+        architecure. If master instead sends a kill signal, returns None for that
+        and any future invocations of _receive_architecture_in_worker.
+        """
         if self.done:
             return None
 
@@ -65,15 +63,14 @@ class MPICommunicator(Communicator):
 
         return vs, evaluation_id, searcher_eval_token
 
-    """
-    Called in master process only.
-    Iterates through ready requests and checks if any of them have been
-    returned. If so, set the next worker corresponding to the ready request that
-    returned, and return True. If none of the workers have sent back a ready
-    request, return False.
-    """
-
     def _is_ready_to_publish_architecture(self):
+        """
+        Called in master process only.
+        Iterates through ready requests and checks if any of them have been
+        returned. If so, set the next worker corresponding to the ready request that
+        returned, and return True. If none of the workers have sent back a ready
+        request, return False.
+        """
         for idx, req in enumerate(self.ready_requests):
             if req:
                 test, msg = req.test()
@@ -82,39 +79,36 @@ class MPICommunicator(Communicator):
                     return True
         return False
 
-    """
-    Called in master process only.
-    Sends architecture to the worker that was designated as ready in
-    _is_ready_to_publish_architecture. Then resets the ready request for that
-    worker. Returns nothing.
-    """
-
     def _publish_architecture_to_worker(self, vs, current_evaluation_id,
                                         searcher_eval_token):
+        """
+        Called in master process only.
+        Sends architecture to the worker that was designated as ready in
+        _is_ready_to_publish_architecture. Then resets the ready request for that
+        worker. Returns nothing.
+        """
         self.comm.isend((vs, current_evaluation_id, searcher_eval_token, False),
                         dest=self.next_worker,
                         tag=MODEL_REQ)
         self.ready_requests[self.next_worker - 1] = (self.comm.irecv(
             source=self.next_worker, tag=READY_REQ))
 
-    """
-    Called in master process only.
-    Checks if the src worker has sent back results. If so, returns the result
-    and resets the request to get results in the future. Else, returns None.
-    """
-
     def _receive_results_in_master(self, src):
+        """
+        Called in master process only.
+        Checks if the src worker has sent back results. If so, returns the result
+        and resets the request to get results in the future. Else, returns None.
+        """
         test, msg = self.eval_requests[src].test()
         if test:
             self.eval_requests[src] = self.comm.irecv(
                 source=src + 1, tag=RESULTS_REQ)
         return msg if test else None
 
-    """
-    Called in master process only.
-    Sends a kill signal to given worker. Doesn't return anything.
-    """
-
     def _kill_worker(self):
+        """
+        Called in master process only.
+        Sends a kill signal to given worker. Doesn't return anything.
+        """
         self.comm.isend((0, 0, 0, True), dest=self.next_worker, tag=MODEL_REQ)
         self.ready_requests[self.next_worker - 1] = None

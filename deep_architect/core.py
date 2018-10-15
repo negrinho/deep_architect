@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
+import json
 
 
 class OrderedSet:
@@ -267,12 +268,13 @@ class DependentHyperparameter(Hyperparameter):
             in the scope is derived.
     """
 
-    def __init__(self, fn, hyperps, scope=None, name=None):
+    def __init__(self, fn, hyperps, scope=None, name=None, unpack_kwargs=True):
         Hyperparameter.__init__(self, scope, name)
         # NOTE: this assert may or may not be necessary.
         # assert isinstance(hyperps, OrderedDict)
         self._hyperps = OrderedDict([(k, hyperps[k]) for k in sorted(hyperps)])
         self._fn = fn
+        self.unpack_kwargs = unpack_kwargs
 
         # registering the dependencies.
         for h in itervalues(self._hyperps):
@@ -289,7 +291,11 @@ class DependentHyperparameter(Hyperparameter):
             kwargs = {
                 name: h.get_value() for name, h in iteritems(self._hyperps)
             }
-            self.assign_value(self._fn(**kwargs))
+            if self.unpack_kwargs:
+                v = self._fn(**kwargs)
+            else:
+                v = self._fn(kwargs)
+            self.assign_value(v)
 
     def _check_value(self, val):
         pass

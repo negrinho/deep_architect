@@ -1,23 +1,21 @@
 
 ###{MARKDOWN}
-# This tutorial aims to tell the reader how to support a new framework in
-# DeepArchitect.
-# By the end of this tutorial, you should understand what are the components
-# necessary to support a framework in DeepArchitect and and how to go about
-# supporting new ones on your own.
+# This tutorial aims to explain to you how to support a new framework in
+# DeepArchitect. After reading it, you should understand what are
+# the components involved in supporting a framework in DeepArchitect and go
+# about implementing the necessary ones yourself.
 
-# DeepArchitect is mostly a collection of wrapper 
-#
-#
-# not constrained to the frameworks that we currently support.
-# Supporting a new framework is a matter of implementing the compile and
-# forward behavior for modules of the desired type.
+# Implementing support for a framework on DeepArchitect heavily depends on
+# specializing the definition of module for that particular framework.
+# For most frameworks that we currently support, the necessary changes are
+# minimal and result mostly from idiosyncrasies from the specific framework, e.g.,
+# what information needs to kept around.
+# DeepArchitect is not limited to the frameworks that we currently support.
+# Asides from the module, most of the other code in DeepArchitect is general
+# and can be reused without changes across frameworks, e.g., searchers, logging, and visualization.
+
 # To exemplify this, we walk the reader over the implementation of existing
 # helpers for supported frameworks and a new example in scikit-learn.
-
-# The way we implement new frameworks is by implementing the meaning of
-# compile and forward in the new context.
-# Let us consider the implementation of Module, which we just pull from core.py.
 
 # The main functions to look at are:
 
@@ -56,21 +54,22 @@
 
 
 # After all hyperparameters for a search space are specified, we can finally
-# compile the module.
+# compile the modules in the search space.
+# By the time that all the hyperparameters of the search space have been
+# assigned a value, all substitution modules ought to have been replaced and
+# only basic modules will be in place.
 # This can be seen in the forward function in Module.
+# When forward is called, _compile is called once and then forward is called
+# right after.
 # The compilation stage can be used to instantiate any state that is used for the
 # module for the forward part, e.g., creation of parameters in the case of
 # deep learning search spaces.
-# After compiling is done, the forward function can be called repeatedly to
-# compute the transformations repeatedly.
+# After compiling is done, the forward function can be called to implement the
+# computation repeatedly.
 
-# Let us look in detail at concrete exmaples for frameworks that currently support.
-# We will also look at implementing an example for a new framework later.
-# Take for example, the Tensorflow support in its most general form as it is
-# defined in deep_architect/helpers/tensorflow.py
-# TODO: add the link to the github information.
-
-# NOTE: in this case, it requires the implementation of the different values.
+# Let us look in detail at concrete exmaples for frameworks that are currently supported
+# in DeepArchitect.
+# Let us look at the Keras defined in deep_architect/helpers/keras.py
 
 import deep_architect.core as co
 import tensorflow as tf
@@ -147,22 +146,18 @@ class KerasModule(co.Module):
     def _update(self):
         pass
 
-# We see that the code itself is very compact and self explanatory.
+# The code is compact and self-explanatory.
 # In this case, the we pass a compile_fn function that returns the forward_fn
 # function upon compilation.
 # To instantiate a module of this type we simply have to provide a compile function
-# that upon calling, return a forward function.
-# For example, for implementing a convolutional module from scratch using
-# this function, we would do
-
-# NOTE: talk about the scope here too, i.e., the use of the random scope.
-
+# that upon calling, returns a forward function.
+# For example, for implementing a convolutional module from scratch relying on this
+# module, we would do
 
 # For example, by looking at the Keras docstring for the conv2D and taking a
 # subset of the options, we can write.
 
 from keras.layers import Conv2D
-
 
 def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
     def compile_fn(di, dh):
@@ -234,12 +229,12 @@ vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
 # As modules with single inputs and single outputs are so common, we defined
 # a few simplified functions that directly work with the Keras definition.
-# The goal of these functions is to reduce boilerplate and provide a simplified
-# workflow.
+# The goal of these functions is to reduce boilerplate and provide a more
+# concise workflow.
 # For example, the above function could be expressed in the same way as
 
 import deep_architect.helpers.keras as hke
-def conv2d_other(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
+def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
     return hke.siso_keras_module_from_keras_layer_fn(Conv2D, {
         "filters" : h_filters,
         "kernel_size" : h_kernel_size,
@@ -263,20 +258,21 @@ vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 # reduce boilerplate for some of the most common use cases.
 # As we have seen, it is possible to express everything that we need using
 # the initial KerasModule, with the other functions being for the purpose of
-# convenience.
+# convenience for common specific cases.
+# It may be necessary to use KerasModule directly for implementing the
+# desired functionality in some cases, e.g., in the case of a module with multiple
+# outputs.
 
-### NOTE: this only holds for simpler use cases. In some more complex use cases
-# there may not exist a way other than reverting a more complex use case.
 
 # The co.forward calls the individual module forward and compile functions
-as defined in KerasModule and passed as argument during the instantiation.
-These are the main ideas for defining a module.
-We invite the reader to inspect deep_architect.core.forward more carefully
-for drilling down on how deep_architect.core.forward is defined is implemented
-in terms of graph traversal.
+# as defined in KerasModule and passed as argument during the instantiation.
+# These are the main ideas for defining a module.
+# We invite the reader to inspect deep_architect.core.forward more carefully
+# for drilling down on how deep_architect.core.forward is defined is implemented
+# in terms of graph traversal.
 
-This is sufficient to specialize the general module code in deep_architect.core
-to support basic modules that come from Keras.
+# This is sufficient to specialize the general module code in deep_architect.core
+# to support basic modules that come from Keras.
 
 Let us now consider Pytorch.
 The reader may think that Pytorch does not fit well in our framework due to
@@ -288,7 +284,7 @@ for both training and inference.
 Static versus dynamic is not really important for architecture search in
 DeepArchitect.
 There are multiple ways of getting around, e.g., searching over the
-computational elements that are used for the static.
+computational elements that are used in a dynamic element of the network.
 
 Let us quickly walk through the DeepArchitect module specialization for
 DeepArchitect.
@@ -317,9 +313,9 @@ class PyTorchModule(co.Module):
         pass
 
 
-We can see that the implementation for PyTorch is essentially the same as that
-for Keras.
-The main different is that the compile_fn function that returns both the
+We can see that the implementation for PyTorch is essentially the same as the
+one for Keras.
+The main difference is that the compile_fn function that returns both the
 forward_fn function and the list of Pytorch modules (as in nn.Module) that have
 been used in the computation.
 Returning the list of modules is used to keep track of what Pytorch modules
@@ -371,11 +367,13 @@ context of its forward and compile functions, then everything works as expected.
 This allows us to create search spaces with multiple different domains, e.g.,
 for the Tensorflow case, some of the modules may produce variables and others
 may produce Tensorflow operations.
+DeepArchitect is a framework to search over computational graphs in arbitrary
+domains.
 
 
 We now move to a non deep learning domain.
 Consider a scikit-learn example.
-The starting point is the same as the other examples: the specialization of
+The starting point is the same as for the other examples: the specialization of
 the DeepArchitect Module class to the domain of interest.
 
 class ScikitLearnModule(co.Module):
@@ -401,11 +399,21 @@ class ScikitLearnModule(co.Module):
 
 Starting with a module that is exactly the same as KerasModule.
 We will notice ideosyncracies of the domain as we go along.
-A good way of implementing support for a new domain is imp
+A reasonable first approach is to rely on the fact that
 
+
+# for preprocessing and feature building.
 
 Copied from the examples of Scikit-Learn (released under a BSD-3 license,
 ommited here for convenience).
+
+import numpy as np
+
+m = 128
+d = 16
+X = np.random.normal(size=(m, d))
+
+
 
 
 

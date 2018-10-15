@@ -108,8 +108,8 @@ def apply_conv_op(main_op, op_name, h_num_filter):
         name='bottleneck_too_thin')
 
     bottleneck_filters = co.DependentHyperparameter(
-        lambda reduced_filter_size, num_filter: num_filter if reduced_filter_size < 1 else reduced_filter_size,
-        {
+        lambda reduced_filter_size, num_filter: num_filter
+        if reduced_filter_size < 1 else reduced_filter_size, {
             'reduced_filter_size': reduced_filter_size,
             'num_filter': h_num_filter
         },
@@ -118,15 +118,13 @@ def apply_conv_op(main_op, op_name, h_num_filter):
     return mo.siso_sequential([
         mo.siso_optional(
             lambda: wrap_relu_batch_norm(
-                conv2d(reduced_filter_size, D([1]), D([1]), D([1]), D([True]))
-            ), bottleneck_too_thin
-        ),
+                conv2d(reduced_filter_size, D([1]), D([1]), D([1]), D([True]))),
+            bottleneck_too_thin),
         wrap_relu_batch_norm(main_op(bottleneck_filters)),
         mo.siso_optional(
             lambda: wrap_relu_batch_norm(
-                conv2d(h_num_filter, D([1]), D([1]), D([1]), D([True])),
-            ), bottleneck_too_thin
-        )
+                conv2d(h_num_filter, D([1]), D([1]), D([1]), D([True])),),
+            bottleneck_too_thin)
     ])
 
 
@@ -142,10 +140,8 @@ def check_stride(h_stride, h_num_filter, h_op_name):
         },
     )
     return mo.siso_or([
-        mo.identity,
-        lambda: wrap_relu_batch_norm(
-            conv2d(h_num_filter, D([1]), h_stride, D([1]), D([True]))
-        )
+        mo.identity, lambda: wrap_relu_batch_norm(
+            conv2d(h_num_filter, D([1]), h_stride, D([1]), D([True])))
     ], need_stride)
 
 
@@ -162,8 +158,7 @@ def check_reduce(main_op, h_stride, h_num_filter):
             lambda: mo.siso_sequential([
                 conv2d(h_num_filter, D([1]), h_stride, D([1]), D([True])),
                 batch_normalization()
-            ]), need_stride
-        )
+            ]), need_stride)
     ])
 
 
@@ -188,53 +183,82 @@ def stacked_depth_separable_conv(h_filter_size, h_num_filters,
 # used in search space 1 and search space 3 in the regularized evolution paper.
 def sp1_operation(h_op_name, h_stride, h_filters):
     return mo.siso_or({
-        'identity': lambda: check_stride(h_stride, h_filters, h_op_name),
-        'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
-        'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
-        'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
-        'avg3': lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
-        'max3': lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
-        'dil3_2': lambda: apply_conv_op(
-            lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])),
-            'dil3_2', h_filters),
-        's_sep7': lambda:apply_conv_op(
+        'identity':
+        lambda: check_stride(h_stride, h_filters, h_op_name),
+        'd_sep3':
+        lambda: stacked_depth_separable_conv(
+            D([3]), h_filters, D([1]), h_stride),
+        'd_sep5':
+        lambda: stacked_depth_separable_conv(
+            D([5]), h_filters, D([1]), h_stride),
+        'd_sep7':
+        lambda: stacked_depth_separable_conv(
+            D([7]), h_filters, D([1]), h_stride),
+        'avg3':
+        lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'max3':
+        lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'dil3_2':
+        lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])
+                                  ), 'dil3_2', h_filters),
+        's_sep7':
+        lambda: apply_conv_op(
             lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
             's_sep7', h_filters),
-        }, h_op_name)
+    }, h_op_name)
 
 
 # This is simply an Or substitution module that chooses between the operations
 # used in search space 2 in the regularized evolution paper.
 def sp2_operation(h_op_name, h_stride, h_filters):
     return mo.siso_or({
-        'identity': lambda: check_stride(h_stride, h_filters, h_op_name),
-        'conv1': lambda: check_stride(h_stride, h_filters, h_op_name),
-        'conv3': lambda: apply_conv_op(
-            lambda filters: conv2d(filters, D([3]), h_stride, D([1]), D([True])),
-            'conv3', h_stride),
-        'd_sep3': lambda: stacked_depth_separable_conv(D([3]), h_filters, D([1]), h_stride),
-        'd_sep5': lambda: stacked_depth_separable_conv(D([5]), h_filters, D([1]), h_stride),
-        'd_sep7': lambda: stacked_depth_separable_conv(D([7]), h_filters, D([1]), h_stride),
-        'avg2': lambda: check_reduce(avg_pool2d(D([2]), D([1])), h_stride, h_filters),
-        'avg3': lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
-        'max2': lambda: check_reduce(max_pool2d(D([2]), D([1])), h_stride, h_filters),
-        'max3': lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
-        'dil3_2': lambda: apply_conv_op(
-            lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])),
-            'dil3_2', h_stride),
-        'dil4_2': lambda: apply_conv_op(
-            conv2d(h_filters, D([3]), h_stride, D([4]), D([True])),
-            'dil3_4', h_stride),
-        'dil6_2': lambda: apply_conv_op(
-            lambda filters: conv2d(filters, D([3]), h_stride, D([6]), D([True])),
-            'dil3_6', h_stride),
-        's_sep3': lambda:apply_conv_op(
+        'identity':
+        lambda: check_stride(h_stride, h_filters, h_op_name),
+        'conv1':
+        lambda: check_stride(h_stride, h_filters, h_op_name),
+        'conv3':
+        lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([1]), D([True])
+                                  ), 'conv3', h_stride),
+        'd_sep3':
+        lambda: stacked_depth_separable_conv(
+            D([3]), h_filters, D([1]), h_stride),
+        'd_sep5':
+        lambda: stacked_depth_separable_conv(
+            D([5]), h_filters, D([1]), h_stride),
+        'd_sep7':
+        lambda: stacked_depth_separable_conv(
+            D([7]), h_filters, D([1]), h_stride),
+        'avg2':
+        lambda: check_reduce(avg_pool2d(D([2]), D([1])), h_stride, h_filters),
+        'avg3':
+        lambda: check_reduce(avg_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'max2':
+        lambda: check_reduce(max_pool2d(D([2]), D([1])), h_stride, h_filters),
+        'max3':
+        lambda: check_reduce(max_pool2d(D([3]), D([1])), h_stride, h_filters),
+        'dil3_2':
+        lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([2]), D([True])
+                                  ), 'dil3_2', h_stride),
+        'dil4_2':
+        lambda: apply_conv_op(
+            conv2d(h_filters, D([3]), h_stride, D([4]), D([True])), 'dil3_4',
+            h_stride),
+        'dil6_2':
+        lambda: apply_conv_op(
+            lambda filters: conv2d(filters, D([3]), h_stride, D([6]), D([True])
+                                  ), 'dil3_6', h_stride),
+        's_sep3':
+        lambda: apply_conv_op(
             lambda filters: conv_spatial_separable(filters, D([3]), h_stride),
             's_sep3', h_stride),
-        's_sep7': lambda:apply_conv_op(
+        's_sep7':
+        lambda: apply_conv_op(
             lambda filters: conv_spatial_separable(filters, D([7]), h_stride),
             's_sep7', h_stride),
-        }, h_op_name)
+    }, h_op_name)
 
 
 # This module takes in a specifiable number of inputs, uses 1x1 convolutions to
@@ -420,12 +444,11 @@ def factorized_reduction(h_num_filters, h_stride):
         lambda: mo.siso_sequential([
             conv2d(h_num_filters, D([1]), h_stride, D([1]), D([True])),
             batch_normalization()
-        ]),
-        lambda: mo.siso_sequential([
-            (ins, c_outs),
-            batch_normalization()
-        ])
-    ], is_stride_2, name='factor')
+        ]), lambda: mo.siso_sequential([(ins, c_outs),
+                                        batch_normalization()])
+    ],
+                      is_stride_2,
+                      name='factor')
 
 
 # A module that outlines the basic cell structure in the transferable
@@ -536,11 +559,17 @@ def get_search_space_small(num_classes, C):
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
         h_sharer.register(
-            'h_norm_op0_' + str(i),
-            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
+            'h_norm_op0_' + str(i), lambda: D([
+                'identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3',
+                'dil3_2', 's_sep7'
+            ],
+                                              name='Mutatable'))
         h_sharer.register(
-            'h_norm_op1_' + str(i),
-            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 'dil3_2', 's_sep7'], name='Mutatable'))
+            'h_norm_op1_' + str(i), lambda: D([
+                'identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3',
+                'dil3_2', 's_sep7'
+            ],
+                                              name='Mutatable'))
         h_sharer.register(
             'h_norm_in0_pos_' + str(i),
             lambda i=i: D(list(range(2 + i)), name='Mutatable'))
@@ -549,11 +578,17 @@ def get_search_space_small(num_classes, C):
             lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     for i in range(C):
         h_sharer.register(
-            'h_red_op0_' + str(i),
-            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
+            'h_red_op0_' + str(i), lambda: D([
+                'identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3',
+                's_sep7'
+            ],
+                                             name='Mutatable'))
         h_sharer.register(
-            'h_red_op1_' + str(i),
-            lambda: D(['identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3', 's_sep7'], name='Mutatable'))
+            'h_red_op1_' + str(i), lambda: D([
+                'identity', 'd_sep3', 'd_sep5', 'd_sep7', 'avg3', 'max3',
+                's_sep7'
+            ],
+                                             name='Mutatable'))
         h_sharer.register(
             'h_red_in0_pos_' + str(i),
             lambda i=i: D(list(range(2 + i)), name='Mutatable'))
@@ -588,11 +623,21 @@ def get_search_space_2(num_classes):
     h_sharer = hp.HyperparameterSharer()
     for i in range(C):
         h_sharer.register(
-            'h_norm_op0_' + str(i),
-            lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+            'h_norm_op0_' + str(i), lambda: D([
+                'identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7',
+                'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7',
+                's_sep3'
+                's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'
+            ],
+                                              name='Mutatable'))
         h_sharer.register(
-            'h_norm_op1_' + str(i),
-            lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+            'h_norm_op1_' + str(i), lambda: D([
+                'identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7',
+                'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7',
+                's_sep3'
+                's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'
+            ],
+                                              name='Mutatable'))
         h_sharer.register(
             'h_in0_pos_' + str(i),
             lambda i=i: D(list(range(2 + i)), name='Mutatable'))
@@ -601,16 +646,37 @@ def get_search_space_2(num_classes):
             lambda i=i: D(list(range(2 + i)), name='Mutatable'))
     for i in range(C):
         if i == 0:
-            h_sharer.register('h_red_op0_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 's_sep3' 's_sep7'], name='Mutatable'))
-            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 's_sep3' 's_sep7'], name='Mutatable'))
+            h_sharer.register(
+                'h_red_op0_' + str(i), lambda: D([
+                    'identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7',
+                    'avg2', 'avg3', 'min2', 'max2', 'max3', 's_sep3'
+                    's_sep7'
+                ],
+                                                 name='Mutatable'))
+            h_sharer.register(
+                'h_red_op1_' + str(i), lambda: D([
+                    'identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7',
+                    'avg2', 'avg3', 'min2', 'max2', 'max3', 's_sep3'
+                    's_sep7'
+                ],
+                                                 name='Mutatable'))
         else:
             h_sharer.register(
-                'h_red_op0_' + str(i),
-                lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
-            h_sharer.register('h_red_op1_' + str(i), lambda: D(['identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7', 'avg2', 'avg3',
-            'min2', 'max2', 'max3', 'dil3', 'dil5', 'dil7', 's_sep3' 's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'], name='Mutatable'))
+                'h_red_op0_' + str(i), lambda: D([
+                    'identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7',
+                    'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5',
+                    'dil7', 's_sep3'
+                    's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'
+                ],
+                                                 name='Mutatable'))
+            h_sharer.register(
+                'h_red_op1_' + str(i), lambda: D([
+                    'identity', 'conv1', 'conv3', 'd_sep3', 'd_sep5', 'd_sep7',
+                    'avg2', 'avg3', 'min2', 'max2', 'max3', 'dil3', 'dil5',
+                    'dil7', 's_sep3'
+                    's_sep7', 'dil3_2', 'dil3_4', 'dil3_6'
+                ],
+                                                 name='Mutatable'))
         h_sharer.register(
             'h_red_in0_pos_' + str(i),
             lambda i=i: D(list(range(2 + i)), name='Mutatable'))
@@ -637,5 +703,5 @@ class SSFZoph17(mo.SearchSpaceFactory):
             search_space_fn = get_search_space_2
         elif search_space == 'sp3':
             search_space_fn = get_search_space_3
-        mo.SearchSpaceFactory.__init__(self,
-                                       lambda: search_space_fn(num_classes))
+        mo.SearchSpaceFactory.__init__(
+            self, lambda: search_space_fn(num_classes))
