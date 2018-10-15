@@ -1,11 +1,15 @@
 
+comments on the paper
+comments on the encoding
+
+
 ### META:
 # This tutorial is divided into sections, with one section per paper.
 # In each section, the ideas of the paper regarding the search space are discussed
-# and we discuss its implementation in the DSL of DeepArchitect.
+# and we discuss its implementation in DeepArchitect using the language to write
+# search spaces.
 # Finally, we discuss a summary about general guidelines to express search
 # spaces in DeepArchitect.
-
 
 # In this tutorial, we will show how to use DeepArchitect to implement
 # search spaces from the literature.
@@ -13,21 +17,22 @@
 # literature and we will show how can we write it in DeepArchitect.
 # This exercise serves to show to the reader the process by which one would go
 # about writing existing search spaces from the literature in DeepArchitect.
+# We will follow the description of the search space as it is done in the paper.
+# We make no effort to implement idiosyncracies in the actual implementation.
 
-# NOTE: that the search space simply encodes the set of architecture that can
-# be considered. it says nothing about how are these architectures going to
-# be evaluated.
-# for most cases that we have seen in the literature, this can also be done
-# under our framework, but we leave it for another time.
+# It should also give a sense to the reader of how the search space constructs
+# can be used to express non-trivial search spaces.
+
+# We believe that most of the search spaces that we have seen in the framework
+# can be expressed straightforwardly in DeepArchitect.
+
 
 # ### Zoph and Le 2017
 
-# We will follow the description of the search space as it is done in the paper.
-# We make no effort to implement idiosyncracies in the actual implementation.
 # Let us take one of the first architecture search papers: Zoph and Le, 2017.
 # In section 4.1, they describe their search space:
 
-
+### TODO: add some copy from the paper.
 # In our framework, if one layer has many input layers then all input layers are
 # concatenated in the depth dimension. Skip connections can cause “compilation
 # failures” where one layer is not compatible with another layer, or one layer
@@ -204,6 +209,56 @@ search spaces of DeepArchitect.
 The main aspect that is searched over in this search space is the connectivity
 pattern.
 
+We follow the description of the search space that can be found (here)[https://arxiv.org/pdf/1703.01513.pdf].
+The description of the search space can be found on Section 3.1 and Section 3.1.1.
+The first part contains an explanation of the encoding, while the second part
+contains a discussion of the handling of some special cases.
+
+Briefly, networks from the search space described are composed S stages.
+Each stage takes the input from the previous (the input to the first stage is
+the input to the network), applies a convolution, then the stage computation,
+which is essentially a DAG of convolutions ending in a single convolutional node,
+which is followed by a last convolution. There is a pooling layer between stages.
+For each stage of the search space, we have to choose the number of nodes in the
+DAG, e.g., in the search space represented in Figure~1, the first stage has
+four nodes and the second stage has five nodes.
+Each time we do a spatial reduction with a pooling layer, the number of filters is
+increased, e.g., if we use a pooling layer with stride 2, the number of filters is
+multiplied by two.
+Neither the spatial dimension or the number of filters changes within a stage.
+Each convolution is followed by ReLU nonlinearities and batch normalization.
+
+The connection pattern of the DAG nodes is encoded by a binary string with
+K_s(K _s - 1) / 2, where K_s is the number of nodes in the DAG in stage s.
+The bit string is composed by K _s - 1 sections, where section i \in [K _s - 1],
+encodes the connections of node i to the earlier nodes.
+
+Section 3.1.1 describes a few edge cases. If a node does not get its input
+from any of the earlier nodes in the stage, it gets its input from the initial
+node of the stage. If a node in a stage is not used, then it is excluded from
+the network.
+We see that most of the complexity of the search space lies in the stage part.
+For simplicity, we will focus on how to represent this part of the search
+space and use the
+
+# NOTE: multiple inputs to the same node are summed.
+
+
+This description is better understood by reading directly the sections mentioned
+along with Figure~1,
+or looking at the encoding of the search space in DeepArchitect.
+
+
+
+
+# define DeepArchitect
+
+
+
+
+# TODO: I think that a good idea is to check that I can use this search space
+# encoding in a separate file and see that it runs and that I can sample.
+
 # TODO: copy 3.1; binary representation section.
 
 # TODO: copy the 3.1.1 technical details section from the paper.
@@ -223,6 +278,9 @@ Arguably, doing all these extensions in an ad-hoc encoding is not straightforwar
 as we have to think about custom ways of encoding these options.
 Within DeepArchitect, these transformations can be expressed in a straighforward
 way with basic and substitution modules.
+
+# FOR example, we see that trivial extensions of the search space by working with
+# the model.
 
 # TODO: perhaps show that this is indeed the case.
 
@@ -303,3 +361,8 @@ more complex to
 
 # NOTE: this is just the search space for the cell, if we wish
 # to write something
+
+# try it for a stage, and try it for multiple stages.
+
+
+# NOTE: some general comments about the motifs.
