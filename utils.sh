@@ -1,12 +1,40 @@
+# useful functions to work with the repo.
+
+# ut_build_documentation(){ cd docs && make clean && make html && cd -; }
+# ut_build_py27_cpu_docker_container(){}
+# ut_build_py27_gpu_docker_container(){}
+# ut_build_py27_cpu_singularity_container(){}
+# ut_build_py27_gpu_singularity_container(){}
+# ut_build_py36_cpu_docker_container(){}
+# ut_build_py36_gpu_docker_container(){}
+# ut_build_py36_cpu_singularity_container(){}
+# ut_build_py36_gpu_singularity_container(){}
+# ut_run_in_py27_cpu_docker_container(){}
+# ut_run_in_py27_gpu_docker_container(){}
+# ut_run_in_py27_cpu_singularity_container(){}
+# ut_run_in_py27_gpu_singularity_container(){}
+# ut_run_in_py36_cpu_docker_container(){}
+# ut_run_in_py36_gpu_docker_container(){}
+# ut_run_in_py36_cpu_singularity_container(){}
+# ut_run_in_py36_gpu_singularity_container(){}
+# ut_run_fast_tests(){}
+ut_run_all_tests(){
+    ut_preappend_to_pythonpath "." && \
+    python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json
+}
+# ut_run_mnist_keras_example(){}
+# ut_run_mnist_tensorflow_example(){}
+# ut_run_mnist_pytorch_example(){}
+# ut_run_mnist_keras_example(){}
+# ut_extract_python_code_from_tutorial(){} # useful to test the that code is not
+# breaking across changes to the model.
+
+
+
 
 # A large fraction of this code was pulled from research_toolbox
 # https://github.com/negrinho/research_toolbox
 
-ut_get_containing_folderpath() { echo "$(dirname "$1")"; }
-
-ut_run_python_command() { python -c "$1" >&2; }
-
-### NOTE: syncing the folder.
 UT_RSYNC_FLAGS="--archive --update --recursive --verbose"
 ut_sync_folder_to_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
 ut_sync_folder_from_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
@@ -39,58 +67,6 @@ ut_submit_bridges_gpu_job_with_resources() {
 #SBATCH --job-name=\"$2\"
 $1" && ut_run_command_on_bridges "cd \"./$3\" && echo \"$script\" > _run.sh && chmod +x _run.sh && sbatch _run.sh && rm _run.sh";
 }
-
-### NOTE: this needs to be updated.
-
-ut_compute_from_jsonfile() { ut_run_python_command "from deep_architect.utils import read_jsonfile; fn = $1; print fn(read_jsonfile(\"$2\"));"; }
-
-ut_test() { echo "from deep_architect.utils import read_jsonfile; fn = $1; print fn(read_jsonfile(\"$2\"));"; }
-
-ut_compute_from_jsonfile() { ut_run_python_command "import json; with "; }
-
-
-ut_run_example(){
-    folderpath=`ut_get_containing_folderpath "$1"` &&
-    python "$1" --config_filepath "$folderpath/configs/$2.json";
-}
-
-ut_run_all_examples(){
-    export PYTHONPATH=".:$PYTHONPATH" &&
-    ut_run_example examples/tensorflow/mnist_with_logging/main.py debug &&
-    ut_run_example examples/tensorflow/cifar10/main.py debug &&
-    ut_run_example examples/tensorflow/benchmarks/main.py debug;
-}
-
-ut_build_documentation(){ cd docs && make clean && make html && cd -; }
-
-# ut_run_multiworker_example
-# ut_run_singleworker_example
-# ut_run_resume_search_example
-# ut_run_logging_with_visualization_example
-#
-
-# ut_build_gpu_singularity_container(){ }
-# ut_build_cpu_singularity_container(){ }
-# ut_download_cpu_singularity_container(){ }
-# ut_download_cpu_singularity_container(){ }
-
-#### NOTE: I think that this is quite important.
-
-### TODO: this should download the
-# ut_download_data() { }
-
-# NOTE: this should be runable with both containers and both versions of the
-# it is a matter of
-
-# TODO: add the syncronization aspects of the model.
-
-# TODO: in some cases,
-
-# TODO: some utils to sample to run on the models that have been sampled.
-
-# NOTE: there is probably a more standard way of dealing with logging folders.
-
-
 
 ut_show_cpu_info() { lscpu; }
 ut_show_gpu_info() { nvidia-smi; }
@@ -125,20 +101,12 @@ ut_uncompress_folder(){ tar -zxf "$1"; }
 ut_send_mail_message_with_subject_to_address() { echo "$1" | mail "--subject=$2" "$3"; }
 ut_send_mail_message_with_subject_and_attachment_to_address() { echo "$1" | mail "--subject=$2" "--attach=$3" "$4"; }
 
-ut_sleep_in_seconds() { sleep "$1s"; }
-ut_run_every_num_seconds() { watch -n "$2" "$1"; }
-
 ut_run_headless_command() { nohup $1; }
 ut_run_command_on_server() { ssh "$2" -t "$1"; }
 ut_run_command_on_server_on_folder() { ssh "$2" -t "cd \"$3\" && $1"; }
 ut_run_bash_on_server_on_folder() { ssh "$1" -t "cd \"$2\" && bash"; }
 ut_run_python_command() { python -c "$1" >&2; }
 ut_profile_python_with_cprofile() { python -m cProfile -s cumtime $"$1"; }
-
-ut_map_jsonfile() { ut_run_python_command \
-    "from research_toolbox.tb_io import read_jsonfile, write_jsonfile;"\
-    "fn = $1; write_jsonfile(fn(read_jsonfile(\"$2\")), \"$3\");";
-}
 
 ut_get_git_head_sha() { git rev-parse HEAD; }
 ut_show_git_commits_for_file(){ git log --follow -- "$1"; }
@@ -151,13 +119,6 @@ ut_discard_all_git_uncommitted_changes() { git checkout -- .; }
 ut_grep_history() { history | grep "$1"; }
 ut_show_known_hosts() { cat ~/.ssh/config; }
 ut_register_ssh_key_on_server() { ssh-copy-id "$1"; }
-
-ut_create_folder_on_server() { ut_run_command_on_server "mkdir -p \"$1\"" "$2"; }
-ut_find_files_and_exec() { find "$1" -name "$2" -exec "$3" {} \ ; }
-
-UT_RSYNC_FLAGS="--archive --update --recursive --verbose"
-ut_sync_folder_to_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
-ut_sync_folder_from_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
 
 ut_show_environment_variables() { printenv; }
 ut_preappend_to_pythonpath() { export PYTHONPATH="$1:$PYTHONPATH"; }
@@ -230,20 +191,4 @@ ut_install_packages() {
         singularity \
         mailutils \
         tree;
-}
-
-# NOTE: there are all these things to run locally and what not.
-
-# TODO: how to do the equivalent DOCKER containers.
-# I think that this is going to be interesting.
-
-# NOTE:
-
-# TODO: add a make logo config.
-
-ut_run_all_examples(){
-    export PYTHONPATH=".:$PYTHONPATH" &&
-    ut_run_example examples/tensorflow/mnist_with_logging/main.py debug &&
-    ut_run_example examples/tensorflow/cifar10/main.py debug &&
-    ut_run_example examples/tensorflow/benchmarks/main.py debug;
 }
