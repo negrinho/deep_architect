@@ -84,39 +84,6 @@ def batch_normalization():
     return siso_tfm('BatchNormalization', compile_fn, {})
 
 
-def dnn_net_simple(num_classes):
-
-    # defining hyperparameter
-    h_num_hidden = D(
-        [64, 128, 256, 512,
-         1024])  # number of hidden units for affine transform module
-    h_nonlin_name = D(['relu', 'tanh',
-                       'elu'])  # nonlinearity function names to choose from
-    h_opt_drop = D(
-        [0, 1])  # dropout optional hyperparameter; 0 is exclude, 1 is include
-    h_drop_keep_prob = D([0.25, 0.5,
-                          0.75])  # dropout probability to choose from
-    h_opt_bn = D([0, 1])  # batch_norm optional hyperparameter
-    h_swap = D([0, 1])  # order of swapping for permutation
-    h_num_repeats = D([1, 2])  # 1 is appearing once, 2 is appearing twice
-
-    # defining search space topology
-    model = mo.siso_sequential([
-        flatten(),
-        mo.siso_repeat(lambda: mo.siso_sequential([
-            dense(h_num_hidden),
-            nonlinearity(h_nonlin_name),
-            mo.siso_permutation([
-                lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
-                lambda: mo.siso_optional(batch_normalization, h_opt_bn),
-            ], h_swap)
-        ]), h_num_repeats),
-        dense(D([num_classes]))
-    ])
-
-    return model
-
-
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
              h_drop_keep_prob):
     return mo.siso_sequential([
