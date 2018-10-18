@@ -31,8 +31,7 @@ def path_prefix(path):
     return os.path.split(path)[0]
 
 
-def create_folder(folderpath,
-                  abort_if_exists=True,
+def create_folder(folderpath, abort_if_exists=True,
                   create_parent_folders=False):
     assert not file_exists(folderpath)
     assert create_parent_folders or folder_exists(path_prefix(folderpath))
@@ -62,27 +61,31 @@ def get_config(is_py27, is_gpu):
     """
     config_d = {
         ('py27', 'cpu'): {
+            'key': ('py27', 'cpu'),
             'tag': 'all-py27-cpu',
             'extra_py_packages': [],
-            'extra_apt_packages': [],
+            'extra_apt_packages': ['python-tk'],
             'extra_bash_commands': [],
         },
         ('py27', 'gpu'): {
+            'key': ('py27', 'gpu'),
             'tag': 'all-py27',
             'extra_py_packages': [],
-            'extra_apt_packages': [],
+            'extra_apt_packages': ['python-tk'],
             'extra_bash_commands': [],
         },
         ('py36', 'cpu'): {
+            'key': ('py36', 'cpu'),
             'tag': 'all-py36-cpu',
             'extra_py_packages': [],
-            'extra_apt_packages': [],
+            'extra_apt_packages': ['python3-tk', 'libopenmpi-dev'],
             'extra_bash_commands': [],
         },
         ('py36', 'gpu'): {
+            'key': ('py36', 'gpu'),
             'tag': 'all-py36',
             'extra_py_packages': [],
-            'extra_apt_packages': [],
+            'extra_apt_packages': ['python3-tk', 'libopenmpi-dev'],
             'extra_bash_commands': [],
         }
     }
@@ -94,30 +97,31 @@ extra_py_packages = [
     # for documentation.
     'sphinx',
     'sphinx_rtd_theme',
-    # for dash visualizations (update later).
-    'dash==0.21.0',
-    'dash-renderer==0.12.1',
-    'dash-html-components==0.10.0',
-    'dash-core-components==0.22.1',
-    'plotly --upgrade',
+    # # for dash visualizations (update later).
+    # 'dash==0.21.0',
+    # 'dash-renderer==0.12.1',
+    # 'dash-html-components==0.10.0',
+    # 'dash-core-components==0.22.1',
+    # 'plotly --upgrade',
     # for multi-machine support.
     'mpi4py',
 ]
 
 ### NOTE: this is not fully tested
 extra_bash_commands = [
-    # for one of max's examples ; this is not fully tested.
-    '$PIP_INSTALL pathlib tqdm tables',
-    '$APT_INSTALL software-properties-common',
-    'add-apt-repository ppa:ubuntugis/ppa',
-    'apt-get update',
-    '$APT_INSTALL gdal-bin libgdal-dev',
-    '$PIP_INSTALL shapely[vectorized] rasterio',
+    # 'apt-get update'
+    # # for one of max's examples ; this is not fully tested.
+    # '$PIP_INSTALL pathlib tqdm tables',
+    # '$APT_INSTALL software-properties-common',
+    # 'add-apt-repository ppa:ubuntugis/ppa',
+    # 'apt-get update',
+    # '$APT_INSTALL gdal-bin libgdal-dev',
+    # '$PIP_INSTALL shapely[vectorized] rasterio',
 ]
 
 extra_apt_packages = [
-    'software-properties-common'
-    'python-tk',
+    'pandoc'
+    # 'software-properties-common'
 ]
 
 
@@ -138,15 +142,18 @@ def create_singularity_container(config_d, out_folderpath):
         '%post',
         '    PIP_INSTALL="python -m pip --no-cache-dir install --upgrade"',
         '    APT_INSTALL="apt-get install -y --no-install-recommends"',
-        '    apt-get update',
-        '    echo > /bin/nvidia-smi',  # necessary for the --nv flag in some cases.
+        '    apt-get update'
     ]
+    if config_d["key"][1] == 'gpu':
+        # necessary for the --nv flag in some cases.
+        post_lines.append('    echo > /bin/nvidia-smi')
+
     for cmd in extra_bash_commands + config_d['extra_bash_commands']:
         post_lines.append('    %s' % cmd)
-    for pkg in extra_py_packages + config_d['extra_py_packages']:
-        post_lines.append('    $PIP_INSTALL %s' % pkg)
     for pkg in extra_apt_packages + config_d['extra_apt_packages']:
         post_lines.append('    $APT_INSTALL %s' % pkg)
+    for pkg in extra_py_packages + config_d['extra_py_packages']:
+        post_lines.append('    $PIP_INSTALL %s' % pkg)
 
     post_lines.extend([
         # cleanup lines
@@ -172,7 +179,8 @@ def create_singularity_container(config_d, out_folderpath):
     # script for creating the container.
     container_filepath = join_paths([out_folderpath, 'deep_architect.img'])
     create_bash_script([
-        'sudo singularity build %s %s' % (container_filepath, recipe_filepath)
+        'sudo singularity build --writable %s %s' %
+        (container_filepath, recipe_filepath)
     ], join_paths([out_folderpath, 'build.sh']))
 
 
@@ -189,9 +197,10 @@ def create_build_all_script(out_folderpath, folderpath_lst):
 
 def create_makefile(out_folderpath, container_config_lst):
     fn = lambda rule_name: {
-        'rule_name' : rule_name,
-        'target_lst' : [],
-        'command_lst' : []}
+        'rule_name': rule_name,
+        'target_lst': [],
+        'command_lst': []
+    }
     rule_name_to_config = {
         'py27': fn('py27'),
         'py36': fn('py36'),
@@ -232,8 +241,10 @@ def main():
     for is_py27 in [False, True]:
         for is_gpu in [False, True]:
             key, config_d = get_config(is_py27, is_gpu)
-            out_folderpath = join_paths(
-                ['containers', 'singularity', '-'.join(['darch'] + list(key))])
+            out_folderpath = join_paths([
+                'containers', 'singularity',
+                '-'.join(['deep_architect'] + list(key))
+            ])
             create_folder(
                 out_folderpath,
                 abort_if_exists=False,

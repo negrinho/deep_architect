@@ -8,7 +8,7 @@ from deep_architect.searchers.random import RandomSearcher
 
 def main():
     num_classes = 10
-    num_samples = 16
+    num_samples = 8
     (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_mnist('data/mnist')
     train_dataset = InMemoryDataset(Xtrain, ytrain, True)
     val_dataset = InMemoryDataset(Xval, yval, False)

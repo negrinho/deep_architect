@@ -43,4 +43,4 @@ Check the documentation of [Singularity](http://singularity.lbl.gov/docs-usage)
 for more information on how to run and use Singularity containers.
 
 **Important:** The most battle-tested containers are the Python 2.7 Singularity
-ones. Expect additional adventures for the other ones.
+ones. Expect adventures for the other ones.

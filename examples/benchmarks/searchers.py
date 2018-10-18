@@ -12,7 +12,9 @@ name_to_get_searcher_fn = {
     'smbo_rand_512':
     lambda ssf: SMBOSearcher(ssf, HashingSurrogate(2048, 1), 512, 0.1),
     'smbo_mcts_256':
-    lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1), 256, 0.1, 1),
+    lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1),
+                                              256, 0.1, 1),
     'smbo_mcts_512':
-    lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1), 512, 0.1, 1)
+    lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1),
+                                              512, 0.1, 1)
 }

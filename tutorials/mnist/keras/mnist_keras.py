@@ -90,7 +90,8 @@ def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
         dense(h_num_hidden),
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
+            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
+                                     h_opt_drop),
             lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)
     ])
@@ -103,11 +104,12 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]),
-            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-            D([0.25, 0.5, 0.75])), D([1, 2])),
-        dense(D([num_classes]))])
+        mo.siso_repeat(
+            lambda: dnn_cell(
+                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
+                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2])),
+        dense(D([num_classes]))
+    ])
 
 
 # Main/Searcher

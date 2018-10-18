@@ -4,5 +4,6 @@
     "log_output_to_terminal": 0,
     "folderpath": "logs/mnist",
     "search_name": "full",
-    "delete_if_exists": 0
+    "delete_if_exists": 0,
+    "use_gpu": 0
 }

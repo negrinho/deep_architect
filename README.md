@@ -1,17 +1,5 @@
-# DeepArchitect
+# DeepArchitect: A Framework for Architecture Search
 
-<!-- NOTE: some of the goals of this model is to show that it is possible
-to develop a framework. -->
-
-<!-- point to examples of reimplementations of search spaces in this framework -->
-<!-- show that searchers can use this model very frequently. -->
-
-<!-- TODO: mention programmability of architecture search . -->
-
-<!-- talk about how github issues are the right place to address some of the
-comments about representation. -->
-
-<!-- allows the user to easily experiments over complex architecture search spaces.  -->
 
 *Architecture search so easy that you'll think it's magic!*
 
@@ -85,7 +73,7 @@ Consider a very minimal functionality exemplifying how to minimally adapt a
 basic Keras examples to sample a model from a search space rather than using
 a single fixed model upfront.
 
-# A minimal DeepArchitect example by adapting a Keras example
+## A minimal DeepArchitect example by adapting a Keras example
 
 Consider the following short example that we minimally adapt from
 [this Keras example](https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py)
@@ -241,7 +229,7 @@ We recommend looking at the tour of the repository for deciding what to read nex
 [This](...) slighly more complex example also includes the usage of the search and
 logging functionality.
 
-# Design
+## Design
 
 In this section, we briefly cover the principles that guided the design of
 DeepArchitect.
@@ -352,7 +340,7 @@ Outside the deep_architect folder, be sure to also check the tutorials and read
 the API documentation.
 
 <!-- Looking into the future -->
-# Looking into the future
+## Looking into the future
 
 Going into the future, the core authors of DeepArchitect expect to continue
 extending and maintaining the codebase and use it for it their own research in architecture
@@ -405,7 +393,7 @@ Matt Gormley
 Yiming Zhao
 Emilio Arroyo-Fang -->
 
-# License
+## License
 
 MIT license
 
@@ -427,7 +415,7 @@ If you want to support my PhD and/or support DeepArchitect with compute
 and/or money, reach out to negrinho@cs.cmu.edu.
 
 
-# Why use DeepArchitect
+## Why use DeepArchitect
 
 Recently, there was a stream of research in architecture search.
 Unfortunately, much of this research builds their own systems from scratch,
@@ -449,3 +437,18 @@ right level of abstraction. This means that compared
 - Modular:
 - Easy to define search spaces:
 
+
+<!-- NOTE: some of the goals of this model is to show that it is possible
+to develop a framework. -->
+
+<!-- point to examples of reimplementations of search spaces in this framework -->
+<!-- show that searchers can use this model very frequently. -->
+
+<!-- TODO: mention programmability of architecture search . -->
+
+<!-- talk about how github issues are the right place to address some of the
+comments about representation. -->
+
+<!-- allows the user to easily experiments over complex architecture search spaces.  -->
+
+<!-- ask for use cases that I can use. -->

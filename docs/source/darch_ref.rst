@@ -1,9 +1,9 @@
-DeepArchitect Reference Manual
+API Documentation
 =================
 
 Information on specific functions, classes, and methods.
 
-DeepArchitect Core
+Core
 -----------------
 
 .. automodule:: deep_architect.core
@@ -11,7 +11,7 @@ DeepArchitect Core
     :undoc-members:
     :show-inheritance:
 
-DeepArchitect Hyperparameters
+Hyperparameters
 ----------------------------
 
 .. automodule:: deep_architect.hyperparameters
@@ -19,7 +19,7 @@ DeepArchitect Hyperparameters
     :undoc-members:
     :show-inheritance:
 
-DeepArchitect Module
+Modules
 --------------------
 
 .. automodule:: deep_architect.modules
@@ -27,7 +27,7 @@ DeepArchitect Module
     :undoc-members:
     :show-inheritance:
 
-DeepArchitect Logging 
+Logging
 ----------------------------
 
 .. automodule:: deep_architect.search_logging
@@ -35,23 +35,81 @@ DeepArchitect Logging
     :undoc-members:
     :show-inheritance:
 
-DeepArchitect Searcher
+Searchers
 ----------------------
 
-.. automodule:: deep_architect.searchers
+.. automodule:: deep_architect.searchers.common
     :members:
     :undoc-members:
     :show-inheritance:
 
-DeepArchitect Surrogates
+.. automodule:: deep_architect.searchers.mcts
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.searchers.random
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.searchers.smbo_mcts
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.searchers.smbo_random
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.searchers.successive_narrowing
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Framework Helpers
 -----------------------
 
-.. automodule:: deep_architect.surrogates
+.. automodule:: deep_architect.helpers.dynet
     :members:
     :undoc-members:
     :show-inheritance:
 
-DeepArchitect Visualization
+.. automodule:: deep_architect.helpers.keras
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.helpers.pytorch
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.helpers.tensorflow
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.helpers.tfeager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Surrogates
+-----------
+
+.. automodule:: deep_architect.surrogates.common
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.surrogates.hashing
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Visualization
 --------------------------
 
 .. automodule:: deep_architect.visualization

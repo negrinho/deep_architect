@@ -1,4 +1,4 @@
-## Guidelines for contributing
+# Guidelines for contributing
 <!--  Contributions welcome.-->
 We strongly encourage contributions to DeepArchitect.
 If DeepArchitect has been useful to you in your work, show some appreciation by
