@@ -17,5 +17,6 @@ name_to_search_space_factory_fn = {
     'zoph_sp2': lambda num_classes: SSFZoph17('sp2', num_classes),
     'zoph_sp3': lambda num_classes: SSFZoph17('sp3', num_classes),
     'enas': lambda num_classes: SSFEnasnet(num_classes, 12, 36),
+    'enas_noshare': lambda num_classes: SSFEnasnet(num_classes, 12, 36, False),
     'dnn': SSF0
 }

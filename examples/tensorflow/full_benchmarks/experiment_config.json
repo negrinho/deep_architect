@@ -87,5 +87,61 @@
       "communicator": "mpi",
       "search_folder": "logs",
       "search_name": "framework_evolution"
+    },
+    "random_zoph_sp1": {
+      "searcher": "random",
+      "dataset": "cifar10",
+      "search_space": "zoph_sp1",
+      "evaluator": "simple_classification",
+      "eval_epochs": 4,
+      "epochs": 1024,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 8,
+      "eager": false,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "framework_random"
+    },
+    "random_zoph_sp2": {
+      "searcher": "random",
+      "dataset": "cifar10",
+      "search_space": "zoph_sp2",
+      "evaluator": "simple_classification",
+      "eval_epochs": 4,
+      "epochs": 1024,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 8,
+      "eager": false,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "framework_random"
+    },
+    "random_zoph_sp3": {
+      "searcher": "random",
+      "dataset": "cifar10",
+      "search_space": "zoph_sp3",
+      "evaluator": "simple_classification",
+      "eval_epochs": 4,
+      "epochs": 1024,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 8,
+      "eager": false,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "framework_random"
+    },
+    "random_enas": {
+      "searcher": "random",
+      "dataset": "cifar10",
+      "search_space": "enas_noshare",
+      "evaluator": "simple_classification",
+      "eval_epochs": 4,
+      "epochs": 1024,
+      "searcher_file_name": "searcher_state.json",
+      "save_every": 8,
+      "eager": false,
+      "communicator": "mpi",
+      "search_folder": "logs",
+      "search_name": "framework_random"
     }
   }

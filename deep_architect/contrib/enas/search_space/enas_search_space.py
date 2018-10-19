@@ -13,27 +13,30 @@ import numpy as np
 from deep_architect.helpers import tfeager as htfe
 from deep_architect.hyperparameters import D
 from deep_architect.contrib.enas.search_space.common_ops import (
-    conv2D, conv2D_depth_separable, global_pool, dropout, fc_layer, 
+    conv2D, conv2D_depth_separable, global_pool, dropout, fc_layer,
     wrap_batch_norm_relu, avg_pool, max_pool, keras_batch_normalization)
 import deep_architect.modules as mo
 
 TFEM = htfe.TFEModule
 
 class WeightSharer(object):
-    def __init__(self):
+    def __init__(self, isSharing):
         self.name_to_weight = {}
         self.name_to_np_fn = {}
         self.weight_dict = {}
-    
+        self.isSharing = isSharing
+
     def get(self, name, construct_fn, np_fn):
-        if name not in self.name_to_weight:
-            with tf.device('/gpu:0'):
-                self.name_to_weight[name] = construct_fn()
-                self.name_to_np_fn[name] = np_fn
-            print(name)
-#        self.weights_used.add(name)
-#        self.name_to_weight[name].gpu()
-        return self.name_to_weight[name]
+        if self.isSharing:
+            if name not in self.name_to_weight:
+                with tf.device('/gpu:0'):
+                    self.name_to_weight[name] = construct_fn()
+                    self.name_to_np_fn[name] = np_fn
+                print(name)
+    #        self.weights_used.add(name)
+    #        self.name_to_weight[name].gpu()
+            return self.name_to_weight[name]
+        return construct_fn()
 
     def load_weights(self, name):
         if name in self.weight_dict:
@@ -46,7 +49,7 @@ class WeightSharer(object):
         for name in self.name_to_weight:
             weight_dict[name] = self.name_to_np_fn[name](self.name_to_weight[name])
         np.save(filename, weight_dict)
-    
+
     def load(self, filename):
         self.weight_dict = np.load(filename).item()
 
@@ -131,10 +134,10 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
         ])
 
 class SSFEnasnet(mo.SearchSpaceFactory):
-    def __init__(self, num_classes, num_layers, out_filters):
+    def __init__(self, num_classes, num_layers, out_filters, isSharing=True):
         mo.SearchSpaceFactory.__init__(self)
         self.num_classes = num_classes
-        self.weight_sharer = WeightSharer()
+        self.weight_sharer = WeightSharer(isSharing)
         self.num_layers = num_layers
         self.out_filters = out_filters
 
