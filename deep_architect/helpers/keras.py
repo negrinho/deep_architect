@@ -51,6 +51,7 @@ class KerasModule(co.Module):
         output_names (list[str]): List of names for the outputs.
         scope (darch.core.Scope, optional): Scope where the module will be
             registered.
+
     """
 
     def __init__(self,

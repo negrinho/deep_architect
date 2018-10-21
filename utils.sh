@@ -34,7 +34,9 @@ ut_bash_in_py27_cpu_singularity_container(){
 # ut_run_in_py27_gpu_singularity_container(){}
 # ut_run_in_py36_cpu_docker_container(){}
 # ut_run_in_py36_gpu_docker_container(){}
-# ut_run_in_py36_cpu_singularity_container(){}
+ut_run_in_py36_cpu_singularity_container(){
+    echo "$1" > "run.sh" && singularity exec containers/singularity/deep_architect-py36-cpu/deep_architect.img bash run.sh;
+}
 # ut_run_in_py36_gpu_singularity_container(){}
 # ut_run_fast_tests(){}
 ut_run_all_tests(){

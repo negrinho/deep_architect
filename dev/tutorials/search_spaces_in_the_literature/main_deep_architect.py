@@ -81,23 +81,3 @@ def model(num_classes):
         conv_fn(),
         dense(D([num_classes]))
     ])
-
-    # filter_nums = range(48, 129, 16)
-    # repeat_nums = [2 ** i for i in xrange(6)]
-    # mult_fn = lambda ls, alpha: list(alpha * np.array(ls))
-    # M = Concat([MH,
-    #         Conv2D(filter_nums, [3, 5, 7], [2], ["SAME"]),
-    #         Module_fn(filter_nums, [3, 5], [0.5, 0.9], repeat_nums),
-    #         Conv2D(filter_nums, [3, 5, 7], [2], ["SAME"]),
-    #         Module_fn(mult_fn(filter_nums, 2), [3, 5], [0.5, 0.9], repeat_nums),
-    #         Affine([num_classes], aff_initers) ])
-
-
-# def Module_fn(filter_ns, filter_ls, keep_ps, repeat_ns):
-#     b = RepeatTied(
-#     Concat([
-#         Conv2D(filter_ns, filter_ls, [1], ["SAME"]),
-#         MaybeSwap_fn( ReLU(), BatchNormalization() ),
-#         Optional_fn( Dropout(keep_ps) )
-#     ]), repeat_ns)
-#     return b

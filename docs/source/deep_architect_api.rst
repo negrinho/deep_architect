@@ -1,42 +1,40 @@
-API Documentation
-=================
+API reference
+=======================
 
-Information on specific functions, classes, and methods.
-
-Core
------------------
+deep_architect.core
+-------------------
 
 .. automodule:: deep_architect.core
     :members:
     :undoc-members:
     :show-inheritance:
 
-Hyperparameters
-----------------------------
+deep_architect.hyperparameters
+------------------------------
 
 .. automodule:: deep_architect.hyperparameters
     :members:
     :undoc-members:
     :show-inheritance:
 
-Modules
---------------------
+deep_architect.modules
+----------------------
 
 .. automodule:: deep_architect.modules
     :members:
     :undoc-members:
     :show-inheritance:
 
-Logging
-----------------------------
+deep_architect.search_logging
+-----------------------------
 
 .. automodule:: deep_architect.search_logging
     :members:
     :undoc-members:
     :show-inheritance:
 
-Searchers
-----------------------
+deep_architect.searchers
+------------------------
 
 .. automodule:: deep_architect.searchers.common
     :members:
@@ -68,13 +66,8 @@ Searchers
     :undoc-members:
     :show-inheritance:
 
-Framework Helpers
------------------------
-
-.. automodule:: deep_architect.helpers.dynet
-    :members:
-    :undoc-members:
-    :show-inheritance:
+deep_architect.helpers
+----------------------
 
 .. automodule:: deep_architect.helpers.keras
     :members:
@@ -91,13 +84,8 @@ Framework Helpers
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: deep_architect.helpers.tfeager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Surrogates
------------
+deep_architect.surrogates
+-------------------------
 
 .. automodule:: deep_architect.surrogates.common
     :members:
@@ -109,8 +97,8 @@ Surrogates
     :undoc-members:
     :show-inheritance:
 
-Visualization
---------------------------
+deep_architect.visualization
+----------------------------
 
 .. automodule:: deep_architect.visualization
     :members:

@@ -1,7 +1,9 @@
-# Guidelines for contributing
+# Contributing
+
+## Introduction
 <!--  Contributions welcome.-->
 We strongly encourage contributions to DeepArchitect.
-If DeepArchitect has been useful to you in your work, show some appreciation by
+If DeepArchitect has been useful to you in your work, please show some appreciation by
 citing it and/or contributing to the codebase, e.g., by refactoring part of your
 code into something that can be generally useful to the community.
 We encourage everyone doing research in architecture search to implement their
@@ -26,7 +28,7 @@ After reading this document, you will understand:
 
 <!-- How to decide exactly what to contribute. -->
 If you have a feature in mind that you would like to add to DeepArchitect but you
-aren't sure if it would be a good fit for inclusion, open a
+are not sure if it would be a good fit for inclusion, open a
 [GitHub issue](https://github.com/negrinho/deep_architect/issues)
 to discuss its scope and suitability.
 This guarantees that your efforts are well-aligned with the project direction.
@@ -49,7 +51,7 @@ The dev folder serves to store code that contains a sketch of some interesting
 functionality, but due to some reason, it is not fully functional or it
 has not been refactored well enough to be integrated as part of contrib.
 Unmaintained code will be moved to dev upon breakage.
-Code on dev should not be used directly, but it can serve as inspiration
+Code on dev should not be used directly, but it can serve as inspiration and reference
 for additional functionality.
 
 <!-- How code evolves between the different folders. -->
@@ -133,7 +135,7 @@ removing the corresponding folders in `deep_architect/contrib`, `tests/contrib`,
 and `examples/contrib`.
 While an example is not required, we do require a few tests to exercise the
 contributed code and have some guarantee that specific features remain correct
-as the contributed code or the development environment change.
+as the contributed code and the development environment change.
 
 ## Folder structure for contributions
 <!-- Motivation for the design of the contrib folder structure,
@@ -156,8 +158,8 @@ We recommend checking existing examples in the
 [repo](https://github.com/negrinho/deep_architect) for determining how to
 structure and document a new example appropriately.
 
-<!-- The config.json file for storing runnable configurations. -->
-Configurations to run the example should be placed in a JSON configuration
+<!-- storing configurations for running examples. -->
+Each configuration to run the example should be placed in a JSON configuration
 file `$CONFIG_NAME.json` in a folder named `configs` living in the same folder
 of the main file of the example.
 JSON configuration files guarantee that the options that determine the behavior
@@ -166,18 +168,20 @@ This is more manageable, programmable, and configurable than having a command li
 This guarantees that it is easy to maintain and store many different configurations,
 e.g., one configuration where the code is exercised with
 few resources and another configuration where the code is exercised in a
-longer run, e.g., see [here](https://github.com/negrinho/deep_architect/blob/merge_all/examples/tensorflow/benchmarks/).
+longer run, e.g., see [here](https://github.com/negrinho/darch/tree/master/examples/mnist_with_logging).
 Each JSON file corresponds to a different configuration.
 We suggest including a `debug.json` to run a quick experiment to
 validate the functionality of both the code under `contrib/examples` and
 `deep_architect/contrib`.
-We recommend the use of config files for all but the most trivial examples.
+We recommend the use of configuration files for all but the most trivial examples.
+We often use the signature `python path/to/example/main.py -- config_filepath /path/to/config.json`
+for running examples, with all the information to run put in the configuration file.
 
 <!-- Separating the contribution according to the different modular components
 identified in the framework. -->
 Whether contributing examples or libraries, we recommend identifying the
 search spaces, searchers, evaluators, and datasets and splitting them into
-different files, e.g., [see]().
+different files, e.g., [see](https://github.com/negrinho/darch/tree/master/deep_architect/searchers).
 Having these components into multiple files makes the dependencies more
 explicit and improves the reusability of the components.
 The framework is developed around these modular components.

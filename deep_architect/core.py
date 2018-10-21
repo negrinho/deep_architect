@@ -75,7 +75,8 @@ class Scope:
         The object must exist in the scope.
 
         Args:
-            elem (deep_architect.core.Addressable): Addressable object registered in the scope.
+            elem (deep_architect.core.Addressable): Addressable object
+                registered in the scope.
 
         Returns:
             str: Name with which the object was registered in the scope.
@@ -112,8 +113,8 @@ class Addressable:
     Provides functionality to register objects in a scope.
 
     Args:
-        scope (deep_architect.core.Scope): Scope object where the addressable object will
-            be registered.
+        scope (deep_architect.core.Scope): Scope object where the addressable
+            object will be registered.
         name (str): Unique name used to register the addressable object.
     """
 
@@ -310,9 +311,10 @@ class Input(Addressable):
     See also: :class:`deep_architect.core.Output` and :class:`deep_architect.core.Module`.
 
     Args:
-        module (deep_architect.core.Module): Module with which the input object is associated to.
-        scope (deep_architect.core.Scope): Scope object where the input is going to be
-            registered in.
+        module (deep_architect.core.Module): Module with which the input object
+            is associated to.
+        scope (deep_architect.core.Scope): Scope object where the input is
+            going to be registered in.
         name (str): Unique name with which to register the input object.
     """
 
@@ -384,8 +386,8 @@ class Input(Addressable):
             :meth:`deep_architect.core.Output.reroute_all_connected_inputs`.
 
         Args:
-            to_input (deep_architect.core.Input): Input to which the output that is connected to
-                this input .is going to be connected to.
+            to_input (deep_architect.core.Input): Input to which the output
+                is going to be connected to.
         """
         assert isinstance(to_input, Input)
         old_ox = self.from_output
@@ -402,9 +404,10 @@ class Output(Addressable):
     See also: :class:`deep_architect.core.Input` and :class:`deep_architect.core.Module`.
 
     Args:
-        module (deep_architect.core.Module): Module with which the output object is associated to.
-        scope (deep_architect.core.Scope): Scope object where the output is going to be
-            registered in.
+        module (deep_architect.core.Module): Module with which the output object
+            is associated to.
+        scope (deep_architect.core.Scope): Scope object where the output is
+            going to be registered in.
         name (str): Unique name with which to register the output object.
     """
 
@@ -427,7 +430,8 @@ class Output(Addressable):
         """Get the list of inputs to which is the output is connected to.
 
         Returns:
-            list[deep_architect.core.Input]: List of the inputs to which the output is connect to.
+            list[deep_architect.core.Input]: List of the inputs to which the
+                output is connect to.
         """
         return self.to_inputs
 
@@ -435,7 +439,8 @@ class Output(Addressable):
         """Get the module object with which the output is associated with.
 
         Returns:
-            deep_architect.core.Module: Module object with which the output is associated with.
+            deep_architect.core.Module: Module object with which the output is
+                associated with.
         """
         return self.module
 
@@ -468,8 +473,8 @@ class Output(Addressable):
             :meth:`deep_architect.core.Input.reroute_connected_output`.
 
         Args:
-            from_output (deep_architect.core.Output): Output to which the connected inputs are
-                going to be rerouted to.
+            from_output (deep_architect.core.Output): Output to which the
+                connected inputs are going to be rerouted to.
         """
         to_inputs = list(self.to_inputs)
         for ix in to_inputs:
@@ -491,8 +496,9 @@ class Module(Addressable):
     operations to understand are compile and forward.
 
     Args:
-        scope (deep_architect.core.Scope, optional): Scope object where the module
-            is going to be registered in.
+
+        scope (deep_architect.core.Scope, optional): Scope object where the
+            module is going to be registered in.
         name (str, optional): Unique name with which to register the module.
     """
 
@@ -529,7 +535,8 @@ class Module(Addressable):
         """Registers an hyperparameter that the module depends on.
 
         Args:
-            h (deep_architect.core.Hyperparameter): Hyperparameter that the module depends on.
+            h (deep_architect.core.Hyperparameter): Hyperparameter that the
+                module depends on.
             name (str): Local name to give to the hyperparameter.
         """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
@@ -562,8 +569,7 @@ class Module(Addressable):
         :meth:`_set_output_values` and :func:`forward`.
 
         Returns:
-            dict[str, object]:
-                Dictionary of local input names to their corresponding values.
+            dict[str, object]: Dictionary of local input names to their corresponding values.
         """
         return {name: ix.val for name, ix in iteritems(self.inputs)}
 
@@ -681,8 +687,8 @@ def determine_module_eval_seq(input_lst):
     modules in the graph. See also: :func:`forward`.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of inputs sufficient to compute
-            the forward computation of the whole graph through propagation.
+        input_lst (list[deep_architect.core.Input]): List of inputs sufficient
+            to compute the forward computation of the whole graph through propagation.
 
     Returns:
         list[deep_architect.core.Module]:
@@ -718,8 +724,8 @@ def traverse_backward(output_lst, fn):
 
     Args:
         output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
-        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each module.
-            Returns ``True`` if the traversal is to be stopped.
+        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each
+            module. Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(output_lst)
@@ -747,8 +753,8 @@ def traverse_forward(input_lst, fn):
 
     Args:
         input_lst (list[deep_architect.core.Input]): List of inputs to start the traversal at.
-        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each module.
-            Returns ``True`` if the traversal is to be stopped.
+        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each
+            module. Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(input_lst)
@@ -869,7 +875,8 @@ def get_unconnected_outputs(input_lst):
     these outputs.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of input to start the forward traversal at.
+        input_lst (list[deep_architect.core.Input]): List of input to start the
+            forward traversal at.
 
     Returns:
         list[deep_architect.core.Output]:
@@ -950,7 +957,8 @@ def get_unassigned_independent_hyperparameters(output_lst):
     :func:`deep_architect.modules.siso_or`, and :func:`deep_architect.modules.siso_repeat`.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
+        output_lst (list[deep_architect.core.Output]): List of outputs to
+            start the traversal at.
 
     Returns:
         OrderedSet[deep_architect.core.Hyperparameter]:

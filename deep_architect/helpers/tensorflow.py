@@ -55,6 +55,7 @@ class TensorflowModule(co.Module):
         output_names (list[str]): List of names for the outputs.
         scope (deep_architect.core.Scope, optional): Scope where the module will be
             registered.
+
     """
 
     def __init__(self,
@@ -116,7 +117,7 @@ def get_feed_dicts(output_lst):
 
     Args:
         output_lst (list[deep_architect.core.Output]): List of outputs of the model
-            (i.e., with no unspecified hyperparameters available) sampled
+            (i.e., with no unspecified hyperparameters available) sampled 
             from the search space.
 
     Returns:

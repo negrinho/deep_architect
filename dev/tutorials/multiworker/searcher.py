@@ -6,6 +6,8 @@ import deep_architect.utils as ut
 from search_space import dnn_net
 import argparse
 
+import keras.losses
+
 
 def get_search_space(num_classes):
 

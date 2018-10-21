@@ -5,6 +5,7 @@ from six.moves import range
 
 class Identity(co.Module):
     """Module passes the input to the output without changes.
+
     Args:
         scope (deep_architect.core.Scope, optional): Scope in which the module will be
             registered. If none is given, uses the default scope.
@@ -38,21 +39,6 @@ class HyperparameterAggregator(co.Module):
         self.outputs['Out'].val = self.inputs['In'].val
 
 
-class InputReplicator(co.Module):
-
-    def __init__(self, num_outputs, scope=None, name=None):
-        co.Module.__init__(self, scope, name)
-        self._register(["In"], ["Out%i" for i in range(num_outputs)], {})
-
-    def _compile(self):
-        pass
-
-    def _forward(self):
-        ival = self.inputs['In'].val
-        for ox in itervalues(self.outputs):
-            ox.val = ival
-
-
 class SubstitutionModule(co.Module):
     """Substitution modules are replaced by other modules when the all the
     hyperparameters that the module depends on are specified.
@@ -74,13 +60,21 @@ class SubstitutionModule(co.Module):
             name of the arguments of the substitution function.
         substitution_fn ((...) -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output]):
             Function that is called with the values of hyperparameters and
-            values of inputs and returns the inputs and the outputs of the
+            returns the inputs and the outputs of the
             network fragment to put in the place the substitution module
             currently is.
         input_names (list[str]): List of the input names of the substitution module.
         output_name (list[str]): List of the output names of the substitution module.
         scope ((deep_architect.core.Scope, optional)) Scope in which the module will be
             registered. If none is given, uses the default scope.
+        allow_input_subset (bool): If true, allows the substitution function to
+            return a strict subset of the names of the inputs existing before the
+            substitution. Otherwise, the dictionary of inputs returned by the
+            substitution function must contain exactly the same input names.
+        allow_output_subset (bool): If true, allows the substitution function to
+            return a strict subset of the names of the outputs existing before the
+            substitution. Otherwise, the dictionary of outputs returned by the
+            substitution function must contain exactly the same output names.
     """
 
     def __init__(self,
@@ -91,12 +85,10 @@ class SubstitutionModule(co.Module):
                  output_names,
                  scope=None,
                  allow_input_subset=False,
-                 allow_output_subset=False,
-                 unpack_kwargs=True):
+                 allow_output_subset=False):
         co.Module.__init__(self, scope, name)
         self.allow_input_subset = allow_input_subset
         self.allow_output_subset = allow_output_subset
-        self.unpack_kwargs = unpack_kwargs
 
         self._register(input_names, output_names, name_to_hyperp)
         self._substitution_fn = substitution_fn
@@ -112,21 +104,8 @@ class SubstitutionModule(co.Module):
         """
         if (not self._is_done) and all(
                 h.has_value_assigned() for h in itervalues(self.hyperps)):
-            argnames = self._substitution_fn.__code__.co_varnames
-
-            kwargs = {}
-            for name, h in iteritems(self.hyperps):
-                kwargs[name] = h.get_value()
-            # NOTE: I'm not sure if it is possible to have this dependency on
-            # inputs. None of the examples below use inputs in substitution_fn.
-            for name, ix in iteritems(self.inputs):
-                if name in argnames:
-                    kwargs[name] = ix.val
-
-            if self.unpack_kwargs:
-                new_inputs, new_outputs = self._substitution_fn(**kwargs)
-            else:
-                new_inputs, new_outputs = self._substitution_fn(kwargs)
+            dh = {name: h.get_value() for name, h in iteritems(self.hyperps)}
+            new_inputs, new_outputs = self._substitution_fn(**dh)
 
             # test for checking that the inputs and outputs returned by the
             # substitution function are valid.
@@ -169,21 +148,12 @@ class SubstitutionModule(co.Module):
 
             self._is_done = True
 
-    # _compile and _forward should never be called on a substitution module,
-    # as they eventually disappear. once all the hyperparameters of the module
-    # are fully specifed, the values should
-    def _compile(self):
-        assert False
-
-    def _forward(self):
-        assert False
-
 
 def identity(scope=None, name=None):
-    """Same as the Empty module, but directly works with dictionaries of
+    """Same as the Identity module, but directly works with dictionaries of
     inputs and outputs of the module.
 
-    See :class:`Empty`.
+    See :class:`Identity`.
 
     Returns:
         (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
@@ -197,12 +167,8 @@ def hyperparameter_aggregator(name_to_hyperp, scope=None, name=None):
 
 
 def get_hyperparameter_aggregators(output_lst):
-    co.get_modules_with_cond(output_lst,
-                             lambda m: isinstance(m, HyperparameterAggregator))
-
-
-def input_replicator(num_outputs, scope=None, name=None):
-    return InputReplicator(num_outputs, scope=scope, name=name).get_io()
+    co.get_modules_with_cond(
+        output_lst, lambda m: isinstance(m, HyperparameterAggregator))
 
 
 def substitution_module(name,
@@ -212,8 +178,7 @@ def substitution_module(name,
                         output_names,
                         scope,
                         allow_input_subset=False,
-                        allow_output_subset=False,
-                        unpack_kwargs=True):
+                        allow_output_subset=False):
     """Same as the substitution module, but directly works with the dictionaries of
     inputs and outputs.
 
@@ -240,6 +205,14 @@ def substitution_module(name,
         input_names (list[str]): List of the input names of the substitution module.
         output_name (list[str]): List of the output names of the substitution module.
         scope (deep_architect.core.Scope): Scope in which the module will be registered.
+        allow_input_subset (bool): If true, allows the substitution function to
+            return a strict subset of the names of the inputs existing before the
+            substitution. Otherwise, the dictionary of inputs returned by the
+            substitution function must contain exactly the same input names.
+        allow_output_subset (bool): If true, allows the substitution function to
+            return a strict subset of the names of the outputs existing before the
+            substitution. Otherwise, the dictionary of outputs returned by the
+            substitution function must contain exactly the same output names.
 
     Returns:
         (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
@@ -253,8 +226,7 @@ def substitution_module(name,
         output_names,
         scope,
         allow_input_subset=allow_input_subset,
-        allow_output_subset=allow_output_subset,
-        unpack_kwargs=unpack_kwargs).get_io()
+        allow_output_subset=allow_output_subset).get_io()
 
 
 def _get_name(name, default_name):

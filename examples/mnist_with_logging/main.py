@@ -68,7 +68,7 @@ def main():
                 outputs.values(),
                 draw_module_hyperparameter_info=True,
                 print_to_screen=False,
-                out_folderpath=eval_logger.get_evaluation_folderpath())
+                out_folderpath=eval_logger.get_evaluation_data_folderpath())
             # Updating the searcher given the results of logging.
             searcher.update(results['validation_accuracy'], eval_token)
 

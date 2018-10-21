@@ -1,79 +1,70 @@
 # DeepArchitect: A Framework for Architecture Search
 
+*Architecture search so easy you'll think it's magic!*
 
-*Architecture search so easy that you'll think it's magic!*
+## Introduction
 
-DeepArchitect is a carefully designed framework for automatically searching over computational graphs.
-DeepArchitect is made of components such as a language for writing composable and
-expressive search spaces over computational graphs in arbitrary domains
-(e.g., Tensorflow, Keras, Pytorch, and even non deep learning frameworks, such as Scikit Learn and preprocessing pipelines),
-general search algorithms that can be used in arbitrary domains,
-logging functionality to easily keep track of the results of a search,
-visualization functionality to explore and inspect the logs that resulted from a search.
-DeepArchitect aims to impact the workflows of both researchers and practioneers
-by reducing the burden resulting from the large number of arbitrary choices that
-have to be made to design a deep learning model for a problem.
-As it is most often currently done, instead of writing down a single model
-(or a search space in an ad-hoc manner),
-DeepArchitect uses composable and modular operators to express a search
-space that is then passed to a search algorithm that samples
-architectures from it with the goal of maximizing a desired performance metric.
-The modularity and composability properties make code written using DeepArchitect
-extremely reusable, often leading to the user only having to write a small amount of
-code for the desired use case.
-
-<!-- main differences between different tools. -->
-Compared to existing work for hyperparameter optimization and architecture
-search, DeepArchitect has several differentiating features that make it suitable
-to augment or replace existing tools.
-The main differences between DeepArchitect and hyperparameter optimization
-tools is that DeepArchitect is more integrated, having the hyperparameters
-directly related to the computational elements. This means that there is less for
-users to develop their own correspondence between encoding of search spaces and
-resulting compiled models.
-The main difference between DeepArchitect and other research in architecture
-search is that most of this research is not highly concerned about extensibility,
-ease of use, and programability, e.g., the search spaces are often hard-coded and hard to
-adapt to or reuse them for new settings. This is not the case with DeepArchitect, allowing the
-user, for example, to run the same searcher on arbitrary search spaces, and run the
-same search space on arbitrary searchers.
-
-<!-- what is there in store for both researchers and practicioners -->
-For researchers, DeepArchitect aims to make architecture search research more
-reusable by providing researchers with a framework that they can use to implement
-new search algorithms while reusing a large amount of code.
-For practioners, DeepArchitect aims to ease the burden resulting from
-number of arbitrary choices that the practioner has to make to write down a model
-over architectures.
-For practicioners, DeepArchitect aims to augment their workflow by providing
-a tool that removes a large fraction of this overwhelming arbitrariness by
-encoding these choices directly in a search space and letting a search algorithm
-take care of finding an architecture.
-
-DeepArchitect was designed with modularity, ease of use, resusability, and
-extensibility in mind. It should be easy for the user to implement a new
-search space or a new searcher in the framowork. The core APIs were carefully
+DeepArchitect is a carefully designed framework for automatically searching over
+computational graphs in arbitrary domains.
+DeepArchitect was designed with a focus on
+**modularity**, **ease of use**, **resusability**, and **extensibility**.
+It should be easy for the user to implement new
+search spaces and searchers in the DeepArchitect. The core APIs were carefully
 designed and their interaction carefully thought out. The design is such that
 most interfaces (e.g., for search spaces, searchers, and evaluators) are only
 lightly coupled and are mostly orthogonal, meaning that each of them as
 well defined responsibilities and concerns.
 
-DeepArchitect mostly stays out of your way, allowing you to use a subset of the
-framework and expand it as needed.
-For example, it is very simple to set up an example with random search
-over an arbitrary search space.
-The main focus of DeepArchitect is on programability; it should be easy
-for the user to express complex search spaces over computational graphs
-using
-Search spaces and searchers are very loosely tied to any particular computational
-framework, as the language to write down search spaces over architectures
-works across different computational frameworks
+With the development of DeepArchitect, we aim to impact the workflows of
+both researchers and practioneers
+by reducing the burden resulting from the large number of arbitrary choices that
+have to be made to design a deep learning model for a problem.
+As it is most often currently done, instead of writing down a single model
+(or a search space in an ad-hoc manner),
+DeepArchitect uses composable and modular operators to express a search
+space over computational graphs that is then passed to a search algorithm that samples
+architectures from it with the goal of maximizing a desired performance metric.
+Code written using DeepArchitect is modular, composable, and reusable, leading
+to the user often only having to write a small amount of code for the desired use case.
 
-Consider a very minimal functionality exemplifying how to minimally adapt a
-basic Keras examples to sample a model from a search space rather than using
-a single fixed model upfront.
+<!-- what is there in store for both researchers and practicioners -->
+For researchers, DeepArchitect aims to make architecture search research more
+reusable and reproducible by providing them with a
+modular framework that they can use to implement
+new search algorithms and new search spaces while reusing a large amount of
+existing code.
+For practicioners, DeepArchitect aims to augment their workflow by providing them
+with a tool that allows them to easily write a search space encoding
+the large number of choices involved in designing an architecture
+and use a search algorithm automatically find an architecture in the search space.
 
-## A minimal DeepArchitect example by adapting a Keras example
+DeepArchitect has the following **main components**:
+
+* a language for writing composable and expressive search spaces over computational graphs in arbitrary domains
+(e.g., Tensorflow, Keras, Pytorch, and even non deep learning frameworks
+such as scikit-learn and preprocessing pipelines);
+* search algorithms that can be used for arbitrary search spaces;
+* logging functionality to easily keep track of the results of a search;
+* visualization functionality to explore and inspect logging information resulting from a search experiment.
+
+<!-- main differences between different tools. -->
+Compared to existing work for hyperparameter optimization and architecture
+search, DeepArchitect has several differentiating features that makes it suitable
+for augmenting existing machine learning workflows.
+The main difference betweeh DeepArchitect and current hyperparameter architecture
+search tools is that DeepArchitect has better integration, having the hyperparameters
+directly related to the computational elements.
+This reduces the arbitrary ad-hoc compilation steps where values of the collection
+of hyperparameters has to be mapped to a specific computational graph by the expert.
+The main difference between DeepArchitect and other existing research in architecture
+search is that DeepArchitect is explicitly concerned about
+extensibility, ease of use, and programability,
+e.g., we designed a composable and expressive language to write search spaces.
+Existing work on architecture search does not have a principled way of accomplish
+this, relying on ad-hoc encodings of search spaces, therefore making them
+hard to adapt and reuse them in new settings.
+
+## A minimal DeepArchitect example with Keras
 
 Consider the following short example that we minimally adapt from
 [this Keras example](https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py)
@@ -187,9 +178,9 @@ print('Test loss:', score[0])
 
 <!-- comments on the example. -->
 This example is introductory and it is meant to show how to introduce the
-absolute minimal architecture search capabilities in an existing Keras examples.
-In this case, we see that the changes necessary to express a reasonable
-number of structural transformations to the computational graph is very compact.
+absolute minimal architecture search capabilities in an existing Keras example.
+In this case, we see that we can compactly express a reasonable
+number of structural transformations for the computational graph.
 Our search space essentially says that our network will be composed of a
 sequential connection of 1, 2, or 4 cells, followed by a final dense module that
 outputs probabilities over classes.
@@ -197,8 +188,8 @@ Each cell is a subsearch space (again, justifying the modularity and composabili
 properties of DeepArchitect). The choice of the activation for the dense layer
 in the cell search space is shared
 
-Each of the cell search spaces is composed of a
-dense layer for which we cho
+
+TODO: finish this part.
 
 <!-- suggestions on going forward. -->
 There are many aspects that we have not exemplified here, such as logging,
@@ -229,13 +220,14 @@ We recommend looking at the tour of the repository for deciding what to read nex
 [This](...) slighly more complex example also includes the usage of the search and
 logging functionality.
 
-## Design
+## Comments on design
 
 In this section, we briefly cover the principles that guided the design of
 DeepArchitect.
 Some of the main concepts that we deal in DeepArchitect are
 
-* Search spaces: search spaces are constructed by putting together modules (both basic and substitution) and
+* **Search spaces**: Search spaces are constructed by putting together modules
+(both basic and substitution) and
 hyperparameters (independent and dependent). These are represented through the
 connections of the modules, which have inputs, outputs, and hyperparameters.
 The search spaces are often passed around a dictionary of inputs and a dictionary
@@ -248,7 +240,7 @@ value assignments to the independent hyperparameters.
 Good references to peruse to
 get more acquainted with these ideas are (core.py, modules.py).
 
-* Searchers: searchers interact with a search through a very simple interface.
+* **Searchers**:  Searchers interact with a search through a very simple interface.
 Regardless of the each search space that a searcher is dealing with, the searcher
 samples a model from the search by assigning values to each of the independent
 hyperparameter of the search, until there are no more independent hyperparameters to
@@ -262,13 +254,13 @@ for some examples of the common API. It is also worth to look at core.py for
 some of the traversal functionality that allows to traverse the independent
 hyperparameters in the graph. Any
 
-* Evaluators: evaluators take a sampled architecture from the search space and
+* **Evaluators**:  Evaluators take a sampled architecture from the search space and
 compute some notion of performance for that particular architecture. These
 contain a single method that returns a dictionary with characteristics for the
 architecture evaluated. In the simplest case, there is a single metric that
 can be used as a performance metric.
 
-* Logging: When we run an architecture search workload, we are going to evaluate
+* **Logging**:  When we run an architecture search workload, we are going to evaluate
 multiple architectures in the search space. To keep track of the generated
 information, we designed a folder structure that maintains a single folder per
 evaluation. This structure allows us to keep the information about the
@@ -278,7 +270,7 @@ example predictions on the validation set or the save model. Most of the
 logging functionality can be found in search_logging.py. A simple example
 of how the logging functionality is used can be found mnist_with_logging/main.py.
 
-* Visualization: Visualization functionality allows us to visualize the structure
+* **Visualization**:  Visualization functionality allows us to visualize the structure
 of the search space and to visualize graph transitions that result from
 assigning values to the independent hyperparameters. This allows the user to
 get a sense if the search space that was defined is encoding the expected
@@ -296,42 +288,53 @@ to the framework, which is potentially useful, but we do not necessarily want
 to maintain. We recommend the user to peruse it. See below for a high-level tour
 of the repo.
 
-* core.py: Most important classes to define search spaces.
-* hyperparameters.py: Basic hyperparameters and auxiliary hyperaprameter sharer class.
-* modules.py: Definition of subsitution modules along with some auxiliary
+* [core.py](https://github.com/negrinho/darch/blob/master/deep_architect/core.py):
+    Most important classes to define search spaces.
+* [hyperparameters.py](https://github.com/negrinho/darch/blob/master/deep_architect/hyperparameters.py):
+    Basic hyperparameters and auxiliary hyperaprameter sharer class.
+* [modules.py](https://github.com/negrinho/darch/blob/master/deep_architect/modules.py):
+    Definition of subsitution modules along with some auxiliary
 abstract functionality to connect modules or construct more larger search spaces
 from simpler search spaces.
-* search_logging.py: functionality to keep track of the results of the architecture
+* [search_logging.py](https://github.com/negrinho/darch/blob/master/deep_architect/search_logging.py):
+    functionality to keep track of the results of the architecture
 search process, allowing to maintain strucutured folders for each architecture search
 process.
-* utils.py: general utility functions that are not directly related to architecture
+* [utils.py](https://github.com/negrinho/darch/blob/master/deep_architect/utils.py):
+    general utility functions that are not directly related to architecture
 search, but are useful in many contextes such as logging and visualization.
-* visualization.py: Simple visualization functionality used to visualize
+* [visualization.py](https://github.com/negrinho/darch/blob/master/deep_architect/visualization.py):
+    Simple visualization functionality used to visualize
 search spaces in graph form.
 
 We also have a few folders in the deep_architect folder.
-* communicators: simple functionality to communicate between master and worker
+* [communicators](https://github.com/negrinho/darch/tree/master/deep_architect/communicators):
+    simple functionality to communicate between master and worker
 processes to relay the evaluation of an architecture and retrieve the results
 once done.
 
-* contrib: useful functionality that uses DeepArchitect and that it will not
+* [contrib](https://github.com/negrinho/darch/tree/master/deep_architect/contrib):
+    useful functionality that uses DeepArchitect and that it will not
 be necessarily maintained over time, but that users of DeepArchitect may
 find useful in their own examples. Contributions by the community will live in this folder.
 See (TODO: link to contributing) for an
 in-depth explanation for the rationale behind the project organization and
 the contrib folder.
 
-* helpers: helpers for different frameworks that we support. This allows to take
+* [helpers](https://github.com/negrinho/darch/tree/master/deep_architect/helpers):
+    helpers for different frameworks that we support. This allows to take
 the base functionality defined in core.py and expand it to provide compilation
 functionality for computational graphs in different frameworks. It should be
 instructive to compare support for different frameworks. One file in the folder
 per framework.
 
-* searchers: different searchers that can be used in top of the search spaces
+* [searchers](https://github.com/negrinho/darch/tree/master/deep_architect/searchers):
+    different searchers that can be used in top of the search spaces
 defined in DeepArchitect. One searcher per file to maintain a reasonable degree
 of separation.
 
-* surrogates: different surrogate function over architectures in the search space.
+* [surrogates](https://github.com/negrinho/darch/tree/master/deep_architect/surrogates):
+    different surrogate function over architectures in the search space.
 searchers based on sequential model based optimization are used frequently in
 DeepArchitect.
 
@@ -413,42 +416,3 @@ as we go along.
 
 If you want to support my PhD and/or support DeepArchitect with compute
 and/or money, reach out to negrinho@cs.cmu.edu.
-
-
-## Why use DeepArchitect
-
-Recently, there was a stream of research in architecture search.
-Unfortunately, much of this research builds their own systems from scratch,
-severely reducing the possibility of building on them.
-In DeepArchitect, we designed a careful API to build modular architecture search systems.
-Our framework allows the researcher to identify a specific aspect of architecture
-search that the researcher wants to explore and focus on it while reusing
-available components from other models.
-This simultaneously improves reusability and reproducibility of the researcher's
-work, making it readily available to the community and allowing fairer and
-easier comparisons to previous work and future work.
-
-- Well designed APIs:
-When designing DeepArchitect, we paid special attention to the design of the
-different APIs to make sure that the programmer would express concepts at the
-right level of abstraction. This means that compared
-
-- Only wrapper code:
-- Modular:
-- Easy to define search spaces:
-
-
-<!-- NOTE: some of the goals of this model is to show that it is possible
-to develop a framework. -->
-
-<!-- point to examples of reimplementations of search spaces in this framework -->
-<!-- show that searchers can use this model very frequently. -->
-
-<!-- TODO: mention programmability of architecture search . -->
-
-<!-- talk about how github issues are the right place to address some of the
-comments about representation. -->
-
-<!-- allows the user to easily experiments over complex architecture search spaces.  -->
-
-<!-- ask for use cases that I can use. -->
