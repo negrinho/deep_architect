@@ -1,6 +1,6 @@
 
 Supporting new frameworks
-=========================
+-------------------------
 
 This tutorial aims to explain to you how to support a new framework in
 DeepArchitect. After reading it, you should understand what are

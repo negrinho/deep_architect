@@ -1,6 +1,6 @@
 
 Logging and visualization
-=========================
+-------------------------
 
 A quite important part of DeepArchitect is the attention paid to logging
 and visualization.

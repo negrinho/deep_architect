@@ -1,6 +1,6 @@
 
 Implementing new searchers
-============================
+--------------------------
 
 Searchers are used to determine the policy that is used to search a search space.
 The search space merely encodes the set of architectures that are to be

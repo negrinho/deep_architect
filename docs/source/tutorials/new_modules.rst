@@ -1,6 +1,6 @@
 
 Implementing new modules
-=========================
+------------------------
 
 
 In this tutorial, we will cover how to implement new modules in DeepArchitect.

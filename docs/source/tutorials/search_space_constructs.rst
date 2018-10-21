@@ -1,6 +1,6 @@
 
 Search space constructs
-=======================
+-----------------------
 
 DeepArchitect uses multiple ideas and concepts to achieve the
 desired level of modularity, extensibility, and abstraction.

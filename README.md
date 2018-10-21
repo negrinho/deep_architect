@@ -64,7 +64,7 @@ Existing work on architecture search does not have a principled way of accomplis
 this, relying on ad-hoc encodings of search spaces, therefore making them
 hard to adapt and reuse them in new settings.
 
-## A minimal DeepArchitect example with Keras
+## A minimal example with Keras
 
 Consider the following short example that we minimally adapt from
 [this Keras example](https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py)
@@ -185,22 +185,10 @@ Our search space essentially says that our network will be composed of a
 sequential connection of 1, 2, or 4 cells, followed by a final dense module that
 outputs probabilities over classes.
 Each cell is a subsearch space (again, justifying the modularity and composability
-properties of DeepArchitect). The choice of the activation for the dense layer
-in the cell search space is shared
-
-
-TODO: finish this part.
-
-<!-- suggestions on going forward. -->
-There are many aspects that we have not exemplified here, such as logging,
-searching, multiple input multiple output modules, and so forth.
-This is example is meant to give the reader a taste of easy is to augment
-existing examples with architecture search capabilities. We point the
-reader to the example for a more concrete details on how a typical
-example using the framework looks like. This example still uses a single process
-(i.e., both the searcher and the evaluators), which should be a reasonable computational setting to start using the
-<!-- check thi... -->
-
+properties of DeepArchitect). The choice of the type of activation for the dense layer
+in the cell search space is shared among all cell search spaces used.
+All other hyperparameter of the cell search space are chosen independently for
+each occurrence of the cell search space in the sequential connection.
 
 We left the original search space commented out in the code above for the reader
 to get a sense of how little code conceptually we need to add to support a
@@ -210,6 +198,18 @@ hyperparameter optimization tools or in an ad-hoc manner. For example, if
 we just wanted to sample a random architecture from this search space, how
 much code would this entail if we had to encode the search space using typical existing tools.
 
+
+<!-- suggestions on going forward. -->
+There are many aspects of DeepArchitect that we have not showcased here,
+such as logging,
+searching, multiple input multiple output modules, and so forth.
+This is example is meant to give the reader a taste of how easy is to augment
+existing examples with architecture search capabilities. We point the
+reader to the example for a more concrete details on how a typical
+example using the framework looks like. This example still uses a single process
+(i.e., both the searcher and the evaluators), which should be a
+reasonable computational setting to start using DeepArchitect.
+
 There are a few important aspects of the framework that are not represented but
 that are useful for the reader to eventually get acquainted with them.
 For example, more sophisticated searchers are useful to explore the search
@@ -217,10 +217,11 @@ space in a more purposeful and sample efficient manner, and the logging
 functionality is useful to keep a record of the performance of different architectures.
 These and other aspects are better covered in existing tutorials.
 We recommend looking at the tour of the repository for deciding what to read next.
-[This](...) slighly more complex example also includes the usage of the search and
+[This](https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py)
+slightly more complex example also includes the usage of the search and
 logging functionality.
 
-## Comments on design
+## Framework components
 
 In this section, we briefly cover the principles that guided the design of
 DeepArchitect.
@@ -343,7 +344,7 @@ Outside the deep_architect folder, be sure to also check the tutorials and read
 the API documentation.
 
 <!-- Looking into the future -->
-## Looking into the future
+## Roadmap for the future
 
 Going into the future, the core authors of DeepArchitect expect to continue
 extending and maintaining the codebase and use it for it their own research in architecture
@@ -371,7 +372,7 @@ We recommend using GitHub issues to engage with the authors
 of DeepArchitect and ask clarification and usage questions. Please, check your
 question has already been answered before asking it.
 
-<!-- # Social Media
+## Reaching out
 
 You can reach the main architect of DeepArchitect on Twitter at . If you tweet about
 DeepArchitect, use the tag #DeepArchitect and/or mention me in the tweet
