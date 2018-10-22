@@ -1,19 +1,20 @@
-# DeepArchitect: A Framework for Architecture Search
+# Overview
 
-*Architecture search so easy you'll think it's magic!*
+*DeepArchitect: Architecture search so easy you'll think it's magic!*
 
 ## Introduction
 
-DeepArchitect is a carefully designed framework for automatically searching over
+DeepArchitect is a framework for automatically searching over
 computational graphs in arbitrary domains.
 DeepArchitect was designed with a focus on
-**modularity**, **ease of use**, **resusability**, and **extensibility**.
+**modularity**, **ease of use**, **reusability**, and **extensibility**.
 It should be easy for the user to implement new
 search spaces and searchers in the DeepArchitect. The core APIs were carefully
-designed and their interaction carefully thought out. The design is such that
-most interfaces (e.g., for search spaces, searchers, and evaluators) are only
-lightly coupled and are mostly orthogonal, meaning that each of them as
-well defined responsibilities and concerns.
+designed and their interaction carefully thought out.
+The design is such that most interfaces (e.g., for search
+spaces, searchers, and evaluators) are only lightly coupled, each of them
+having well defined responsibilities and concerns.
+
 
 With the development of DeepArchitect, we aim to impact the workflows of
 both researchers and practioneers
@@ -67,7 +68,7 @@ hard to adapt and reuse them in new settings.
 ## A minimal example with Keras
 
 Consider the following short example that we minimally adapt from
-[this Keras example](https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py)
+[this Keras example](https://github.com/keras-team/keras/blob/negrinho_cleanup/examples/mnist_cnn.py)
 by defining a search space of models and sampling a random model from it.
 The original example considers a single fixed three-layer neural network
 with ReLU activations in the hidden layers and dropout with rate equal to 0.2.
@@ -196,13 +197,13 @@ nontrivial search space. It may be worth to take a minute to think about how
 would the user go about supporting such a search space using current
 hyperparameter optimization tools or in an ad-hoc manner. For example, if
 we just wanted to sample a random architecture from this search space, how
-much code would this entail if we had to encode the search space using typical existing tools.
+much code would this entail if we had to encode the search space using existing tools.
 
 
 <!-- suggestions on going forward. -->
 There are many aspects of DeepArchitect that we have not showcased here,
 such as logging,
-searching, multiple input multiple output modules, and so forth.
+searching, multiple-input multiple-output modules, and so forth.
 This is example is meant to give the reader a taste of how easy is to augment
 existing examples with architecture search capabilities. We point the
 reader to the example for a more concrete details on how a typical
@@ -217,21 +218,21 @@ space in a more purposeful and sample efficient manner, and the logging
 functionality is useful to keep a record of the performance of different architectures.
 These and other aspects are better covered in existing tutorials.
 We recommend looking at the tour of the repository for deciding what to read next.
-[This](https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py)
-slightly more complex example also includes the usage of the search and
-logging functionality.
+[This](https://github.com/negrinho/darch/blob/negrinho_cleanup/examples/mnist_with_logging/main.py)
+slightly more complex example shows the use of the search and
+logging functionalities.
 
 ## Framework components
 
 In this section, we briefly cover the principles that guided the design of
 DeepArchitect.
-Some of the main concepts that we deal in DeepArchitect are
+Some of the main concepts that we deal with in DeepArchitect are:
 
 * **Search spaces**: Search spaces are constructed by putting together modules
 (both basic and substitution) and
-hyperparameters (independent and dependent). These are represented through the
-connections of the modules, which have inputs, outputs, and hyperparameters.
-The search spaces are often passed around a dictionary of inputs and a dictionary
+hyperparameters (independent and dependent). These are built by connecting modules,
+which have inputs, outputs, and hyperparameters.
+The search spaces are often passed around as a dictionary of inputs and a dictionary
 of outputs, allowing us to abstract whether the search space is composed of a
 single or multiple modules. Working directly with these dictionaries allows us
 to compose search spaces easily too. In designing substitution modules, we make
@@ -239,39 +240,52 @@ extensive use of ideas of delayed evaluation.
 A important concept in search spaces is the notion of graph transitions with
 value assignments to the independent hyperparameters.
 Good references to peruse to
-get more acquainted with these ideas are (core.py, modules.py).
+get more acquainted with these ideas are
+[deep_architect/core.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/core.py) ahd
+[deep_architect/modules.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/modules.py).
 
 * **Searchers**:  Searchers interact with a search through a very simple interface.
-Regardless of the each search space that a searcher is dealing with, the searcher
+Regardless of the search space that a searcher is dealing with, the searcher
 samples a model from the search by assigning values to each of the independent
-hyperparameter of the search, until there are no more independent hyperparameters to
-assign. A searcher object is created with a specific search space.
+hyperparameter of the search, until there are no more independent hyperparameters without a value.
+A searcher object is created with a specific search space.
 The base API for the searcher has two methods `sample`, which samples
 an architecture from the search space, and `update`, which takes the results
 for a particular sampled architecture and updates the state of the searcher to
 take the results of this architecture into consideration.
-The reader can look at (point to searchers.common, searchers.random, searchers.smbo
-for some examples of the common API. It is also worth to look at core.py for
-some of the traversal functionality that allows to traverse the independent
-hyperparameters in the graph. Any
+The reader can look at
+[deep_architect/searchers/common.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/searchers/common.py),
+[deep_architect/searchers/random.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/searchers/random.py), and
+[deep_architect/searchers/smbo.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/searchers/smbo.py)
+for examples of the common API.
+It is also worth to look at
+[deep_architect/core.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/core.py) and
+for some of the traversal functionality that allows to traverse the independent
+hyperparameters in the graph.
 
 * **Evaluators**:  Evaluators take a sampled architecture from the search space and
-compute some notion of performance for that particular architecture. These
-contain a single method that returns a dictionary with characteristics for the
-architecture evaluated. In the simplest case, there is a single metric that
-can be used as a performance metric.
+compute some notion of performance for that particular architecture. Evaluators
+often have a single method named `eval` that
+takes the definition of an architecture to evaluate and
+returns a dictionary with the evaluation results.
+In the simplest case, there is a single performance metric of interest.
+See [here](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/contrib/misc/evaluators/tensorflow/classification.py)
+for an example implementation of an evaluator.
 
-* **Logging**:  When we run an architecture search workload, we are going to evaluate
+* **Logging**:  When we run an architecture search workload, we evaluate
 multiple architectures in the search space. To keep track of the generated
-information, we designed a folder structure that maintains a single folder per
+results, we designed a folder structure that maintains a single folder per
 evaluation. This structure allows us to keep the information about the
 configuration evaluated, the results for that configuration, but also additional
 information that the user may wish to maintain for that architecture, e.g.,
-example predictions on the validation set or the save model. Most of the
-logging functionality can be found in search_logging.py. A simple example
-of how the logging functionality is used can be found mnist_with_logging/main.py.
+example predictions or the model checkpoints. Most of the
+logging functionality can be found in
+[deep_architect/search_logging.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/search_logging.py).
+A simple example
+of how the logging functionality is used can be found
+[here](https://github.com/negrinho/darch/blob/negrinho_cleanup/examples/mnist_with_logging/main.py).
 
-* **Visualization**:  Visualization functionality allows us to visualize the structure
+* **Visualization**:  Visualization functionality allows us to inspect the structure
 of the search space and to visualize graph transitions that result from
 assigning values to the independent hyperparameters. This allows the user to
 get a sense if the search space that was defined is encoding the expected
@@ -279,141 +293,120 @@ search space or not. Another possible visualizations of interest is related to
 calibration of the effort necessary to determine an appropriate ordering of
 the architectures, e.g., how many epochs to we need to invest to identify the best
 architecture or make sure that the best architecture is at least in the top 5.
-Good references about this functionality live in the visualization.py and
-contrib/misc/callibration_utils.py.
+Good references for this functionality live in the
+[deep_architect/visualization.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/visualization.py).
 
+## Main folder structure
 
-The most important source files in the repository live in deep_architect subtree
-excluding deep_architet/contrib. deep_architect/contrib contains code auxiliary
-to the framework, which is potentially useful, but we do not necessarily want
-to maintain. We recommend the user to peruse it. See below for a high-level tour
-of the repo.
+The most important source files in the repository live in
+the [deep_architect folder](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect),
+excluding the contrib folder, which contains auxiliary code
+to the framework that is potentially useful, but that we do not necessarily want
+to maintain. We recommend the user to peruse it. We also recommend the user
+to read the tutorials as they cover much of the information needed to extend the
+framework.
+See below for a high-level tour of the repo.
 
-* [core.py](https://github.com/negrinho/darch/blob/master/deep_architect/core.py):
+* [core.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/core.py):
     Most important classes to define search spaces.
-* [hyperparameters.py](https://github.com/negrinho/darch/blob/master/deep_architect/hyperparameters.py):
+* [hyperparameters.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/hyperparameters.py):
     Basic hyperparameters and auxiliary hyperaprameter sharer class.
-* [modules.py](https://github.com/negrinho/darch/blob/master/deep_architect/modules.py):
-    Definition of subsitution modules along with some auxiliary
-abstract functionality to connect modules or construct more larger search spaces
+* [modules.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/modules.py):
+    Definition of substitution modules along with some auxiliary
+abstract functionality to connect modules or construct larger search spaces
 from simpler search spaces.
-* [search_logging.py](https://github.com/negrinho/darch/blob/master/deep_architect/search_logging.py):
+* [search_logging.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/search_logging.py):
     functionality to keep track of the results of the architecture
-search process, allowing to maintain strucutured folders for each architecture search
-process.
-* [utils.py](https://github.com/negrinho/darch/blob/master/deep_architect/utils.py):
+search process, allowing to maintain structured folders for each  search
+experiment.
+* [utils.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/utils.py):
     general utility functions that are not directly related to architecture
-search, but are useful in many contextes such as logging and visualization.
-* [visualization.py](https://github.com/negrinho/darch/blob/master/deep_architect/visualization.py):
-    Simple visualization functionality used to visualize
-search spaces in graph form.
+search, but are useful in many contexts such as logging and visualization.
+* [visualization.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/visualization.py):
+    Simple visualization functionality used to visualize search spaces as graph
+    or a sequence of graphs.
 
 We also have a few folders in the deep_architect folder.
-* [communicators](https://github.com/negrinho/darch/tree/master/deep_architect/communicators):
+* [communicators](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/communicators):
     simple functionality to communicate between master and worker
 processes to relay the evaluation of an architecture and retrieve the results
-once done.
-
-* [contrib](https://github.com/negrinho/darch/tree/master/deep_architect/contrib):
+once finished.
+* [contrib](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/contrib):
     useful functionality that uses DeepArchitect and that it will not
 be necessarily maintained over time, but that users of DeepArchitect may
 find useful in their own examples. Contributions by the community will live in this folder.
-See (TODO: link to contributing) for an
-in-depth explanation for the rationale behind the project organization and
+See [here](https://github.com/negrinho/darch/blob/negrinho_cleanup/CONTRIBUTING.md)
+for an in-depth explanation for the rationale behind the project organization and
 the contrib folder.
-
-* [helpers](https://github.com/negrinho/darch/tree/master/deep_architect/helpers):
-    helpers for different frameworks that we support. This allows to take
-the base functionality defined in core.py and expand it to provide compilation
+* [helpers](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/helpers):
+    helpers for different frameworks that we support. This allows us to take
+the base functionality defined in
+[core.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/core.py)
+and expand it to provide compilation
 functionality for computational graphs in different frameworks. It should be
 instructive to compare support for different frameworks. One file in the folder
 per framework.
-
-* [searchers](https://github.com/negrinho/darch/tree/master/deep_architect/searchers):
+* [searchers](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/searchers):
     different searchers that can be used in top of the search spaces
 defined in DeepArchitect. One searcher per file to maintain a reasonable degree
 of separation.
-
-* [surrogates](https://github.com/negrinho/darch/tree/master/deep_architect/surrogates):
+* [surrogates](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/surrogates):
     different surrogate function over architectures in the search space.
 searchers based on sequential model based optimization are used frequently in
 DeepArchitect.
 
-
-Outside the deep_architect folder, be sure to also check the tutorials and read
-the API documentation.
-
-<!-- Looking into the future -->
 ## Roadmap for the future
 
-Going into the future, the core authors of DeepArchitect expect to continue
+Going forward, the core authors of DeepArchitect expect to continue
 extending and maintaining the codebase and use it for it their own research in architecture
 search, and deep learning in general.
 
-The community will have a fundamental role to play in moving forward with
-DeepArchitect, for example, authors from existing architecture search algorithms
-can implement their algorithms in DeepArchitect such that we can compare them
-with existing algorithms to measure progress more reliably. New search
-spaces for new tasks can be implemented and can be made available in DeepArchitect,
-allowing users to build on them by composing new search spaces from them,
-or just using them in their own experiments. New evaluators can be implemented,
+The community will have a fundamental role to play in extending DeepArchitect,
+for example, authors from existing architecture search algorithms
+can implement their algorithms in DeepArchitect.
+This will the community to compare algorithms on the same footing and
+to measure progress more reliably.
+New search spaces for new tasks can be implemented and made available in DeepArchitect,
+allowing users to use them (either directly or in the construction of new search spaces),
+in their own experiments. New evaluators can be implemented,
 making sure that it possible to use the same evaluator for the other search
-spaces in the same problem. The visualization functionality can be improved by
-adding new visualizations leveraging the fact that architecture search
-workloads try many many models. Essembling capabilities may be added to
+spaces for the same task.
+The visualization functionality can be improved by
+adding new, more interesting, visualizations leveraging the fact that
+architecture search workloads train a large number of models.
+Essembling capabilities may be added to
 DeepArchitect to easily construct essembles from the many models that were
 explored as a result of the architecture search workload.
 
 The reusability, composability, and extensibility properties of the DeepArchitect
-will be fundamental going forward. We ask the willing contributor to check the
-contributing guide (TODO: put a link to it). There we detail some of the rationale behind the folder
-organization of the project and where will future contributions live.
+will be fundamental going forward. We ask willing contributors to check the
+[contributing guide](https://github.com/negrinho/darch/blob/negrinho_cleanup/CONTRIBUTING.md).
 We recommend using GitHub issues to engage with the authors
-of DeepArchitect and ask clarification and usage questions. Please, check your
-question has already been answered before asking it.
+of DeepArchitect and ask clarification and usage questions.
+Please, check if your question has already been answered before creating a new issue.
 
 ## Reaching out
 
-You can reach the main architect of DeepArchitect on Twitter at . If you tweet about
-DeepArchitect, use the tag #DeepArchitect and/or mention me in the tweet
-@rmpnegrinho. Looking forward to feedback about the framework. I
-
-This work benefited imensely from a group of excited
-
-Graham Neubig,
-
-This work was done in part when the main contributor
-
-This project benefited from the discussions with many people: Geoff Gordon, Matt
-Gormley, Willie Neiswanger, Ruslan Salakutinov, Eric Xing, Xue Liu, ...
-
-Daniel Ferreira
-Max Le
-Darshan Patil
-Kirielle Singajarah
-
-Geoff Gordon
-Matt Gormley
-Yiming Zhao
-Emilio Arroyo-Fang -->
+You can reach the main researcher behind of DeepArchitect at negrinho@cs.cmu.edu.
+If you tweet about DeepArchitect, use the tag `#DeepArchitect` and/or
+mention me ([\@rmpnegrinho](https://twitter.com/rmpnegrinho)) in the tweet.
+For bug reports, questions, and suggestions, use
+[Github issues](https://github.com/negrinho/darch/issues).
 
 ## License
 
-MIT license
+DeepArchitect is licensed under the MIT license as found
+[here](https://github.com/negrinho/darch/blob/negrinho_cleanup/LICENSE.md).
+Contributors agree to license their contributions under the MIT license.
 
-TODO: add some fast pointers.
+## Contributors and acknowledgements
 
-We made a consistent effort to make the code very readable, so we recommend
-users of DeepArchitect to read the source when looking for specific about what
-the code is doing.
-
-TODO: say that feedback about implementations should be done in the model.
-
-TODO: if there is no tutorial for a particular aspect of the framework, the
-best way of getting acquainted with it is to read the source for an existing
-example to get an idea of what is happening and then, if necessary, open a
-issue about the use case. Additional tutorials and documentation will be created
-as we go along.
-
-If you want to support my PhD and/or support DeepArchitect with compute
-and/or money, reach out to negrinho@cs.cmu.edu.
+The main researcher behind DeepArchitect is [Renato Negrinho](https://www.cs.cmu.edu/~negrinho/).
+Daniel Ferreira played an important role in shaping the
+APIs of DeepArchitect through discussions and contributions.
+This work benefitted immensely from the involvement and contributions of talented
+undergraduate students at CMU
+(Darshan Patil, Max Le, Kirielle Singajarah, Yiming Zhao, and Emilio Arroyo-Fang).
+This work benefited greatly from discussions with both faculty (Geoff Gordon, Matt
+Gormley, Graham Neubig, Ruslan Salakhutdinov, Eric Xing, and Xue Liu), and
+fellow PhD students (Zhiting Hu, Willie Neiswanger, Christoph Dann, and Matt Barnes).

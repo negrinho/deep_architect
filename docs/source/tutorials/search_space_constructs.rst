@@ -16,7 +16,7 @@ does not commit to any particular framework, deep learning or otherwise.
 The core codebase is composed mainly of wrappers and it is straightforward
 to extend it to other domains (e.g., scikit-learn pipelines).
 Consider the following Keras example using the Keras functional API pulled
-verbatim from https://keras.io/getting-started/functional-api-guide/
+verbatim from `here <https://keras.io/getting-started/functional-api-guide/>`_.
 
 .. code:: python
 
@@ -38,7 +38,7 @@ searching over them, e.g., by searching over the number of layers and
 activations of each layer.
 We defined a few simple helper functions that, for simple cases, allow us
 to take a function that returns a Keras layer and wraps it in a DeepArchitect module.
-A minimal adaptation of the above example in DeepArchitect looks like
+See below for a minimal adaptation of the above example in DeepArchitect.
 
 .. code:: python
 
@@ -59,7 +59,6 @@ A minimal adaptation of the above example in DeepArchitect looks like
 
 
     def search_space():
-        co.Scope.reset_default_scope()
         return mo.siso_sequential([
             dense(D([32, 64, 128, 256]), D(["relu", "sigmoid"])),
             dense(D([32, 64, 128, 256]), D(["relu", "sigmoid"])),
@@ -67,11 +66,11 @@ A minimal adaptation of the above example in DeepArchitect looks like
         ])
 
 
-    (inputs, outputs) = search_space()
+    (inputs, outputs) = mo.SearchSpaceFactory(search_space).get_search_space()
 
 
 The above code defines a search space where the nonlinearities and number of
-from this search space.
+units are chosen from a set of possible values rather than being fixed upfront.
 In this case, the hyperparameters are independent for each of the modules.
 What we have done is simply defining a search space that captures all possible
 choices for the values of these hyperparameters .
