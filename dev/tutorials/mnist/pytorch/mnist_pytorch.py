@@ -6,7 +6,7 @@ import numpy as np
 
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
-from deep_architect.contrib.misc.search_spaces.pytorch.common import siso_torchm
+from deep_architect.helpers.pytorch import siso_pytorch_module
 
 D = hp.Discrete  # Discrete Hyperparameter
 
@@ -22,7 +22,7 @@ def flatten():
 
         return fn, []
 
-    return siso_torchm('Flatten', compile_fn, {})
+    return siso_pytorch_module('Flatten', compile_fn, {})
 
 
 def dense(h_units):
@@ -36,7 +36,7 @@ def dense(h_units):
 
         return fn, [Dense]
 
-    return siso_torchm('Dense', compile_fn, {'units': h_units})
+    return siso_pytorch_module('Dense', compile_fn, {'units': h_units})
 
 
 def nonlinearity(h_nonlin_name):
@@ -57,8 +57,8 @@ def nonlinearity(h_nonlin_name):
 
         return fn, []
 
-    return siso_torchm('Nonlinearity', compile_fn,
-                       {'nonlin_name': h_nonlin_name})
+    return siso_pytorch_module('Nonlinearity', compile_fn,
+                               {'nonlin_name': h_nonlin_name})
 
 
 def dropout(h_keep_prob):
@@ -71,7 +71,8 @@ def dropout(h_keep_prob):
 
         return fn, [Dropout]
 
-    return siso_torchm('Dropout', compile_fn, {'keep_prob': h_keep_prob})
+    return siso_pytorch_module('Dropout', compile_fn,
+                               {'keep_prob': h_keep_prob})
 
 
 def batch_normalization():
@@ -85,7 +86,7 @@ def batch_normalization():
 
         return fn, [bn]
 
-    return siso_torchm('BatchNormalization', compile_fn, {})
+    return siso_pytorch_module('BatchNormalization', compile_fn, {})
 
 
 def dnn_net_simple(num_classes):
@@ -107,14 +108,16 @@ def dnn_net_simple(num_classes):
     # defining search space topology
     model = mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: mo.siso_sequential([
-            dense(h_num_hidden),
-            nonlinearity(h_nonlin_name),
-            mo.siso_permutation([
-                lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
-                lambda: mo.siso_optional(batch_normalization, h_opt_bn),
-            ], h_swap)
-        ]), h_num_repeats),
+        mo.siso_repeat(
+            lambda: mo.siso_sequential([
+                dense(h_num_hidden),
+                nonlinearity(h_nonlin_name),
+                mo.siso_permutation([
+                    lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
+                                             h_opt_drop),
+                    lambda: mo.siso_optional(batch_normalization, h_opt_bn),
+                ], h_swap)
+            ]), h_num_repeats),
         dense(D([num_classes]))
     ])
 
@@ -127,7 +130,8 @@ def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
         dense(h_num_hidden),
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
+            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
+                                     h_opt_drop),
             lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)
     ])
@@ -140,27 +144,18 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]),
-            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-            D([0.25, 0.5, 0.75])), D([1, 2])),
-        dense(D([num_classes]))])
+        mo.siso_repeat(
+            lambda: dnn_cell(
+                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
+                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2])),
+        dense(D([num_classes]))
+    ])
 
 
 # Main/Searcher
 import deep_architect.searchers.random as se
 import deep_architect.core as co
 import torchvision
-
-
-def get_search_space(num_classes):
-
-    def fn():
-        co.Scope.reset_default_scope()
-        inputs, outputs = dnn_net(num_classes)
-        return inputs, outputs, {}
-
-    return fn
 
 
 def main():
@@ -203,7 +198,9 @@ def main():
         max_num_training_epochs=5,
         batch_size=batch_size,
         log_output_to_terminal=True)  # defining evaluator
-    searcher = se.RandomSearcher(get_search_space(num_classes))
+    search_space_fn = mo.SearchSpaceFactory(lambda: dnn_net_simple(
+        num_classes)).get_search_space
+    searcher = se.RandomSearcher(search_space_fn)
 
     for i in xrange(num_samples):
         print("Sampling architecture %d" % i)
@@ -223,7 +220,7 @@ def main():
 
 # Evaluator
 import torch.optim as optim
-from deep_architect.helpers.pytorch import PyTNetContainer, parameters
+from deep_architect.helpers.pytorch import PyTorchModel, parameters
 
 
 class SimpleClassifierEvaluator:
@@ -261,14 +258,16 @@ class SimpleClassifierEvaluator:
 
     def evaluate(self, inputs, outputs):
 
-        self.network = PyTNetContainer(inputs, outputs)
-        X = torch.ones(()).new_identity((self.batch_size,) +
-                                        self.train_dataset.dataset[0][0].size())
+        self.network = PyTorchModel(inputs, outputs)
+        print self.batch_size, self.train_dataset.dataset[0][0].size()
+        X = torch.ones(
+            *(self.batch_size,) + self.train_dataset.dataset[0][0].size())
         self.network.forward({'In': X})  # to extract parameters
         optimizer = optim.Adam(self.network.parameters(), lr=self.learning_rate)
         for epoch in range(self.max_num_training_epochs):
             self.network.train()
             for batch_idx, (data, target) in enumerate(self.train_dataset):
+                print epoch, batch_idx
                 optimizer.zero_grad()
                 output = self.network({'In': data})
                 probs = F.softmax(output['Out'], dim=1)

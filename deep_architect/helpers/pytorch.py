@@ -87,7 +87,7 @@ class PyTorchModule(co.Module):
         pass
 
 
-def siso_pytorch_module(name, name_to_hyperp, compile_fn, scope=None):
+def siso_pytorch_module(name, compile_fn, name_to_hyperp, scope=None):
     return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
                          scope).get_io()
 
@@ -139,8 +139,8 @@ def eval(output_lst):
 
 # TODO: this needs to be changed.
 def cuda(output_lst, *args, **kwargs):
-    _call_fn_on_pytorch_module(output_lst,
-                               lambda pyth_m: pyth_m.cuda(*args, **kwargs))
+    _call_fn_on_pytorch_module(
+        output_lst, lambda pyth_m: pyth_m.cuda(*args, **kwargs))
 
 
 def cpu(output_lst):
