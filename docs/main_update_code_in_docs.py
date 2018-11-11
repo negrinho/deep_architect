@@ -29,8 +29,6 @@ if __name__ == "__main__":
     cmd.add('out_filepath', 'str')
     d = cmd.parse()
 
-    # wrong. this is going to be interesting. I think that reading the blocks
-    # can be done easily.
     block_lst = read_code_blocks(d["in_code_filepath"])
     lines = ut.read_textfile(d["in_doc_filepath"], strip=False)
     inside_block = False
@@ -41,17 +39,20 @@ if __name__ == "__main__":
         for line in lines:
             s = line.rstrip()
             if inside_block:
-                if not (s == '' or s == ' '):
+                if not (s == '' or s[0] == ' '):
                     inside_block = False
                     for b_line in block_lst[block_idx]:
-                        out_lines.append((' ' * indent) + s)
+                        if b_line != '':
+                            out_lines.append((' ' * indent) + b_line)
+                        else:
+                            out_lines.append(b_line)
                     block_idx += 1
+                    out_lines.append(s)
             else:
                 out_lines.append(s)
 
             if s == ".. code:: python":
                 inside_block = True
-                out_lines.append(s)
 
         # if it terminates with a block. likely unusual.
         if inside_block:
@@ -67,11 +68,12 @@ if __name__ == "__main__":
             elif s == '```':
                 if inside_block:
                     out_lines.extend(block_lst[block_idx])
-                    out_lines.append(s)
                     block_idx += 1
                     inside_block = False
-            else:
                 out_lines.append(s)
+            else:
+                if not inside_block:
+                    out_lines.append(s)
     else:
         raise ValueError(
             "File %s is not supported. Supported formats .md and .rst" %
