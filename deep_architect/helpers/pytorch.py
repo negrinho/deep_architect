@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class PyTorchModule(co.Module):
-    """Class for taking Pytorch code and wrapping it in a darch module.
+    """Class for taking Pytorch code and wrapping it in a DeepArchitect module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
     the information associated to it (e.g., inputs, outputs, and hyperparameters).
@@ -20,7 +20,7 @@ class PyTorchModule(co.Module):
 
     See :class:`deep_architect.helpers.tensorflow.TensorflowModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
-    static computational graphs, so the forward functionality is usually only
+    static computational graphs, so the forward functionality is often only
     called once per creation for the graph creation. Pytorch requires calling
     forward for each tensor of data that is fed through the network.
 

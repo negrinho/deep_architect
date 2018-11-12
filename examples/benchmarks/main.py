@@ -21,14 +21,13 @@ import searchers as local_se
 import search_spaces as local_ss
 
 
-def run_searcher(searcher, evaluator, num_samples, search_logger):
-    for _ in xrange(num_samples):
-        evaluation_logger = search_logger.get_current_evaluation_logger()
-        inputs, outputs, hyperp_value_lst, searcher_eval_token = searcher.sample(
-        )
+def run_searcher(searcher, evaluator, num_samples, get_evaluation_logger):
+    for idx in xrange(num_samples):
+        evaluation_logger = get_evaluation_logger(idx)
+        (inputs, outputs, hyperp_value_lst,
+         searcher_eval_token) = searcher.sample()
         results = evaluator.eval(inputs, outputs)
         evaluation_logger.log_config(hyperp_value_lst, searcher_eval_token)
-        evaluation_logger.log_features(inputs, outputs)
         evaluation_logger.log_results(results)
         vi.draw_graph(
             outputs.values(),
@@ -64,12 +63,12 @@ def main():
                     search_space_name, searcher_name
                 ])
 
-                search_logger = sl.SearchLogger(
+                sl.create_search_folderpath(
                     folderpath,
                     'rep%d' % rep_i,
-                    create_parent_folders=True,
-                    delete_if_exists=cfg['delete_if_exists'],
-                    resume_if_exists=cfg['resume_if_exists'])
+                    abort_if_exists=True,
+                    delete_if_exists=cfg["delete_if_exists"],
+                    create_parent_folders=True)
 
                 search_space_fn = local_ss.name_to_search_space_fn[
                     search_space_name](num_classes)

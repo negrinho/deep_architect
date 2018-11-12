@@ -6,7 +6,7 @@ DeepArchitect
 was designed with a focus on **modularity**, **ease of use**,
 **reusability**, and **extensibility**.
 With DeepArchitect, we aim to impact the workflows of
-both researchers and practioneers by reducing the burden resulting from
+both researchers and practitioners by reducing the burden resulting from
 the large number of arbitrary choices that have to be made to design
 deep learning models.
 We recommend the reader to start with the :doc:`overview <readme>`,

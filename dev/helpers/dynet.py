@@ -27,9 +27,8 @@ class DyParameterCollection(dy.ParameterCollection):
         return self.params
 
 
-class DyModule(co.Module):
-    """Wrapper Module, see TFModule for TensorFlow or PyTModule for PyTorch
-    """
+class DyNetModule(co.Module):
+    """Wrapper Module, see TFModule for TensorFlow or PyTModule for PyTorch"""
 
     def __init__(self,
                  name,
@@ -57,7 +56,7 @@ class DyModule(co.Module):
         pass
 
 
-def siso_dym(name, compile_fn, name_to_hyperp, scope=None):
+def siso_dynet_module(name, compile_fn, name_to_hyperp, scope=None):
     "Dynet module for single-input, single-output"
-    return DyModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
-                    scope).get_io()
+    return DyNetModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
+                       scope).get_io()

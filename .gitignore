@@ -1,6 +1,6 @@
 logs/
 data/
-docs/_build
+docs/build
 temp/
 .DS_Store
 containers/singularity/*

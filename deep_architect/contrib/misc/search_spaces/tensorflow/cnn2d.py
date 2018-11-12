@@ -74,8 +74,8 @@ def conv_net(h_num_spatial_reductions):
     h_keep_prob = D([0.25, 0.5, 0.75, 1.0])
 
     get_conv_cell = lambda stride: conv_cell(
-        D([32, 64, 128, 256, 512]), D([1, 3, 5]),
-        h_swap, h_opt_drop, h_keep_prob, stride)
+        D([32, 64, 128, 256, 512]), D([1, 3, 5]), h_swap, h_opt_drop,
+        h_keep_prob, stride)
 
     get_reduction_cell = lambda: get_conv_cell(2)
     get_normal_cell = lambda: get_conv_cell(1)
@@ -83,8 +83,8 @@ def conv_net(h_num_spatial_reductions):
     return mo.siso_repeat(
         lambda: mo.siso_sequential([
             get_reduction_cell(),
-            mo.siso_repeat(get_normal_cell, D([1, 2, 4, 8])),]),
-        h_num_spatial_reductions)
+            mo.siso_repeat(get_normal_cell, D([1, 2, 4, 8])),
+        ]), h_num_spatial_reductions)
 
 
 def spatial_squeeze(h_pool_op, h_num_hidden):

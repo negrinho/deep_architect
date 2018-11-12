@@ -146,7 +146,7 @@ insightful once we start using more complex search space operators.
 The hyperparameter values were chosen independently for each of the layers.
 If we wished to tie some hyperparameters across different parts of the
 search space, e.g., use the same nonlinearity for all modules,
-we would simply have to instantiate a single hyperparamter and use it in
+we would simply have to instantiate a single hyperparameter and use it in
 multiple places.
 Adapting the first search space to reflect this change is straightforward.
 
@@ -208,7 +208,7 @@ as long as no directed cycles are formed.
 One may question why introduce dependent hyperparameters in such a language.
 While independent hyperparameters can be used to express a superset of
 what can be done with dependent hyperparameters, it is useful to have the
-possibility of writing depedent hyperaparameters to restrict the search
+possibility of writing dependent hyperparameters to restrict the search
 space to transformations that are of interest rather than only being able
 to consider search spaces that have excessive flexibility.
 
@@ -228,7 +228,7 @@ By looking at the graph, we see that as soon as a value is a assigned
 to the hyperparameter that the dependent hyperparameter depends on, the
 the dependent hyperparameter is assigned a value.
 The value assignment to the dependent hyperparameter is triggered due to the
-fact that all the hyperparameters that the depedent hyperparameter depends
+fact that all the hyperparameters that the dependent hyperparameter depends
 on have been assigned a value.
 
 We have talked about modules and hyperparameters.
@@ -253,7 +253,7 @@ In contrast, we can have modules whose purpose is to serve as a placeholder
 until some property is determined.
 The purpose of these modules is not to implement computation but
 to delay the choice of a specific property (i.e., the choice of values for
-specific hyperperameter that capture this structural transformation).
+specific hyperparameter that capture this structural transformation).
 The fundamental concept to express these transformations is the notion of
 a substitution module.
 Substitution modules rely heavily on the ideas of delayed evaluation from
@@ -412,7 +412,7 @@ it matches your expectations.
 We argue that by using basic modules, substitution modules, independent hyperparameters,
 and dependent hyperparameters we are able to represent a large variety of
 search spaces in a compact and natural manner.
-As the reader becomes more confortable with these concepts, the reader should
+As the reader becomes more comfortable with these concepts, the reader should
 find it progressively easier to express search spaces in DeepArchitect and
 better appreciate the expressivity and reusability of the language.
 
@@ -489,9 +489,9 @@ called.
 If a substitution module is used instead, the module disappears once the value
 for the hyperparameter is chosen and the result of rerouting shows up in its
 place.
-After the user becomes proeficient with the ideas of basic and substitution
+After the user becomes proficient with the ideas of basic and substitution
 modules, the user will realize that oftentimes there are multiple ways of
 expressing the same search space.
-Our suggestion is that basic modules, substitution modules, independent hyperaparameters
+Our suggestion is that basic modules, substitution modules, independent hyperparameters
 and dependent hyperparameters should be used for maximum effect to express
 search spaces very compactly and clearly.

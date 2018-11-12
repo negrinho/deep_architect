@@ -9,24 +9,20 @@ computational graphs in arbitrary domains.
 DeepArchitect was designed with a focus on
 **modularity**, **ease of use**, **reusability**, and **extensibility**.
 It should be easy for the user to implement new
-search spaces and searchers in the DeepArchitect. The core APIs were carefully
-designed and their interaction carefully thought out.
+search spaces and searchers in the DeepArchitect.
+The core APIs were carefully designed and their interaction carefully thought out.
 The design is such that most interfaces (e.g., for search
 spaces, searchers, and evaluators) are only lightly coupled, each of them
-having well defined responsibilities and concerns.
+having well-defined responsibilities.
 
-
+A researcher or practitioner has to make a large number of design choices to design
+a deep learning model for a problem.
 With the development of DeepArchitect, we aim to impact the workflows of
-both researchers and practioneers
-by reducing the burden resulting from the large number of arbitrary choices that
-have to be made to design a deep learning model for a problem.
-As it is most often currently done, instead of writing down a single model
-(or a search space in an ad-hoc manner),
+both researchers and practitioners by allowing the expert to easily express this
+design ambiguity and easily offload it to an automatic search algorithm.
 DeepArchitect uses composable and modular operators to express a search
 space over computational graphs that is then passed to a search algorithm that samples
 architectures from it with the goal of maximizing a desired performance metric.
-Code written using DeepArchitect is modular, composable, and reusable, leading
-to the user often only having to write a small amount of code for the desired use case.
 
 <!-- what is there in store for both researchers and practicioners -->
 For researchers, DeepArchitect aims to make architecture search research more
@@ -34,29 +30,30 @@ reusable and reproducible by providing them with a
 modular framework that they can use to implement
 new search algorithms and new search spaces while reusing a large amount of
 existing code.
-For practicioners, DeepArchitect aims to augment their workflow by providing them
+For practitioners, DeepArchitect aims to augment their workflow by providing them
 with a tool that allows them to easily write a search space encoding
 the large number of choices involved in designing an architecture
 and use a search algorithm automatically find an architecture in the search space.
 
 DeepArchitect has the following **main components**:
 
-* a language for writing composable and expressive search spaces over computational graphs in arbitrary domains
-(e.g., Tensorflow, Keras, Pytorch, and even non deep learning frameworks
-such as scikit-learn and preprocessing pipelines);
+* a language for writing composable and expressive search spaces over computational
+graphs in arbitrary domains (e.g., Tensorflow, Keras, Pytorch, and even non
+deep learning frameworks such as scikit-learn and preprocessing pipelines);
 * search algorithms that can be used for arbitrary search spaces;
 * logging functionality to easily keep track of the results of a search;
-* visualization functionality to explore and inspect logging information resulting from a search experiment.
+* visualization functionality to explore and inspect logging information
+resulting from a search experiment.
 
 <!-- main differences between different tools. -->
 Compared to existing work for hyperparameter optimization and architecture
 search, DeepArchitect has several differentiating features that makes it suitable
 for augmenting existing machine learning workflows.
-The main difference betweeh DeepArchitect and current hyperparameter architecture
+The main difference between DeepArchitect and current hyperparameter architecture
 search tools is that DeepArchitect has better integration, having the hyperparameters
 directly related to the computational elements.
-This reduces the arbitrary ad-hoc compilation steps where values of the collection
-of hyperparameters has to be mapped to a specific computational graph by the expert.
+This reduces the arbitrary ad-hoc compilation steps where the values of the collection
+of hyperparameters have to be mapped to a specific computational graph by the expert.
 The main difference between DeepArchitect and other existing research in architecture
 search is that DeepArchitect is explicitly concerned about
 extensibility, ease of use, and programability,
@@ -65,13 +62,21 @@ Existing work on architecture search does not have a principled way of accomplis
 this, relying on ad-hoc encodings of search spaces, therefore making them
 hard to adapt and reuse them in new settings.
 
-## A minimal example with Keras
+## Installation
+
+```
+git clone git@github.com:negrinho/darch.git deep_architect
+cd deep_architect
+pip install -e .
+```
+
+## A minimal DeepArchitect example with Keras
 
 Consider the following short example that we minimally adapt from
 [this Keras example](https://github.com/keras-team/keras/blob/negrinho_cleanup/examples/mnist_cnn.py)
 by defining a search space of models and sampling a random model from it.
 The original example considers a single fixed three-layer neural network
-with ReLU activations in the hidden layers and dropout with rate equal to 0.2.
+with ReLU activations in the hidden layers and dropout with rate equal to *0.2*.
 We constructed a search space by relaxing the number of layers that the network
 can have, choosing between sigmoid and ReLU activations, and the number of units that
 each dense layer can have. Check the following minimal search space:
@@ -183,7 +188,7 @@ absolute minimal architecture search capabilities in an existing Keras example.
 In this case, we see that we can compactly express a reasonable
 number of structural transformations for the computational graph.
 Our search space essentially says that our network will be composed of a
-sequential connection of 1, 2, or 4 cells, followed by a final dense module that
+sequential connection of *1*, *2*, or *4* cells, followed by a final dense module that
 outputs probabilities over classes.
 Each cell is a subsearch space (again, justifying the modularity and composability
 properties of DeepArchitect). The choice of the type of activation for the dense layer
@@ -202,8 +207,7 @@ much code would this entail if we had to encode the search space using existing 
 
 <!-- suggestions on going forward. -->
 There are many aspects of DeepArchitect that we have not showcased here,
-such as logging,
-searching, multiple-input multiple-output modules, and so forth.
+such as logging, searching, multiple-input multiple-output modules, and so forth.
 This is example is meant to give the reader a taste of how easy is to augment
 existing examples with architecture search capabilities. We point the
 reader to the example for a more concrete details on how a typical
@@ -219,8 +223,7 @@ functionality is useful to keep a record of the performance of different archite
 These and other aspects are better covered in existing tutorials.
 We recommend looking at the tour of the repository for deciding what to read next.
 [This](https://github.com/negrinho/darch/blob/negrinho_cleanup/examples/mnist_with_logging/main.py)
-slightly more complex example shows the use of the search and
-logging functionalities.
+slightly more complex example shows the use of the search and logging functionalities.
 
 ## Framework components
 
@@ -239,9 +242,8 @@ to compose search spaces easily too. In designing substitution modules, we make
 extensive use of ideas of delayed evaluation.
 A important concept in search spaces is the notion of graph transitions with
 value assignments to the independent hyperparameters.
-Good references to peruse to
-get more acquainted with these ideas are
-[deep_architect/core.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/core.py) ahd
+Good references to peruse to get more acquainted with these ideas are
+[deep_architect/core.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/core.py) and
 [deep_architect/modules.py](https://github.com/negrinho/darch/blob/negrinho_cleanup/deep_architect/modules.py).
 
 * **Searchers**:  Searchers interact with a search through a very simple interface.
@@ -359,12 +361,12 @@ DeepArchitect.
 
 Going forward, the core authors of DeepArchitect expect to continue
 extending and maintaining the codebase and use it for it their own research in architecture
-search, and deep learning in general.
+search and deep learning.
 
-The community will have a fundamental role to play in extending DeepArchitect,
+The community will have a fundamental role in extending DeepArchitect,
 for example, authors from existing architecture search algorithms
 can implement their algorithms in DeepArchitect.
-This will the community to compare algorithms on the same footing and
+This will allow the community to compare algorithms on the same footing and
 to measure progress more reliably.
 New search spaces for new tasks can be implemented and made available in DeepArchitect,
 allowing users to use them (either directly or in the construction of new search spaces),
@@ -399,14 +401,19 @@ DeepArchitect is licensed under the MIT license as found
 [here](https://github.com/negrinho/darch/blob/negrinho_cleanup/LICENSE.md).
 Contributors agree to license their contributions under the MIT license.
 
-## Contributors and acknowledgements
+## Contributors and acknowledgments
 
 The main researcher behind DeepArchitect is [Renato Negrinho](https://www.cs.cmu.edu/~negrinho/).
-Daniel Ferreira played an important role in shaping the
+[Daniel Ferreira](https://github.com/dcferreira) played an important role in designing the
 APIs of DeepArchitect through discussions and contributions.
-This work benefitted immensely from the involvement and contributions of talented
+This work benefited immensely from the involvement and contributions of talented
 undergraduate students at CMU
-(Darshan Patil, Max Le, Kirielle Singajarah, Yiming Zhao, and Emilio Arroyo-Fang).
+([Darshan Patil](https://github.com/dapatil211),
+[Max Le](https://github.com/lethenghia18),
+[Kirielle Singajarah](https://github.com/ksingarajah),
+[Zejie Ai](https://github.com/aizjForever),
+[Yiming Zhao](https://github.com/startrails98),
+[Emilio Arroyo-Fang](https://github.com/negrinho/darch/commits?author=fizzxed)).
 This work benefited greatly from discussions with both faculty (Geoff Gordon, Matt
 Gormley, Graham Neubig, Ruslan Salakhutdinov, Eric Xing, and Xue Liu), and
 fellow PhD students (Zhiting Hu, Willie Neiswanger, Christoph Dann, and Matt Barnes).

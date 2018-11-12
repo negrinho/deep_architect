@@ -34,8 +34,6 @@ to discuss its scope and suitability.
 This guarantees that your efforts are well-aligned with the project direction.
 The best way to start a discussion is with a code snippet or pseudo-code
 that illustrates an important use case for the feature that you want to implement.
-You can also check the evergrowing list of work items
-[here](https://github.com/negrinho/deep_architect/blob/master/todos.md).
 
 ## Types of contributions
 <!-- The contrib and dev folders and their semantics. -->
@@ -155,7 +153,7 @@ in `examples/contrib`.
 The subfolder in `examples/contrib` is meant for runnable code related to
 or making extensive use of the library code in the `deep_architect/contrib` subfolder.
 We recommend checking existing examples in the
-[repo](https://github.com/negrinho/deep_architect) for determining how to
+[repo](https://github.com/negrinho/darch) for determining how to
 structure and document a new example appropriately.
 
 <!-- storing configurations for running examples. -->
@@ -198,9 +196,13 @@ command line (after Visual Studio Code has been installed) with
 `code --install-extension $EXTENSION_NAME` where `EXTENSION_NAME` should be
 replaced by the name of each of the extensions.
 
+We include a VS Code settings file with the repo which makes uses of
+[yapf](https://github.com/google/yapf) to automatically format the code on save.
+This will allow the contributor to effortlessly maintain formatting consistency with the rest of DeepArchitect.
+
 <!-- Singularity containers for easy running. -->
-We provide Singularity containers (which should be easy to adapt to Docker containers)
-with the development environment.
+We provide Singularity and Docker containers recipes
+for the development environment.
 These can found in `containers` along with additional information on how to build
 them.
 
@@ -220,6 +222,7 @@ Getting the general gist of the design decisions that went in writing this code
 will help you write code that fits well with the existing code.
 This guarantees that the focus stays on the functionality rather than
 in differences in code style.
+We configured an autoformatter in VS Code to accomplish this effortlessly.
 
 <!-- Naming guidelines for variables, functions, and files. -->
 Readable variable names are preferred for function names, function arguments,
@@ -246,7 +249,7 @@ Contributions beyond the ones covered here in detail here are very much encourag
 
 ### Contributing a searcher
 <!-- What does a saercher do in the most widely applicable case. -->
-In most cases, searchers interact with the search space through a
+Searchers interact with the search space through a
 very simple interface: the searcher can ask if all the hyperparameters are
 specified (and therefore, if the specified search space can be compiled to a
 single model that can be evaluated);
@@ -255,32 +258,24 @@ a single unspecified hyperparameter and assign a value to it.
 When a value is assigned to an unspecified hyperparameter, the search space
 transitions, which sometimes gives rise to additional unspecified hyperparameters,
 e.g., after choosing the number of repetitions for a repetition substitution module.
-**TODO: Add the link**.
 
 <!-- General and specific searchers. -->
 The most general searchers rely solely on this simple interface.
-Good examples of general searchers implemented can be found in
-**TODO: Add the link**.
+Good examples of general searchers implemented can be found
+[here](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/searchers).
 In more specific cases, namely in reimplementations of searchers proposed in
 specific architecture search papers, there is some coupling between the search
 space and the searcher.
 In this case, the developed searcher expects the search space to have certain
 structure or properties.
-A specific example of a searcher that expects a more specific search space
-and how that is tackled in the implementation of the searcher.
-**TODO: Add the link**.
-<!-- Nonetheless, it is still relevant to keep in mind the decomposition of the
-architecture search problem in search space, searcher, and evaluator.
-Often, even if the architecture search configuration that the user wishes to
-develop cannot be broken neatly into these three components, it may require
-a minimal adaptation of these components (or their interaction) to implement it. -->
+We recommend these types of searchers and search spaces to be kept in a
+contrib folder dedicated to the specific pair.
 
 <!-- Preferences about general versus specific models. -->
 Searchers that do not require a specific structure for the search space are
 preferred.
 Searchers that require some specific characteristics from the search space
 are also possible and often easily implemented in the framework.
-**TODO: Add the link to such a case**
 If the searcher requires some specific search space structure, please document
 this extensively, e.g., by including example search spaces that the searcher
 operates on, by discussing how do these differences compare with the most general
@@ -304,6 +299,7 @@ We recommend reading this paper and compare the new searcher under one of the
 benchmark settings that were identified there.
 **TODO: Add the link to the non-existing paper.**
 
+<!-- TODO: cut back on the framework independent stuff. -->
 ### Contributing a search space
 <!-- What is the goal of the search space. -->
 A search space encodes the set of architecture structures that
@@ -324,11 +320,6 @@ For example, all substitution modules are framework independent.
 Certain search space functionality that takes other smaller search spaces
 and put them together into a larger search space are also often framework
 independent.
-We have also started an attempt **Add link to the appropriate place**
-to develop a set of basic modules that are independent of the specific
-framework in which they are implemented in.
-These are motivated by the observation that often, simple modules in
-different frameworks.
 
 By this, we mean that the search spaces can be used with different frameworks
 (i.e., backends), not that different backends can be necessarily mixed together.
@@ -343,13 +334,8 @@ problem at hand.
 The goal of introducing new search spaces may be to explore new interesting
 structures and to make them available to other people that want to use them.
 
-<!-- TODO: more detail necessary. -->
-<!-- can we say something else about the evaluator? what else can we do this? -->
-<!-- having some form of search space over the evaluator. -->
-
 ### Contributing an evaluator
 <!-- equate the evaluator with training -->
-
 Evaluators are important in the sense that they determine the function that
 we are optimizing over the search space.
 If the evaluator does not do a good job identifying the models that we in fact
@@ -390,61 +376,12 @@ the search it induces, and by how effective it is in determining the relative
 ordering of models in the search space.
 A good surrogate functions should be able to embed the architecture to be
 evaluated and generate accurate predictions.
-It isn't obvious which surrogate model architectures are effective at capturing
+It is not obvious which surrogate model architectures are effective at capturing
 the properties of an architecture that determine performance.
 We ask the contributor to explore different structures and validate their
 performance.
 Existing implementations of surrogate functions can be found at
 **Add link to the appropriate place**
-
-<!-- TODO: come back here. -->
-
-
-### Contributing by working on work items
-
-**TODO:  check if this is in the README or not.**
-We maintain a list of work items in the `README.md`.
-These work items correspond to features or improvements that remain to be done
-either due to lack of time or lack of sufficiently .
-To work on the work items of either the main project or a contrib folder,
-we suggest that you first create an issue about the
-
-
-<!-- partition the work items into different categories.
-H.0, M.0, L.0; should this be a checklist, moved out of todos.
-Searcher.
-SearchSpace.
--->
-
-<!-- NOTE: this discussion for the  -->
-<!-- contrib.misc.H1000 -->
-
-Numbering for the works items starts at zero for each priority level.
-Once assigned, the number is persistent, meaning that future work items will
-have different higher numbers assigned to them.
-
-
-
-<!-- check Github's issue tracker. This is important. -->
-
-
-
-Next work items:
-
-<!-- Definition of proxy tasks. Why does it make sense to define proxy tasks. -->
-
-
-
-what are the tests that are going to run.
-
-contrib is the library component of your contribution.
-don't commit data files. your library should not require any data files.
-if you main requires data files, then add a README.md on how to download them.
-
-
-
-<!-- check that this is correct. -->
-
 
 ## Conclusion
 <!-- What were the topics that were addressed in this document. -->

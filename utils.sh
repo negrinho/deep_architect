@@ -4,6 +4,23 @@ ut_random_run_script_name(){ python -c 'import uuid; print("run_%s.sh" % uuid.uu
 ut_convert_md_to_rst(){ pandoc "$1" -f markdown -t rst -o "$2"; }
 ut_convert_rst_to_md(){ pandoc "$1" -f rst -t markdown -o "$2"; }
 
+ut_extract_python_code_from_docs() {
+    out_fp=`echo "${1%.*}"`".py" &&
+    python docs/main_get_code_from_docs.py \
+        --in_filepath "$1" \
+        --out_filepath "$out_fp";
+}
+
+# NOTE: this updates code in the documentation in place.
+# check that changes are as expected after using.
+ut_update_python_code_in_docs() {
+    code_fp=`echo "${1%.*}"`".py" &&
+    python docs/main_update_code_in_docs.py \
+        --in_doc_filepath "$1" \
+        --in_code_filepath "$code_fp"
+        --out_filepath "$1";
+}
+
 ut_build_documentation(){
     export LC_ALL=C && \
     ut_convert_md_to_rst README.md docs/source/readme.rst && \
@@ -11,7 +28,11 @@ ut_build_documentation(){
     cd docs && \
     make clean && \
     make html && \
-    cd -; }
+    cd -;
+}
+
+ut_spellcheck_file(){ apropos spell "$1"; }
+
 # ut_build_py27_cpu_docker_container(){}
 # ut_build_py27_gpu_docker_container(){}
 ut_build_py27_cpu_singularity_container(){
@@ -43,23 +64,11 @@ ut_run_all_tests(){
     set -x && ut_preappend_to_pythonpath "." && \
     # python examples/mnist/main.py && \
     # python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json &&\
-    # python examples/benchmarks/main.py --config_filepath examples/benchmarks/configs/debug.json && \
+    python examples/benchmarks/main.py --config_filepath examples/benchmarks/configs/debug.json;
     # ./examples/simplest_multiworker/run.sh debug 2 \
     # ./tutorials/full_search/launch_file_based_search.sh 2 \
-    ./tutorials/full_search/launch_mpi_based_search.sh 2;
+    # ./tutorials/full_search/launch_mpi_based_search.sh 2;
 }
-# ut_run_mnist_keras_example(){}
-# ut_run_mnist_tensorflow_example(){}
-# ut_run_mnist_pytorch_example(){}
-# ut_run_mnist_keras_example(){}
-# ut_extract_python_code_from_document(){} # useful to test the that code is not
-# breaking across changes to the model.
-
-### NOTE: add a few more that allows us to work with the model.
-# working with these models is annoying
-
-
-# change name to run_command_in...
 
 # A large fraction of this code was pulled from research_toolbox
 # https://github.com/negrinho/research_toolbox

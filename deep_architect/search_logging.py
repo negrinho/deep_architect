@@ -210,6 +210,35 @@ class EvaluationLogger:
         return self.evaluation_data_folderpath
 
 
+class SearchLogger:
+
+    def __init__(self,
+                 folderpath,
+                 search_name,
+                 abort_if_exists=True,
+                 delete_if_exists=False):
+        self.folderpath = folderpath
+        self.search_name = search_name
+
+        create_search_folderpath(
+            folderpath,
+            search_name,
+            abort_if_exists=abort_if_exists,
+            delete_if_exists=delete_if_exists,
+            create_parent_folders=True)
+
+    def get_evaluation_logger(self,
+                              evaluation_id,
+                              abort_if_exists=False,
+                              abort_if_notexists=False):
+        return EvaluationLogger(
+            self.folderpath,
+            self.search_name,
+            evaluation_id,
+            abort_if_exists=abort_if_exists,
+            abort_if_notexists=abort_if_notexists)
+
+
 def read_evaluation_folder(evaluation_folderpath):
     """Reads all the standard JSON log files associated to a single evaluation.
 

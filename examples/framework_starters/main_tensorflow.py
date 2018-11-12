@@ -5,11 +5,11 @@ import numpy as np
 
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
-from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tfm
+from deep_architect.helpers.tensorflow import siso_tensorflow_module
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 
-D = hp.Discrete  # Discrete Hyperparameter
+D = hp.Discrete
 
 
 def flatten():
@@ -22,7 +22,7 @@ def flatten():
 
         return fn
 
-    return siso_tfm('Flatten', compile_fn, {})
+    return siso_tensorflow_module('Flatten', compile_fn, {})
 
 
 def dense(h_units):
@@ -35,7 +35,7 @@ def dense(h_units):
 
         return fn
 
-    return siso_tfm('Dense', compile_fn, {'units': h_units})
+    return siso_tensorflow_module('Dense', compile_fn, {'units': h_units})
 
 
 def nonlinearity(h_nonlin_name):
@@ -56,7 +56,8 @@ def nonlinearity(h_nonlin_name):
 
         return fn
 
-    return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name': h_nonlin_name})
+    return siso_tensorflow_module('Nonlinearity', compile_fn,
+                                  {'nonlin_name': h_nonlin_name})
 
 
 def dropout(h_keep_prob):
@@ -70,7 +71,8 @@ def dropout(h_keep_prob):
 
         return fn, {p: dh['keep_prob']}, {p: 1.0}
 
-    return siso_tfm('Dropout', compile_fn, {'keep_prob': h_keep_prob})
+    return siso_tensorflow_module('Dropout', compile_fn,
+                                  {'keep_prob': h_keep_prob})
 
 
 def batch_normalization():
@@ -84,40 +86,7 @@ def batch_normalization():
 
         return fn, {p_var: 1}, {p_var: 0}
 
-    return siso_tfm('BatchNormalization', compile_fn, {})
-
-
-def dnn_net_simple(num_classes):
-
-    # declaring hyperparameter
-    h_nonlin_name = D(['relu', 'tanh',
-                       'elu'])  # nonlinearity function names to choose from
-    h_opt_drop = D(
-        [0, 1])  # dropout optional hyperparameter; 0 is exclude, 1 is include
-    h_drop_keep_prob = D([0.25, 0.5,
-                          0.75])  # dropout probability to choose from
-    h_opt_bn = D([0, 1])  # batch_norm optional hyperparameter
-    h_num_hidden = D(
-        [64, 128, 256, 512,
-         1024])  # number of hidden units for affine transform module
-    h_swap = D([0, 1])  # order of swapping for permutation
-    h_num_repeats = D([1, 2])  # 1 is appearing once, 2 is appearing twice
-
-    # defining search space topology
-    model = mo.siso_sequential([
-        flatten(),
-        mo.siso_repeat(lambda: mo.siso_sequential([
-            dense(h_num_hidden),
-            nonlinearity(h_nonlin_name),
-            mo.siso_permutation([
-                lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
-                lambda: mo.siso_optional(batch_normalization, h_opt_bn),
-            ], h_swap)
-        ]), h_num_repeats),
-        dense(D([num_classes]))
-    ])
-
-    return model
+    return siso_tensorflow_module('BatchNormalization', compile_fn, {})
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
@@ -126,7 +95,8 @@ def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
         dense(h_num_hidden),
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
+            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
+                                     h_opt_drop),
             lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)
     ])
@@ -139,11 +109,12 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]),
-            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-            D([0.25, 0.5, 0.75])), D([1, 2])),
-        dense(D([num_classes]))])
+        mo.siso_repeat(
+            lambda: dnn_cell(
+                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
+                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2])),
+        dense(D([num_classes]))
+    ])
 
 
 # Main/Searcher

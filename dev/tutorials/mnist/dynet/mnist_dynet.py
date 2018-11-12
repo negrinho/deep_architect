@@ -4,7 +4,7 @@
 import dynet as dy
 import numpy as np
 
-from deep_architect.helpers.dynet import DyParameterCollection, siso_dym
+from deep_architect.helpers.dynet import DyParameterCollection, siso_dynet_module
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 
@@ -24,7 +24,7 @@ def flatten():
 
         return fn
 
-    return siso_dym('Flatten', compile_fn, {})
+    return siso_dynet_module('Flatten', compile_fn, {})
 
 
 def dense(h_u):
@@ -44,7 +44,7 @@ def dense(h_u):
 
         return fn
 
-    return siso_dym('Dense', compile_fn, {'units': h_u})
+    return siso_dynet_module('Dense', compile_fn, {'units': h_u})
 
 
 # just put here to streamline everything
@@ -66,7 +66,7 @@ def nonlinearity(h_nonlin_name):
 
         return fn
 
-    return siso_dym('Nonlinearity', compile_fn, {'nonlin_name': h_nonlin_name})
+    return siso_dynet_module('Nonlinearity', compile_fn, {'nonlin_name': h_nonlin_name})
 
 
 def dropout(h_keep_prob):
@@ -80,7 +80,7 @@ def dropout(h_keep_prob):
 
         return fn
 
-    return siso_dym('Dropout', compile_fn, {'keep_prop': h_keep_prob})
+    return siso_dynet_module('Dropout', compile_fn, {'keep_prop': h_keep_prob})
 
 
 def dnn_net_simple(num_classes):

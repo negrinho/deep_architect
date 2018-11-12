@@ -8,7 +8,7 @@ class TensorflowModule(co.Module):
     """Class for taking Tensorflow code and wrapping it in a darch module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
-    the functionality associated to it (e.g., keepign track of inputs, outputs,
+    the functionality associated to it (e.g., keeping track of inputs, outputs,
     and hyperparameters). It also enables to do the compile and forward
     operations for these types of modules once a module is fully specified,
     i.e., once all the hyperparameters have been chosen.
@@ -117,7 +117,7 @@ def get_feed_dicts(output_lst):
 
     Args:
         output_lst (list[deep_architect.core.Output]): List of outputs of the model
-            (i.e., with no unspecified hyperparameters available) sampled 
+            (i.e., with no unspecified hyperparameters available) sampled
             from the search space.
 
     Returns:
