@@ -94,7 +94,8 @@ def siso_pytorch_module(name, compile_fn, name_to_hyperp, scope=None):
 
 def siso_pytorch_module_from_pytorch_layer_fn(layer_fn,
                                               name_to_hyperp,
-                                              scope=None):
+                                              scope=None,
+                                              name=None):
 
     def compile_fn(di, dh):
         m = layer_fn(**dh)
@@ -104,8 +105,10 @@ def siso_pytorch_module_from_pytorch_layer_fn(layer_fn,
 
         return forward_fn, [m]
 
-    return siso_pytorch_module(layer_fn.__name__, compile_fn, name_to_hyperp,
-                               scope)
+    if name is None:
+        name = layer_fn.__name__
+
+    return siso_pytorch_module(name, compile_fn, name_to_hyperp, scope)
 
 
 # NOTE: this is done for the case where all the PyTorch modules are created

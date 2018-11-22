@@ -31,7 +31,7 @@ ut_build_documentation(){
     cd -;
 }
 
-ut_spellcheck_file(){ apropos spell "$1"; }
+ut_spellcheck_file(){ aspell check "$1"; }
 
 # ut_build_py27_cpu_docker_container(){}
 # ut_build_py27_gpu_docker_container(){}

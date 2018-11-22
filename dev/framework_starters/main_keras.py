@@ -1,40 +1,34 @@
-# Using TensorFlow Backend
-
-# Search Space
 import keras
 import numpy as np
 
+import deep_architect.core as co
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
-from deep_architect.contrib.misc.search_spaces.tensorflow.common import siso_tfm
+import deep_architect.searchers.random as se
+import deep_architect.helpers.keras as hke
+import deep_architect.search_logging as sl
+import deep_architect.visualization as vi
 
-D = hp.Discrete  # Discrete Hyperparameter
+from keras.layers import Dropout, Activation, BatchNormalization, Dense, Input
+from keras.models import Model
+from keras.optimizers import Adam
 
+from keras.datasets import mnist
 
-def flatten():
-
-    def compile_fn(di, dh):
-        Flatten = keras.layers.Flatten()
-
-        def fn(di):
-            return {'Out': Flatten(di['In'])}
-
-        return fn
-
-    return siso_tfm('Flatten', compile_fn, {})  # use siso_tfm for now
+D = hp.Discrete
 
 
 def dense(h_units):
+    return hke.siso_keras_module_from_keras_layer_fn(Dense, {'units': h_units})
 
-    def compile_fn(di, dh):
-        Dense = keras.layers.Dense(dh['units'])
 
-        def fn(di):
-            return {'Out': Dense(di['In'])}
+def dropout(h_drop_rate):
+    return hke.siso_keras_module_from_keras_layer_fn(Dropout,
+                                                     {'rate': h_drop_rate})
 
-        return fn
 
-    return siso_tfm('Dense', compile_fn, {'units': h_units})
+def batch_normalization():
+    return hke.siso_keras_module_from_keras_layer_fn(BatchNormalization, {})
 
 
 def nonlinearity(h_nonlin_name):
@@ -44,54 +38,28 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = keras.layers.Activation('relu')(di['In'])
+                Out = Activation('relu')(di['In'])
             elif nonlin_name == 'tanh':
-                Out = keras.layers.Activation('tanh')(di['In'])
+                Out = Activation('tanh')(di['In'])
             elif nonlin_name == 'elu':
-                Out = keras.layers.Activation('elu')(di['In'])
+                Out = Activation('elu')(di['In'])
             else:
                 raise ValueError
             return {"Out": Out}
 
         return fn
 
-    return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name': h_nonlin_name})
-
-
-def dropout(h_keep_prob):
-
-    def compile_fn(di, dh):
-        Dropout = keras.layers.Dropout(dh['keep_prob'])
-
-        def fn(di):
-            return {'Out': Dropout(di['In'])}
-
-        return fn
-
-    return siso_tfm('Dropout', compile_fn, {'keep_prob': h_keep_prob})
-
-
-def batch_normalization():
-
-    def compile_fn(di, dh):
-        bn = keras.layers.BatchNormalization()
-
-        def fn(di):
-            return {'Out': bn(di['In'])}
-
-        return fn
-
-    return siso_tfm('BatchNormalization', compile_fn, {})
+    return hke.siso_keras_module('Nonlinearity', compile_fn,
+                                 {'nonlin_name': h_nonlin_name})
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-             h_drop_keep_prob):
+             h_drop_rate):
     return mo.siso_sequential([
         dense(h_num_hidden),
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
-                                     h_opt_drop),
+            lambda: mo.siso_optional(lambda: dropout(h_drop_rate), h_opt_drop),
             lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)
     ])
@@ -103,107 +71,101 @@ def dnn_net(num_classes):
     h_opt_drop = D([0, 1])
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
-        flatten(),
         mo.siso_repeat(
             lambda: dnn_cell(
                 D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
-                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2])),
+                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2, 4])),
         dense(D([num_classes]))
     ])
-
-
-# Main/Searcher
-import deep_architect.searchers.random as se
-import deep_architect.core as co
-from keras.datasets import mnist
-
-
-def get_search_space(num_classes):
-
-    def fn():
-        co.Scope.reset_default_scope()
-        inputs, outputs = dnn_net(num_classes)
-        return inputs, outputs, {}
-
-    return fn
-
-
-def main():
-
-    num_classes = 10
-    num_samples = 3  # number of architecture to sample
-    best_val_acc, best_architecture = 0., -1
-
-    # load and normalize data
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_train, x_test = x_train / 255.0, x_test / 255.0
-
-    # defining searcher and evaluator
-    evaluator = SimpleClassifierEvaluator((x_train, y_train),
-                                          num_classes,
-                                          max_num_training_epochs=5)
-    searcher = se.RandomSearcher(get_search_space(num_classes))
-
-    for i in xrange(num_samples):
-        print("Sampling architecture %d" % i)
-        inputs, outputs, _, searcher_eval_token = searcher.sample()
-        val_acc = evaluator.evaluate(
-            inputs,
-            outputs)['val_acc']  # evaluate and return validation accuracy
-        print("Finished evaluating architecture %d, validation accuracy is %f" %
-              (i, val_acc))
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            best_architecture = i
-        searcher.update(val_acc, searcher_eval_token)
-    print("Best validation accuracy is %f with architecture %d" %
-          (best_val_acc, best_architecture))
-
-
-# Evaluator
 
 
 class SimpleClassifierEvaluator:
 
     def __init__(self,
-                 train_dataset,
+                 X_train,
+                 y_train,
+                 X_val,
+                 y_val,
                  num_classes,
-                 max_num_training_epochs=10,
+                 num_training_epochs,
                  batch_size=256,
                  learning_rate=1e-3):
 
-        self.train_dataset = train_dataset
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_val = X_val
+        self.y_val = y_val
         self.num_classes = num_classes
-        self.max_num_training_epochs = max_num_training_epochs
+        self.num_training_epochs = num_training_epochs
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.val_split = 0.1  # 10% of dataset for validation
 
     def evaluate(self, inputs, outputs):
         keras.backend.clear_session()
 
-        (x_train, y_train) = self.train_dataset
-
-        X = keras.layers.Input(x_train[0].shape)
+        X = Input(self.X_train[0].shape)
         co.forward({inputs['In']: X})
         logits = outputs['Out'].val
-        probs = keras.layers.Softmax()(logits)
-        model = keras.models.Model(inputs=[inputs['In'].val], outputs=[probs])
-        optimizer = keras.optimizers.Adam(lr=self.learning_rate)
+        probs = Activation('softmax')(logits)
+
+        model = Model(inputs=[inputs['In'].val], outputs=[probs])
         model.compile(
-            optimizer=optimizer,
+            optimizer=Adam(lr=self.learning_rate),
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy'])
         model.summary()
         history = model.fit(
-            x_train,
-            y_train,
+            self.X_train,
+            self.y_train,
             batch_size=self.batch_size,
-            epochs=self.max_num_training_epochs,
-            validation_split=self.val_split)
+            epochs=self.num_training_epochs,
+            validation_data=(self.X_val, self.y_val))
 
-        results = {'val_acc': history.history['val_acc'][-1]}
+        results = {'validation_accuracy': history.history['val_acc'][-1]}
         return results
+
+
+def main():
+    num_classes = 10
+    num_samples = 4
+    num_training_epochs = 2
+    validation_frac = 0.2
+    # NOTE: change to True for graph visualization
+    show_graph = False
+
+    # load the data.
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    fn = lambda X: X.reshape((X.shape[0], -1))
+    X_train = fn(X_train) / 255.0
+    X_test = fn(X_test) / 255.0
+    num_train = int((1.0 - validation_frac) * X_train.shape[0])
+    X_train, X_val = X_train[:num_train], X_train[num_train:]
+    y_train, y_val = y_train[:num_train], y_train[num_train:]
+
+    # define the search and the evalutor
+    evaluator = SimpleClassifierEvaluator(
+        X_train,
+        y_train,
+        X_val,
+        y_val,
+        num_classes,
+        num_training_epochs=num_training_epochs)
+    ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
+    searcher = se.RandomSearcher(ssf.get_search_space)
+
+    for i in xrange(num_samples):
+        (inputs, outputs, hyperp_value_lst,
+         searcher_eval_token) = searcher.sample()
+        if show_graph:
+            # try setting draw_module_hyperparameter_info=False and
+            # draw_hyperparameters=True for a different visualization.
+            vi.draw_graph(
+                outputs.values(),
+                draw_module_hyperparameter_info=False,
+                draw_hyperparameters=True)
+        results = evaluator.evaluate(inputs, outputs)
+        # updating the searcher. no-op for the random searcher.
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
 
 
 if __name__ == "__main__":

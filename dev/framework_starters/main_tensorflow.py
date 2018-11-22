@@ -5,37 +5,52 @@ import numpy as np
 
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
-from deep_architect.helpers.tensorflow import siso_tensorflow_module
+import deep_architect.helpers.tensorflow as htf
+import deep_architect.visualization as vi
+
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
+import deep_architect.searchers.random as se
+import deep_architect.core as co
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 
 D = hp.Discrete
 
 
-def flatten():
-
-    def compile_fn(di, dh):
-        Flatten = tf.layers.flatten
-
-        def fn(di):
-            return {'Out': Flatten(di['In'])}
-
-        return fn
-
-    return siso_tensorflow_module('Flatten', compile_fn, {})
-
-
 def dense(h_units):
+    return htf.siso_tensorflow_module_from_tensorflow_op_fn(
+        tf.layers.Dense, {'units': h_units})
+
+
+def dropout(h_drop_rate):
 
     def compile_fn(di, dh):
-        Dense = tf.layers.dense
+        p = tf.placeholder(tf.float32)
 
         def fn(di):
-            return {'Out': Dense(di['In'], dh['units'])}
+            return {'Out': tf.nn.dropout(di['In'], p)}
 
-        return fn
+        return fn, {p: 1.0 - dh['drop_rate']}, {p: 1.0}
 
-    return siso_tensorflow_module('Dense', compile_fn, {'units': h_units})
+    return htf.siso_tensorflow_module('Dropout', compile_fn,
+                                      {'drop_rate': h_drop_rate})
+
+
+# TODO: this needs to be fixed because it is not possible to do different
+# forwards.
+def batch_normalization():
+
+    def compile_fn(di, dh):
+        p_var = tf.placeholder(tf.bool)
+        bn = tf.layers.BatchNormalization()
+
+        def fn(di):
+            return {'Out': bn(di['In'], training=p_var)}
+
+        return fn, {p_var: 1}, {p_var: 0}
+
+    return htf.siso_tensorflow_module('BatchNormalization', compile_fn, {})
 
 
 def nonlinearity(h_nonlin_name):
@@ -56,47 +71,17 @@ def nonlinearity(h_nonlin_name):
 
         return fn
 
-    return siso_tensorflow_module('Nonlinearity', compile_fn,
-                                  {'nonlin_name': h_nonlin_name})
-
-
-def dropout(h_keep_prob):
-
-    def compile_fn(di, dh):
-        p = tf.placeholder(tf.float32)
-        Dropout = tf.nn.dropout
-
-        def fn(di):
-            return {'Out': Dropout(di['In'], p)}
-
-        return fn, {p: dh['keep_prob']}, {p: 1.0}
-
-    return siso_tensorflow_module('Dropout', compile_fn,
-                                  {'keep_prob': h_keep_prob})
-
-
-def batch_normalization():
-
-    def compile_fn(di, dh):
-        p_var = tf.placeholder(tf.bool)
-        bn = tf.layers.batch_normalization
-
-        def fn(di):
-            return {'Out': bn(di['In'], training=p_var)}
-
-        return fn, {p_var: 1}, {p_var: 0}
-
-    return siso_tensorflow_module('BatchNormalization', compile_fn, {})
+    return htf.siso_tensorflow_module('Nonlinearity', compile_fn,
+                                      {'nonlin_name': h_nonlin_name})
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-             h_drop_keep_prob):
+             h_drop_rate):
     return mo.siso_sequential([
         dense(h_num_hidden),
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
-                                     h_opt_drop),
+            lambda: mo.siso_optional(lambda: dropout(h_drop_rate), h_opt_drop),
             lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)
     ])
@@ -108,71 +93,12 @@ def dnn_net(num_classes):
     h_opt_drop = D([0, 1])
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
-        flatten(),
         mo.siso_repeat(
             lambda: dnn_cell(
                 D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
-                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2])),
+                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2, 4])),
         dense(D([num_classes]))
     ])
-
-
-# Main/Searcher
-from deep_architect.contrib.misc.datasets.loaders import load_mnist
-from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
-import deep_architect.searchers.random as se
-import deep_architect.core as co
-
-
-def get_search_space(num_classes):
-
-    def fn():
-        co.Scope.reset_default_scope()
-        inputs, outputs = dnn_net(num_classes)
-        return inputs, outputs, {}
-
-    return fn
-
-
-def main():
-
-    num_classes = 10
-    num_samples = 20  # number of architecture to sample
-    best_val_acc, best_architecture = 0., -1
-
-    # load data
-    (Xtrain, ytrain, Xval, yval, Xtest, ytest) = load_mnist('data/mnist')
-    train_dataset = InMemoryDataset(Xtrain, ytrain, True)
-    val_dataset = InMemoryDataset(Xval, yval, False)
-    test_dataset = InMemoryDataset(Xtest, ytest, False)
-
-    # defining evaluator and searcher
-    evaluator = SimpleClassifierEvaluator(
-        train_dataset,
-        val_dataset,
-        num_classes,
-        max_num_training_epochs=5,
-        log_output_to_terminal=True)
-    searcher = se.RandomSearcher(get_search_space(num_classes))
-
-    for i in xrange(num_samples):
-        print("Sampling architecture %d" % i)
-        inputs, outputs, _, searcher_eval_token = searcher.sample()
-        val_acc = evaluator.evaluate(
-            inputs,
-            outputs)['val_acc']  # evaluate and return validation accuracy
-        print("Finished evaluating architecture %d, validation accuracy is %f" %
-              (i, val_acc))
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            best_architecture = i
-        searcher.update(val_acc, searcher_eval_token)
-    print("Best validation accuracy is %f with architecture %d" %
-          (best_val_acc, best_architecture))
-
-
-# Evaluator
-import deep_architect.helpers.tensorflow as htf
 
 
 class SimpleClassifierEvaluator:
@@ -181,7 +107,7 @@ class SimpleClassifierEvaluator:
                  train_dataset,
                  val_dataset,
                  num_classes,
-                 max_num_training_epochs=10,
+                 num_training_epochs,
                  batch_size=256,
                  learning_rate=1e-3,
                  display_step=1,
@@ -192,7 +118,7 @@ class SimpleClassifierEvaluator:
         self.num_classes = num_classes
         self.in_dim = list(train_dataset.next_batch(1)[0].shape[1:])
 
-        self.max_num_training_epochs = max_num_training_epochs
+        self.num_training_epochs = num_training_epochs
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.log_output_to_terminal = log_output_to_terminal
@@ -240,7 +166,7 @@ class SimpleClassifierEvaluator:
 
             num_batches = int(
                 self.train_dataset.get_num_examples() / self.batch_size)
-            for epoch in range(self.max_num_training_epochs):
+            for epoch in range(self.num_training_epochs):
                 avg_loss = 0.
                 for _ in range(num_batches):
                     X_batch, y_batch = self.train_dataset.next_batch(
@@ -254,24 +180,57 @@ class SimpleClassifierEvaluator:
                     _, c = sess.run([optimizer, loss], feed_dict=train_feed)
                     avg_loss += c / num_batches
 
-                val_acc = self.compute_accuracy(sess, X_pl, y_pl, num_correct,
-                                                self.val_dataset, eval_feed)
-
-                # Display logs per epoch step
                 if self.log_output_to_terminal and epoch % self.display_step == 0:
                     print("epoch:", '%d' % (epoch + 1), "loss:",
-                          "{:.9f}".format(avg_loss), "validation_accuracy:",
-                          "%.5f" % val_acc)
+                          "{:.9f}".format(avg_loss))
 
             val_acc = self.compute_accuracy(sess, X_pl, y_pl, num_correct,
                                             self.val_dataset, eval_feed)
-
+            print("validation accuracy: %0.4f" % val_acc)
             results = {
-                'val_acc': val_acc,
-                'num_parameters': float(htf.get_num_trainable_parameters())
+                'validation_accuracy': val_acc,
+                'num_parameters': htf.get_num_trainable_parameters()
             }
 
         return results
+
+
+def main():
+    num_classes = 10
+    num_samples = 4
+    num_training_epochs = 2
+    # NOTE: change to True for graph visualization
+    show_graph = False
+
+    # load data
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(
+        'data/mnist', flatten=True)
+    train_dataset = InMemoryDataset(X_train, y_train, True)
+    val_dataset = InMemoryDataset(X_val, y_val, False)
+    test_dataset = InMemoryDataset(X_test, y_test, False)
+
+    # defining evaluator and searcher
+    evaluator = SimpleClassifierEvaluator(
+        train_dataset,
+        val_dataset,
+        num_classes,
+        num_training_epochs=num_training_epochs,
+        log_output_to_terminal=True)
+    ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
+    searcher = se.RandomSearcher(ssf.get_search_space)
+
+    for i in xrange(num_samples):
+        inputs, outputs, _, searcher_eval_token = searcher.sample()
+        if show_graph:
+            # try setting draw_module_hyperparameter_info=False and
+            # draw_hyperparameters=True for a different visualization.
+            vi.draw_graph(
+                outputs.values(),
+                draw_module_hyperparameter_info=False,
+                draw_hyperparameters=True)
+        results = evaluator.evaluate(inputs, outputs)
+        # updating the searcher. no-op for the random searcher.
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
 
 
 if __name__ == "__main__":

@@ -96,7 +96,8 @@ def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
 
 def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn,
                                                  name_to_hyperp,
-                                                 scope=None):
+                                                 scope=None,
+                                                 name=None):
 
     def compile_fn(di, dh):
         m = layer_fn(**dh)
@@ -106,8 +107,10 @@ def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn,
 
         return forward_fn
 
-    return siso_tensorflow_module(layer_fn.__name__, compile_fn, name_to_hyperp,
-                                  scope)
+    if name is None:
+        name = layer_fn.__name__
+
+    return siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope)
 
 
 def get_feed_dicts(output_lst):
