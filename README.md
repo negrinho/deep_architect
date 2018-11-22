@@ -1,6 +1,12 @@
 # Overview
 
+<p align="center">
+  <img width="512" height="512" src="docs/source/logo/logo.svg">
+</p>
+
+<p style="text-align: center;">
 *DeepArchitect: Architecture search so easy you'll think it's magic!*
+</p>
 
 ## Introduction
 
