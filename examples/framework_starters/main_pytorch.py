@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import range
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,7 +10,8 @@ import deep_architect.hyperparameters as hp
 import deep_architect.visualization as vi
 import deep_architect.helpers.pytorch as hpt
 import deep_architect.searchers.random as se
-import torchvision
+from deep_architect.contrib.misc.datasets.loaders import load_mnist
+from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 
 import torch.optim as optim
 from deep_architect.helpers.pytorch import PyTorchModel
@@ -97,8 +99,8 @@ def dnn_net(num_classes):
 class SimpleClassifierEvaluator:
 
     def __init__(self,
-                 train_loader,
-                 val_loader,
+                 train_dataset,
+                 val_dataset,
                  num_classes,
                  num_training_epochs,
                  batch_size=256,
@@ -106,10 +108,13 @@ class SimpleClassifierEvaluator:
                  display_step=1,
                  log_output_to_terminal=True):
 
-        self.train_loader = train_loader
-        self.val_loader = val_loader
+        self.train_dataset = train_dataset
+        self.val_dataset = val_dataset
         self.num_classes = num_classes
-        self.in_features = np.product(train_loader.dataset[0][0].size())
+        self.in_features = train_dataset.next_batch(1)[0].shape[-1]
+        fn = lambda ds: int(np.ceil(ds.get_num_examples() / float(batch_size)))
+        self.num_train_batches = fn(train_dataset)
+        self.num_val_batches = fn(val_dataset)
 
         self.num_training_epochs = num_training_epochs
         self.batch_size = batch_size
@@ -119,17 +124,18 @@ class SimpleClassifierEvaluator:
 
     def evaluate(self, inputs, outputs):
         network = hpt.PyTorchModel(inputs, outputs)
+        network.eval()
         # NOTE: instantiation of parameters requires passing data through the
         # model once.
-        network.eval()
         network.forward({'In': torch.zeros(self.batch_size, self.in_features)})
         optimizer = optim.Adam(network.parameters(), lr=self.learning_rate)
         network.train()
         for epoch in range(self.num_training_epochs):
-            for (data, target) in self.train_loader:
+            for _ in range(self.num_train_batches):
+                data, target = self.train_dataset.next_batch(self.batch_size)
                 optimizer.zero_grad()
-                output = network({'In': data.view(-1, self.in_features)})
-                loss = F.cross_entropy(output["Out"], target)
+                output = network({'In': torch.FloatTensor(data)})
+                loss = F.cross_entropy(output["Out"], torch.LongTensor(target))
                 loss.backward()
                 optimizer.step()
 
@@ -141,11 +147,12 @@ class SimpleClassifierEvaluator:
         network.eval()
         correct = 0
         with torch.no_grad():
-            for data, target in self.val_loader:
-                output = network({'In': data.view(-1, self.in_features)})
+            for _ in range(self.num_val_batches):
+                data, target = self.val_dataset.next_batch(self.batch_size)
+                output = network({'In': torch.FloatTensor(data)})
                 pred = output["Out"].data.max(1)[1]
-                correct += pred.eq(target.data).sum().item()
-        val_acc = float(correct) / len(self.val_loader.dataset)
+                correct += pred.eq(torch.LongTensor(target).data).sum().item()
+        val_acc = float(correct) / self.val_dataset.get_num_examples()
         print("validation accuracy: %0.4f" % val_acc)
 
         return {'validation_accuracy': val_acc}
@@ -159,30 +166,17 @@ def main():
     # NOTE: change to True for graph visualization
     show_graph = False
 
-    ### NOTE: revisit this.
     # load and normalize data
-    train_loader = torch.utils.data.DataLoader(
-        torchvision.datasets.MNIST(
-            './tmp/data/',
-            train=True,
-            download=True,
-            transform=torchvision.transforms.ToTensor()),
-        batch_size=batch_size,
-        shuffle=True)
-    # NOTE: using test as validation here, for simplicity sake.
-    val_loader = torch.utils.data.DataLoader(
-        torchvision.datasets.MNIST(
-            './tmp/data/',
-            train=False,
-            download=True,
-            transform=torchvision.transforms.ToTensor()),
-        batch_size=batch_size,
-        shuffle=False)
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(
+        'data/mnist', flatten=True, one_hot=False)
+    train_dataset = InMemoryDataset(X_train, y_train, True)
+    val_dataset = InMemoryDataset(X_val, y_val, False)
+    test_dataset = InMemoryDataset(X_test, y_test, False)
 
     # defining evaluator and searcher
     evaluator = SimpleClassifierEvaluator(
-        train_loader,
-        val_loader,
+        train_dataset,
+        val_dataset,
         num_classes,
         num_training_epochs=num_training_epochs,
         batch_size=batch_size,
@@ -190,7 +184,7 @@ def main():
     ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
     searcher = se.RandomSearcher(ssf.get_search_space)
 
-    for i in xrange(num_samples):
+    for i in range(num_samples):
         inputs, outputs, _, searcher_eval_token = searcher.sample()
         if show_graph:
             # try setting draw_module_hyperparameter_info=False and

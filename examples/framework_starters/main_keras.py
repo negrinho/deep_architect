@@ -1,3 +1,4 @@
+from builtins import range
 import keras
 import numpy as np
 
@@ -153,7 +154,7 @@ def main():
     ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
     searcher = se.RandomSearcher(ssf.get_search_space)
 
-    for i in xrange(num_samples):
+    for i in range(num_samples):
         (inputs, outputs, hyperp_value_lst,
          searcher_eval_token) = searcher.sample()
         if show_graph:

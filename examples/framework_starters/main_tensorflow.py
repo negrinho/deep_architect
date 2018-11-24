@@ -1,5 +1,6 @@
 # Search Space
 from __future__ import print_function
+from builtins import range
 import tensorflow as tf
 import numpy as np
 
@@ -219,7 +220,7 @@ def main():
     ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
     searcher = se.RandomSearcher(ssf.get_search_space)
 
-    for i in xrange(num_samples):
+    for i in range(num_samples):
         inputs, outputs, _, searcher_eval_token = searcher.sample()
         if show_graph:
             # try setting draw_module_hyperparameter_info=False and
