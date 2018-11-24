@@ -204,7 +204,7 @@ explicitly, as they will just take the default names of In and Out.
     def conv_relu_batch_norm(h_filters, h_kernel_size, h_strides):
 
         def compile_fn(di, dh):
-            m_conv = Conv(
+            m_conv = Conv2D(
                 dh["filters"], dh["kernel_size"], dh["strides"], padding='same')
             m_bn = BatchNormalization()
 
@@ -213,7 +213,7 @@ explicitly, as they will just take the default names of In and Out.
 
             return forward_fn
 
-        return keras_module('ConvReLUBatchNorm', compile_fn, {
+        return siso_keras_module('ConvReLUBatchNorm', compile_fn, {
             "filters": h_filters,
             "kernel_size": h_kernel_size,
             'strides': h_strides
@@ -278,7 +278,7 @@ other ones defined through hyperparameters, we can do as such
 
 So far, we covered how can we easily implement new modules in a framework
 that we are working with. These examples were all focused on Keras, but these
-aspects that we covered so far trasfer mostly without changes across frameworks.
+aspects that we covered so far transfer mostly without changes across frameworks.
 All the aspects that we have seen so far correspond to examples of modules that
 actually implement computation. We will now look at examples of modules whose
 purpose is not to implement computation, but to perform a structural transformation
@@ -289,7 +289,7 @@ upon porting one search space from one framework to a different one, the only
 modules that need to be ported are the basic modules. Any auxiliary functions that
 simply put modules together and substitution modules work automatically across frameworks.
 This means that a large amount of code is reusable when moving from one framework
-to another one. The basic modules are often very simply to implement, being the
+to another one. The basic modules are often very simple to implement, being the
 auxiliary functions and the substitution modules that often contain most of the
 complexity of the search space.
 
@@ -409,7 +409,7 @@ First, consider the definition of a substitution module.
                 self._is_done = True
 
 
-The reader will not get all the details by looking at this, but the main idea is
+The reader may not get all the details by looking at this, but the main idea is
 that the substitution module has some hyperparameters associated to it and a
 substitution function that returns a graph fragment that is used in the same
 place of where the substitution module was before the substitution.
@@ -429,7 +429,8 @@ some structural property of the search space until some hyperparameters are
 assigned a value.
 Substitution modules are very useful and allows us to write down more complex
 and expressive search spaces. We have defined a few relatively useful
-substitution modules in deep_architect/modules.
+substitution modules in
+`deep_architect/modules.py <https://github.com/negrinho/darch/blob/master/deep_architect/modules.py>`_.
 Similar to the basic module definition that we looked above, it is more convenient
 to deal with the dictionaries of inputs and the dictionaries of outputs than
 directly with the modules, so we define this function
@@ -545,8 +546,6 @@ We see how short the implementation is. This module has a single hyperparameter
 that determines the choice between which function in the function list (or dictionary)
 to call. Each of the functions in the function list returns a dictionary of
 inputs and a dictionary of outputs when called.
-An example search space using subsitution modules, among others, can be found in
-deep_architect/misc/.
 
 .. code:: python
 
@@ -571,7 +570,6 @@ modules that passes the input unchanged to the output is used.
 Another aspect that is clear from the example above is that substitution modules
 are modules, so they can be used in any place that a module can be used.
 This makes the language to write search spaces very compositional.
-# careful here.
 
 Let us now look at a more complex use of a custom substitution module.
 
@@ -630,15 +628,13 @@ Let us now look at a more complex use of a custom substitution module.
         return mo.substitution_module(
             "Motif", name_to_hyperp, substitution_fn, ["In"], ["Out"], scope=None)
 This substitution module implements the notion of a motif defined in the
-paper (TODO: point to hierarhical paper).
+this `paper <https://arxiv.org/abs/1711.00436>`_.
 The main goal of this substitution module is to delay the creation of the
 motif structure until the values for values for the hyperparameters of the
 connections in the motif are determined. The notion of the motif defined in the
 paper is recursive. We see that the motif function takes a submotif function
 that allows us to place submotifs in each of the edges that are included in the
-top-level motif. If the reader wishes to read in more detail about these
-search spaces in the literature, we point the reader to the tutorial
-search spaces in the literature (TODO).
+top-level motif.
 
 This concludes our discussion about how to implement new modules in a specific
 framework that the reader is working with. We point the reader to the

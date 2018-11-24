@@ -29,7 +29,6 @@ verbatim from `here <https://keras.io/getting-started/functional-api-guide/>`_.
     x = Dense(64, activation='relu')(x)
     predictions = Dense(10, activation='softmax')(x)
 
-
 The above code is an example of a fixed two-layer perceptron defined in Keras.
 The problem with the above code is that it requires the expert to commit to
 specific values for the number of units and the type of activations.
@@ -58,7 +57,7 @@ See below for a minimal adaptation of the above example in DeepArchitect.
         })
 
 
-    def search_space():
+    def search_space0():
         return mo.siso_sequential([
             dense(D([32, 64, 128, 256]), D(["relu", "sigmoid"])),
             dense(D([32, 64, 128, 256]), D(["relu", "sigmoid"])),
@@ -66,8 +65,7 @@ See below for a minimal adaptation of the above example in DeepArchitect.
         ])
 
 
-    (inputs, outputs) = mo.SearchSpaceFactory(search_space).get_search_space()
-
+    (inputs, outputs) = mo.SearchSpaceFactory(search_space0).get_search_space()
 
 The above code defines a search space where the nonlinearities and number of
 units are chosen from a set of possible values rather than being fixed upfront.
@@ -80,8 +78,10 @@ visualize the search search as a graph.
 .. code:: python
 
     import deep_architect.visualization as vi
-    vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
-
+    vi.draw_graph(
+        outputs.values(),
+        draw_module_hyperparameter_info=False,
+        graph_name='graph0_first')
 
 The connections between the modules in the graph are fixed.
 In the construction of the search space, all function calls return a dictionary
@@ -106,7 +106,6 @@ of the module on the value of that hyperparameter.
     y = outputs["Out"].val
     print(vs)
 
-
 The values randomly chosen are returned by `random_specify`.
 This function simply iterates through the hyperparameters that have not
 been assigned a value yet and chooses a value randomly among the possible ones.
@@ -114,13 +113,16 @@ After choosing all these values, the resulting search space looks like this.
 
 .. code:: python
 
-    vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
-
+    vi.draw_graph(
+        outputs.values(),
+        draw_module_hyperparameter_info=False,
+        graph_name='graph0_last')
 
 We see that the edges between hyperapameters and modules have been labeled
 with the values that have been chosen for the hyperparameters.
-The search process iterates over the hyperparameter that have not
-been assigned a value yet and picks a value at random among the possible
+The search process iterates over the hyperparameters that have not
+been assigned a value yet and, for each hyperparameter,
+picks a value at random among the possible
 values that can be assigned to that hyperparameter.
 The graph transitions with each assignment.
 We have a function that allows us to visualize these graph transitions as a
@@ -128,11 +130,14 @@ sequence of frames.
 
 .. code:: python
 
-    inputs, outputs = search_space()
+    inputs, outputs = search_space0()
 
-    # vi.draw_graph_evolution(
-    #     outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
-
+    vi.draw_graph_evolution(
+        outputs.values(),
+        vs,
+        '.',
+        draw_module_hyperparameter_info=False,
+        graph_name='graph0_evo')
 
 We see that we start with the initial graph with no hyperparameters specified
 (i.e., no hyperparameters have been assigned a value), and progressively,
@@ -153,7 +158,8 @@ Adapting the first search space to reflect this change is straightforward.
 
 .. code:: python
 
-    def search_space():
+
+    def search_space1():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         return mo.siso_sequential([
@@ -163,9 +169,11 @@ Adapting the first search space to reflect this change is straightforward.
         ])
 
 
-(inputs, outputs) = search_space()
-vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
-
+    (inputs, outputs) = search_space1()
+    vi.draw_graph(
+        outputs.values(),
+        draw_module_hyperparameter_info=False,
+        graph_name='graph1_first')
 
 Redrawing the initial graph for the search space (i.e., after having
 made any choices for hyperparameters), we see that that now there exists
@@ -182,12 +190,13 @@ layer.
 
 .. code:: python
 
-    def search_space():
+
+    def search_space2():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
-                                                {"units": h_units})
+                                                 {"units": h_units})
 
         return mo.siso_sequential([
             dense(h_units, h_activation),
@@ -196,9 +205,11 @@ layer.
         ])
 
 
-    (inputs, outputs) = search_space()
-    vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
-
+    (inputs, outputs) = search_space2()
+    vi.draw_graph(
+        outputs.values(),
+        draw_module_hyperparameter_info=False,
+        graph_name='graph2_first')
 
 As we can see in the graph, there is an edge going from the independent
 hyperparameter to the hyperparameter that it depends on.
@@ -218,11 +229,14 @@ successive assignments to the values of hyperparameters.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space()
+    inputs, outputs = search_space2()
 
-    # vi.draw_graph_evolution(
-    #     outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
-
+    vi.draw_graph_evolution(
+        outputs.values(),
+        vs,
+        '.',
+        draw_module_hyperparameter_info=False,
+        graph_name='graph2_evo')
 
 By looking at the graph, we see that as soon as a value is a assigned
 to the hyperparameter that the dependent hyperparameter depends on, the
@@ -271,12 +285,13 @@ an operation that either includes a submodule or not.
 
 .. code:: python
 
-    def search_space():
+
+    def search_space3():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
-                                                {"units": h_units})
+                                                 {"units": h_units})
         h_opt = D([0, 1])
 
         return mo.siso_sequential([
@@ -286,8 +301,7 @@ an operation that either includes a submodule or not.
         ])
 
 
-    (inputs, outputs) = search_space()
-
+    (inputs, outputs) = search_space3()
 
 The optional module takes a thunk (this terminology comes from programming
 languages) which returns a graph fragment (returned as a dictionary of
@@ -302,11 +316,14 @@ Consider the graph evolution for a random sample from this search space.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space()
+    inputs, outputs = search_space3()
 
-    # vi.draw_graph_evolution(
-    #     outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
-
+    vi.draw_graph_evolution(
+        outputs.values(),
+        vs,
+        '.',
+        draw_module_hyperparameter_info=False,
+        graph_name='graph3_evo')
 
 We see that once the hyperparameter that the optional substitution module depends on
 is assigned a value, the substitution module disappears and is replaced by a graph
@@ -324,12 +341,13 @@ connected in a serial connection.
 
 .. code:: python
 
-    def search_space():
+
+    def search_space4():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
-                                                {"units": h_units})
+                                                 {"units": h_units})
         h_opt = D([0, 1])
         h_num_repeats = D([1, 2, 4])
 
@@ -340,8 +358,7 @@ connected in a serial connection.
         ])
 
 
-    (inputs, outputs) = search_space()
-
+    (inputs, outputs) = search_space4()
 
 Note that in the search space above, the hyperparameter respective to the
 number of units of the dense modules inside the repeat share the same hyperparameter,
@@ -350,10 +367,14 @@ meaning that all these modules will have the same number of units.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space()
+    inputs, outputs = search_space4()
 
-    # vi.draw_graph_evolution(
-    #     outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
+    vi.draw_graph_evolution(
+        outputs.values(),
+        vs,
+        '.',
+        draw_module_hyperparameter_info=False,
+        graph_name='graph4_evo')
 
 In the graph evolution, we see that once we assign a value to the hyperparameter
 corresponding to the number of repetitions of the graph fragment returned by the
@@ -374,26 +395,26 @@ For example, consider the following example
 
 .. code:: python
 
-    def search_space():
+
+    def search_space5():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
-                                                {"units": h_units})
+                                                 {"units": h_units})
         h_opt = D([0, 1])
         h_num_repeats = D([1, 2, 4])
 
         return mo.siso_sequential([
             mo.siso_repeat(lambda: dense(h_units, h_activation), h_num_repeats),
             mo.siso_optional(
-                lambda: mo.siso_repeat(lambda: dense(h_units_dep, h_activation), h_num_repeats),
-                h_opt),
+                lambda: mo.siso_repeat(lambda: dense(h_units_dep, h_activation),
+                                       h_num_repeats), h_opt),
             dense(D([10]), D(["softmax"]))
         ])
 
 
-    (inputs, outputs) = search_space()
-
+    (inputs, outputs) = search_space5()
 
 Again, given the search space above, the reader should get an expectation of
 of what graph evolution to expect.
@@ -404,11 +425,13 @@ it matches your expectations.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space()
-    # vi.draw_graph_evolution(
-    #     outputs.values(), vs, '.', draw_module_hyperparameter_info=False)
-
-
+    inputs, outputs = search_space5()
+    vi.draw_graph_evolution(
+        outputs.values(),
+        vs,
+        '.',
+        draw_module_hyperparameter_info=False,
+        graph_name='graph5_evo')
 We argue that by using basic modules, substitution modules, independent hyperparameters,
 and dependent hyperparameters we are able to represent a large variety of
 search spaces in a compact and natural manner.
@@ -435,7 +458,7 @@ We also recommend the reader to look into search space factory as it provides
 a convenient auxiliary function that directly takes care of these issues.
 
 Besides basic modules and substitution modules, we also use several auxiliary
-functions whose purpose is to put arrange multiple graph fragments in different
+functions whose purpose is to arrange multiple graph fragments in different
 ways.
 They often do not create new modules, but simply use graph fragments or
 functions that return graph fragments to create a new graph fragment by using the

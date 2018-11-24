@@ -95,7 +95,7 @@ def draw_graph(output_lst,
             ix.get_name(),
             shape='invhouse',
             penwidth=penwidth,
-            fillcolor='firebrick3',
+            fillcolor='firebrick',
             style='filled')
         g.edge(ix.get_name(), ix.get_module().get_name())
 
@@ -131,7 +131,7 @@ def draw_graph(output_lst,
             ox.get_name(),
             shape='house',
             penwidth=penwidth,
-            fillcolor='firebrick3',
+            fillcolor='deepskyblue',
             style='filled')
         g.edge(ox.get_module().get_name(), ox.get_name())
 
@@ -169,7 +169,7 @@ def draw_graph(output_lst,
             g.node(
                 h.get_name(),
                 fontsize=h_fs,
-                fillcolor='darkolivegreen3',
+                fillcolor='darkseagreen',
                 style='filled')
 
     # add the output terminals.
@@ -183,7 +183,7 @@ def draw_graph(output_lst,
             s,
             shape='rectangle',
             penwidth=penwidth,
-            fillcolor='darkgoldenrod3',
+            fillcolor='goldenrod',
             style='filled')
 
     if print_to_screen or out_folderpath is not None:
