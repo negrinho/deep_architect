@@ -1,3 +1,4 @@
+from builtins import range
 from deep_architect.contrib.misc.datasets.loaders import load_mnist
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
@@ -25,7 +26,7 @@ def main():
     search_space_factory = mo.SearchSpaceFactory(search_space_fn)
 
     searcher = RandomSearcher(search_space_factory.get_search_space)
-    for _ in xrange(num_samples):
+    for _ in range(num_samples):
         inputs, outputs, searcher_eval_token, _ = searcher.sample()
         val_acc = evaluator.eval(inputs, outputs)['validation_accuracy']
         searcher.update(val_acc, searcher_eval_token)

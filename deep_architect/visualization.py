@@ -1,3 +1,4 @@
+from builtins import range
 import matplotlib.pyplot as plt
 import graphviz
 from six import itervalues, iteritems
@@ -195,15 +196,17 @@ def draw_graph_evolution(output_lst,
         h.assign_value(v)
         draw_fn(i + 1)
 
-    in_filepath_expr = ut.join_paths(
-        [out_folderpath, graph_name + '-{0..%d}.pdf' % len(hyperp_value_lst)])
+    filepath_lst = [
+        ut.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
+        for i in range(len(hyperp_value_lst) + 1)
+    ]
     out_filepath = ut.join_paths([out_folderpath, graph_name + '.pdf'])
-    ut.run_bash_command(
-        'pdftk %s cat output %s' % (in_filepath_expr, out_filepath))
 
-    for i in xrange(len(hyperp_value_lst) + 1):
-        filepath = ut.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
-        ut.delete_file(filepath)
+    cmd = " ".join(["pdftk"] + filepath_lst + ["cat", "output", out_filepath])
+    ut.run_bash_command(cmd)
+
+    for fp in filepath_lst:
+        ut.delete_file(fp)
 
 
 class LinePlot:

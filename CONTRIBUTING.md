@@ -262,7 +262,7 @@ e.g., after choosing the number of repetitions for a repetition substitution mod
 <!-- General and specific searchers. -->
 The most general searchers rely solely on this simple interface.
 Good examples of general searchers implemented can be found
-[here](https://github.com/negrinho/darch/tree/negrinho_cleanup/deep_architect/searchers).
+[here](https://github.com/negrinho/darch/tree/master/deep_architect/searchers).
 In more specific cases, namely in reimplementations of searchers proposed in
 specific architecture search papers, there is some coupling between the search
 space and the searcher.

@@ -86,6 +86,7 @@ pygments_style = 'sphinx'
 #
 import sphinx_rtd_theme
 
+# html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
@@ -118,6 +119,10 @@ html_sidebars = {
         'searchbox.html',
     ]
 }
+
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+html_logo = "logo/logo.svg"
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

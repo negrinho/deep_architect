@@ -1,3 +1,4 @@
+from builtins import range
 import deep_architect.search_logging as sl
 import deep_architect.visualization as vi
 import deep_architect.utils as ut
@@ -21,7 +22,7 @@ def main():
         delete_if_exists=cfg['delete_if_exists'],
         create_parent_folders=True)
     # Search loop.
-    for evaluation_id in xrange(cfg['num_samples']):
+    for evaluation_id in range(cfg['num_samples']):
         logger = sl.EvaluationLogger(cfg["folderpath"], cfg["search_name"],
                                      evaluation_id)
         if not logger.config_exists():

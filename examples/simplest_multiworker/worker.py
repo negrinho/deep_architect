@@ -1,3 +1,4 @@
+from builtins import range
 from deep_architect.contrib.misc.datasets.loaders import load_mnist
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
@@ -32,8 +33,8 @@ def main():
         log_output_to_terminal=True,
         test_dataset=test_dataset)
 
-    for evaluation_id in xrange(out["worker_id"], cfg["num_samples"],
-                                out["num_workers"]):
+    for evaluation_id in range(out["worker_id"], cfg["num_samples"],
+                               out["num_workers"]):
         logger = sl.EvaluationLogger(
             cfg["folderpath"],
             cfg["search_name"],

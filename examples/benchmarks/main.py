@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 # Run configs to make it easier to run the code.
 import deep_architect.search_logging as sl
 import deep_architect.utils as ut
@@ -8,7 +10,7 @@ if __name__ == '__main__':
     if cfg['use_gpu']:
         import deep_architect.contrib.misc.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
-        print "Using GPU %d" % gpu_id
+        print("Using GPU %d" % gpu_id)
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
@@ -22,7 +24,7 @@ import search_spaces as local_ss
 
 
 def run_searcher(searcher, evaluator, num_samples, get_evaluation_logger):
-    for idx in xrange(num_samples):
+    for idx in range(num_samples):
         evaluation_logger = get_evaluation_logger(idx)
         (inputs, outputs, hyperp_value_lst,
          searcher_eval_token) = searcher.sample()
@@ -54,7 +56,7 @@ def main():
         log_output_to_terminal=True,
         test_dataset=test_dataset)
 
-    for rep_i in xrange(cfg['num_repetitions']):
+    for rep_i in range(cfg['num_repetitions']):
         for search_space_name in cfg['search_space_name_lst']:
             for searcher_name in cfg['searcher_name_lst']:
 

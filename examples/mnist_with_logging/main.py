@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import deep_architect.utils as ut
 
 # Make sure that only one GPU is visible.
@@ -6,7 +8,7 @@ if __name__ == '__main__':
     if cfg['use_gpu']:
         import deep_architect.contrib.misc.gpu_utils as gpu_utils
         gpu_id = gpu_utils.get_available_gpu(0.1, 5.0)
-        print "Using GPU %d" % gpu_id
+        print("Using GPU %d" % gpu_id)
         assert gpu_id is not None
         gpu_utils.set_visible_gpus([gpu_id])
 
@@ -54,7 +56,7 @@ def main():
     # Creating the searcher.
     searcher = RandomSearcher(search_space_factory.get_search_space)
     # Search loop.
-    for evaluation_id in xrange(num_samples):
+    for evaluation_id in range(num_samples):
         eval_logger = sl.EvaluationLogger(cfg["folderpath"], cfg["search_name"],
                                           evaluation_id)
         if not eval_logger.config_exists():

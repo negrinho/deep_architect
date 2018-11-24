@@ -1,3 +1,4 @@
+from builtins import range
 import numpy as np
 
 
@@ -33,7 +34,7 @@ def random_crop(X, out_height, out_width):
     start_is = np.random.randint(in_height - out_height + 1, size=num_examples)
     start_js = np.random.randint(in_width - out_width + 1, size=num_examples)
     out_X = []
-    for ind in xrange(num_examples):
+    for ind in range(num_examples):
         st_i = start_is[ind]
         st_j = start_js[ind]
 

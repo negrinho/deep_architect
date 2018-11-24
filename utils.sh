@@ -61,13 +61,31 @@ ut_run_in_py36_cpu_singularity_container(){
 # ut_run_in_py36_gpu_singularity_container(){}
 # ut_run_fast_tests(){}
 ut_run_all_tests(){
-    set -x && ut_preappend_to_pythonpath "." && \
-    # python examples/mnist/main.py && \
-    # python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json &&\
-    python examples/benchmarks/main.py --config_filepath examples/benchmarks/configs/debug.json;
+    set -x && ut_preappend_to_pythonpath "." &&
+    python examples/mnist/main.py &&
+    python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json &&
+    # python examples/benchmarks/main.py --config_filepath examples/benchmarks/configs/debug.json;
     # ./examples/simplest_multiworker/run.sh debug 2 \
     # ./tutorials/full_search/launch_file_based_search.sh 2 \
-    # ./tutorials/full_search/launch_mpi_based_search.sh 2;
+    # ./tutorials/full_search/launch_mpi_based_search.sh 2 \
+    python examples/framework_starters/main_keras.py &&
+    python examples/framework_starters/main_tensorflow.py &&
+    python examples/framework_starters/main_pytorch.py;
+}
+
+ut_extract_all_doc_code(){
+    ut_extract_python_code_from_docs README.md &&
+    ut_extract_python_code_from_docs docs/source/tutorials/search_space_constructs.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/new_frameworks.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/new_modules.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/new_searchers.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/logging_and_visualization.rst;
+}
+
+# NOTE: this is for testing.
+ut_run_doc_code(){
+    ut_extract_python_code_from_docs docs/source/tutorials/search_space_constructs.rst &&
+    python docs/source/tutorials/search_space_constructs.py;
 }
 
 # A large fraction of this code was pulled from research_toolbox

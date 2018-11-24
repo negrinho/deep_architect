@@ -1,3 +1,4 @@
+from builtins import range
 import deep_architect.visualization as vi
 import deep_architect.utils as ut
 import numpy as np
@@ -51,7 +52,7 @@ def generate_indices(num_items,
     assert not (use_multiplicative_increases and increase_factor == 1)
     idxs = []
     v = 0
-    for i in xrange(max_num_indices):
+    for i in range(max_num_indices):
         idxs.append(v)
         if use_multiplicative_increases:
             v = (v + 1) * increase_factor - 1
@@ -225,18 +226,18 @@ def calibration_table(time_sequence_lst,
     if time_multiplicative_increases:
         time_instants = [
             start_time * (time_increase_factor**i)
-            for i in xrange(num_time_instants)
+            for i in range(num_time_instants)
         ]
     else:
         time_instants = [
             start_time + i * time_increase_factor
-            for i in xrange(num_time_instants)
+            for i in range(num_time_instants)
         ]
 
     rows = []
     for t in time_instants:
         values_at_t = []
-        for i in xrange(num_sequences):
+        for i in range(num_sequences):
             v = get_value_at_time(
                 t,
                 sorted_time_sequence_lst[i],

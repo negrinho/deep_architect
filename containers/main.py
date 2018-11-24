@@ -179,7 +179,7 @@ def create_singularity_container(config_d, out_folderpath):
     # script for creating the container.
     container_filepath = join_paths([out_folderpath, 'deep_architect.img'])
     create_bash_script([
-        'sudo singularity build --writable %s %s' %
+        'sudo singularity build --sandbox %s %s' %
         (container_filepath, recipe_filepath)
     ], join_paths([out_folderpath, 'build.sh']))
 
