@@ -17,7 +17,7 @@ ut_update_python_code_in_docs() {
     code_fp=`echo "${1%.*}"`".py" &&
     python docs/main_update_code_in_docs.py \
         --in_doc_filepath "$1" \
-        --in_code_filepath "$code_fp"
+        --in_code_filepath "$code_fp" \
         --out_filepath "$1";
 }
 
@@ -82,10 +82,24 @@ ut_extract_all_doc_code(){
     ut_extract_python_code_from_docs docs/source/tutorials/logging_and_visualization.rst;
 }
 
+ut_update_all_doc_code(){
+    ut_update_python_code_in_docs README.md &&
+    ut_update_python_code_in_docs docs/source/tutorials/search_space_constructs.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/new_frameworks.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/new_modules.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/new_searchers.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/logging_and_visualization.rst;
+}
+
 # NOTE: this is for testing.
-ut_run_doc_code(){
-    ut_extract_python_code_from_docs docs/source/tutorials/search_space_constructs.rst &&
-    python docs/source/tutorials/search_space_constructs.py;
+ut_run_all_doc_code(){
+    set +x &&
+    python README.py &&
+    python docs/source/tutorials/search_space_constructs.py &&
+    python docs/source/tutorials/new_frameworks.py &&
+    python docs/source/tutorials/new_modules.py &&
+    python docs/source/tutorials/new_searchers.py &&
+    python docs/source/tutorials/logging_and_visualization.py;
 }
 
 # A large fraction of this code was pulled from research_toolbox

@@ -75,12 +75,12 @@ case, Keras:
         """
 
         def __init__(self,
-                    name,
-                    name_to_hyperp,
-                    compile_fn,
-                    input_names,
-                    output_names,
-                    scope=None):
+                     name,
+                     name_to_hyperp,
+                     compile_fn,
+                     input_names,
+                     output_names,
+                     scope=None):
             co.Module.__init__(self, scope, name)
 
             self._register(input_names, output_names, name_to_hyperp)
@@ -99,6 +99,7 @@ case, Keras:
 
         def _update(self):
             pass
+
 
 With this helper, creating new functions is a matter of instantiating modules
 by passing the appropriate values for the name of the module, the names of the
@@ -120,32 +121,42 @@ albeit a bit redundant.
 
 .. code:: python
 
+
     def keras_module(name,
-                    compile_fn,
-                    name_to_hyperp,
-                    input_names,
-                    output_names,
-                    scope=None):
+                     compile_fn,
+                     name_to_hyperp,
+                     input_names,
+                     output_names,
+                     scope=None):
         return KerasModule(name, name_to_hyperp, compile_fn, input_names,
-                        output_names, scope).get_io()
+                           output_names, scope).get_io()
 
 
 A typical implementation of a module using these auxiliary functions is like this
 
 .. code:: python
 
-    from keras.layers import Conv, BatchNormalization
+    from keras.layers import Conv2D, BatchNormalization
+
 
     def conv_relu_batch_norm(h_filters, h_kernel_size, h_strides):
+
         def compile_fn(di, dh):
-            m_conv = Conv(dh["filters"], dh["kernel_size"], dh["strides"], padding='same')
+            m_conv = Conv2D(
+                dh["filters"], dh["kernel_size"], dh["strides"], padding='same')
             m_bn = BatchNormalization()
+
             def forward_fn(di):
-                return {"Out" : m_bn(m_conv(di["In"]))}
+                return {"Out": m_bn(m_conv(di["In"]))}
+
             return forward_fn
-        return keras_module('ConvReLUBatchNorm', compile_fn,
-        {"filters" : h_filters, "kernel_size" : h_kernel_size, 'strides' : h_strides},
-        ["In"], ["Out"])
+
+        return keras_module('ConvReLUBatchNorm', compile_fn, {
+            "filters": h_filters,
+            "kernel_size": h_kernel_size,
+            'strides': h_strides
+        }, ["In"], ["Out"])
+
 
 We see that the implementation is straighforward. The forward function is defined
 via a function closure. At the time that the compile function is called, we do
@@ -170,9 +181,11 @@ output modules, so we have defined the following function.
 
 .. code:: python
 
+
     def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
         return KerasModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
-                        scope).get_io()
+                           scope).get_io()
+
 
 This essentially saves us writing the names of the inputs and outputs for the
 single input and single output case. As the reader becomes familiar with
@@ -187,15 +200,25 @@ explicitly, as they will just take the default names of In and Out.
 
 .. code:: python
 
+
     def conv_relu_batch_norm(h_filters, h_kernel_size, h_strides):
+
         def compile_fn(di, dh):
-            m_conv = Conv(dh["filters"], dh["kernel_size"], dh["strides"], padding='same')
+            m_conv = Conv(
+                dh["filters"], dh["kernel_size"], dh["strides"], padding='same')
             m_bn = BatchNormalization()
+
             def forward_fn(di):
-                return {"Out" : m_bn(m_conv(di["In"]))}
+                return {"Out": m_bn(m_conv(di["In"]))}
+
             return forward_fn
-        return keras_module('ConvReLUBatchNorm', compile_fn,
-        {"filters" : h_filters, "kernel_size" : h_kernel_size, 'strides' : h_strides})
+
+        return keras_module('ConvReLUBatchNorm', compile_fn, {
+            "filters": h_filters,
+            "kernel_size": h_kernel_size,
+            'strides': h_strides
+        })
+
 
 Another auxiliary function that can be quite useful is to create a module
 directly from a function (e.g., most of the functions defined in keras.layers)
@@ -205,9 +228,9 @@ that returns a Keras module.
 
 
     def siso_keras_module_from_keras_layer_fn(layer_fn,
-                                            name_to_hyperp,
-                                            scope=None,
-                                            name=None):
+                                              name_to_hyperp,
+                                              scope=None,
+                                              name=None):
 
         def compile_fn(di, dh):
             m = layer_fn(**dh)
@@ -229,18 +252,29 @@ For example, for getting a convolutional module, we can do
 
 .. code:: python
 
+
     def conv2d(h_filters, h_kernel_size):
-        return siso_keras_module_from_keras_layer_fn(Conv2D, {"filters" : h_filters, "kernel_size" : h_kernel_size})
+        return siso_keras_module_from_keras_layer_fn(Conv2D, {
+            "filters": h_filters,
+            "kernel_size": h_kernel_size
+        })
+
 
 If additionaly, we would like to set some attributes to fixed values and have
 other ones defined through hyperparameters, we can do as such
 
 .. code:: python
 
+
     def conv2d(h_filters, h_kernel_size):
-        fn = lambda filters, kernel_size: Conv2D(filters, kernel_size, padding='same')
-        return siso_keras_module_from_keras_layer_fn(fn, {"filters" : h_filters, "kernel_size" : h_kernel_size},
-            name="Conv2D")
+        fn = lambda filters, kernel_size: Conv2D(
+            filters, kernel_size, padding='same')
+        return siso_keras_module_from_keras_layer_fn(
+            fn, {
+                "filters": h_filters,
+                "kernel_size": h_kernel_size
+            }, name="Conv2D")
+
 
 So far, we covered how can we easily implement new modules in a framework
 that we are working with. These examples were all focused on Keras, but these
@@ -263,6 +297,7 @@ First, consider the definition of a substitution module.
 
 
 .. code:: python
+
 
     class SubstitutionModule(co.Module):
         """Substitution modules are replaced by other modules when the all the
@@ -303,14 +338,14 @@ First, consider the definition of a substitution module.
         """
 
         def __init__(self,
-                    name,
-                    name_to_hyperp,
-                    substitution_fn,
-                    input_names,
-                    output_names,
-                    scope=None,
-                    allow_input_subset=False,
-                    allow_output_subset=False):
+                     name,
+                     name_to_hyperp,
+                     substitution_fn,
+                     input_names,
+                     output_names,
+                     scope=None,
+                     allow_input_subset=False,
+                     allow_output_subset=False):
             co.Module.__init__(self, scope, name)
             self.allow_input_subset = allow_input_subset
             self.allow_output_subset = allow_output_subset
@@ -401,6 +436,7 @@ directly with the modules, so we define this function
 
 .. code:: python
 
+
     def substitution_module(name,
                             name_to_hyperp,
                             substitution_fn,
@@ -452,6 +488,7 @@ directly with the modules, so we define this function
             allow_output_subset=allow_output_subset,
             unpack_kwargs=unpack_kwargs).get_io()
 
+
 We will now look at two specific examples of substitution modules. First a
 very simple one that the reader will use widely and another one how often
 it is useful when implementing more complex search spaces from the literature.
@@ -460,6 +497,7 @@ substiution module (we often just use the version with a single input and a sing
 output).
 
 .. code:: python
+
 
     def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
         """Implements an or substitution operation.
@@ -502,6 +540,7 @@ output).
             _get_name(name, "Or"), {'idx': h_or}, substitution_fn, input_names,
             output_names, scope)
 
+
 We see how short the implementation is. This module has a single hyperparameter
 that determines the choice between which function in the function list (or dictionary)
 to call. Each of the functions in the function list returns a dictionary of
@@ -511,17 +550,19 @@ deep_architect/misc/.
 
 .. code:: python
 
+
     def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-                h_drop_keep_prob):
+                 h_drop_keep_prob):
         return mo.siso_sequential([
             affine_simplified(h_num_hidden),
             nonlinearity(h_nonlin_name),
             mo.siso_permutation([
                 lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
-                                        h_opt_drop),
+                                         h_opt_drop),
                 lambda: mo.siso_optional(batch_normalization, h_opt_bn),
             ], h_swap)
         ])
+
 
 Optional is a special case of a substitution module. If the hyperparameter is
 such that the function is to be used, then the function
@@ -535,6 +576,7 @@ This makes the language to write search spaces very compositional.
 Let us now look at a more complex use of a custom substitution module.
 
 .. code:: python
+
 
     def motif(submotif_fn, num_nodes):
         assert num_nodes >= 1
@@ -587,8 +629,6 @@ Let us now look at a more complex use of a custom substitution module.
         }
         return mo.substitution_module(
             "Motif", name_to_hyperp, substitution_fn, ["In"], ["Out"], scope=None)
-
-
 This substitution module implements the notion of a motif defined in the
 paper (TODO: point to hierarhical paper).
 The main goal of this substitution module is to delay the creation of the

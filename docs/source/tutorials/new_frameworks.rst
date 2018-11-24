@@ -56,7 +56,6 @@ The main functions to look at are:
     #         self._is_compiled = True
     #     self._forward()
 
-
 After all hyperparameters for a search space are specified, we can finally
 compile the modules in the search space.
 By the time that all the hyperparameters of the search space have been
@@ -132,8 +131,14 @@ Let us look at the Keras defined in deep_architect/helpers/keras.py
             scope (darch.core.Scope, optional): Scope where the module will be
                 registered.
         """
-        def __init__(self, name, name_to_hyperp, compile_fn,
-                input_names, output_names, scope=None):
+
+        def __init__(self,
+                     name,
+                     name_to_hyperp,
+                     compile_fn,
+                     input_names,
+                     output_names,
+                     scope=None):
             co.Module.__init__(self, scope, name)
 
             self._register(input_names, output_names, name_to_hyperp)
@@ -152,6 +157,7 @@ Let us look at the Keras defined in deep_architect/helpers/keras.py
         def _update(self):
             pass
 
+
 The code is compact and self-explanatory.
 In this case, the we pass a compile_fn function that returns the forward_fn
 function upon compilation.
@@ -167,18 +173,26 @@ subset of the options, we can write.
 
     from keras.layers import Conv2D
 
+
     def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
+
         def compile_fn(di, dh):
             m = Conv2D(**dh)
+
             def forward_fn(di):
-                return {"Out" : m(di["In"])}
+                return {"Out": m(di["In"])}
+
             return forward_fn
-        return KerasModule("Conv2D", {
-            "filters" : h_filters,
-            "kernel_size" : h_kernel_size,
-            "strides" : h_strides,
-            "activation" : h_activation,
-            "use_bias" : h_use_bias}, compile_fn, ["In"], ["Out"]).get_io()
+
+        return KerasModule(
+            "Conv2D", {
+                "filters": h_filters,
+                "kernel_size": h_kernel_size,
+                "strides": h_strides,
+                "activation": h_activation,
+                "use_bias": h_use_bias
+            }, compile_fn, ["In"], ["Out"]).get_io()
+
 
 A few points to pay attention to:
 * Input, output and hyperparameter names are specified when instantiating the
@@ -227,9 +241,10 @@ model would be.
     h_strides = D([1])
     h_activation = D(['relu', 'sigmoid'])
     h_use_bias = D([0, 1])
-    (inputs, outputs) = conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias)
+    (inputs, outputs) = conv2d(h_filters, h_kernel_size, h_strides, h_activation,
+                               h_use_bias)
     random_specify(outputs.values())
-    co.forward({inputs["In"] : x})
+    co.forward({inputs["In"]: x})
     out = outputs["Out"].val
     model = Model(inputs=x, outputs=out)
     model.summary()
@@ -246,17 +261,22 @@ For example, the above function could be expressed in the same way as
 .. code:: python
 
     import deep_architect.helpers.keras as hke
+
+
     def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
-        return hke.siso_keras_module_from_keras_layer_fn(Conv2D, {
-            "filters" : h_filters,
-            "kernel_size" : h_kernel_size,
-            "strides" : h_strides,
-            "activation" : h_activation,
-            "use_bias" : h_use_bias})
+        return hke.siso_keras_module_from_keras_layer_fn(
+            Conv2D, {
+                "filters": h_filters,
+                "kernel_size": h_kernel_size,
+                "strides": h_strides,
+                "activation": h_activation,
+                "use_bias": h_use_bias
+            })
 
 
-    (inputs, outputs) = conv2d_other(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias)
-    co.forward({inputs["In"] : x})
+    (inputs, outputs) = conv2d(h_filters, h_kernel_size, h_strides, h_activation,
+                               h_use_bias)
+    co.forward({inputs["In"]: x})
     out = outputs["Out"].val
     model = Model(inputs=x, outputs=out)
     model.summary()
@@ -304,9 +324,16 @@ We omit the docstring due to the similarity with the one for KerasModule.forward
 
 .. code:: python
 
+
     class PyTorchModule(co.Module):
-        def __init__(self, name, name_to_hyperp, compile_fn,
-                input_names, output_names, scope=None):
+
+        def __init__(self,
+                     name,
+                     name_to_hyperp,
+                     compile_fn,
+                     input_names,
+                     output_names,
+                     scope=None):
             co.Module.__init__(self, scope, name)
             self._register(input_names, output_names, name_to_hyperp)
             self._compile_fn = compile_fn
@@ -314,7 +341,8 @@ We omit the docstring due to the similarity with the one for KerasModule.forward
         def _compile(self):
             input_name_to_val = self._get_input_values()
             hyperp_name_to_val = self._get_hyperp_values()
-            self._fn, self.pyth_modules = self._compile_fn(input_name_to_val, hyperp_name_to_val)
+            self._fn, self.pyth_modules = self._compile_fn(input_name_to_val,
+                                                           hyperp_name_to_val)
             for pyth_m in self.pyth_modules:
                 assert isinstance(pyth_m, nn.Module)
 
@@ -343,27 +371,37 @@ when implemeneting support for a new framework in DeepArchitect.
 
 .. code:: python
 
+
     def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
+
         def compile_fn(di, dh):
             m = Conv2D(**dh)
+
             def forward_fn(di):
-                return {"Out" : m(di["In"])}
+                return {"Out": m(di["In"])}
+
             return forward_fn
-        return KerasModule("Conv2D", {
-            "filters" : h_filters,
-            "kernel_size" : h_kernel_size,
-            "strides" : h_strides,
-            "activation" : h_activation,
-            "use_bias" : h_use_bias}, compile_fn, ["In"], ["Out"]).get_io()
+
+        return KerasModule(
+            "Conv2D", {
+                "filters": h_filters,
+                "kernel_size": h_kernel_size,
+                "strides": h_strides,
+                "activation": h_activation,
+                "use_bias": h_use_bias
+            }, compile_fn, ["In"], ["Out"]).get_io()
 
 
-    def conv2d_pytorch(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
-        return hke.siso_keras_module_from_keras_layer_fn(Conv2D, {
-            "filters" : h_filters,
-            "kernel_size" : h_kernel_size,
-            "strides" : h_strides,
-            "activation" : h_activation,
-            "use_bias" : h_use_bias})
+    def conv2d_pytorch(h_filters, h_kernel_size, h_strides, h_activation,
+                       h_use_bias):
+        return hke.siso_keras_module_from_keras_layer_fn(
+            Conv2D, {
+                "filters": h_filters,
+                "kernel_size": h_kernel_size,
+                "strides": h_strides,
+                "activation": h_activation,
+                "use_bias": h_use_bias
+            })
 
 
 DeepArchitect is not limited to deep learning frameworks---any domain that for
@@ -392,9 +430,16 @@ the DeepArchitect Module class to the domain of interest.
 
 .. code:: python
 
+
     class ScikitLearnModule(co.Module):
-        def __init__(self, name, name_to_hyperp, compile_fn,
-                input_names, output_names, scope=None):
+
+        def __init__(self,
+                     name,
+                     name_to_hyperp,
+                     compile_fn,
+                     input_names,
+                     output_names,
+                     scope=None):
             co.Module.__init__(self, scope, name)
 
             self._register(input_names, output_names, name_to_hyperp)
@@ -412,7 +457,6 @@ the DeepArchitect Module class to the domain of interest.
 
         def _update(self):
             pass
-
 Starting with a module that is exactly the same as KerasModule.
 We will notice ideosyncracies of the domain as we go along.
 A reasonable first approach is to rely on the fact that

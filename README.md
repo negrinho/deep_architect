@@ -68,13 +68,15 @@ hard to adapt and reuse them in new settings.
 
 ## Installation
 
+Run the following code snippet for a local installation:
+
 ```
 git clone git@github.com:negrinho/darch.git deep_architect
 cd deep_architect
 pip install -e .
 ```
 
-After installing, attempt to run one of the examples to check that no
+After installing DeepArchitect, attempt to run one of the examples to check that no
 dependencies are missing, e.g.,
 `python examples/framework_starters/main_keras.py`
 or
@@ -82,11 +84,10 @@ or
 We omitted many of the deep learning framework dependencies to avoid
 installing unnecessary software that will not be used by a particular user.
 
-We have included a [utils file](https://github.com/negrinho/darch/blob/master/utils.sh)
-with some useful functions to interact with the project, e.g., to build
+We have included [utils.sh](https://github.com/negrinho/darch/blob/master/utils.sh)
+with some useful functionality to develop for DeepArchitect, e.g., to build
 documentation, extract code from documentation files, and
 build Singularity containers with the development dependencies.
-These functions will be useful mostly for development rather than for usage of DeepArchitect.
 
 ## A minimal DeepArchitect example with Keras
 
