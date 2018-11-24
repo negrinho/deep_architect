@@ -17,14 +17,14 @@ and simple examples
 to get a gist of the framework.
 
 Currently, we support Tensorflow, Keras, and PyTorch.
-See `here <https://github.com/negrinho/darch/tree/master/examples/framework_starters>`_
+See `here <https://github.com/negrinho/darch/tree/master/examples/framework_starters>`__
 for minimal complete examples for each of these frameworks.
 It should be straightforward to take these examples and adapt them for your
 custom problem.
 See :doc:`here <tutorials/new_frameworks>`
 to learn how to support new frameworks, which should require minimal adaptation
 of the existing framework helpers found
-`here <https://github.com/negrinho/darch/tree/master/examples/framework_starters>`_.
+`here <https://github.com/negrinho/darch/tree/master/examples/framework_starters>`__.
 
 Questions and bug reports should be done through Github issues.
 See :doc:`here <contributing>` for details on how to contribute.

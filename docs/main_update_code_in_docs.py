@@ -1,6 +1,26 @@
 import deep_architect.utils as ut
 
 
+def normalize_block_lines(lines):
+    out_lines = []
+    start_idx = 0
+    end_idx = len(lines)
+    for idx, s in enumerate(lines):
+        if s != '':
+            start_idx = idx
+            break
+
+    for idx, s in enumerate(lines[::-1]):
+        if s != '':
+            end_idx = len(lines) - idx
+            break
+
+    out_lines.append('')
+    out_lines.extend(lines[start_idx:end_idx])
+    out_lines.append('')
+    return out_lines
+
+
 def read_code_blocks(filepath):
     code_marker = '### (((CODE-BELOW))) ###'
 
@@ -11,12 +31,13 @@ def read_code_blocks(filepath):
         s = line.rstrip()
         if s == code_marker:
             if block_lines is not None:
-                block_lst.append(block_lines)
+                block_lst.append(normalize_block_lines(block_lines))
             block_lines = []
         else:
             block_lines.append(s)
     if block_lines is not None:
-        block_lst.append(block_lines)
+        block_lst.append(normalize_block_lines(block_lines))
+
     return block_lst
 
 

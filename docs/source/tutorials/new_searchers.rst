@@ -80,6 +80,7 @@ The sample method is used to pick an architecture from this search space.
 The architecture returned results simply from assigning a value to all the
 hyperparameters in the search space, until there are no more hyperparameters
 left to assign a value to.
+
 Sample returns the inputs and outputs, which encode the architecture.
 The other two returned terms deserve a bit more explanation.
 The third element returned by sample is the list of hyperparameter values that
@@ -96,6 +97,7 @@ we will traverse the hyperparameters in the same order (provided that the same
 hyperparameters are present; note that the specific values that we assign to
 hyperparameters may influence the hyperparameters (number and type) of hyperparameters
 that we have to assign a value to).
+
 The fourth element that is returned by the sample function is what we call a
 searcher evaluation token.
 This token is used to keep any information that is necessary for the
@@ -242,7 +244,8 @@ We copy the implementation here for ease of reference.
             feats = extract_features(inputs, outputs)
             self.surr_model.update(val, feats)
 
-This searcher can be found in the searchers/smbo_random.py.
+This searcher can be found in the
+`searchers/smbo_random.py <https://github.com/negrinho/darch/blob/master/deep_architect/searchers/smbo_random.py>`_.
 A SMBO (surrogate model based optimization) searcher relies on a surrogate
 function on the space of architectures that can be evaluated for each architecture
 of the space to give us an estimate of the performance of that architecture

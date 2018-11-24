@@ -72,7 +72,8 @@ computation repeatedly.
 
 Let us look in detail at concrete exmaples for frameworks that are currently supported
 in DeepArchitect.
-Let us look at the Keras defined in deep_architect/helpers/keras.py
+Let us look at the Keras defined in
+`deep_architect/helpers/keras.py <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`_
 
 .. code:: python
 
@@ -195,24 +196,27 @@ subset of the options, we can write.
 
 
 A few points to pay attention to:
-* Input, output and hyperparameter names are specified when instantiating the
-KerasModule.
-* di and dh are dictionaries with inputs names mapping to input values and
-hyperparameter names mapping to hyperparameter values.
-* In the line Conv2D(**dh), simply used the dictionary unpacking functionality
-to call the Keras function that instantiates a Keras layer (as in the Keras
-API).
-We could have done the unpacking manually and perform additional computation.
-* Upon the instantiation of the Keras modules, we call get_io to get a pair
-(inputs, outputs), where both inputs and outputs are dictionaries, where
-inputs maps input names to input objects (i.e., an object from the class
-deep_architect.core.Input), and outputs maps output names to output objects
-(i.e., an object from the class deep_architect.core.Output).
-This is done because the search space constructs work directly on these dictionaries
-rather than on modules.
-Dealing directly with inputs and outputs makes the framework more easy to use
-because we can transparently work over subgraph structures without ever concerning
-ourselves about whether they are composed of multiple modules or not.
+
+-   Input, output and hyperparameter names are specified when instantiating the
+    KerasModule.
+
+-   di and dh are dictionaries with inputs names mapping to input values and
+    hyperparameter names mapping to hyperparameter values.
+
+-   In the line Conv2D(**dh), simply used the dictionary unpacking functionality
+    to call the Keras function that instantiates a Keras layer (as in the Keras
+    API). We could have done the unpacking manually and perform additional computation.
+
+-   Upon the instantiation of the Keras modules, we call get_io to get a pair
+    (inputs, outputs), where both inputs and outputs are dictionaries, where
+    inputs maps input names to input objects (i.e., an object from the class
+    deep_architect.core.Input), and outputs maps output names to output objects
+    (i.e., an object from the class deep_architect.core.Output).
+    This is done because the search space constructs work directly on these dictionaries
+    rather than on modules.
+    Dealing directly with inputs and outputs makes the framework more easy to use
+    because we can transparently work over subgraph structures without ever concerning
+    ourselves about whether they are composed of multiple modules or not.
 
 A minimal example to go from this wrapper code to an instantiated Keras
 model would be.
@@ -286,7 +290,7 @@ We refer the reader to deep_architect.helpers.keras if the reader wishes to
 inspect the implementation of this function and how does it fit with the
 previous definition for a Keras module.
 We promise that this functions to minimal additional code.
-The main motivation to have this auxiliary functions in place is to
+The main motivation to have these auxiliary functions in place is to
 reduce boilerplate for some of the most common use cases.
 As we have seen, it is possible to express everything that we need using
 the initial KerasModule, with the other functions being for the purpose of
@@ -294,7 +298,6 @@ convenience for common specific cases.
 It may be necessary to use KerasModule directly for implementing the
 desired functionality in some cases, e.g., in the case of a module with multiple
 outputs.
-
 
 The co.forward calls the individual module forward and compile functions
 as defined in KerasModule and passed as argument during the instantiation.
@@ -312,7 +315,6 @@ being a dynamic framework where the graph that is used for back propagation
 is defined for each instance, i.e., defined by run, rather than static (as it is
 the case of Keras) where the graph is defined upfront and used multiple times
 for both training and inference.
-# TODO: improve parallelism here.
 Static versus dynamic is not really important for architecture search in
 DeepArchitect.
 There are multiple ways of getting around, e.g., searching over the
@@ -422,115 +424,10 @@ may produce Tensorflow operations.
 DeepArchitect is a framework to search over computational graphs in arbitrary
 domains.
 
-
-We now move to a non deep learning domain.
-Consider a scikit-learn example.
-The starting point is the same as for the other examples: the specialization of
-the DeepArchitect Module class to the domain of interest.
-
-.. code:: python
-
-
-    class ScikitLearnModule(co.Module):
-
-        def __init__(self,
-                     name,
-                     name_to_hyperp,
-                     compile_fn,
-                     input_names,
-                     output_names,
-                     scope=None):
-            co.Module.__init__(self, scope, name)
-
-            self._register(input_names, output_names, name_to_hyperp)
-            self._compile_fn = compile_fn
-
-        def _compile(self):
-            input_name_to_val = self._get_input_values()
-            hyperp_name_to_val = self._get_hyperp_values()
-            self._fn = self._compile_fn(input_name_to_val, hyperp_name_to_val)
-
-        def _forward(self):
-            input_name_to_val = self._get_input_values()
-            output_name_to_val = self._fn(input_name_to_val)
-            self._set_output_values(output_name_to_val)
-
-        def _update(self):
-            pass
-Starting with a module that is exactly the same as KerasModule.
-We will notice ideosyncracies of the domain as we go along.
-A reasonable first approach is to rely on the fact that
-
-
-# for preprocessing and feature building.
-
-Copied from the examples of Scikit-Learn (released under a BSD-3 license,
-ommited here for convenience).
-
-import numpy as np
-
-m = 128
-d = 16
-X = np.random.normal(size=(m, d))
-
-
-
-
-
-
-
-
-
-This exemplifies two aspects that we have been talking about: first, that it is
-simple to support new framework, often with very minor (if any) changes to
-existing module specializations; second, it is trivial to combine different
-domains in the same computational graph; everything works as expected.
-
-# the insights are similar in this case.
-
-
-
-
-### later TODOs after the tutorial is done.
-
-# TODO: by the end of this tutorial just go back and check if there is
-# more stuff that I need to cover.
-
-# NOTE: we also implemented a few auxiliary functions due to how common
-# modules with a single input and a single output are, or how common it is
-# to create modules out of existing Tensorflow functions.
-
-
-# TODO: the goal of the tutorial is to be very very clear.
-
-# TODO: show how to do it for other frameworks.
-
-# TODO: say that forward happens through the other forward function, but that
-# is it.
-
-# TODO: profile some of the stuff that I have here.
-
-# NOTE: I need to talk about the scope somewhere, but I don't think that here
-# is a good place.
-
-# NOTE: maybe make fixed.
-
-# name_to_hyperp
-# name_to_hyperp_val
-# input_to_val
-# output_to_val
-# name_to_val
-# inputs
-# name_to_input
-# name_to_hyperp
-# input_name_to_input
-# div
-# inputs
-# name_to_input
-# name_to_input_val['In']
-# name_to_input
-# inputs[]
-
-
-# TODO: write about on recommendations on using the framework.
-# I think that this should wokr.
+We showcased support for both a static and a dynamic deep learning frameworks
+here.
+The notions of basic modules, substitution modules, independent hyperparameters, and
+dependent hyperparameters are very general and can be used across a large range
+of settings (e.g., scikit-learn or data augmentation pipelines).
+We leave the consideration of these other non deep learning frameworks to the
+reader.

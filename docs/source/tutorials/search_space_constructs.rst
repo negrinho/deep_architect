@@ -158,7 +158,6 @@ Adapting the first search space to reflect this change is straightforward.
 
 .. code:: python
 
-
     def search_space1():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
@@ -189,7 +188,6 @@ layer.
 
 
 .. code:: python
-
 
     def search_space2():
         co.Scope.reset_default_scope()
@@ -285,7 +283,6 @@ an operation that either includes a submodule or not.
 
 .. code:: python
 
-
     def search_space3():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
@@ -341,7 +338,6 @@ connected in a serial connection.
 
 .. code:: python
 
-
     def search_space4():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
@@ -395,7 +391,6 @@ For example, consider the following example
 
 .. code:: python
 
-
     def search_space5():
         co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
@@ -432,6 +427,7 @@ it matches your expectations.
         '.',
         draw_module_hyperparameter_info=False,
         graph_name='graph5_evo')
+
 We argue that by using basic modules, substitution modules, independent hyperparameters,
 and dependent hyperparameters we are able to represent a large variety of
 search spaces in a compact and natural manner.
