@@ -91,7 +91,12 @@ def draw_graph(output_lst,
             fontsize=edge_fs)
 
     def _draw_unconnected_input(ix_localname, ix):
-        g.node(ix.get_name(), shape='invhouse', penwidth=penwidth)
+        g.node(
+            ix.get_name(),
+            shape='invhouse',
+            penwidth=penwidth,
+            fillcolor='firebrick3',
+            style='filled')
         g.edge(ix.get_name(), ix.get_module().get_name())
 
     def _draw_module_hyperparameter(m, h_localname, h):
@@ -122,7 +127,12 @@ def draw_graph(output_lst,
             ]) + ">")
 
     def _draw_output_terminal(ox_localname, ox):
-        g.node(ox.get_name(), shape='house', penwidth=penwidth)
+        g.node(
+            ox.get_name(),
+            shape='house',
+            penwidth=penwidth,
+            fillcolor='firebrick3',
+            style='filled')
         g.edge(ox.get_module().get_name(), ox.get_name())
 
     nodes = set()
@@ -156,7 +166,11 @@ def draw_graph(output_lst,
             if isinstance(h, co.DependentHyperparameter):
                 _draw_dependent_hyperparameter_relations(h)
 
-            g.node(h.get_name(), fontsize=h_fs)
+            g.node(
+                h.get_name(),
+                fontsize=h_fs,
+                fillcolor='darkolivegreen3',
+                style='filled')
 
     # add the output terminals.
     for m in co.extract_unique_modules(output_lst):
@@ -165,7 +179,12 @@ def draw_graph(output_lst,
 
     # minor adjustments to attributes.
     for s in nodes:
-        g.node(s, shape='rectangle', penwidth=penwidth)
+        g.node(
+            s,
+            shape='rectangle',
+            penwidth=penwidth,
+            fillcolor='darkgoldenrod3',
+            style='filled')
 
     if print_to_screen or out_folderpath is not None:
         g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
