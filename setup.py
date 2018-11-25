@@ -53,5 +53,13 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     packages=['deep_architect'],
-    install_requires=[],
-    extras_require={})
+    install_requires=[
+        'numpy',
+        'scipy',
+        'six',
+    ],
+    extras_require={
+        "docs": ["sphinx"
+                 "sphinx_rtd_theme"],
+        "viz": ['matplotlib', 'graphviz']
+    })

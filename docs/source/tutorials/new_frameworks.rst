@@ -167,8 +167,8 @@ that upon calling, returns a forward function.
 For example, for implementing a convolutional module from scratch relying on this
 module, we would do
 
-For example, by looking at the Keras docstring for the conv2D and taking a
-subset of the options, we can write.
+For example, by looking at the Keras docstring for the Conv2D and taking a
+subset of the options, we can write:
 
 .. code:: python
 
@@ -203,7 +203,7 @@ A few points to pay attention to:
 -   di and dh are dictionaries with inputs names mapping to input values and
     hyperparameter names mapping to hyperparameter values.
 
--   In the line Conv2D(**dh), simply used the dictionary unpacking functionality
+-   In the line :code:`Conv2D(**dh)`, simply used the dictionary unpacking functionality
     to call the Keras function that instantiates a Keras layer (as in the Keras
     API). We could have done the unpacking manually and perform additional computation.
 

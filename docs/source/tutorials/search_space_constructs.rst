@@ -48,6 +48,7 @@ See below for a minimal adaptation of the above example in DeepArchitect.
     from deep_architect.searchers.common import random_specify, specify
 
     D = hp.Discrete
+    wrap_search_space_fn = lambda fn: mo.SearchSpaceFactory(fn).get_search_space
 
 
     def dense(h_units, h_activation):
@@ -65,7 +66,7 @@ See below for a minimal adaptation of the above example in DeepArchitect.
         ])
 
 
-    (inputs, outputs) = mo.SearchSpaceFactory(search_space0).get_search_space()
+    (inputs, outputs) = wrap_search_space_fn(search_space0)()
 
 The above code defines a search space where the nonlinearities and number of
 units are chosen from a set of possible values rather than being fixed upfront.
@@ -130,7 +131,7 @@ sequence of frames.
 
 .. code:: python
 
-    inputs, outputs = search_space0()
+    (inputs, outputs) = wrap_search_space_fn(search_space0)()
 
     vi.draw_graph_evolution(
         outputs.values(),
@@ -159,7 +160,6 @@ Adapting the first search space to reflect this change is straightforward.
 .. code:: python
 
     def search_space1():
-        co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         return mo.siso_sequential([
             dense(D([32, 64, 128, 256]), h_activation),
@@ -168,7 +168,7 @@ Adapting the first search space to reflect this change is straightforward.
         ])
 
 
-    (inputs, outputs) = search_space1()
+    (inputs, outputs) = wrap_search_space_fn(search_space1)()
     vi.draw_graph(
         outputs.values(),
         draw_module_hyperparameter_info=False,
@@ -190,7 +190,6 @@ layer.
 .. code:: python
 
     def search_space2():
-        co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
@@ -203,7 +202,7 @@ layer.
         ])
 
 
-    (inputs, outputs) = search_space2()
+    (inputs, outputs) = wrap_search_space_fn(search_space2)()
     vi.draw_graph(
         outputs.values(),
         draw_module_hyperparameter_info=False,
@@ -227,7 +226,7 @@ successive assignments to the values of hyperparameters.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space2()
+    (inputs, outputs) = wrap_search_space_fn(search_space2)()
 
     vi.draw_graph_evolution(
         outputs.values(),
@@ -284,7 +283,6 @@ an operation that either includes a submodule or not.
 .. code:: python
 
     def search_space3():
-        co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
@@ -298,7 +296,7 @@ an operation that either includes a submodule or not.
         ])
 
 
-    (inputs, outputs) = search_space3()
+    (inputs, outputs) = wrap_search_space_fn(search_space3)()
 
 The optional module takes a thunk (this terminology comes from programming
 languages) which returns a graph fragment (returned as a dictionary of
@@ -313,7 +311,7 @@ Consider the graph evolution for a random sample from this search space.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space3()
+    (inputs, outputs) = wrap_search_space_fn(search_space3)()
 
     vi.draw_graph_evolution(
         outputs.values(),
@@ -339,7 +337,6 @@ connected in a serial connection.
 .. code:: python
 
     def search_space4():
-        co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
@@ -354,7 +351,7 @@ connected in a serial connection.
         ])
 
 
-    (inputs, outputs) = search_space4()
+    (inputs, outputs) = wrap_search_space_fn(search_space4)()
 
 Note that in the search space above, the hyperparameter respective to the
 number of units of the dense modules inside the repeat share the same hyperparameter,
@@ -363,7 +360,7 @@ meaning that all these modules will have the same number of units.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space4()
+    (inputs, outputs) = wrap_search_space_fn(search_space4)()
 
     vi.draw_graph_evolution(
         outputs.values(),
@@ -392,7 +389,6 @@ For example, consider the following example
 .. code:: python
 
     def search_space5():
-        co.Scope.reset_default_scope()
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
         h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
@@ -409,7 +405,7 @@ For example, consider the following example
         ])
 
 
-    (inputs, outputs) = search_space5()
+    (inputs, outputs) = wrap_search_space_fn(search_space5)()
 
 Again, given the search space above, the reader should get an expectation of
 of what graph evolution to expect.
@@ -420,7 +416,7 @@ it matches your expectations.
 .. code:: python
 
     vs = seco.random_specify(outputs.values())
-    inputs, outputs = search_space5()
+    (inputs, outputs) = wrap_search_space_fn(search_space5)()
     vi.draw_graph_evolution(
         outputs.values(),
         vs,

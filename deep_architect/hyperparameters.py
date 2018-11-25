@@ -69,6 +69,7 @@ class Discrete(co.Hyperparameter):
     """
 
     def __init__(self, vs, scope=None, name=None):
+        assert len(vs) > 0
         co.Hyperparameter.__init__(self, scope, name)
         self.vs = vs
 

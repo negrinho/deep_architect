@@ -100,7 +100,6 @@ case, Keras:
         def _update(self):
             pass
 
-
 With this helper, creating new functions is a matter of instantiating modules
 by passing the appropriate values for the name of the module, the names of the
 inputs and outputs, the hyperparameters, and the compile function.
@@ -121,7 +120,6 @@ albeit a bit redundant.
 
 .. code:: python
 
-
     def keras_module(name,
                      compile_fn,
                      name_to_hyperp,
@@ -131,8 +129,7 @@ albeit a bit redundant.
         return KerasModule(name, name_to_hyperp, compile_fn, input_names,
                            output_names, scope).get_io()
 
-
-A typical implementation of a module using these auxiliary functions is like this
+A typical implementation of a module using these auxiliary functions looks like this
 
 .. code:: python
 
@@ -157,7 +154,6 @@ A typical implementation of a module using these auxiliary functions is like thi
             'strides': h_strides
         }, ["In"], ["Out"])
 
-
 We see that the implementation is straighforward. The forward function is defined
 via a function closure. At the time that the compile function is called, we do
 have specific values for the inputs of the module, which in this case are Keras
@@ -181,11 +177,9 @@ output modules, so we have defined the following function.
 
 .. code:: python
 
-
     def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
         return KerasModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
                            scope).get_io()
-
 
 This essentially saves us writing the names of the inputs and outputs for the
 single input and single output case. As the reader becomes familiar with
@@ -199,7 +193,6 @@ except that we do not need that we do not need to name the input and output
 explicitly, as they will just take the default names of In and Out.
 
 .. code:: python
-
 
     def conv_relu_batch_norm(h_filters, h_kernel_size, h_strides):
 
@@ -219,13 +212,11 @@ explicitly, as they will just take the default names of In and Out.
             'strides': h_strides
         })
 
-
 Another auxiliary function that can be quite useful is to create a module
 directly from a function (e.g., most of the functions defined in keras.layers)
 that returns a Keras module.
 
 .. code:: python
-
 
     def siso_keras_module_from_keras_layer_fn(layer_fn,
                                               name_to_hyperp,
@@ -245,13 +236,11 @@ that returns a Keras module.
 
         return siso_keras_module(name, compile_fn, name_to_hyperp, scope)
 
-
 This function is convenient from extremely simple and short cases for
 functions that return directly a single input single output Keras module.
 For example, for getting a convolutional module, we can do
 
 .. code:: python
-
 
     def conv2d(h_filters, h_kernel_size):
         return siso_keras_module_from_keras_layer_fn(Conv2D, {
@@ -259,12 +248,10 @@ For example, for getting a convolutional module, we can do
             "kernel_size": h_kernel_size
         })
 
-
 If additionaly, we would like to set some attributes to fixed values and have
 other ones defined through hyperparameters, we can do as such
 
 .. code:: python
-
 
     def conv2d(h_filters, h_kernel_size):
         fn = lambda filters, kernel_size: Conv2D(
@@ -274,7 +261,6 @@ other ones defined through hyperparameters, we can do as such
                 "filters": h_filters,
                 "kernel_size": h_kernel_size
             }, name="Conv2D")
-
 
 So far, we covered how can we easily implement new modules in a framework
 that we are working with. These examples were all focused on Keras, but these
@@ -297,7 +283,6 @@ First, consider the definition of a substitution module.
 
 
 .. code:: python
-
 
     class SubstitutionModule(co.Module):
         """Substitution modules are replaced by other modules when the all the
@@ -408,7 +393,6 @@ First, consider the definition of a substitution module.
 
                 self._is_done = True
 
-
 The reader may not get all the details by looking at this, but the main idea is
 that the substitution module has some hyperparameters associated to it and a
 substitution function that returns a graph fragment that is used in the same
@@ -436,7 +420,6 @@ to deal with the dictionaries of inputs and the dictionaries of outputs than
 directly with the modules, so we define this function
 
 .. code:: python
-
 
     def substitution_module(name,
                             name_to_hyperp,
@@ -489,7 +472,6 @@ directly with the modules, so we define this function
             allow_output_subset=allow_output_subset,
             unpack_kwargs=unpack_kwargs).get_io()
 
-
 We will now look at two specific examples of substitution modules. First a
 very simple one that the reader will use widely and another one how often
 it is useful when implementing more complex search spaces from the literature.
@@ -498,7 +480,6 @@ substiution module (we often just use the version with a single input and a sing
 output).
 
 .. code:: python
-
 
     def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
         """Implements an or substitution operation.
@@ -541,14 +522,12 @@ output).
             _get_name(name, "Or"), {'idx': h_or}, substitution_fn, input_names,
             output_names, scope)
 
-
 We see how short the implementation is. This module has a single hyperparameter
 that determines the choice between which function in the function list (or dictionary)
 to call. Each of the functions in the function list returns a dictionary of
 inputs and a dictionary of outputs when called.
 
 .. code:: python
-
 
     def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
                  h_drop_keep_prob):
@@ -562,7 +541,6 @@ inputs and a dictionary of outputs when called.
             ], h_swap)
         ])
 
-
 Optional is a special case of a substitution module. If the hyperparameter is
 such that the function is to be used, then the function
 (in the example above, a lambda function) is called. Otherwise, an identity
@@ -574,7 +552,6 @@ This makes the language to write search spaces very compositional.
 Let us now look at a more complex use of a custom substitution module.
 
 .. code:: python
-
 
     def motif(submotif_fn, num_nodes):
         assert num_nodes >= 1
@@ -627,6 +604,7 @@ Let us now look at a more complex use of a custom substitution module.
         }
         return mo.substitution_module(
             "Motif", name_to_hyperp, substitution_fn, ["In"], ["Out"], scope=None)
+
 This substitution module implements the notion of a motif defined in the
 this `paper <https://arxiv.org/abs/1711.00436>`_.
 The main goal of this substitution module is to delay the creation of the

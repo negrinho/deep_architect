@@ -2,24 +2,23 @@
 Logging and visualization
 -------------------------
 
-A quite important part of DeepArchitect is the attention paid to logging
-and visualization.
-Architecture search provides a tremendous opportunity for visualization for the
-problem at hand.
+DeepArchitect regards logging and visualization as being important
+aspects of an architecture search based workflow.
+Architecture search provides tremendous opportunity for insightful visualizations
+based on architecture search results.
 A large number of models can be evaluated in the same setting, meaning that
 some broad insights about the results can be extracted from the results of the
 search.
 Just compare this with the current non-architecture search workflow in
 machine learning.
 In such a workflow, it is hard to evaluate search over very diverse models
-as the description of the search space ad-hoc, leading to only being practical to
-explore a moderate number of hyperparameters.
-
+as the description of the search space is ad-hoc, being only practical to
+explore a moderate number of simple hyperparameters.
 This tutorial also shows how to implement an evaluator and how it is used by the
 in a simple example to evaluate architectures coming from a simple search space.
 
 In DeepArchitect, we can express a search space in a standard way which
-is largely shared for all the frameworks and domains that we consider
+is largely shared across all the frameworks and domains that we consider
 (only necessary to reimplement the simple modules, with the abstract modules
 such as substitution modules being applicable in the new domain without any changes).
 In this tutorial, we will talk a bit about how to use the logging functionalities
@@ -37,18 +36,18 @@ The user component allows the user to write any information that may be of
 interest to keep for the architecture in question.
 This allows, for example, to keep the actual model files that were generated as
 a result of evaluation or example predictions of the model evaluated.
-The logging funcitonality makes it convenient to manage this folder structure
+The logging functionality makes it convenient to manage this folder structure
 having a single folder per evaluation.
 
 The logging folder for the whole search experiment also keeps user information
 at the search level. For example, if we want to keep checkpoints on the searcher
-as the search progress. We point the reader to examples/mnist_with_logging for
-an example usage of logging.
+as the search progress. We point the reader to
+`examples/mnist_with_logging <https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py>`__
+for an example usage of logging.
 deep_architect/search_logging contains the API definition for the logging
 functionality. We recommend the reader to go through these references if the
 reader wishes to get a better grasp of the logging functionality.
 
-# TODO: finish the logging and visualization example
 Let us now look at a specific example using the logging functionality.
 Let us start with the MNIST example in Keras adapted to DeepArchitect.
 This was copied from the Keras website.
@@ -73,7 +72,7 @@ This was copied from the Keras website.
 
     batch_size = 128
     num_classes = 10
-    epochs = 20
+    epochs = 1
 
     # the data, split between train and test sets
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -97,18 +96,19 @@ This was copied from the Keras website.
     model.add(Dense(512, activation='relu'))
     model.add(Dropout(0.2))
     model.add(Dense(num_classes, activation='softmax'))
-
+    print(y_train.shape, y_test.shape)
     model.summary()
 
-    model.compile(loss='categorical_crossentropy',
-                optimizer=RMSprop(),
-                metrics=['accuracy'])
+    model.compile(
+        loss='categorical_crossentropy', optimizer=RMSprop(), metrics=['accuracy'])
 
-    history = model.fit(x_train, y_train,
-                        batch_size=batch_size,
-                        epochs=epochs,
-                        verbose=1,
-                        validation_data=(x_test, y_test))
+    history = model.fit(
+        x_train,
+        y_train,
+        batch_size=batch_size,
+        epochs=epochs,
+        verbose=1,
+        validation_data=(x_test, y_test))
     score = model.evaluate(x_test, y_test, verbose=0)
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
@@ -127,13 +127,15 @@ to evaluate the best architecture that we will found.
 
     import deep_architect.core as co
     from keras.layers import Input
+    from keras.models import Model
 
-    ### NOTE: make this a simple adaptation of the previous model.
+
     class Evaluator:
+
         def __init__(self, batch_size, epochs):
-            batch_size = 128
-            num_classes = 10
-            epochs = 20
+            self.batch_size = 128
+            self.num_classes = 10
+            self.epochs = 1
 
             # the data, split between train and test sets
             (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -144,9 +146,12 @@ to evaluate the best architecture that we will found.
             x_test = x_test.astype('float32')
             x_train /= 255
             x_test /= 255
+            y_train = keras.utils.to_categorical(y_train, num_classes)
+            y_test = keras.utils.to_categorical(y_test, num_classes)
 
             num_val = 10000
-            x_train, x_val = x_train[:num_val], x_train[num_val:]
+            x_train, x_val = (x_train[:num_val], x_train[num_val:])
+            y_train, y_val = (y_train[:num_val], y_train[num_val:])
             self.x_train = x_train
             self.y_train = y_train
             self.x_val = x_val
@@ -156,34 +161,38 @@ to evaluate the best architecture that we will found.
             self.last_model = None
 
         def eval(self, inputs, outputs):
-            x = Input((784,) dtype='float32')
-            co.forward({inputs["In"] : x})
+            x = Input((784,), dtype='float32')
+            co.forward({inputs["In"]: x})
             y = outputs["Out"].val
             model = Model(inputs=x, outputs=y)
 
             model.summary()
 
-            model.compile(loss='categorical_crossentropy',
-                        optimizer=RMSprop(),
-                        metrics=['accuracy'])
+            model.compile(
+                loss='categorical_crossentropy',
+                optimizer=RMSprop(),
+                metrics=['accuracy'])
 
-            history = model.fit(self.x_train, self.y_train,
-                                batch_size=batch_size,
-                                epochs=epochs,
-                                verbose=1)
+            history = model.fit(
+                self.x_train,
+                self.y_train,
+                batch_size=self.batch_size,
+                epochs=self.epochs,
+                verbose=1)
             self.last_model = model
             train_metrics = model.evaluate(self.x_train, self.y_train, verbose=0)
             val_metrics = model.evaluate(self.x_val, self.y_val, verbose=0)
             test_metrics = model.evaluate(self.x_test, self.y_test, verbose=0)
             return {
-                "train_loss" : train_metrics[0],
-                "validation_loss" : validation_metrics[0],
-                "test_loss" : test_metrics[0],
-                "train_accuracy" : train_metrics[1],
-                "validation_accuracy" : validation_metrics[1],
-                "test_accuracy" : test_metrics[1],
-                "num_parameters" : model.count_params(),
+                "train_loss": train_metrics[0],
+                "validation_loss": val_metrics[0],
+                "test_loss": test_metrics[0],
+                "train_accuracy": train_metrics[1],
+                "validation_accuracy": val_metrics[1],
+                "test_accuracy": test_metrics[1],
+                "num_parameters": model.count_params(),
             }
+
 
     # TODO: using the information about the model. what can be done here?
     import deep_architect.helpers.keras as hke
@@ -196,33 +205,48 @@ to evaluate the best architecture that we will found.
 
     km = hke.siso_keras_module_from_keras_layer_fn
 
+
     def cell(h_opt_drop, h_opt_batchnorm, h_drop_rate, h_activation, h_permutation):
         h_units = D([128, 256, 512])
-        return siso_sequential([
-            mo.siso_permutation([
-                lambda: km(Dense, {"units" : h_units, "activation" : h_activation})),
-                lambda: mo.siso_optional(lambda: km(Dropout, {"rate" : h_drop_rate})),
-                lambda: mo.siso_optional(lambda: km(BatchNormalization, {}))
-            ], h_permutation)
+        return mo.siso_sequential([
+            mo.siso_permutation(
+                [
+                    lambda: km(Dense, {
+                        "units": h_units,
+                        "activation": h_activation
+                    }),  #
+                    lambda: mo.siso_optional(
+                        lambda: km(Dropout, {"rate": h_drop_rate}), h_opt_drop),
+                    lambda: mo.siso_optional(  #
+                        lambda: km(BatchNormalization, {}), h_opt_batchnorm)
+                ],
+                h_permutation)
         ])
 
 
     h_opt_drop = D([0, 1])
     h_opt_batchnorm = D([0, 1])
     h_permutation = hp.OneOfKFactorial(3)
-    fn = lambda: cell(h_opt_drop, h_opt_batchnorm, D([0.0, 0.2, 0.5, 0.8]))
+    h_activation = D(["relu", "tanh", "elu"])
+    fn = lambda: cell(h_opt_drop, h_opt_batchnorm, D([0.0, 0.2, 0.5, 0.8]),
+                      h_activation, h_permutation)
     search_space_fn = lambda: mo.siso_sequential([
-        mo.siso_repeat(fn, D([1, 2, 4]),
+        mo.siso_repeat(fn, D([1, 2, 4])),
         km(Dense, {
-            "units" : D([num_classes]),
-            "activation" : D["softmax"]}))])
+            "units": D([num_classes]),
+            "activation": D(["softmax"])
+        })
+    ])
 
     search_space_fn = mo.SearchSpaceFactory(search_space_fn).get_search_space
 
     import deep_architect.search_logging as sl
 
-    sl.create_search_folderpath('logs', 'logging_tutorial',
-        delete_if_exists=True, create_parent_folders=True)
+    sl.create_search_folderpath(
+        'logs',
+        'logging_tutorial',
+        delete_if_exists=True,
+        create_parent_folders=True)
 
 This create an initial folder structure that will progressively be filled by
 each of the evaluations. The basic architecture search loop with a single process
@@ -241,15 +265,18 @@ is as follows:
     for evaluation_id in range(num_samples):
         (inputs, outputs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
         results = evaluator.eval(inputs, outputs)
-        eval_logger = sl.EvaluationLogger('logs', 'logging_tutorial', evaluation_id,
-            abort_if_exists=True)
+        eval_logger = sl.EvaluationLogger(
+            'logs', 'logging_tutorial', evaluation_id, abort_if_exists=True)
         eval_logger.log_config(hyperp_value_lst, searcher_eval_token)
         eval_logger.log_results(results)
         user_folderpath = eval_logger.get_evaluation_data_folderpath()
-        vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False, out_folderpath=user_folderpath)
+        vi.draw_graph(
+            outputs.values(),
+            draw_module_hyperparameter_info=False,
+            out_folderpath=user_folderpath)
         model_filepath = ut.join_paths([user_folderpath, 'model.h5'])
         evaluator.last_model.save(model_filepath)
-        searcher.update(results["validation_accuracy"])
+        searcher.update(results["validation_accuracy"], searcher_eval_token)
 
 The above code samples and evaluates three architectures from the search space.
 The results, the corresponding graph, and the saved models are logged to each of the evaluation
