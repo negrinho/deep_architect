@@ -55,7 +55,6 @@ def folder_exists(path):
     return os.path.isdir(path)
 
 def create_folder(folderpath, abort_if_exists=True, create_parent_folders=False):
-    assert not file_exists(folderpath)
     assert create_parent_folders or folder_exists(path_prefix(folderpath))
     assert not (abort_if_exists and folder_exists(folderpath))
 

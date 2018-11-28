@@ -1,5 +1,4 @@
 import argparse
-import tensorflow as tf
 import pickle
 import deep_architect.utils as ut
 
@@ -17,6 +16,7 @@ from searcher import name_to_searcher_fn
 
 from deep_architect.contrib.enas.evaluator.enas_evaluator import ENASEvaluator
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.misc.evaluators.tensorflow.estimator_classification import AdvanceClassifierEvaluator
 
 from deep_architect.communicators.communicator import get_communicator
 
@@ -103,9 +103,6 @@ def start_worker(comm, evaluator, search_space_factory, folderpath,
     # set the available gpu for process
     print('WORKER %d' % comm.get_rank())
     step = 0
-    if len(gpu_utils.get_gpu_information()) != 0:
-        #https://github.com/tensorflow/tensorflow/issues/1888
-        gpu_utils.set_visible_gpus([comm.get_rank() % gpu_utils.get_total_num_gpus()])
 
     sl.create_search_folderpath(folderpath, search_name)
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
@@ -153,23 +150,27 @@ def main():
     options = parser.parse_args()
     config = configs[options.config_name]
 
+    num_procs = config['num_procs'] if 'num_procs' in config else 0
+    comm = get_communicator(config['communicator'], num_procs)
+    if len(gpu_utils.get_gpu_information()) != 0:
+        #https://github.com/tensorflow/tensorflow/issues/1888
+        gpu_utils.set_visible_gpus([comm.get_rank() % gpu_utils.get_total_num_gpus()])
+
     if 'eager' in config and config['eager']:
+        import tensorflow as tf
         tf.logging.set_verbosity(tf.logging.ERROR)
         tfconfig = tf.ConfigProto()
         tfconfig.gpu_options.allow_growth=True
         tf.enable_eager_execution(tfconfig, device_policy=tf.contrib.eager.DEVICE_PLACEMENT_SILENT)
 
     datasets = {
-        'cifar10': lambda: (load_cifar10('data/cifar10/'), 10),
+        'cifar10': lambda: (load_cifar10('data/cifar10/', one_hot=False), 10),
         'mnist': lambda: (load_mnist('data/mnist/'), 10),
         'fashion_mnist': lambda: (load_fashion_mnist(), 10)
     }
 
     (Xtrain, ytrain, Xval, yval, Xtest, ytest), num_classes = datasets[config['dataset']]()
     search_space_factory = name_to_search_space_factory_fn[config['search_space']](num_classes)
-
-    num_procs = config['num_procs'] if 'num_procs' in config else 0
-    comm = get_communicator(config['communicator'], num_procs)
 
     save_every = 1 if 'save_every' not in config else config['save_every']
     if comm.get_rank() == 0:
@@ -185,7 +186,15 @@ def main():
         val_dataset = InMemoryDataset(Xval, yval, False)
         test_dataset = InMemoryDataset(Xtest, ytest, False)
 
+        search_path = sl.get_search_folderpath(config['search_folder'], config['search_name'])
+        ut.create_folder(ut.join_paths([search_path, 'scratch_data']), create_parent_folders=True)
+        scratch_folder = ut.join_paths([search_path, 'scratch_data', 'eval_' + str(comm.get_rank())])
+        ut.create_folder(scratch_folder)
+
         evaluators = {
+            'advance_classification': lambda: AdvanceClassifierEvaluator(train_dataset, val_dataset, num_classes,
+                        max_num_training_epochs=config['eval_epochs'], stop_patience=25, whiten=True,
+                        test_dataset=test_dataset, base_dir=scratch_folder),
             'simple_classification': lambda: SimpleClassifierEvaluator(train_dataset, val_dataset, num_classes,
                         './temp' + str(comm.get_rank()), max_num_training_epochs=config['eval_epochs'], log_output_to_terminal=options.display_output,
                         test_dataset=test_dataset),

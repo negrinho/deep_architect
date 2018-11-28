@@ -19,7 +19,7 @@ def train_best(config, searcher_file):
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
     save_filepath = ut.join_paths((search_data_folder, searcher_file))
     searcher_data = ut.read_jsonfile(save_filepath)
-    best_models = searcher_data
+    best_models = searcher_data['best_models']
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/'), 10),
         'mnist': lambda: (load_mnist('data/mnist/'), 10),

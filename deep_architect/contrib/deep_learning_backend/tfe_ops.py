@@ -8,14 +8,15 @@ def max_pool2d(h_kernel_size, h_stride):
                 [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
         return fn
     return siso_tfeager_module('MaxPool2D', cfn, {
-        'kernel_size' : h_kernel_size, 
+        'kernel_size' : h_kernel_size,
         'stride' : h_stride,})
 
 def batch_normalization():
     def cfn(di, dh):
         bn = tf.keras.layers.BatchNormalization()
-        def fn(di, isTraining):
+        def fn(di, isTraining=True):
             return {'Out' : bn(di['In'], training=isTraining) }
+            # return {'Out': di['In']}
         return fn
     return siso_tfeager_module('BatchNormalization', cfn, {})
 
@@ -26,19 +27,56 @@ def relu():
         return fn
     return siso_tfeager_module('ReLU', cfn, {})
 
-def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
+def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate, h_use_bias):
     def cfn(di, dh):
         conv = tf.keras.layers.Conv2D(dh['num_filters'], dh['filter_width'],
-            dh['stride'], use_bias=dh['use_bias'], padding='SAME')
+            dh['stride'], dilation_rate=dh['dilation_rate'], use_bias=dh['use_bias'], padding='SAME')
         def fn(di, isTraining=True):
+            # print(conv)
+            # print(conv.weights)
+            # print(conv.weights[0].device)
+            # print(out.device)
+
             return {'Out' : conv(di['In'])}
         return fn
     return siso_tfeager_module('Conv2D', cfn, {
         'num_filters' : h_num_filters,
         'filter_width' : h_filter_width,
         'stride' : h_stride,
-        'use_bias' : h_use_bias
+        'use_bias' : h_use_bias,
+        'dilation_rate' : h_dilation_rate
         })
+
+def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
+                     h_depth_multiplier, h_use_bias):
+    def cfn(di, dh):
+        conv_op = tf.keras.layers.SeparableConv2D(dh['num_filters'], dh['filter_width'],
+            strides=dh['stride'], dilation_rate=dh['dilation_rate'],
+            depth_multiplier=dh['depth_multiplier'], use_bias=dh['use_bias'],
+            padding='SAME')
+        def fn(di, isTraining=True):
+            # print(conv_op)
+            # print(conv_op.weights[0].device)
+            # print(out.device)
+            return {'Out' : conv_op(di['In'])}
+        return fn
+    return siso_tfeager_module('SeparableConv2D', cfn, {
+        'num_filters' : h_num_filters,
+        'filter_width' : h_filter_width,
+        'stride' : h_stride,
+        'use_bias' : h_use_bias,
+        'dilation_rate' : h_dilation_rate,
+        'depth_multiplier' : h_depth_multiplier,
+        })
+
+def avg_pool2d(h_kernel_size, h_stride):
+    def cfn(di, dh):
+        def fn(di, isTraining=True):
+            return {'Out' : tf.nn.avg_pool(di['In'],
+                [1, dh['kernel_size'], dh['kernel_size'], 1], [1, dh['stride'], dh['stride'], 1], 'SAME')}
+        return fn
+    return siso_tfeager_module('MaxPool2D', cfn, {
+        'kernel_size' : h_kernel_size, 'stride' : h_stride,})
 
 def dropout(h_keep_prob):
     def cfn(di, dh):

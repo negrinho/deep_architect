@@ -8,7 +8,7 @@ else:
     import pickle
 
 def load_fashion_mnist(flatten=False, one_hot=True, normalize_range=False, validation_size=5000):
-    from tensorflow import keras    
+    from tensorflow import keras
     fashion_mnist = keras.datasets.fashion_mnist
     train, val = fashion_mnist.load_data()
 
@@ -85,6 +85,8 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
             if data_format == 'NHWC':
                 X = X.transpose((0,2,3,1))
             X = X.astype('float32')
+            # sub = 10
+            # X = X[:sub, :, :, :]
 
             # transformations based on the argument options.
             if normalize_range:
@@ -95,7 +97,8 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
 
             # for the labels
             y = np.array(d['labels'])
-
+            # y = y[:sub]
+            # num_images = sub
             if one_hot:
                 y_one_hot = np.zeros((num_images, num_classes), dtype='float32')
                 y_one_hot[np.arange(num_images), y] = 1.0

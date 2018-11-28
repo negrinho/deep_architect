@@ -92,56 +92,56 @@
       "searcher": "random",
       "dataset": "cifar10",
       "search_space": "zoph_sp1",
-      "evaluator": "simple_classification",
-      "eval_epochs": 4,
-      "epochs": 1024,
+      "evaluator": "advance_classification",
+      "eval_epochs": 600,
+      "samples": 256,
       "searcher_file_name": "searcher_state.json",
       "save_every": 8,
       "eager": false,
       "communicator": "mpi",
       "search_folder": "logs",
-      "search_name": "framework_random"
+      "search_name": "bench_random_zoph_sp1_adv"
     },
     "random_zoph_sp2": {
       "searcher": "random",
       "dataset": "cifar10",
       "search_space": "zoph_sp2",
-      "evaluator": "simple_classification",
-      "eval_epochs": 4,
-      "epochs": 1024,
+      "evaluator": "advance_classification",
+      "eval_epochs": 600,
+      "samples": 256,
       "searcher_file_name": "searcher_state.json",
       "save_every": 8,
       "eager": false,
       "communicator": "mpi",
       "search_folder": "logs",
-      "search_name": "framework_random"
+      "search_name": "bench_random_zoph_sp2"
     },
     "random_zoph_sp3": {
       "searcher": "random",
       "dataset": "cifar10",
       "search_space": "zoph_sp3",
-      "evaluator": "simple_classification",
-      "eval_epochs": 4,
-      "epochs": 1024,
+      "evaluator": "advance_classification",
+      "eval_epochs": 600,
+      "samples": 256,
       "searcher_file_name": "searcher_state.json",
       "save_every": 8,
       "eager": false,
       "communicator": "mpi",
       "search_folder": "logs",
-      "search_name": "framework_random"
+      "search_name": "bench_random_zoph_sp3"
     },
-    "random_enas": {
+    "random_enas_space": {
       "searcher": "random",
       "dataset": "cifar10",
       "search_space": "enas_noshare",
-      "evaluator": "simple_classification",
-      "eval_epochs": 4,
-      "epochs": 1024,
+      "evaluator": "advance_classification",
+      "eval_epochs": 600,
+      "samples": 256,
       "searcher_file_name": "searcher_state.json",
       "save_every": 8,
       "eager": false,
       "communicator": "mpi",
       "search_folder": "logs",
-      "search_name": "framework_random"
+      "search_name": "bench_random_enas_space"
     }
   }

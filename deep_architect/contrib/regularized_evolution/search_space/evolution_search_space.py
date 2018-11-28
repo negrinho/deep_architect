@@ -46,10 +46,10 @@ from collections import OrderedDict
 
 import deep_architect.core as co
 import deep_architect.hyperparameters as hp
-import deep_architect.helpers.tensorflow as htf
+import deep_architect.helpers.tfeager as htfe
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
-from deep_architect.contrib.deep_learning_backend.tf_ops import (
+from deep_architect.contrib.deep_learning_backend.tfe_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d,
     max_pool2d, fc_layer, global_pool2d
 )
@@ -57,7 +57,7 @@ from deep_architect.contrib.deep_learning_backend.tf_ops import (
 from deep_architect.hyperparameters import Discrete as D
 
 
-TFM = htf.TensorflowModule
+TFEM = htfe.TFEModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
 # This is a module created using framework agnostic modules to perform spatially
@@ -238,21 +238,17 @@ def mi_add(num_terms, name=None):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
             min_channels = channels if channels < min_channels else min_channels
 
-        W_init_fn = cnn2d.kaiming2015delving_initializer_conv()
-        b_init_fn = const_fn(0.0)
-        w_dict = {}
-        b_dict = {}
+        conv_dict = {}
         for i in range(num_terms):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
             if channels != min_channels:
-                w_dict[i] = tf.Variable( W_init_fn( [1, 1, channels, min_channels]))
-                b_dict[i] = tf.Variable( b_init_fn( [min_channels]))
+                conv_dict[i] = tf.layers.Conv2D(min_channels, 1, 1, use_bias=True, padding='SAME')
 
-        def fn(di):
+        def fn(di, isTraining=True):
             trans = []
             for i in range(num_terms):
-                if i in w_dict:
-                    trans.append(tf.nn.bias_add(tf.nn.conv2d(di['In' + str(i)], w_dict[i], [1, 1, 1, 1], 'SAME'), b_dict[i]))
+                if i in conv_dict:
+                    trans.append(conv_dict[i](di['In' + str(i)]))
                 else:
                     trans.append(di['In' + str(i)])
             total_sum = trans[0]
@@ -260,7 +256,7 @@ def mi_add(num_terms, name=None):
                 total_sum = tf.add(total_sum, trans[i])
             return {'Out' : total_sum}
         return fn
-    return TFM('MultiInputAdd' if name is None else name, {}, cfn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
+    return TFEM('MultiInputAdd' if name is None else name, {}, cfn, ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
 
 # This module applies a sp1_operation to two inputs, and adds them together
 def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
@@ -332,20 +328,20 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
 def pad_and_shift():
     def cfn(di, dh):
         pad_arr = [[0, 0], [0, 1], [0, 1], [0, 0]]
-        def fn(di):
+        def fn(di, isTraining=True):
             return {'Out': tf.pad(di['In'], pad_arr)[:, 1:, 1:, :]}
         return fn
-    return htf.siso_tensorflow_module('Pad', cfn, {})
+    return htfe.siso_tfeager_module('Pad', cfn, {})
 
 # This is a module used to concatenate two inputs along the channel dimension.
 # This is used as part of the factorized reduction operation in the amoebanet
 # code.
 def concat(axis):
     def cfn(di, dh):
-        def fn(di):
+        def fn(di, isTraining=True):
             return {'Out': tf.concat(values=[di['In0'], di['In1']], axis=axis)}
         return fn
-    return TFM('Concat', {}, cfn, ['In0', 'In1'], ['Out']).get_io()
+    return TFEM('Concat', {}, cfn, ['In0', 'In1'], ['Out']).get_io()
 
 # This operation is used to reduce the size of the input, either by striding
 # ir reducing the number of filters, without losing information. It is specified
