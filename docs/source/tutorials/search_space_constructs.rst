@@ -8,6 +8,11 @@ In this tutorial, we aim to convey to the reader ideas that make
 DeepArchitect tick and explain API design decisions.
 After going through this tutorial, the reader should have a good
 understanding of how the different components in DeepArchitect are inter-related.
+All the visualizations that are generated in this tutorial can be found
+`here <https://www.cs.cmu.edu/~negrinho/deep_architect/search_space_constructs/viz/>`__.
+
+Starting with a fixed Keras model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A simple example is a good starting point to start thinking about
 what can be represented with the search space representation language.
@@ -37,6 +42,10 @@ searching over them, e.g., by searching over the number of layers and
 activations of each layer.
 We defined a few simple helper functions that, for simple cases, allow us
 to take a function that returns a Keras layer and wraps it in a DeepArchitect module.
+
+Introducing independent hyperparameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 See below for a minimal adaptation of the above example in DeepArchitect.
 
 .. code:: python
@@ -107,7 +116,7 @@ of the module on the value of that hyperparameter.
     y = outputs["Out"].val
     print(vs)
 
-The values randomly chosen are returned by `random_specify`.
+The values randomly chosen are returned by :code:`random_specify`.
 This function simply iterates through the hyperparameters that have not
 been assigned a value yet and chooses a value randomly among the possible ones.
 After choosing all these values, the resulting search space looks like this.
@@ -119,7 +128,7 @@ After choosing all these values, the resulting search space looks like this.
         draw_module_hyperparameter_info=False,
         graph_name='graph0_last')
 
-We see that the edges between hyperapameters and modules have been labeled
+We see that the edges between hyperparameters and modules have been labeled
 with the values that have been chosen for the hyperparameters.
 The search process iterates over the hyperparameters that have not
 been assigned a value yet and, for each hyperparameter,
@@ -149,7 +158,12 @@ to modules change with each transition.
 This graph defining a search space is still very simple.
 The functionality to visualize the transitions between graphs will become more
 insightful once we start using more complex search space operators.
-The hyperparameter values were chosen independently for each of the layers.
+
+Sharing hyperparameters across modules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the previous search space, the hyperparameter values were chosen independently
+for each of the layers.
 If we wished to tie some hyperparameters across different parts of the
 search space, e.g., use the same nonlinearity for all modules,
 we would simply have to instantiate a single hyperparameter and use it in
@@ -177,6 +191,9 @@ Adapting the first search space to reflect this change is straightforward.
 Redrawing the initial graph for the search space (i.e., after having
 made any choices for hyperparameters), we see that that now there exists
 a single hyperparameter associated to activations of all dense modules.
+
+Expressing dependencies between hyperparameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We have implemented another useful language features for hyperparameters,
 namely dependent hyperparameters, which allows us to express an hyperparameter
@@ -242,11 +259,14 @@ The value assignment to the dependent hyperparameter is triggered due to the
 fact that all the hyperparameters that the dependent hyperparameter depends
 on have been assigned a value.
 
+Delaying sub search space creation through substitution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 We have talked about modules and hyperparameters.
 For hyperparameters, we distinguish between independent hyperparameters
 (hyperparameters whose value is set independently of any other hyperparameters),
 and dependent hyperparameters (hyperparameters whose value is computed
-as a function of the values of some other hyperparameters).
+as a function of the values of other hyperparameters).
 For modules, we distinguish between basic modules
 (modules that stay in place when all hyperparameters that the module depends
 on have been assigned values),
@@ -431,12 +451,21 @@ As the reader becomes more comfortable with these concepts, the reader should
 find it progressively easier to express search spaces in DeepArchitect and
 better appreciate the expressivity and reusability of the language.
 
+Concluding remarks
+^^^^^^^^^^^^^^^^^^
+
 We now provide some ending notes for this tutorial, both talking about
 minor aspects that we have not paid much attention in this tutorial, and
 giving recommendations to the reader on how and what to learn next.
-Throughout the definition of the various search spaces, we have seen
-this line `co.Scope.reset_default_scope()`.
-We use an object that we call the scope to assign unique names to the elements
+
+Throughout the instantiation of the various search spaces, we have seen
+this call to :code:`wrap_search_space_fn`, which internally uses
+:code:`mo.SearchSpaceFactory`.
+:code:`mo.SearchSpaceFactory` manages the global scope and buffer the
+search space to make sure that there are no substitution modules with unconnected
+inputs or outputs (i.e., at the border of the search space).
+
+We use the global the scope to assign unique names to the elements
 that show up in the search space (currently, modules, hyperparameters, inputs, and
 outputs).
 Every time a module, hyperparameter, input, or output is created, we use
@@ -445,9 +474,16 @@ Every time that we want to start the search from scratch with a new search space
 we should clear the scope to avoid keeping the names and objects from the previous
 samples around.
 In most cases, the user does not have to be concerned about the scope as it
-can just use the default scope.
-We also recommend the reader to look into search space factory as it provides
-a convenient auxiliary function that directly takes care of these issues.
+can just use :code:`mo.SearchSpaceFactory` to handle the global scope.
+
+The search space cannot have substitution modules in its border
+as effectively substitution modules disappear once the substitution is done,
+and therefore references to the module and its inputs and outputs become invalid.
+:code:`mo.SearchSpaceFactory` creates and connects extra identity modules
+(which are basic modules, as opposed to substitution modules)
+before (in the case of inputs) or after (in the case of outputs) for each
+input and output belonging to a substitution module at the border of the search
+space.
 
 Besides basic modules and substitution modules, we also use several auxiliary
 functions whose purpose is to arrange multiple graph fragments in different
@@ -455,12 +491,13 @@ ways.
 They often do not create new modules, but simply use graph fragments or
 functions that return graph fragments to create a new graph fragment by using the
 arguments in a certain way.
-An example of a function of this type is `siso_sequential`, which just connects
+An example of a function of this type is :code:`siso_sequential`, which just connects
 the graph fragments (expressed as a dictionary of inputs and a dictionary of outputs),
 in a serial connection, which just require us to connect inputs and outputs of the
 fragments passed as arguments to the function.
 Similarly to substitution modules, these auxiliary functions are framework
 independent as they only rely on properties of the module API.
+
 A reasonable way of thinking about these auxiliary functions is that they
 are just like substitution modules, but the substitution is done immediately
 rather than being postponed to some later stage when some hyperparameters have
@@ -468,20 +505,24 @@ been specified.
 Using and defining auxiliary functions of this type will help the user have
 a more effective and pleasant experience with the framework.
 Auxiliary functions of this type are very useful in practice as we can use
-them to construct larger search spaces by making complex arrangements from
+them to construct larger search spaces made of complex arrangements of
 smaller search spaces.
 
 When implementing support for a new framework, the only concepts that need to
 potentially be specialized to the new framework are the basic modules.
-We recommend the reader to read `deep_architect.core.py` for extensive information
-about the APIs.
+We recommend reading
+`deep_architect/core.py <https://github.com/negrinho/darch/blob/master/deep_architect/core.py>`__
+for extensive information about basic DeepArchitect API components.
 This code is the basis of DeepArchitect and has been extensively commented,
 meaning that the reader should have a much better understanding on how to
 extend the framework after perusing this code and perhaps, experimenting with it.
-Everything in `deep_architect.core.py` is framework independent.
+Everything in
+`deep_architect/core.py <https://github.com/negrinho/darch/blob/master/deep_architect/core.py>`__
+is framework independent.
 To understand more about substitution modules and how they are implemented, we
-point the reader to `deep_architect.modules.py`, which is also extensively
-commented.
+point the reader to
+`deep_architect/modules.py <https://github.com/negrinho/darch/blob/master/deep_architect/modules.py>`__ ,
+which is also extensively commented.
 We point the reader to the tutorial about supporting new frameworks for an
 explanation of the aspects that come into play when specializing to a
 new framework.
@@ -489,9 +530,9 @@ new framework.
 For learning more about the framework, please read more tutorials on aspects or
 use cases which you may find important and/or hard to understand.
 In this tutorial, we only covered expressing search spaces over architectures.
-DeepArchitect is composed of many other components such as search, evaluation, logging, visualization
-and multiworker, so please read additional tutorials if you wish
-to become familiar with these other aspects.
+DeepArchitect is composed of many other components such as search, evaluation,
+logging, visualization and multiworker, so please read additional tutorials if
+you wish to become familiar with these other aspects.
 
 While we have not covered rerouting in this tutorial, it is reasonably
 straightforward to think about how to implement rerouting with, either as a

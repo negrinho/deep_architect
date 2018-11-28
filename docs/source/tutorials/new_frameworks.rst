@@ -2,24 +2,24 @@
 Supporting new frameworks
 -------------------------
 
-This tutorial aims to explain to you how to support a new framework in
-DeepArchitect. After reading it, you should understand what are
-the components involved in supporting a framework in DeepArchitect and go
-about implementing the necessary ones yourself.
+Explains how to support a new framework in DeepArchitect.
+Supporting a framework in DeepArchitect requires the
+specialization of the module definition for that particular framework.
+For the frameworks that we currently support, the necessary changes across
+frameworks are minimal and result mostly from framework idiosyncrasies, e.g.,
+what information needs to kept around to create a computational graph.
 
-Implementing support for a framework on DeepArchitect heavily depends on
-specializing the definition of module for that particular framework.
-For most frameworks that we currently support, the necessary changes are
-minimal and result mostly from idiosyncrasies from the specific framework, e.g.,
-what information needs to kept around.
 DeepArchitect is not limited to the frameworks that we currently support.
-Asides from the module, most of the other code in DeepArchitect is general
-and can be reused without changes across frameworks, e.g., searchers, logging, and visualization.
+Aside from module specialization, most of the other code in DeepArchitect is general
+and can be reused without changes across frameworks, e.g.,
+searchers, logging, and visualization.
+We will walk the reader over the implementation of some of the helpers for
+the frameworks that are currently supported.
 
-To exemplify this, we walk the reader over the implementation of existing
-helpers for supported frameworks and a new example in scikit-learn.
+Specializing the module class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The main functions to look at are:
+The main module functions to look at are:
 
 .. code:: python
 
@@ -59,21 +59,25 @@ The main functions to look at are:
 After all hyperparameters for a search space are specified, we can finally
 compile the modules in the search space.
 By the time that all the hyperparameters of the search space have been
-assigned a value, all substitution modules ought to have been replaced and
+assigned a value, all substitution modules have been replaced and
 only basic modules will be in place.
-This can be seen in the forward function in Module.
-When forward is called, _compile is called once and then forward is called
-right after.
-The compilation stage can be used to instantiate any state that is used for the
-module for the forward part, e.g., creation of parameters in the case of
+This can be seen in :code:`forward` in :code:`Module`.
+When :code:`forward` is called, :code:`_compile` is called once and then
+:code:`forward` is called right after.
+Compilation can be used to instantiate any state that is used by the
+module for the forward computation, e.g., creation of parameters in the case of
 deep learning search spaces.
-After compiling is done, the forward function can be called to implement the
+After compilation, :code:`forward` can be called multiple times to perform the
 computation repeatedly.
 
-Let us look in detail at concrete exmaples for frameworks that are currently supported
-in DeepArchitect.
-Let us look at the Keras defined in
-`deep_architect/helpers/keras.py <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`_
+Let us look in detail at concrete exmaples for frameworks that are currently
+supported in DeepArchitect.
+
+Keras helpers
+^^^^^^^^^^^^^
+
+Let us look at the Keras helper defined in
+`deep_architect/helpers/keras.py <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`_.
 
 .. code:: python
 
@@ -83,7 +87,7 @@ Let us look at the Keras defined in
 
 
     class KerasModule(co.Module):
-        """Class for taking Keras code and wrapping it in a darch module.
+        """Class for taking Keras code and wrapping it in a DeepArchitect module.
 
         This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
         the functionality associated to it (e.g., keeping track of inputs, outputs,
@@ -100,7 +104,7 @@ Let us look at the Keras defined in
         .. note::
             This module is abstract, meaning that it does not actually implement
             any particular Keras computation. It simply wraps Keras
-            functionality in a DeepArchitect module. The instantation of the Keras
+            functionality in a DeepArchitect module. The instantiation of the Keras
             variables is taken care by the `compile_fn` function that takes a two
             dictionaries, one of inputs and another one of outputs, and
             returns another function that takes a dictionary of inputs and creates
@@ -158,17 +162,13 @@ Let us look at the Keras defined in
         def _update(self):
             pass
 
-
 The code is compact and self-explanatory.
-In this case, the we pass a compile_fn function that returns the forward_fn
-function upon compilation.
+We pass a function called :code:`compile_fn` that returns a
+function called :code:`forward_fn` function upon compilation.
 To instantiate a module of this type we simply have to provide a compile function
 that upon calling, returns a forward function.
 For example, for implementing a convolutional module from scratch relying on this
-module, we would do
-
-For example, by looking at the Keras docstring for the Conv2D and taking a
-subset of the options, we can write:
+module (check the Keras docstring for :code:`Conv2D`), we would do:
 
 .. code:: python
 
@@ -194,32 +194,32 @@ subset of the options, we can write:
                 "use_bias": h_use_bias
             }, compile_fn, ["In"], ["Out"]).get_io()
 
-
 A few points to pay attention to:
 
--   Input, output and hyperparameter names are specified when instantiating the
-    KerasModule.
+-   Input, output and hyperparameter names are specified when creating an instance of
+    :code:`KerasModule`.
 
--   di and dh are dictionaries with inputs names mapping to input values and
-    hyperparameter names mapping to hyperparameter values.
+-   :code:`di` and :code:`dh` are dictionaries with inputs names mapping to
+    input values and hyperparameter names mapping to hyperparameter values,
+    respectively.
 
--   In the line :code:`Conv2D(**dh)`, simply used the dictionary unpacking functionality
+-   :code:`Conv2D(**dh)` uses dictionary unpacking
     to call the Keras function that instantiates a Keras layer (as in the Keras
-    API). We could have done the unpacking manually and perform additional computation.
+    API). We could have done the unpacking manually and performed additional computation.
 
--   Upon the instantiation of the Keras modules, we call get_io to get a pair
-    (inputs, outputs), where both inputs and outputs are dictionaries, where
-    inputs maps input names to input objects (i.e., an object from the class
-    deep_architect.core.Input), and outputs maps output names to output objects
-    (i.e., an object from the class deep_architect.core.Output).
-    This is done because the search space constructs work directly on these dictionaries
-    rather than on modules.
-    Dealing directly with inputs and outputs makes the framework more easy to use
-    because we can transparently work over subgraph structures without ever concerning
+-   Upon the instantiation of the Keras module, we call :code:`get_io` to get a pair
+    :code:`(inputs, outputs)`, where both :code:`inputs` and :code:`outputs`
+    are dictionaries, where
+    :code:`inputs` maps input names to input objects (i.e., an object from the class
+    :code:`deep_architect.core.Input`), and :code:`outputs` maps output names to output objects
+    (i.e., an object from the class :code:`deep_architect.core.Output`).
+    Working directly with dictionaries of inputs and outputs is more convenient
+    than working with modules,
+    because we can transparently work with subgraph structures without concerning
     ourselves about whether they are composed of multiple modules or not.
 
 A minimal example to go from this wrapper code to an instantiated Keras
-model would be.
+model is:
 
 .. code:: python
 
@@ -229,14 +229,6 @@ model would be.
     from deep_architect.searchers.common import random_specify
     from keras.models import Model
 
-    # NOTE: this should probably be removed.
-    # TODO: go over this case and see if there is stuff to simplify with getting
-    # the values. maybe it should have namespace of our
-    # TODO: I think that one good way of going about it to create a search space
-    # factory from the inputs and outputs.
-    # SearchSpaceFactory(search_space_fn); this is enough.
-    # I think that all of the searchers will expect a search space factory because
-    # it prevents you from shooting in the foot.
     D = hp.Discrete
     # specifying all the hyperparameters.
     x = Input((32, 32, 3), dtype='float32')
@@ -256,11 +248,11 @@ model would be.
     import deep_architect.visualization as vi
     vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
-As modules with single inputs and single outputs are so common, we defined
+As modules with a single input and a single output are common, we defined
 a few simplified functions that directly work with the Keras definition.
 The goal of these functions is to reduce boilerplate and provide a more
 concise workflow.
-For example, the above function could be expressed in the same way as
+For example, the above function could be expressed in the same way as:
 
 .. code:: python
 
@@ -286,27 +278,27 @@ For example, the above function could be expressed in the same way as
     model.summary()
     vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
-We refer the reader to deep_architect.helpers.keras if the reader wishes to
+We refer the reader to
+`deep_architect.helpers.keras <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`__
+if the reader wishes to
 inspect the implementation of this function and how does it fit with the
 previous definition for a Keras module.
-We promise that this functions to minimal additional code.
-The main motivation to have these auxiliary functions in place is to
-reduce boilerplate for some of the most common use cases.
+These functions require minimal additional code.
+These auxiliary functions are convenient to reduce boilerplate for
+some of the most common use cases.
 As we have seen, it is possible to express everything that we need using
-the initial KerasModule, with the other functions being for the purpose of
+:code:`KerasModule`, with the other functions used for
 convenience for common specific cases.
-It may be necessary to use KerasModule directly for implementing the
-desired functionality in some cases, e.g., in the case of a module with multiple
-outputs.
+In some cases, it may be necessary to use :code:`KerasModule` directly for implementing the
+desired functionality, e.g., in the case of a module with multiple outputs.
 
-The co.forward calls the individual module forward and compile functions
-as defined in KerasModule and passed as argument during the instantiation.
+Calls to :code:`co.forward` call the individual module forward and compile functions
+as defined in :code:`KerasModule` and passed as argument during the instantiation.
 These are the main ideas for defining a module.
-We invite the reader to inspect deep_architect.core.forward more carefully
-for drilling down on how deep_architect.core.forward is defined is implemented
-in terms of graph traversal.
-
-This is sufficient to specialize the general module code in deep_architect.core
+We invite the reader to inspect :code:`deep_architect.core.forward` more carefully
+(found `here <https://github.com/negrinho/darch/blob/master/deep_architect/core.py>`__)
+for understanding how it is implemented using graph traversal.
+This is sufficient to specialize the general module code in :code:`deep_architect.core`
 to support basic modules that come from Keras.
 
 Let us now consider Pytorch.
@@ -317,15 +309,17 @@ the case of Keras) where the graph is defined upfront and used multiple times
 for both training and inference.
 Static versus dynamic is not really important for architecture search in
 DeepArchitect.
-There are multiple ways of getting around, e.g., searching over the
-computational elements that are used in a dynamic element of the network.
+There are multiple ways of getting around this, e.g., searching over the
+computational elements that are used in a dynamic way by the network.
+
+Pytorch helpers
+^^^^^^^^^^^^^^^
 
 Let us quickly walk through the DeepArchitect module specialization for
-DeepArchitect.
-We omit the docstring due to the similarity with the one for KerasModule.forward
+PyTorch.
+We omit the docstring due to the similarity with the one for :code:`KerasModule.forward`.
 
 .. code:: python
-
 
     class PyTorchModule(co.Module):
 
@@ -356,11 +350,10 @@ We omit the docstring due to the similarity with the one for KerasModule.forward
         def _update(self):
             pass
 
-
 We can see that the implementation for PyTorch is essentially the same as the
 one for Keras.
-The main difference is that the compile_fn function that returns both the
-forward_fn function and the list of Pytorch modules (as in nn.Module) that have
+The main difference is that the compile_fn function that returns both
+:code:`forward_fn` and the list of Pytorch modules (as in :code:`nn.Module`) that have
 been used in the computation.
 Returning the list of modules is used to keep track of what Pytorch modules
 are in use by the DeepArchitect module, which is necessary if we want to move them
@@ -373,6 +366,8 @@ when implemeneting support for a new framework in DeepArchitect.
 
 .. code:: python
 
+    import deep_architect.helpers.pytorch as hpy
+
 
     def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
 
@@ -384,7 +379,7 @@ when implemeneting support for a new framework in DeepArchitect.
 
             return forward_fn
 
-        return KerasModule(
+        return PyTorchModule(
             "Conv2D", {
                 "filters": h_filters,
                 "kernel_size": h_kernel_size,
@@ -396,7 +391,7 @@ when implemeneting support for a new framework in DeepArchitect.
 
     def conv2d_pytorch(h_filters, h_kernel_size, h_strides, h_activation,
                        h_use_bias):
-        return hke.siso_keras_module_from_keras_layer_fn(
+        return hpy.siso_pytorch_module_from_pytorch_layer_fn(
             Conv2D, {
                 "filters": h_filters,
                 "kernel_size": h_kernel_size,
@@ -405,11 +400,12 @@ when implemeneting support for a new framework in DeepArchitect.
                 "use_bias": h_use_bias
             })
 
+Concluding remarks
+^^^^^^^^^^^^^^^^^^
 
 DeepArchitect is not limited to deep learning frameworks---any domain that for
 which we can define notions of compile and forward as they were discussed above
 can be supported as above.
-# TODO: perhaps move this to a different place.
 Another aspect to keep in mind is that there is not a need for all the modules
 of the computational graph to be in the same domains (e.g., a preprocessing
 component followed by the actual graph propagation).

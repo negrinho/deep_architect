@@ -3,7 +3,7 @@ import deep_architect.core as co
 
 
 class KerasModule(co.Module):
-    """Class for taking Keras code and wrapping it in a darch module.
+    """Class for taking Keras code and wrapping it in a DeepArchitect module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
     the functionality associated to it (e.g., keeping track of inputs, outputs,
@@ -20,7 +20,7 @@ class KerasModule(co.Module):
     .. note::
         This module is abstract, meaning that it does not actually implement
         any particular Keras computation. It simply wraps Keras
-        functionality in a DeepArchitect module. The instantation of the Keras
+        functionality in a DeepArchitect module. The instantiation of the Keras
         variables is taken care by the `compile_fn` function that takes a two
         dictionaries, one of inputs and another one of outputs, and
         returns another function that takes a dictionary of inputs and creates

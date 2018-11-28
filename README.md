@@ -101,6 +101,7 @@ can have, choosing between sigmoid and ReLU activations, and the number of units
 each dense layer can have. Check the following minimal search space:
 
 ```python
+
 from __future__ import print_function
 
 import keras
@@ -352,6 +353,7 @@ search, but are useful in many contexts such as logging and visualization.
     or a sequence of graphs.
 
 We also have a few folders in the deep_architect folder.
+
 * [communicators](https://github.com/negrinho/darch/tree/master/deep_architect/communicators):
     simple functionality to communicate between master and worker
 processes to relay the evaluation of an architecture and retrieve the results

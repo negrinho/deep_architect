@@ -6,6 +6,10 @@ Searchers are used to determine the policy that is used to search a search space
 The search space merely encodes the set of architectures that are to be
 considered, allowing the encoding an expert's inductive bias in a very direct
 way.
+
+Searcher API
+^^^^^^^^^^^^
+
 We consider a very simple API for a searcher, composed of two main methods and
 two auxiliary methods.
 
@@ -69,7 +73,6 @@ two auxiliary methods.
             """
             raise NotImplementedError
 
-
 Implementing a new searcher is done by inheriting from this class.
 A searcher is initialized with a function that returns a search space,
 which is simply a dictionary of inputs and dictionary of outputs, where some
@@ -88,10 +91,9 @@ were used to arrive at the particular architecture that is being returned.
 If we call the search space function, iterate over the independent hyperparameters
 that do not have a value assigned yet, and assign the values from this list in
 order to them, we will obtain back the same architecture.
-The combination of the search space function and this list of hyperparameters
-effectively encodes the structure of the architecture sampled as it can be
-used to recover the sampled architecture.
-The iteration through the hyperparameters is guaranteed to be deterministic, i.e.,
+The combination of the search space function and this list of hyperparameters values
+encodes the architecture sampled.
+Iterating through the hyperparameters is guaranteed to be deterministic, i.e.,
 each time that the search space function is called and we iterate over the hyperparameters,
 we will traverse the hyperparameters in the same order (provided that the same
 hyperparameters are present; note that the specific values that we assign to
@@ -112,21 +114,25 @@ regardless of this, guaranteeing that the incoming results are used correctly.
 
 Finally, we look at the update function of the searcher.
 The update function takes the results of the evaluation and the searcher
-evalution token (which allows the searcher to identify which architecture
+evaluation token (which allows the searcher to identify which architecture
 the results refer to) and updates the state of the searcher with this new
 information. The searcher is a stateful object; updates to the searcher
 change the state of the searcher and therefore, the behavior of the searcher
 may change as a result.
 
-The other two auxiliary functions that we have for the searcher are save_state
-and load_state, which allows us to save the state of the searcher to disk
+The other two searcher auxiliary functions (that we have ommitted) are :code:`save_state`
+and :code:`load_state`, which allows us to save the state of the searcher to disk
 (e.g., for checkpointing) and load it back at a later stage.
 This is especially useful for long running searches that require resuming
 from saved state multiple times due to limits in job length on a server or
 potential hardware issues.
 
-We will now go over a two different searchers for the reader to ground the
+We will now go over a two different searchers to help the reader ground the
 ideas that we have discussed here.
+
+Random searcher
+^^^^^^^^^^^^^^^
+
 The simplest possible searcher is a random searcher, which assigns a random
 value to each of the unassigned hyperparameters.
 
@@ -147,7 +153,6 @@ value to each of the unassigned hyperparameters.
 
         def update(self, val, searcher_eval_token):
             pass
-
 
 The implementation of this searcher is very short. It uses the implementation
 of random_specify, which is also fairly compact. We copy it here for reference.
@@ -194,6 +199,9 @@ These are the two main auxiliary functions to randomly specify hyperparameters
 and to pick a random architecture from the search space by picking values
 for all the hyperparameters independently at random.
 As we can see, this functionality is concise and self-explanatory.
+
+SMBO searcher
+^^^^^^^^^^^^^
 
 Let us now see a SMBO searcher, which is more complex than the searcher than
 the random searcher that we looked at right now.
@@ -254,18 +262,22 @@ more performance architectures should ideally be scored higher than less perform
 ones).
 
 Sampling an architecture from the search space is done as a result
-of optimizing the surrogation function. In the implementation above, the
-optimization of the surrogate function is done by sampling a number of
-random architectures from the search space, evaluating the surrogate function,
+of optimizing the surrogate function. In the implementation above, the
+optimizing the surrogate function is done by sampling a number of
+random architectures from the search space, evaluating the surrogate function for each of them,
 and picking the best one. We also just pick an architecture at random from the
-search space with fixed probabability.
+search space with fixed probability.
 
 Updating the searcher in this case corresponds to updating the surrogate function
 with the observed results for the architecture in question. In this case,
 changes to the searcher policy occur as a result of updates to the surrogate
 function as it hopefully becomes more accurate as we get more data for the
 search space.
-The API definition for a surrogate function can be found in surrogates/common.py.
+The API definition for a surrogate function can be found in
+`surrogates/common.py <https://github.com/negrinho/darch/blob/master/deep_architect/surrogates/common.py>`__.
+
+Concluding remarks
+^^^^^^^^^^^^^^^^^^
 
 Implementing a new searcher amounts to implementing the sample and update
 methods for it. We see that these are fairly simple methods. One of the
@@ -273,8 +285,8 @@ advantages of this API definition for the searcher is that all the state of the
 searcher is kept locally in the searcher object.
 
 We point the reader to searchers folder for more example implementations of
-searcheres. There is a single searcher per file. We very much welcome searcher
+searchers. There is a single searcher per file. We very much welcome searcher
 contributions, so if you would like to contribute with a search algorithm that
 you developed for DeepArchitect, please write a issue to discuss the implementation.
-One of the goals of DeepArchitect is to make architecture search research widely
+One of the main goals of DeepArchitect is to make architecture search research widely
 available and reusable.

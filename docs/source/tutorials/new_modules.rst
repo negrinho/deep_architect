@@ -13,7 +13,10 @@ play when implementing new modules, but these aspects are almost the same across
 frameworks, so we believe that the reader will be able to get the gist of it
 for other frameworks.
 
-Again, the main starting point of implenting a new module is the implementation of
+Starting with the framework helper module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Again, the main starting point of implementing a new module is the implementation of
 the helper for the particular framework that we are dealing with, in this
 case, Keras:
 
@@ -24,7 +27,7 @@ case, Keras:
 
 
     class KerasModule(co.Module):
-        """Class for taking Keras code and wrapping it in a darch module.
+        """Class for taking Keras code and wrapping it in a DeepArchitect module.
 
         This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
         the functionality associated to it (e.g., keeping track of inputs, outputs,
@@ -41,7 +44,7 @@ case, Keras:
         .. note::
             This module is abstract, meaning that it does not actually implement
             any particular Keras computation. It simply wraps Keras
-            functionality in a DeepArchitect module. The instantation of the Keras
+            functionality in a DeepArchitect module. The instantiation of the Keras
             variables is taken care by the `compile_fn` function that takes a two
             dictionaries, one of inputs and another one of outputs, and
             returns another function that takes a dictionary of inputs and creates
@@ -103,7 +106,7 @@ case, Keras:
 With this helper, creating new functions is a matter of instantiating modules
 by passing the appropriate values for the name of the module, the names of the
 inputs and outputs, the hyperparameters, and the compile function.
-The compile function is perhaps the place that captures most of the speficic
+The compile function is perhaps the place that captures most of the specific
 functionality for the module in question that we want to implement.
 Calling the compile function passed as argument returns a function, called that
 we call the forward function. The _compile function is called only once.
@@ -114,7 +117,11 @@ Some aspects to note in the above definition are the
 Instances of this class are sufficient for most use cases that we have encountered,
 but there may exist special cases where inheriting from this class and implementing
 the _compile and _forward functions directly may be necessary.
-Another aspect to keep in mind is that in writing down search spaces, we work
+
+Working with inputs and outputs instead of modules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When writing down search spaces, we work
 mostly with inputs and outputs, so the following auxiliary function is useful,
 albeit a bit redundant.
 
@@ -154,7 +161,7 @@ A typical implementation of a module using these auxiliary functions looks like 
             'strides': h_strides
         }, ["In"], ["Out"])
 
-We see that the implementation is straighforward. The forward function is defined
+We see that the implementation is straightforward. The forward function is defined
 via a function closure. At the time that the compile function is called, we do
 have specific values for the inputs of the module, which in this case are Keras
 tensor nodes. If we were dealing with Tensorflow, these would Tensorflow op
@@ -167,6 +174,9 @@ names and whose values are input values) and a dictionary of outputs
 The forward function is simply called with a dictionary of input values.
 Values for the hyperparameters are accessible (due to being in the closure),
 but they are often not needed inside the forward function.
+
+Simplifications for single-input single-output modules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 While the above definition is a bit verbose, we expect it to be very straightforward
 in what it is doing and how it is interacting with the Keras module helper
@@ -212,6 +222,9 @@ explicitly, as they will just take the default names of In and Out.
             'strides': h_strides
         })
 
+Easily creating modules directly from framework functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Another auxiliary function that can be quite useful is to create a module
 directly from a function (e.g., most of the functions defined in keras.layers)
 that returns a Keras module.
@@ -248,7 +261,7 @@ For example, for getting a convolutional module, we can do
             "kernel_size": h_kernel_size
         })
 
-If additionaly, we would like to set some attributes to fixed values and have
+If additionally, we would like to set some attributes to fixed values and have
 other ones defined through hyperparameters, we can do as such
 
 .. code:: python
@@ -262,6 +275,9 @@ other ones defined through hyperparameters, we can do as such
                 "kernel_size": h_kernel_size
             }, name="Conv2D")
 
+Implementing new substitution modules
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 So far, we covered how can we easily implement new modules in a framework
 that we are working with. These examples were all focused on Keras, but these
 aspects that we covered so far transfer mostly without changes across frameworks.
@@ -269,7 +285,9 @@ All the aspects that we have seen so far correspond to examples of modules that
 actually implement computation. We will now look at examples of modules whose
 purpose is not to implement computation, but to perform a structural transformation
 based on the value of its hyperparameters. We call these modules substitution
-modules. One of the big advantages of substitution modules is that they are
+modules.
+
+One of the big advantages of substitution modules is that they are
 independent of the framework that we are working with. This means that
 upon porting one search space from one framework to a different one, the only
 modules that need to be ported are the basic modules. Any auxiliary functions that
@@ -401,14 +419,16 @@ The main method in the case of the substitution module is update, which
 is called each time one of the hyperparameters that is associated to the
 substitution module is assigned until finally all hyperparameters have a value
 assigned. The substitution is then performed.
-Substitution modules disappear from the graph when the subsitution is performed,
+
+Substitution modules disappear from the graph when the substitution is performed,
 being replaced by some graph fragment that is returned by the substitution function.
 The substitution function may itself return a graph fragment with substitution
 modules, which means that the process of substitution will proceed recursively
 until there are only basic modules. At that point, the search space is fully
 specified and we can call the compile and forward functions for each of the
 basic modules involved in it.
-The way to think about substitution modules is that they delay the choice of
+
+Substitution modules delay the choice of
 some structural property of the search space until some hyperparameters are
 assigned a value.
 Substitution modules are very useful and allows us to write down more complex
@@ -476,7 +496,7 @@ We will now look at two specific examples of substitution modules. First a
 very simple one that the reader will use widely and another one how often
 it is useful when implementing more complex search spaces from the literature.
 One of the simplest but also most useful substitution modules is the or
-substiution module (we often just use the version with a single input and a single
+substitution module (we often just use the version with a single input and a single
 output).
 
 .. code:: python
@@ -549,6 +569,9 @@ Another aspect that is clear from the example above is that substitution modules
 are modules, so they can be used in any place that a module can be used.
 This makes the language to write search spaces very compositional.
 
+An example of a complex substitution module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Let us now look at a more complex use of a custom substitution module.
 
 .. code:: python
@@ -613,6 +636,9 @@ connections in the motif are determined. The notion of the motif defined in the
 paper is recursive. We see that the motif function takes a submotif function
 that allows us to place submotifs in each of the edges that are included in the
 top-level motif.
+
+Concluding remarks
+^^^^^^^^^^^^^^^^^^
 
 This concludes our discussion about how to implement new modules in a specific
 framework that the reader is working with. We point the reader to the

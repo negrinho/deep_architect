@@ -2,7 +2,7 @@ import deep_architect.core as co
 
 
 class TFEModule(co.Module):
-    """Class for taking TFEager code and wrapping it in a darch module.
+    """Class for taking TFEager code and wrapping it in a DeepArchitect module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
     the information associated to it (e.g., inputs, outputs, and hyperparameters).
@@ -25,7 +25,7 @@ class TFEModule(co.Module):
     .. note::
         This module is abstract, meaning that it does not actually implement
         any particular TFEager computation. It simply wraps TFEager
-        functionality in a darch module. This functionality makes extensive use
+        functionality in a DeepArchitect module. This functionality makes extensive use
         of closures.
 
         The keys of the dictionaries that are passed to the compile function
@@ -45,7 +45,7 @@ class TFEModule(co.Module):
             a function that takes a dictionary with keys corresponding to
             `input_names` and returns a dictionary with keys corresponding
             to `output_names` and a list of Pytorch modules involved in the
-            computation of the darch module.
+            computation of the DeepArchitect module.
         input_names (list[str]): List of names for the inputs.
         output_names (list[str]): List of names for the outputs.
         scope (deep_architect.core.Scope, optional): Scope where the module will be

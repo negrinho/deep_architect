@@ -276,7 +276,7 @@ also search over depth of the network or to search over the number of computatio
 nodes on each stage (tying them or not).
 Arguably, doing all these extensions in an ad-hoc encoding is not straightforward
 as we have to think about custom ways of encoding these options.
-Within DeepArchitect, these transformations can be expressed in a straighforward
+Within DeepArchitect, these transformations can be expressed in a straightforward
 way with basic and substitution modules.
 
 # FOR example, we see that trivial extensions of the search space by working with

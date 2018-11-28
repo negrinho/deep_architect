@@ -11,16 +11,16 @@ some broad insights about the results can be extracted from the results of the
 search.
 Just compare this with the current non-architecture search workflow in
 machine learning.
-In such a workflow, it is hard to evaluate search over very diverse models
+In such a workflow, it is hard to evaluate very diverse models
 as the description of the search space is ad-hoc, being only practical to
-explore a moderate number of simple hyperparameters.
+express search spaces with a moderate number of simple hyperparameters.
 This tutorial also shows how to implement an evaluator and how it is used by the
 in a simple example to evaluate architectures coming from a simple search space.
-
 In DeepArchitect, we can express a search space in a standard way which
 is largely shared across all the frameworks and domains that we consider
 (only necessary to reimplement the simple modules, with the abstract modules
 such as substitution modules being applicable in the new domain without any changes).
+
 In this tutorial, we will talk a bit about how to use the logging functionalities
 in place for DeepArchitect.
 The logging functionality allows us to create a folder for a search experiment.
@@ -28,6 +28,7 @@ The logging folder contains a folder for each evaluation that is done during
 search.
 Each of the evaluation folders contains a component that is fixed and a component
 that is specified by the user.
+
 The fixed component contains a file with the hyperparameters values that define
 the architecture in the search space that is being considered in the search
 experiment and a file with the results obtained for that file.

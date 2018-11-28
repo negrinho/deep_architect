@@ -295,10 +295,6 @@ allowing us to get a sense of the improved performance with respect to
 existing searchers in whatever benchmark settings that the searcher
 intends to address.
 
-We recommend reading this paper and compare the new searcher under one of the
-benchmark settings that were identified there.
-**TODO: Add the link to the non-existing paper.**
-
 <!-- TODO: cut back on the framework independent stuff. -->
 ### Contributing a search space
 <!-- What is the goal of the search space. -->
@@ -380,8 +376,8 @@ It is not obvious which surrogate model architectures are effective at capturing
 the properties of an architecture that determine performance.
 We ask the contributor to explore different structures and validate their
 performance.
-Existing implementations of surrogate functions can be found at
-**Add link to the appropriate place**
+Existing implementations of surrogate functions can be found
+[here](https://github.com/negrinho/darch/tree/master/deep_architect/surrogates).
 
 ## Conclusion
 <!-- What were the topics that were addressed in this document. -->
@@ -390,5 +386,5 @@ Putting these guidelines in place guarantees that the focus is placed on the
 the functionality developed, rather than on the specific arbitrary decisions
 taken to implement it.
 Please make sure that you understand the main points of this document, e.g.,
-in terms of folder organization, documentation, code style, and test requirements,
+in terms of folder organization, documentation, code style, test requirements,
 and different types of contributions.

@@ -27,7 +27,7 @@ class PyTorchModule(co.Module):
     .. note::
         This module is abstract, meaning that it does not actually implement
         any particular Pytorch computation. It simply wraps Pytorch
-        functionality in a darch module. This functionality makes extensive use
+        functionality in a DeepArchitect module. This functionality makes extensive use
         of closures.
 
         The keys of the dictionaries that are passed to the compile function
@@ -52,7 +52,7 @@ class PyTorchModule(co.Module):
             a function that takes a dictionary with keys corresponding to
             `input_names` and returns a dictionary with keys corresponding
             to `output_names` and a list of Pytorch modules involved in the
-            computation of the darch module.
+            computation of the DeepArchitect module.
         input_names (list[str]): List of names for the inputs.
         output_names (list[str]): List of names for the outputs.
         scope (deep_architect.core.Scope, optional): Scope where the module will be
@@ -190,7 +190,7 @@ class PyTorchModel(nn.Module):
     # outputs is correct.
     def forward(self, input_name_to_val):
         """Forward computation of the module that is represented through the
-        graph of darch modules.
+        graph of DeepArchitect modules.
         """
         if self._module_seq is None:
             self._module_seq = co.determine_module_eval_seq(
