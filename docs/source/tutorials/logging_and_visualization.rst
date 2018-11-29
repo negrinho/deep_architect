@@ -2,57 +2,41 @@
 Logging and visualization
 -------------------------
 
-DeepArchitect regards logging and visualization as being important
-aspects of an architecture search based workflow.
-Architecture search provides tremendous opportunity for insightful visualizations
+Logging and visualization are important aspects of an architecture search workflow.
+Architecture search provides tremendous opportunity to create insightful visualizations
 based on architecture search results.
-A large number of models can be evaluated in the same setting, meaning that
-some broad insights about the results can be extracted from the results of the
-search.
-Just compare this with the current non-architecture search workflow in
-machine learning.
-In such a workflow, it is hard to evaluate very diverse models
-as the description of the search space is ad-hoc, being only practical to
-express search spaces with a moderate number of simple hyperparameters.
-This tutorial also shows how to implement an evaluator and how it is used by the
-in a simple example to evaluate architectures coming from a simple search space.
-In DeepArchitect, we can express a search space in a standard way which
-is largely shared across all the frameworks and domains that we consider
-(only necessary to reimplement the simple modules, with the abstract modules
-such as substitution modules being applicable in the new domain without any changes).
 
-In this tutorial, we will talk a bit about how to use the logging functionalities
-in place for DeepArchitect.
-The logging functionality allows us to create a folder for a search experiment.
-The logging folder contains a folder for each evaluation that is done during
-search.
-Each of the evaluation folders contains a component that is fixed and a component
+The logging functionality in DeepArchitect allows us to create a folder for
+a search experiment.
+This search log folder contains a folder for each evaluation done during search.
+Each evaluation folder contains a fixed component and a component
 that is specified by the user.
-
 The fixed component contains a file with the hyperparameters values that define
 the architecture in the search space that is being considered in the search
-experiment and a file with the results obtained for that file.
+experiment and a file with the results obtained for that architecture.
 Both of these files are represented as JSON files in disk.
-The user component allows the user to write any information that may be of
-interest to keep for the architecture in question.
-This allows, for example, to keep the actual model files that were generated as
-a result of evaluation or example predictions of the model evaluated.
+The user component allows the user to store any information that may be of
+interest for each particular architecture, e.g., parameters for the evaluated model
+or model predictions on examples of the validation set.
 The logging functionality makes it convenient to manage this folder structure
-having a single folder per evaluation.
-
-The logging folder for the whole search experiment also keeps user information
+with a single subfolder per evaluation.
+The log folder for the whole search experiment keeps user information
 at the search level. For example, if we want to keep checkpoints on the searcher
-as the search progress. We point the reader to
+as the search progresses.
+
+We point the reader to
 `examples/mnist_with_logging <https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py>`__
-for an example usage of logging.
-deep_architect/search_logging contains the API definition for the logging
-functionality. We recommend the reader to go through these references if the
-reader wishes to get a better grasp of the logging functionality.
+for an example use of logging, and to
+`deep_architect/search_logging.py <https://github.com/negrinho/darch/blob/master/deep_architect/search_logging.py>`__
+for the API definitions.
+We recommend the reader to go through these references
+to get a better grasp of the logging functionality.
 
-Let us now look at a specific example using the logging functionality.
-Let us start with the MNIST example in Keras adapted to DeepArchitect.
-This was copied from the Keras website.
+Starting Keras example to adapt for logging
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Let us start with a Keras MNIST example (copied from the Keras website),
+and adapt to get a DeepArchitect example using the logging functionality.
 
 .. code:: python
 
@@ -116,13 +100,15 @@ This was copied from the Keras website.
 
 This is the simplest MNIST example that we can get from the Keras examples
 website.
-It takes the MNIST examples in flattened form and applies a two layer multi-layer
-perceptron.
-We will adapt this example, but also, set up logging and visualization to
+
+Evaluator and search space definitions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We will adapt this example to create a DeepArchitect example showcasing some of
+the logging and visualization functionalities.
 
 It does not make sense to use the test data as validation data, so we will
-create a small validation set out of training set and use the test set only
-to evaluate the best architecture that we will found.
+create a small validation set out of training set.
 
 .. code:: python
 
@@ -195,7 +181,6 @@ to evaluate the best architecture that we will found.
             }
 
 
-    # TODO: using the information about the model. what can be done here?
     import deep_architect.helpers.keras as hke
     import deep_architect.hyperparameters as hp
     import deep_architect.searchers.common as sco
@@ -225,43 +210,47 @@ to evaluate the best architecture that we will found.
         ])
 
 
-    h_opt_drop = D([0, 1])
-    h_opt_batchnorm = D([0, 1])
-    h_permutation = hp.OneOfKFactorial(3)
-    h_activation = D(["relu", "tanh", "elu"])
-    fn = lambda: cell(h_opt_drop, h_opt_batchnorm, D([0.0, 0.2, 0.5, 0.8]),
-                      h_activation, h_permutation)
-    search_space_fn = lambda: mo.siso_sequential([
-        mo.siso_repeat(fn, D([1, 2, 4])),
-        km(Dense, {
-            "units": D([num_classes]),
-            "activation": D(["softmax"])
-        })
-    ])
+    def model_search_space():
+        h_opt_drop = D([0, 1])
+        h_opt_batchnorm = D([0, 1])
+        h_permutation = hp.OneOfKFactorial(3)
+        h_activation = D(["relu", "tanh", "elu"])
+        fn = lambda: cell(h_opt_drop, h_opt_batchnorm, D([0.0, 0.2, 0.5, 0.8]),
+                          h_activation, h_permutation)
+        return mo.siso_sequential([
+            mo.siso_repeat(fn, D([1, 2, 4])),
+            km(Dense, {
+                "units": D([num_classes]),
+                "activation": D(["softmax"])
+            })
+        ])
 
-    search_space_fn = mo.SearchSpaceFactory(search_space_fn).get_search_space
 
-    import deep_architect.search_logging as sl
+    search_space_fn = mo.SearchSpaceFactory(model_search_space).get_search_space
 
-    sl.create_search_folderpath(
-        'logs',
-        'logging_tutorial',
-        delete_if_exists=True,
-        create_parent_folders=True)
+Main search loop with logging
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This create an initial folder structure that will progressively be filled by
+This create an initial folder structure that will be progressively filled by
 each of the evaluations. The basic architecture search loop with a single process
 is as follows:
 
 .. code:: python
 
     from deep_architect.searchers.mcts import MCTSSearcher
+    import deep_architect.search_logging as sl
     import deep_architect.visualization as vi
     import deep_architect.utils as ut
 
     searcher = MCTSSearcher(search_space_fn)
     evaluator = Evaluator(batch_size, epochs)
     num_samples = 3
+
+    sl.create_search_folderpath(
+        'logs',
+        'logging_tutorial',
+        delete_if_exists=True,
+        create_parent_folders=True)
 
     for evaluation_id in range(num_samples):
         (inputs, outputs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
@@ -287,9 +276,16 @@ with only a few ones being of interest to the user, then perhaps different logic
 should be used to maintain these models.
 
 After running this code, we ask the reader to explore the resulting
-logging folder to get a sense of the information that is kept.
+log folder to get a sense of the information that is kept.
+We made the resulting folder available
+`here <https://www.cs.cmu.edu/~negrinho/deep_architect/logging_tutorial.zip>`__ in case the reader does not
+wish to run the code locally, but still wishes to inspect the resulting
+search log folder.
 
-These logging folders are then useful for visualization purposes. One of the
+Concluding remarks
+^^^^^^^^^^^^^^^^^^
+
+These log folders are then useful for visualization purposes. One of the
 advantages of architecture search is that it allows us to try many of the
 different architectures and explore different characteristics on each of them.
 For example, we may set the search space with the goal of exploring what
