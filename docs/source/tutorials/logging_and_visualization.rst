@@ -270,10 +270,11 @@ is as follows:
 
 The above code samples and evaluates three architectures from the search space.
 The results, the corresponding graph, and the saved models are logged to each of the evaluation
-folders. Typically, we may not want to save the weights for all the architectures
-sampled during training as this will lead to large amount of data being kept,
-with only a few ones being of interest to the user, then perhaps different logic
-should be used to maintain these models.
+folders. Typically, we may not want to store weights for all the architectures
+evaluated during search as it will lead to large amount of space being consumed.
+In case case only the weights for few architectures are to be kept around, then
+the user can employ different logic to guarantee that the number of stored models
+remains small during search.
 
 After running this code, we ask the reader to explore the resulting
 log folder to get a sense of the information that is kept.

@@ -70,7 +70,7 @@ deep learning search spaces.
 After compilation, :code:`forward` can be called multiple times to perform the
 computation repeatedly.
 
-Let us look in detail at concrete exmaples for frameworks that are currently
+Let us look in detail at concrete examples for frameworks that are currently
 supported in DeepArchitect.
 
 Keras helpers
@@ -362,7 +362,7 @@ As we see, the changes from Tensorflow to Pytorch are mainly a result by the
 differences in our these two frameworks handle the declaration of computational
 graphs.
 Hopefully, this conveys to the reader the considerations that should be taken
-when implemeneting support for a new framework in DeepArchitect.
+when implementing support for a new framework in DeepArchitect.
 
 .. code:: python
 
