@@ -285,10 +285,10 @@ search log folder.
 Concluding remarks
 ^^^^^^^^^^^^^^^^^^
 
-These log folders are then useful for visualization purposes. One of the
-advantages of architecture search is that it allows us to try many of the
+Log folders are useful for visualization.
+Architecture search allows us to try many of the
 different architectures and explore different characteristics on each of them.
-For example, we may set the search space with the goal of exploring what
+We may set the search space with the goal of exploring what
 characteristics lead to better performance. Architecture search, and
 more specifically, DeepArchitect and the workflow that we suggest allows us to
 formulate many of these questions easily and explore the results to gain insight.
