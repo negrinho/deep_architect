@@ -116,7 +116,7 @@ of the module on the value of that hyperparameter.
     y = outputs["Out"].val
     print(vs)
 
-The values randomly chosen are returned by :code:`random_specify`.
+The values randomly chosen are returned by :py:func:`deep_architect.searchers.common.random_specify`.
 This function simply iterates through the hyperparameters that have not
 been assigned a value yet and chooses a value randomly among the possible ones.
 After choosing all these values, the resulting search space looks like this.
@@ -460,8 +460,8 @@ giving recommendations to the reader on how and what to learn next.
 
 Throughout the instantiation of the various search spaces, we have seen
 this call to :code:`wrap_search_space_fn`, which internally uses
-:code:`mo.SearchSpaceFactory`.
-:code:`mo.SearchSpaceFactory` manages the global scope and buffer the
+:py:class:`deep_architect.modules.SearchSpaceFactory`.
+:py:class:`deep_architect.modules.SearchSpaceFactory` manages the global scope and buffer the
 search space to make sure that there are no substitution modules with unconnected
 inputs or outputs (i.e., at the border of the search space).
 
@@ -474,12 +474,12 @@ Every time that we want to start the search from scratch with a new search space
 we should clear the scope to avoid keeping the names and objects from the previous
 samples around.
 In most cases, the user does not have to be concerned about the scope as it
-can just use :code:`mo.SearchSpaceFactory` to handle the global scope.
+can just use :py:class:`deep_architect.modules.SearchSpaceFactory` to handle the global scope.
 
 The search space cannot have substitution modules in its border
 as effectively substitution modules disappear once the substitution is done,
 and therefore references to the module and its inputs and outputs become invalid.
-:code:`mo.SearchSpaceFactory` creates and connects extra identity modules
+:py:class:`deep_architect.modules.SearchSpaceFactory` creates and connects extra identity modules
 (which are basic modules, as opposed to substitution modules)
 before (in the case of inputs) or after (in the case of outputs) for each
 input and output belonging to a substitution module at the border of the search
@@ -491,7 +491,7 @@ ways.
 They often do not create new modules, but simply use graph fragments or
 functions that return graph fragments to create a new graph fragment by using the
 arguments in a certain way.
-An example of a function of this type is :code:`siso_sequential`, which just connects
+An example of a function of this type is :py:func:`deep_architect.modules.siso_sequential`, which just connects
 the graph fragments (expressed as a dictionary of inputs and a dictionary of outputs),
 in a serial connection, which just require us to connect inputs and outputs of the
 fragments passed as arguments to the function.
