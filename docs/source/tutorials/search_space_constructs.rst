@@ -98,7 +98,7 @@ In the construction of the search space, all function calls return a dictionary
 of inputs and outputs.
 Typically, we just use a searcher, but in this case we are just going
 to use a simple function from the search tools that randomly chooses
-values for all hyperparameters of the search space until values for all the
+values for all hyperparameters of the search space.
 
 The rectangles in the graph represent modules, and the ovals
 represent hyperparameters.
