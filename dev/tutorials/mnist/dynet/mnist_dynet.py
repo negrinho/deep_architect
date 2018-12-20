@@ -66,7 +66,8 @@ def nonlinearity(h_nonlin_name):
 
         return fn
 
-    return siso_dynet_module('Nonlinearity', compile_fn, {'nonlin_name': h_nonlin_name})
+    return siso_dynet_module('Nonlinearity', compile_fn,
+                             {'nonlin_name': h_nonlin_name})
 
 
 def dropout(h_keep_prob):
@@ -104,8 +105,8 @@ def dnn_net_simple(num_classes):
             lambda: mo.siso_sequential([
                 dense(h_num_hidden),
                 nonlinearity(h_nonlin_name),
-                mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),]),
-            h_num_repeats),
+                mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
+            ]), h_num_repeats),
         dense(D([num_classes]))
     ])
 
@@ -125,11 +126,12 @@ def dnn_net(num_classes):
     h_opt_drop = D([0, 1])
     return mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]),
-            h_nonlin_name, h_opt_drop,
-            D([0.25, 0.5, 0.75])), D([1, 2])),
-        dense(D([num_classes]))])
+        mo.siso_repeat(
+            lambda: dnn_cell(
+                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_opt_drop,
+                D([0.25, 0.5, 0.75])), D([1, 2])),
+        dense(D([num_classes]))
+    ])
 
 
 # Main/Searcher

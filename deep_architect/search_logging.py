@@ -1,10 +1,4 @@
-import json
-import os
-import shutil
-import time
-import subprocess
 import deep_architect.utils as ut
-from deep_architect.surrogates.common import extract_features
 from six import iteritems, itervalues
 
 

@@ -301,7 +301,8 @@ def budget_calibration_plot(reference_value_sequence,
     assert other_label_lst is None or (
         len(other_value_sequence_lst) == len(other_label_lst))
 
-    argsort_fn = lambda seq: argsort(seq, [lambda x: x], increasing=not maximizing)
+    argsort_fn = lambda seq: argsort(
+        seq, [lambda x: x], increasing=not maximizing)
 
     num_evals = len(reference_value_sequence)
     ref_sorting_idxs = argsort_fn(reference_value_sequence)

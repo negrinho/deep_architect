@@ -5,8 +5,8 @@ Implementing new modules
 
 In this tutorial, we will cover how to implement new modules in DeepArchitect.
 We will focus specifically on how to implement modules within a specific
-framework. For a discussion of how to support new frameworks, see tutorial
-new_frameworks.
+framework. For a discussion of how to support new frameworks, see the corresponding
+tutorial.
 
 We will use the Keras support to discuss the relevant aspects that come into
 play when implementing new modules, but these aspects are almost the same across
@@ -136,7 +136,7 @@ albeit a bit redundant.
         return KerasModule(name, name_to_hyperp, compile_fn, input_names,
                            output_names, scope).get_io()
 
-A typical implementation of a module using these auxiliary functions looks like this
+A typical implementation of a module using these auxiliary functions looks like this:
 
 .. code:: python
 
@@ -161,7 +161,7 @@ A typical implementation of a module using these auxiliary functions looks like 
             'strides': h_strides
         }, ["In"], ["Out"])
 
-We see that the implementation is straightforward. The forward function is defined
+The forward function is defined
 via a function closure. At the time that the compile function is called, we do
 have specific values for the inputs of the module, which in this case are Keras
 tensor nodes. If we were dealing with Tensorflow, these would Tensorflow op
@@ -182,8 +182,8 @@ While the above definition is a bit verbose, we expect it to be very straightfor
 in what it is doing and how it is interacting with the Keras module helper
 that we just presented above.
 To make the creation of modules less verbose, we introduce a few additional functions.
-For example, it is typical that we are often dealing with single input and single
-output modules, so we have defined the following function.
+For example, it is typical that we are often dealing with
+single-input and single-output modules, so we have defined the following function.
 
 .. code:: python
 
@@ -191,12 +191,12 @@ output modules, so we have defined the following function.
         return KerasModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
                            scope).get_io()
 
-This essentially saves us writing the names of the inputs and outputs for the
-single input and single output case. As the reader becomes familiar with
-DeepArchitect, the reader will notice that we use In/Out names for single
-input modules and In0, In1, ... and Out0, Out1, ... for modules that often
-have multiple inputs and/or outputs. These names are arbitrary and can be chosen
-differently.
+This saves us writing the names of the inputs and outputs for the
+single-input single-output case. As the reader becomes familiar with
+DeepArchitect, the reader will notice that we use In/Out names for
+single-input/single-output modules and In0, In1, .../Out0, Out1, ... for
+modules that often have multiple inputs/outputs.
+These names are arbitrary and can be chosen differently.
 
 Using this function, the above example would be written entirely similarly,
 except that we do not need that we do not need to name the input and output
@@ -250,7 +250,7 @@ that returns a Keras module.
         return siso_keras_module(name, compile_fn, name_to_hyperp, scope)
 
 This function is convenient from extremely simple and short cases for
-functions that return directly a single input single output Keras module.
+functions that return directly a single-input single-output Keras module.
 For example, for getting a convolutional module, we can do
 
 .. code:: python
@@ -496,8 +496,8 @@ We will now look at two specific examples of substitution modules. First a
 very simple one that the reader will use widely and another one how often
 it is useful when implementing more complex search spaces from the literature.
 One of the simplest but also most useful substitution modules is the or
-substitution module (we often just use the version with a single input and a single
-output).
+substitution module (we often just use the version with a single input and a
+single output).
 
 .. code:: python
 
@@ -633,7 +633,7 @@ this `paper <https://arxiv.org/abs/1711.00436>`_.
 The main goal of this substitution module is to delay the creation of the
 motif structure until the values for values for the hyperparameters of the
 connections in the motif are determined. The notion of the motif defined in the
-paper is recursive. We see that the motif function takes a submotif function
+paper is recursive. The motif function takes a submotif function
 that allows us to place submotifs in each of the edges that are included in the
 top-level motif.
 
