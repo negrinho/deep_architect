@@ -61,7 +61,7 @@ compile the modules in the search space.
 By the time that all the hyperparameters of the search space have been
 assigned a value, all substitution modules have been replaced and
 only basic modules will be in place.
-This can be seen in :code:`forward` in :code:`Module`.
+This can be seen in :py:meth:`deep_architect.core.Module.forward`.
 When :code:`forward` is called, :code:`_compile` is called once and then
 :code:`forward` is called right after.
 Compilation can be used to instantiate any state that is used by the
@@ -211,8 +211,8 @@ A few points to pay attention to:
     :code:`(inputs, outputs)`, where both :code:`inputs` and :code:`outputs`
     are dictionaries, where
     :code:`inputs` maps input names to input objects (i.e., an object from the class
-    :code:`deep_architect.core.Input`), and :code:`outputs` maps output names to output objects
-    (i.e., an object from the class :code:`deep_architect.core.Output`).
+    :py:class:`deep_architect.core.Input`), and :code:`outputs` maps output names to output objects
+    (i.e., an object from the class :py:class:`deep_architect.core.Output`).
     Working directly with dictionaries of inputs and outputs is more convenient
     than working with modules,
     because we can transparently work with subgraph structures without concerning
@@ -292,13 +292,13 @@ convenience for common specific cases.
 In some cases, it may be necessary to use :code:`KerasModule` directly for implementing the
 desired functionality, e.g., in the case of a module with multiple outputs.
 
-Calls to :code:`co.forward` call the individual module forward and compile functions
+Calls to :py:func:`deep_architect.core.forward` call the individual module forward and compile functions
 as defined in :code:`KerasModule` and passed as argument during the instantiation.
 These are the main ideas for defining a module.
-We invite the reader to inspect :code:`deep_architect.core.forward` more carefully
+We invite the reader to inspect :py:func:`deep_architect.core.forward` more carefully
 (found `here <https://github.com/negrinho/darch/blob/master/deep_architect/core.py>`__)
 for understanding how it is implemented using graph traversal.
-This is sufficient to specialize the general module code in :code:`deep_architect.core`
+This is sufficient to specialize the general module code in :py:mod:`deep_architect.core`
 to support basic modules that come from Keras.
 
 Let us now consider Pytorch.
