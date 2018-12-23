@@ -56,7 +56,7 @@ case, Keras:
             equal to the names of the outputs.
 
             This implementation is very similar to the implementation of the Tensorflow
-            helper :class:`deep_architect.helpers.tensorflow.TensorflowModule`.
+            helper :class:`deep_architect.helpers.tensorflow_support.TensorflowModule`.
 
         Args:
             name (str): Name of the module

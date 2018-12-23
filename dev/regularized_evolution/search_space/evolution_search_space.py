@@ -46,7 +46,7 @@ from collections import OrderedDict
 
 import deep_architect.core as co
 import deep_architect.hyperparameters as hp
-import deep_architect.helpers.tensorflow as htf
+import deep_architect.helpers.tensorflow_support as htf
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
 from deep_architect.contrib.deep_learning_backend.tf_ops import (

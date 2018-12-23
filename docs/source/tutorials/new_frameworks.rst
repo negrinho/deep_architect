@@ -116,7 +116,7 @@ Let us look at the Keras helper defined in
             equal to the names of the outputs.
 
             This implementation is very similar to the implementation of the Tensorflow
-            helper :class:`deep_architect.helpers.tensorflow.TensorflowModule`.
+            helper :class:`deep_architect.helpers.tensorflow_support.TensorflowModule`.
 
         Args:
             name (str): Name of the module
@@ -256,7 +256,7 @@ For example, the above function could be expressed in the same way as:
 
 .. code:: python
 
-    import deep_architect.helpers.keras as hke
+    import deep_architect.helpers.keras_support as hke
 
 
     def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):
@@ -279,7 +279,7 @@ For example, the above function could be expressed in the same way as:
     vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
 We refer the reader to
-`deep_architect.helpers.keras <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`__
+`deep_architect.helpers.keras_support <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`__
 if the reader wishes to
 inspect the implementation of this function and how does it fit with the
 previous definition for a Keras module.
@@ -366,7 +366,7 @@ when implementing support for a new framework in DeepArchitect.
 
 .. code:: python
 
-    import deep_architect.helpers.pytorch as hpy
+    import deep_architect.helpers.pytorch_support as hpy
 
 
     def conv2d(h_filters, h_kernel_size, h_strides, h_activation, h_use_bias):

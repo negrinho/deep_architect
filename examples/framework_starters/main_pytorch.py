@@ -8,13 +8,13 @@ import numpy as np
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.visualization as vi
-import deep_architect.helpers.pytorch as hpt
+import deep_architect.helpers.pytorch_support as hpt
 import deep_architect.searchers.random as se
 from deep_architect.contrib.misc.datasets.loaders import load_mnist
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 
 import torch.optim as optim
-from deep_architect.helpers.pytorch import PyTorchModel
+from deep_architect.helpers.pytorch_support import PyTorchModel
 
 D = hp.Discrete
 

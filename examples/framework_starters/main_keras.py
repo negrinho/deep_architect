@@ -6,7 +6,7 @@ import deep_architect.core as co
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.searchers.random as se
-import deep_architect.helpers.keras as hke
+import deep_architect.helpers.keras_support as hke
 import deep_architect.search_logging as sl
 import deep_architect.visualization as vi
 

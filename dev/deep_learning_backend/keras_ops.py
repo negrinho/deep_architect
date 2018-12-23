@@ -1,5 +1,5 @@
 from keras import layers
-from deep_architect.helpers.keras import siso_keras_module
+from deep_architect.helpers.keras_support import siso_keras_module
 from deep_architect.hyperparameters import Discrete as D
 """
 di['In'] is expected to be a tuple representing the shape of a single input

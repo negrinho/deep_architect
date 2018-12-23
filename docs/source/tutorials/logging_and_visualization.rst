@@ -181,7 +181,7 @@ create a small validation set out of training set.
             }
 
 
-    import deep_architect.helpers.keras as hke
+    import deep_architect.helpers.keras_support as hke
     import deep_architect.hyperparameters as hp
     import deep_architect.searchers.common as sco
     import deep_architect.modules as mo

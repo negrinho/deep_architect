@@ -53,7 +53,7 @@ See below for a minimal adaptation of the above example in DeepArchitect.
     import deep_architect.core as co
     import deep_architect.modules as mo
     import deep_architect.hyperparameters as hp
-    import deep_architect.helpers.keras as hke
+    import deep_architect.helpers.keras_support as hke
     from deep_architect.searchers.common import random_specify, specify
 
     D = hp.Discrete
