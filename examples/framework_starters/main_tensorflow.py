@@ -6,7 +6,7 @@ import numpy as np
 
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
-import deep_architect.helpers.tensorflow as htf
+import deep_architect.helpers.tensorflow_support as htf
 import deep_architect.visualization as vi
 
 from deep_architect.contrib.misc.datasets.loaders import load_mnist

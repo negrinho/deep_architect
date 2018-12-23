@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from deep_architect.helpers.pytorch import siso_pytorch_module
+from deep_architect.helpers.pytorch_support import siso_pytorch_module
 
 
 def calculate_same_padding(h_in, w_in, stride, filter_size):

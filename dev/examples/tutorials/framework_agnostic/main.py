@@ -86,7 +86,7 @@ logit_vals = None
 if backend.get_backend() == backend.TENSORFLOW:
     in_dim = list(X_batch.shape[1:])
     import tensorflow as tf
-    import deep_architect.helpers.tensorflow as htf
+    import deep_architect.helpers.tensorflow_support as htf
 
     # In order to feed the data through, you need to create placeholders for the
     # data and compile the graph with the placeholders assigned to the input nodes
@@ -123,7 +123,7 @@ elif backend.get_backend() == backend.TENSORFLOW_EAGER:
 # Eager framework.
 elif backend.get_backend() == backend.PYTORCH:
     import torch
-    import deep_architect.helpers.pytorch as hpy
+    import deep_architect.helpers.pytorch_support as hpy
     hpy.train(outs.values())
     co.forward({ins['In']: torch.Tensor(X_batch)})
     logit_vals = outs['Out'].val

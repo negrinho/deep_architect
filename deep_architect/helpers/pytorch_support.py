@@ -18,7 +18,7 @@ class PyTorchModule(co.Module):
     operation and constructs the actual computational graph fragment associated
     to this module.
 
-    See :class:`deep_architect.helpers.tensorflow.TensorflowModule` for a similar class for
+    See :class:`deep_architect.helpers.tensorflow_support.TensorflowModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
     static computational graphs, so the forward functionality is often only
     called once per creation for the graph creation. Pytorch requires calling
@@ -160,7 +160,7 @@ def parameters(output_lst):
 
 
 class PyTorchModel(nn.Module):
-    """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch.PyTorchModule`
+    """Encapsulates a network of modules of type :class:`deep_architect.helpers.pytorch_support.PyTorchModule`
     in a way that they can be used as :class:`torch.nn.Module`, e.g.,
     functionality to move the computation of the GPU or to get all the parameters
     involved in the computation are available.

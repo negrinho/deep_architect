@@ -1,5 +1,5 @@
 from deep_architect.contrib.misc.search_spaces.tensorflow.common import D, siso_tensorflow_module
-import deep_architect.helpers.tensorflow as htf
+import deep_architect.helpers.tensorflow_support as htf
 import deep_architect.modules as mo
 
 import tensorflow as tf

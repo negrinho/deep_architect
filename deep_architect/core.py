@@ -1,6 +1,5 @@
 from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
-import json
 
 
 class OrderedSet:

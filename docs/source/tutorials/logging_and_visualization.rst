@@ -181,7 +181,7 @@ create a small validation set out of training set.
             }
 
 
-    import deep_architect.helpers.keras as hke
+    import deep_architect.helpers.keras_support as hke
     import deep_architect.hyperparameters as hp
     import deep_architect.searchers.common as sco
     import deep_architect.modules as mo
@@ -231,7 +231,7 @@ create a small validation set out of training set.
 Main search loop with logging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This create an initial folder structure that will be progressively filled by
+This creates an initial folder structure that will be progressively filled by
 each of the evaluations. The basic architecture search loop with a single process
 is as follows:
 
@@ -246,17 +246,13 @@ is as follows:
     evaluator = Evaluator(batch_size, epochs)
     num_samples = 3
 
-    sl.create_search_folderpath(
-        'logs',
-        'logging_tutorial',
-        delete_if_exists=True,
-        create_parent_folders=True)
+    search_logger = sl.SearchLogger(
+        'logs', 'logging_tutorial', delete_if_exists=True, abort_if_exists=False)
 
     for evaluation_id in range(num_samples):
         (inputs, outputs, hyperp_value_lst, searcher_eval_token) = searcher.sample()
         results = evaluator.eval(inputs, outputs)
-        eval_logger = sl.EvaluationLogger(
-            'logs', 'logging_tutorial', evaluation_id, abort_if_exists=True)
+        eval_logger = search_logger.get_evaluation_logger(evaluation_id)
         eval_logger.log_config(hyperp_value_lst, searcher_eval_token)
         eval_logger.log_results(results)
         user_folderpath = eval_logger.get_evaluation_data_folderpath()

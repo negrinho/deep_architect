@@ -20,8 +20,8 @@ def get_environment_variable(name, abort_if_notexists=True):
 def get_gpu_information():
     gpus = []
     try:
-        convert_to_gigabytes = lambda x: ut.convert_between_byte_units(x,
-            src_units='megabytes', dst_units='gigabytes')
+        convert_to_gigabytes = lambda x: ut.convert_between_byte_units(
+            x, src_units='megabytes', dst_units='gigabytes')
         out = subprocess.check_output([
             'nvidia-smi',
             '--query-gpu=utilization.gpu,memory.used,memory.total',

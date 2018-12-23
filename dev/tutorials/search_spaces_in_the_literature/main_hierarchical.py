@@ -3,7 +3,7 @@ import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.utils as ut
 from deep_architect.searchers.common import random_specify
-import deep_architect.helpers.keras as hke
+import deep_architect.helpers.keras_support as hke
 import deep_architect.visualization as vi
 
 D = hp.Discrete

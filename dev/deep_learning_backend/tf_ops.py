@@ -1,5 +1,5 @@
-from deep_architect.helpers.tensorflow import (siso_tensorflow_module,
-                                               TensorflowModule)
+from deep_architect.helpers.tensorflow_support import (siso_tensorflow_module,
+                                                       TensorflowModule)
 import tensorflow as tf
 
 
@@ -134,8 +134,8 @@ def relu():
 
 
 def add():
-    return TensorflowModule('Add', {},
-                            lambda: lambda In0, In1: tf.add(In0, In1),
+    return TensorflowModule('Add',
+                            {}, lambda: lambda In0, In1: tf.add(In0, In1),
                             ['In0', 'In1'], ['Out']).get_io()
 
 

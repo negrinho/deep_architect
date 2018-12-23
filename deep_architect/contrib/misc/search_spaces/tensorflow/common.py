@@ -1,4 +1,4 @@
-import deep_architect.helpers.tensorflow as htf
+import deep_architect.helpers.tensorflow_support as htf
 import deep_architect.hyperparameters as hp
 
 D = hp.Discrete

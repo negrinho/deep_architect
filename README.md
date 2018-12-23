@@ -110,7 +110,7 @@ from keras.models import Model
 from keras.layers import Dense, Dropout, Input
 from keras.optimizers import RMSprop
 
-import deep_architect.helpers.keras as hke
+import deep_architect.helpers.keras_support as hke
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.core as co
