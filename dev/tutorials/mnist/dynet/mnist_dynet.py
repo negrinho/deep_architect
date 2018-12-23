@@ -4,7 +4,7 @@
 import dynet as dy
 import numpy as np
 
-from deep_architect.helpers.dynet import DyParameterCollection, siso_dynet_module
+from deep_architect.helpers.dynet_support import DyParameterCollection, siso_dynet_module
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 
