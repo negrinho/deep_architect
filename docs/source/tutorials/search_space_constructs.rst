@@ -262,7 +262,7 @@ The value assignment to the dependent hyperparameter is triggered due to the
 fact that all the hyperparameters that the dependent hyperparameter depends
 on have been assigned values.
 
-Delaying sub search space creation through substitution
+Delaying sub-search space creation through substitution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We have talked about modules and hyperparameters.

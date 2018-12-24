@@ -21,6 +21,7 @@ or any other component or functionality that would be useful to include
 in DeepArchitect, please make a pull request that follows the guidelines
 described in this document.
 After reading this document, you will understand:
+
 * what are the different types of contributions that we identify;
 * what is the folder structure for contributions;
 * what is required in terms of tests and documentation for different types of contributions;
@@ -49,7 +50,7 @@ The dev folder serves to store code that contains a sketch of some interesting
 functionality, but due to some reason, it is not fully functional or it
 has not been refactored well enough to be integrated as part of contrib.
 Unmaintained code will be moved to dev upon breakage.
-Code on dev should not be used directly, but it can serve as inspiration and reference
+Code in dev should not be used directly, but it can serve as inspiration and reference
 for additional functionality.
 
 <!-- How code evolves between the different folders. -->
