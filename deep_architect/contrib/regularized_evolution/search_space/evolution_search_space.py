@@ -51,7 +51,7 @@ import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
 from deep_architect.contrib.deep_learning_backend.tfe_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d,
-    max_pool2d, fc_layer, global_pool2d
+    max_pool2d, fc_layer, global_pool2d, dropout
 )
 
 from deep_architect.hyperparameters import Discrete as D
@@ -459,7 +459,9 @@ def ss_repeat(input_layers, h_N, h_sharer, h_filters, C, num_ov_repeat, num_clas
 
         return mo.siso_sequential([
             input_layers[-1],
+            relu(),
             global_pool2d(),
+            dropout(D([.5])),
             fc_layer(D([num_classes]))
         ])
     return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn, ['In0', 'In1'], ['Out'], scope)
@@ -468,7 +470,6 @@ def ss_repeat(input_layers, h_N, h_sharer, h_filters, C, num_ov_repeat, num_clas
 # and 3 from the regularized evolution paper
 def get_search_space_small(num_classes, C):
     co.Scope.reset_default_scope()
-    C = 5
     h_N = D([3])
     h_F = D([24])
     h_sharer = hp.HyperparameterSharer()

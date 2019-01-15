@@ -85,7 +85,7 @@ def load_cifar10(data_dir, flatten=False, one_hot=True, normalize_range=False,
             if data_format == 'NHWC':
                 X = X.transpose((0,2,3,1))
             X = X.astype('float32')
-            # sub = 10
+            # sub = 1000
             # X = X[:sub, :, :, :]
 
             # transformations based on the argument options.

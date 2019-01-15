@@ -21,10 +21,11 @@ def search_space():
     return mo.siso_sequential([
         mo.empty(),
         tfe_ops.conv2d(D([36]), D([3]), D([1]), D([1]), D([True])),
+        # tfe_ops.batch_normalization(),
+        # tfe_ops.relu(),
+        # tfe_ops.conv2d(D([36]), D([3]), D([1]), D([1]), D([True])),
         tfe_ops.batch_normalization(),
-        tfe_ops.relu(),
-        tfe_ops.conv2d(D([36]), D([3]), D([1]), D([1]), D([True])),
-        tfe_ops.dropout(D([.6])),
+        # tfe_ops.relu(),
         tfe_ops.global_pool2d(),
         tfe_ops.fc_layer(D([10]))
     ])
@@ -51,9 +52,9 @@ def main():
                         test_dataset=test_dataset, base_dir=scratch_folder)
 
     inputs, outputs, hs = search_space_factory.get_search_space()
-    se.specify(outputs.values(), hs, vs)
+    # se.specify(outputs.values(), hs, vs)
     # inputs, outputs = search_space()
-    # se.random_specify(outputs.values())
+    se.random_specify(outputs.values())
     results = evaluator.eval(inputs, outputs)
     pprint(results)
 

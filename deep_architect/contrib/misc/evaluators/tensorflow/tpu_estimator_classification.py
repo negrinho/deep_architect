@@ -42,7 +42,7 @@ def input_fn(features, labels, batch_size=128, train=True):
             return {'images': tf.image.random_flip_left_right(image)}, label
         dataset = dataset.shuffle(10 * batch_size)
         dataset = dataset.map(augmentation, num_parallel_calls=8)
-    dataset = dataset.batch(batch_size).prefetch(2)
+    dataset = dataset.batch(batch_size).prefetch(2 * batch_size)
     return dataset
     # images, labels = dataset.prefetch(2 * batch_size).make_one_shot_iterator().get_next()
     # features = {'images': images}
@@ -104,10 +104,9 @@ class AdvanceClassifierEvaluator:
         lr = tf.cond(step < warmup_steps, lambda: warmup_lr, lambda: lr)
         lr = tf.maximum(
             lr, 0.0001 * self.init_lr)
-        tf.summary.scalar('learning_rate', lr)
+        # tf.summary.scalar('learning_rate', lr)
 
         return lr
-
     def eval(self, inputs, outputs):
         tf.reset_default_graph()
 
@@ -115,6 +114,8 @@ class AdvanceClassifierEvaluator:
         ut.create_folder(model_dir, abort_if_exists=False)
 
 
+        def metric_fn(labels, predictions):
+            return {'accuracy': tf.metrics.accuracy(labels, predictions)}
 
         def model_fn(features, labels, mode, params):
             feature_columns = list(get_feature_columns().values())
@@ -149,15 +150,17 @@ class AdvanceClassifierEvaluator:
                 tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=labels))
             loss = unreg_loss + l2_loss
             # Compute evaluation metrics.
-            accuracy = tf.metrics.accuracy(labels=tf.argmax(labels, 1),
-                                        predictions=predicted_classes,
-                                        name='acc_op')
-            metrics = {'accuracy': accuracy}
+            # accuracy = tf.metrics.accuracy(labels=tf.argmax(labels, 1),
+            #                             predictions=predicted_classes,
+            #                               name='acc_op')
+            # metrics = {'accuracy': accuracy}
             if mode == tf.estimator.ModeKeys.EVAL:
-                loss = tf.Print(loss, [accuracy, l2_loss, unreg_loss, loss, tf.argmax(labels, 1),
-                    predicted_classes], summarize=10)
-                return tf.estimator.EstimatorSpec(
-                    mode, loss=loss, eval_metric_ops=metrics)
+                # loss = tf.Print(loss, [accuracy, l2_loss, unreg_loss, loss, tf.argmax(labels, 1),
+                #     predicted_classes], summarize=10)
+                return tf.contrib.tpu.TPUEstimatorSpec(
+                    mode,
+                    loss=loss,
+                    eval_metrics=(metric_fn, [tf.argmax(labels, 1), predicted_classes])
 
             # Create training op.
             assert mode == tf.estimator.ModeKeys.TRAIN
@@ -168,10 +171,11 @@ class AdvanceClassifierEvaluator:
                 .9,
                 momentum=.9,
                 epsilon=1.0)
-            loss = tf.Print(loss, [accuracy, l2_loss, unreg_loss, loss, learning_rate, tf.argmax(labels, 1), predicted_classes], summarize=10)
+            optimizer = tf.contrib.tpu.CrossShardOptimizer(optimizer)
+            # loss = tf.Print(loss, [accuracy, l2_loss, unreg_loss, loss, learning_rate, tf.argmax(labels, 1), predicted_classes], summarize=10)
             with tf.control_dependencies(update_ops):
                 train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-            return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
+            return tf.contrib.tpu.TPUEstimatorSpec(mode, loss=loss, train_op=train_op)
 
         # NUM_GPUS = 2
         # strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=NUM_GPUS)
