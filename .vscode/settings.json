@@ -1,8 +1,23 @@
 {
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true
+    },
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
     "python.linting.mypyArgs": [
         "--rcfile=.pylintrc"
     ],
-    "files.trimTrailingWhitespace": true
+    "files.trimTrailingWhitespace": true,
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": [
+        "--style",
+        "{based_on_style: google, ALLOW_MULTILINE_LAMBDAS: true}"
+    ],
+    "editor.formatOnSaveTimeout": 60000,
 }

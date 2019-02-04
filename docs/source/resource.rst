@@ -1,3 +1,0 @@
-Parallelism/Resource Policy 
-=======================
-hello

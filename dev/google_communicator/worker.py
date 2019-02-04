@@ -87,12 +87,16 @@ step = 0
 sl.create_search_folderpath(config['search_folder'], config['search_name'])
 search_data_folder = sl.get_search_data_folderpath(config['search_folder'], config['search_name'])
 finished = False
+working = False
 def eval(message):
     global step
     global finished
+    global working = True
     data = json.loads(message.data.decode('utf-8'))
     if data is 'kill':
         finished = True
+        message.nack()
+        subscription.cancel()
     else:
         vs, evaluation_id, searcher_eval_token = data
         inputs, outputs, hs = search_space_factory.get_search_space()
@@ -107,8 +111,15 @@ def eval(message):
         encoded_results = json.dumps((results, evaluation_id, searcher_eval_token)).encode('utf-8')
         future = publisher.publish(results_topic, encoded_results)
         future.result()
-    message.ack()
-subscriber.subscribe(arch_subscription, callback=eval)
+        message.ack()
+
+subscription = subscriber.subscribe(arch_subscription, callback=eval)
+
+time.sleep(10)
+if not working:
+    encoded_results = json.dumps('publish').encode('utf-8')
+    future = publisher.publish(results_topic, encoded_results)
+    future.result()
 
 while not finished:
     time.sleep(30)

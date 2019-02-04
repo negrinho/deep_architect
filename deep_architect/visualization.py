@@ -1,3 +1,4 @@
+from builtins import range
 import matplotlib.pyplot as plt
 import graphviz
 from six import itervalues, iteritems
@@ -6,13 +7,18 @@ import deep_architect.utils as ut
 import deep_architect.searchers as se
 import numpy as np
 
+
 def running_max(vs):
     return np.maximum.accumulate(vs)
 
-def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
-        draw_module_hyperparameter_info=True,
-        out_folderpath=None, graph_name='graph', print_to_screen=True,
-        format='pdf'):
+
+def draw_graph(output_lst,
+               draw_hyperparameters=True,
+               draw_io_labels=True,
+               draw_module_hyperparameter_info=True,
+               out_folderpath=None,
+               graph_name='graph',
+               print_to_screen=True):
     """Draws a graph representation of the current state of the search space.
 
     All edges are directed. An edge between two modules represents the output of
@@ -63,13 +69,15 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
     edge_fs = '10'
     h_fs = '10'
     penwidth = '1'
+
     def _draw_connected_input(ix_localname, ix):
         ox = ix.get_connected_output()
         if not draw_io_labels:
             label = ''
         else:
             ox_localname = None
-            for ox_iter_localname, ox_iter in iteritems(ox.get_module().outputs):
+            for ox_iter_localname, ox_iter in iteritems(
+                    ox.get_module().outputs):
                 if ox_iter == ox:
                     ox_localname = ox_iter_localname
                     break
@@ -79,14 +87,17 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
         g.edge(
             ox.get_module().get_name(),
             ix.get_module().get_name(),
-            label=label, fontsize=edge_fs)
+            label=label,
+            fontsize=edge_fs)
 
     def _draw_unconnected_input(ix_localname, ix):
-        g.node(ix.get_name(), shape='invhouse', penwidth=penwidth,
-            fillcolor='skyblue', style='filled')
-        g.edge(
+        g.node(
             ix.get_name(),
-            ix.get_module().get_name())
+            shape='invhouse',
+            penwidth=penwidth,
+            fillcolor='firebrick',
+            style='filled')
+        g.edge(ix.get_name(), ix.get_module().get_name())
 
     def _draw_module_hyperparameter(m, h_localname, h):
         if h.has_value_assigned():
@@ -94,14 +105,9 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
         else:
             label = h_localname
 
-        g.edge(
-            h.get_name(),
-            m.get_name(),
-            label=label,
-            fontsize=edge_fs)
+        g.edge(h.get_name(), m.get_name(), label=label, fontsize=edge_fs)
 
     def _draw_dependent_hyperparameter_relations(h_dep):
-
         for h_localname, h in iteritems(h_dep._hyperps):
             if h.has_value_assigned():
                 label = h_localname + '=' + str(h.get_value())
@@ -109,28 +115,28 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
                 label = h_localname
 
             g.edge(
-                h.get_name(),
-                h_dep.get_name(),
-                label=label,
-                fontsize=edge_fs)
+                h.get_name(), h_dep.get_name(), label=label, fontsize=edge_fs)
 
     def _draw_module_hyperparameter_info(m):
         g.node(
             m.get_name(),
             xlabel="<" + '<br align="right"/>'.join([
-                    '<FONT POINT-SIZE="%s">' % h_fs +
-                    h_localname + ('=' + str(h.get_value()) if h.has_value_assigned() else '') +
-                    "</FONT>"
-                    for h_localname, h in iteritems(m.hyperps)]) + ">")
+                '<FONT POINT-SIZE="%s">' % h_fs + h_localname +
+                ('=' + str(h.get_value()) if h.has_value_assigned() else '') +
+                "</FONT>" for h_localname, h in iteritems(m.hyperps)
+            ]) + ">")
 
     def _draw_output_terminal(ox_localname, ox):
-        g.node(ox.get_name(), shape='house', penwidth=penwidth, 
-            fillcolor='skyblue', style='filled')
-        g.edge(
-            ox.get_module().get_name(),
-            ox.get_name())
+        g.node(
+            ox.get_name(),
+            shape='house',
+            penwidth=penwidth,
+            fillcolor='deepskyblue',
+            style='filled')
+        g.edge(ox.get_module().get_name(), ox.get_name())
 
     nodes = set()
+
     def fn(m):
         """Adds the module information to the graph that is local to the module.
         """
@@ -160,8 +166,11 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
             if isinstance(h, co.DependentHyperparameter):
                 _draw_dependent_hyperparameter_relations(h)
 
-            g.node(h.get_name(), fontsize=h_fs,
-                fillcolor='darkseagreen3', style='filled')
+            g.node(
+                h.get_name(),
+                fontsize=h_fs,
+                fillcolor='darkseagreen',
+                style='filled')
 
     # add the output terminals.
     for m in co.extract_unique_modules(output_lst):
@@ -170,74 +179,85 @@ def draw_graph(output_lst, draw_hyperparameters=True, draw_io_labels=True,
 
     # minor adjustments to attributes.
     for s in nodes:
-        g.node(s, shape='rectangle', penwidth=penwidth, 
-            fillcolor='lightpink2', style='filled')
+        g.node(
+            s,
+            shape='rectangle',
+            penwidth=penwidth,
+            fillcolor='goldenrod',
+            style='filled')
 
     if print_to_screen or out_folderpath is not None:
         g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
-def draw_graph_evolution(output_lst, hyperp_value_lst, out_folderpath, graph_name='graph',
-        draw_hyperparameters=True, draw_io_labels=True, draw_module_hyperparameter_info=True, format='pdf'):
 
-    draw_fn = lambda i, lst: draw_graph(lst,
+def draw_graph_evolution(output_lst,
+                         hyperp_value_lst,
+                         out_folderpath,
+                         graph_name='graph',
+                         draw_hyperparameters=True,
+                         draw_io_labels=True,
+                         draw_module_hyperparameter_info=True):
+
+    def draw_fn(i):
+        return draw_graph(
+            output_lst,
             draw_hyperparameters=draw_hyperparameters,
             draw_io_labels=draw_io_labels,
             draw_module_hyperparameter_info=draw_module_hyperparameter_info,
             out_folderpath=out_folderpath,
             graph_name=graph_name + '-%d' % i,
-            print_to_screen=False,
-            format=format)
+            print_to_screen=False)
 
-    draw_fn(0, [output_lst[0].module.inputs.values()[0].get_connected_output()])
+    draw_fn(0)
     h_iter = co.unassigned_independent_hyperparameter_iterator(output_lst)
     for i, v in enumerate(hyperp_value_lst):
         h = h_iter.next()
         h.assign_value(v)
-        lst = [output_lst[0].module.inputs.values()[0].get_connected_output()]
-        draw_fn(i + 1, lst)
-        
+        draw_fn(i + 1)
 
-    in_filepath_expr = ut.join_paths([
-        out_folderpath, graph_name + '-{0..%d}.pdf' % len(hyperp_value_lst)])
+    filepath_lst = [
+        ut.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
+        for i in range(len(hyperp_value_lst) + 1)
+    ]
     out_filepath = ut.join_paths([out_folderpath, graph_name + '.pdf'])
-    ut.run_bash_command('pdftk %s cat output %s' % (in_filepath_expr, out_filepath))
 
-    for i in xrange(len(hyperp_value_lst) + 1):
-        filepath = ut.join_paths([out_folderpath, graph_name + '-%d.pdf' % i])
-        ut.delete_file(filepath)
+    cmd = " ".join(["pdftk"] + filepath_lst + ["cat", "output", out_filepath])
+    ut.run_bash_command(cmd)
+
+    for fp in filepath_lst:
+        ut.delete_file(fp)
+
 
 class LinePlot:
+
     def __init__(self, title=None, xlabel=None, ylabel=None):
         self.data = []
         self.title = title
         self.xlabel = xlabel
         self.ylabel = ylabel
 
-        self.color_to_str = {
-            'black' : 'k',
-            'red' : 'r'
-        }
-        self.line_type_to_str = {
-            'solid' : '-',
-            'dotted' : ':',
-            'dashed' : '--'
-        }
+        self.color_to_str = {'black': 'k', 'red': 'r'}
+        self.line_type_to_str = {'solid': '-', 'dotted': ':', 'dashed': '--'}
 
-    def add_line(self, xs, ys, label=None, err=None, color=None, line_type=None):
-        d = {"xs": xs,
-             "ys": ys,
-             "label": label,
-             "err": err,
-             "color": color,
-             "line_type": line_type}
+    def add_line(self, xs, ys, label=None, err=None, color=None,
+                 line_type=None):
+        d = {
+            "xs": xs,
+            "ys": ys,
+            "label": label,
+            "err": err,
+            "color": color,
+            "line_type": line_type
+        }
         self.data.append(d)
 
     def plot(self, show=True, fpath=None):
         f = plt.figure()
         for d in self.data:
             fmt = (self.color_to_str.get(d['color'], '') +
-                self.line_type_to_str.get(d['line_type'], ''))
-            plt.errorbar(d['xs'], d['ys'], yerr=d['err'], label=d['label'], fmt=fmt)
+                   self.line_type_to_str.get(d['line_type'], ''))
+            plt.errorbar(
+                d['xs'], d['ys'], yerr=d['err'], label=d['label'], fmt=fmt)
 
         if self.title is not None:
             plt.title(self.title)

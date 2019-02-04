@@ -1,7 +1,9 @@
 from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
 
+
 class OrderedSet:
+
     def __init__(self):
         self.d = OrderedDict()
 
@@ -24,11 +26,13 @@ class OrderedSet:
     def __contains__(self, item):
         return item in self.d
 
+
 class Scope:
     """A scope is used to help assign unique readable names to addressable objects.
 
     A scope keeps references to modules, hyperparameters, inputs, and outputs.
     """
+
     def __init__(self):
         self.name_to_elem = OrderedDict()
         self.elem_to_name = OrderedDict()
@@ -70,7 +74,8 @@ class Scope:
         The object must exist in the scope.
 
         Args:
-            elem (deep_architect.core.Addressable): Addressable object registered in the scope.
+            elem (deep_architect.core.Addressable): Addressable object
+                registered in the scope.
 
         Returns:
             str: Name with which the object was registered in the scope.
@@ -95,7 +100,11 @@ class Scope:
         """Replaces the current default scope with a new empty scope."""
         Scope.default_scope = Scope()
 
+
+# NOTE: is this called once for each time core is imported?
+# TODO: check.
 Scope.default_scope = Scope()
+
 
 class Addressable:
     """Base class for classes whose objects have to be registered in a scope.
@@ -103,10 +112,11 @@ class Addressable:
     Provides functionality to register objects in a scope.
 
     Args:
-        scope (deep_architect.core.Scope): Scope object where the addressable object will
-            be registered.
+        scope (deep_architect.core.Scope): Scope object where the addressable
+            object will be registered.
         name (str): Unique name used to register the addressable object.
     """
+
     def __init__(self, scope, name):
         scope.register(name, self)
         self.scope = scope
@@ -132,6 +142,7 @@ class Addressable:
         """
         return self.__class__.__name__
 
+
 class Hyperparameter(Addressable):
     """Base hyperparameter class.
 
@@ -151,6 +162,7 @@ class Hyperparameter(Addressable):
             hyperparameter. If none is given, uses the class name to derive
             the name.
     """
+
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
@@ -234,6 +246,7 @@ class Hyperparameter(Addressable):
         """
         raise NotImplementedError
 
+
 class DependentHyperparameter(Hyperparameter):
     """Hyperparameter that depends on other hyperparameters.
 
@@ -254,12 +267,14 @@ class DependentHyperparameter(Hyperparameter):
         name (str, optional): Name from which the name of the hyperparameter
             in the scope is derived.
     """
-    def __init__(self, fn, hyperps, scope=None, name=None):
+
+    def __init__(self, fn, hyperps, scope=None, name=None, unpack_kwargs=True):
         Hyperparameter.__init__(self, scope, name)
         # NOTE: this assert may or may not be necessary.
         # assert isinstance(hyperps, OrderedDict)
         self._hyperps = OrderedDict([(k, hyperps[k]) for k in sorted(hyperps)])
         self._fn = fn
+        self.unpack_kwargs = unpack_kwargs
 
         # registering the dependencies.
         for h in itervalues(self._hyperps):
@@ -273,11 +288,18 @@ class DependentHyperparameter(Hyperparameter):
         """
         # assert not self.has_value_assigned()
         if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
-            kwargs = {name: h.get_value() for name, h in iteritems(self._hyperps)}
-            self.assign_value(self._fn(**kwargs))
+            kwargs = {
+                name: h.get_value() for name, h in iteritems(self._hyperps)
+            }
+            if self.unpack_kwargs:
+                v = self._fn(**kwargs)
+            else:
+                v = self._fn(kwargs)
+            self.assign_value(v)
 
     def _check_value(self, val):
         pass
+
 
 class Input(Addressable):
     """Manages input connections.
@@ -288,11 +310,13 @@ class Input(Addressable):
     See also: :class:`deep_architect.core.Output` and :class:`deep_architect.core.Module`.
 
     Args:
-        module (deep_architect.core.Module): Module with which the input object is associated to.
-        scope (deep_architect.core.Scope): Scope object where the input is going to be
-            registered in.
+        module (deep_architect.core.Module): Module with which the input object
+            is associated to.
+        scope (deep_architect.core.Scope): Scope object where the input is
+            going to be registered in.
         name (str): Unique name with which to register the input object.
     """
+
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'I', name])
         Addressable.__init__(self, scope, name)
@@ -361,13 +385,14 @@ class Input(Addressable):
             :meth:`deep_architect.core.Output.reroute_all_connected_inputs`.
 
         Args:
-            to_input (deep_architect.core.Input): Input to which the output that is connected to
-                this input .is going to be connected to.
+            to_input (deep_architect.core.Input): Input to which the output
+                is going to be connected to.
         """
         assert isinstance(to_input, Input)
         old_ox = self.from_output
         self.disconnect()
         old_ox.connect(to_input)
+
 
 class Output(Addressable):
     """Manages output connections.
@@ -378,11 +403,13 @@ class Output(Addressable):
     See also: :class:`deep_architect.core.Input` and :class:`deep_architect.core.Module`.
 
     Args:
-        module (deep_architect.core.Module): Module with which the output object is associated to.
-        scope (deep_architect.core.Scope): Scope object where the output is going to be
-            registered in.
+        module (deep_architect.core.Module): Module with which the output object
+            is associated to.
+        scope (deep_architect.core.Scope): Scope object where the output is
+            going to be registered in.
         name (str): Unique name with which to register the output object.
     """
+
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'O', name])
         Addressable.__init__(self, scope, name)
@@ -402,7 +429,8 @@ class Output(Addressable):
         """Get the list of inputs to which is the output is connected to.
 
         Returns:
-            list[deep_architect.core.Input]: List of the inputs to which the output is connect to.
+            list[deep_architect.core.Input]: List of the inputs to which the
+                output is connect to.
         """
         return self.to_inputs
 
@@ -410,7 +438,8 @@ class Output(Addressable):
         """Get the module object with which the output is associated with.
 
         Returns:
-            deep_architect.core.Module: Module object with which the output is associated with.
+            deep_architect.core.Module: Module object with which the output is
+                associated with.
         """
         return self.module
 
@@ -443,13 +472,14 @@ class Output(Addressable):
             :meth:`deep_architect.core.Input.reroute_connected_output`.
 
         Args:
-            from_output (deep_architect.core.Output): Output to which the connected inputs are
-                going to be rerouted to.
+            from_output (deep_architect.core.Output): Output to which the
+                connected inputs are going to be rerouted to.
         """
         to_inputs = list(self.to_inputs)
         for ix in to_inputs:
             ix.disconnect()
             ix.connect(from_output)
+
 
 class Module(Addressable):
     """Modules inputs and outputs, and depend on hyperparameters.
@@ -465,10 +495,12 @@ class Module(Addressable):
     operations to understand are compile and forward.
 
     Args:
-        scope (deep_architect.core.Scope, optional): Scope object where the module is going to be
-            registered in.
+
+        scope (deep_architect.core.Scope, optional): Scope object where the
+            module is going to be registered in.
         name (str, optional): Unique name with which to register the module.
     """
+
     def __init__(self, scope=None, name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
@@ -502,7 +534,8 @@ class Module(Addressable):
         """Registers an hyperparameter that the module depends on.
 
         Args:
-            h (deep_architect.core.Hyperparameter): Hyperparameter that the module depends on.
+            h (deep_architect.core.Hyperparameter): Hyperparameter that the
+                module depends on.
             name (str): Local name to give to the hyperparameter.
         """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
@@ -535,8 +568,7 @@ class Module(Addressable):
         :meth:`_set_output_values` and :func:`forward`.
 
         Returns:
-            dict[str, object]:
-                Dictionary of local input names to their corresponding values.
+            dict[str, object]: Dictionary of local input names to their corresponding values.
         """
         return {name: ix.val for name, ix in iteritems(self.inputs)}
 
@@ -620,6 +652,7 @@ class Module(Addressable):
             self._is_compiled = True
         self._forward()
 
+
 def extract_unique_modules(input_or_output_lst):
     """Get the modules associated to the inputs and outputs in the list.
 
@@ -639,6 +672,7 @@ def extract_unique_modules(input_or_output_lst):
         ms.add(x.get_module())
     return list(ms)
 
+
 # assumes that the inputs provided are sufficient to evaluate all the network.
 # TODO: add the more general functionality that allows us to compute the sequence
 # of forward operations for a subgraph of the full computational graph.
@@ -652,8 +686,8 @@ def determine_module_eval_seq(input_lst):
     modules in the graph. See also: :func:`forward`.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of inputs sufficient to compute
-            the forward computation of the whole graph through propagation.
+        input_lst (list[deep_architect.core.Input]): List of inputs sufficient
+            to compute the forward computation of the whole graph through propagation.
 
     Returns:
         list[deep_architect.core.Module]:
@@ -665,7 +699,8 @@ def determine_module_eval_seq(input_lst):
     input_memo = set(input_lst)
     ms = extract_unique_modules(input_lst)
     for m in ms:
-        if m not in module_memo and all(ix in input_memo for ix in itervalues(m.inputs)):
+        if m not in module_memo and all(
+                ix in input_memo for ix in itervalues(m.inputs)):
             module_seq.append(m)
             module_memo.add(m)
 
@@ -675,6 +710,7 @@ def determine_module_eval_seq(input_lst):
                 m_lst = [ix.get_module() for ix in ix_lst]
                 ms.extend(m_lst)
     return module_seq
+
 
 def traverse_backward(output_lst, fn):
     """Backward traversal function through the graph.
@@ -687,8 +723,8 @@ def traverse_backward(output_lst, fn):
 
     Args:
         output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
-        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each module.
-            Returns ``True`` if the traversal is to be stopped.
+        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each
+            module. Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(output_lst)
@@ -704,6 +740,7 @@ def traverse_backward(output_lst, fn):
                         memo.add(m_prev)
                         ms.append(m_prev)
 
+
 def traverse_forward(input_lst, fn):
     """Forward traversal function through the graph.
 
@@ -715,8 +752,8 @@ def traverse_forward(input_lst, fn):
 
     Args:
         input_lst (list[deep_architect.core.Input]): List of inputs to start the traversal at.
-        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each module.
-            Returns ``True`` if the traversal is to be stopped.
+        fn ((deep_architect.core.Module) -> (bool)): Function to apply to each
+            module. Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
     ms = extract_unique_modules(input_lst)
@@ -733,6 +770,18 @@ def traverse_forward(input_lst, fn):
                             memo.add(m_next)
                             ms.append(m_next)
 
+
+def get_modules_with_cond(output_lst, cond_fn):
+    ms = OrderedSet()
+
+    def fn(m):
+        if cond_fn(m):
+            ms.add(m)
+
+    traverse_backward(output_lst, fn)
+    return ms
+
+
 def is_specified(output_lst):
     """Checks if all the hyperparameters reachable by traversing backward from
     the outputs have been set.
@@ -744,14 +793,17 @@ def is_specified(output_lst):
         bool: ``True`` if all the hyperparameters have been set. ``False`` otherwise.
     """
     is_spec = [True]
+
     def fn(module):
         for h in itervalues(module.hyperps):
             if not h.has_value_assigned():
                 is_spec[0] = False
                 return True
         return False
+
     traverse_backward(output_lst, fn)
     return is_spec[0]
+
 
 def forward(input_to_val, _module_seq=None):
     """Forward pass through the graph starting with the provided inputs.
@@ -785,6 +837,7 @@ def forward(input_to_val, _module_seq=None):
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
 
+
 def get_unconnected_inputs(output_lst):
     """Get the inputs that are reachable going backward from the provided outputs,
     but are not connected to any outputs.
@@ -808,8 +861,10 @@ def get_unconnected_inputs(output_lst):
             if not ix.is_connected():
                 ix_lst.append(ix)
         return False
+
     traverse_backward(output_lst, fn)
     return ix_lst
+
 
 def get_unconnected_outputs(input_lst):
     """Get the outputs that are reachable going forward from the provided inputs,
@@ -819,7 +874,8 @@ def get_unconnected_outputs(input_lst):
     these outputs.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of input to start the forward traversal at.
+        input_lst (list[deep_architect.core.Input]): List of input to start the
+            forward traversal at.
 
     Returns:
         list[deep_architect.core.Output]:
@@ -833,8 +889,10 @@ def get_unconnected_outputs(input_lst):
             if not ox.is_connected():
                 ox_lst.append(ox)
         return False
+
     traverse_forward(input_lst, fn)
     return ox_lst
+
 
 def get_all_hyperparameters(output_lst):
     """Going backward from the outputs provided, gets all hyperparameters.
@@ -898,7 +956,8 @@ def get_unassigned_independent_hyperparameters(output_lst):
     :func:`deep_architect.modules.siso_or`, and :func:`deep_architect.modules.siso_repeat`.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
+        output_lst (list[deep_architect.core.Output]): List of outputs to
+            start the traversal at.
 
     Returns:
         OrderedSet[deep_architect.core.Hyperparameter]:
@@ -908,13 +967,17 @@ def get_unassigned_independent_hyperparameters(output_lst):
     assert not is_specified(output_lst)
     unassigned_indep_hs = OrderedSet()
     for h in get_all_hyperparameters(output_lst):
-        if not isinstance(h, DependentHyperparameter) and not h.has_value_assigned():
+        if not isinstance(
+                h, DependentHyperparameter) and not h.has_value_assigned():
             unassigned_indep_hs.add(h)
     return unassigned_indep_hs
 
+
 # TODO: perhaps change to not have to work until everything is specified.
 # this can be done through a flag.
-def unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst=None):
+
+
+def unassigned_independent_hyperparameter_iterator(output_lst):
     """Returns an iterator over the hyperparameters that are not specified in
     the current search space.
 
@@ -931,20 +994,11 @@ def unassigned_independent_hyperparameter_iterator(output_lst, hyperp_lst=None):
             traversed back will reach all the modules in the search space, and
             correspondingly all the current unspecified hyperparameters of the
             search space.
-        hyperp_lst (list[deep_architect.core.Hyperparameter], optional): List of
-            additional hyperparameter that are not involved in the search space.
-            Often used to specif additional hyperparameters, e.g., learning
-            rate.
 
     Yields:
         (deep_architect.core.Hyperparameter):
             Next unspecified hyperparameter of the search space.
     """
-    if hyperp_lst is not None:
-        for h in hyperp_lst:
-            if not h.has_value_assigned():
-                yield h
-
     while not is_specified(output_lst):
         hs = get_unassigned_independent_hyperparameters(output_lst)
         for h in hs:

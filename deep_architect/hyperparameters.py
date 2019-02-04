@@ -3,6 +3,7 @@ import numpy as np
 from collections import OrderedDict
 import deep_architect.core as co
 
+
 class HyperparameterSharer:
     """Dictionary of hyperparameters used to help share hyperparameters between
     modules.
@@ -12,6 +13,7 @@ class HyperparameterSharer:
     hyperparameter and stores it in a dictionary. Once created, following calls
     get the hyperparameter from the dictionary.
     """
+
     def __init__(self):
         self.name_to_h_fn = OrderedDict()
         self.name_to_h = OrderedDict()
@@ -51,6 +53,7 @@ class HyperparameterSharer:
             self.name_to_h[hyperp_name] = self.name_to_h_fn[hyperp_name]()
         return self.name_to_h[hyperp_name]
 
+
 class Discrete(co.Hyperparameter):
     """List valued hyperparameter.
 
@@ -64,7 +67,9 @@ class Discrete(co.Hyperparameter):
         name (str, optional): Name from which the name of the hyperparameter
             in the scope is derived.
     """
+
     def __init__(self, vs, scope=None, name=None):
+        assert len(vs) > 0
         co.Hyperparameter.__init__(self, scope, name)
         self.vs = vs
 
@@ -79,18 +84,25 @@ class Discrete(co.Hyperparameter):
             print(val)
         assert val in self.vs
 
+
 class Bool(Discrete):
+
     def __init__(self, scope=None, name=None):
         Discrete.__init__(self, [0, 1], scope, name)
 
+
 class OneOfK(Discrete):
+
     def __init__(self, k, scope=None, name=None):
         Discrete.__init__(self, range(k), scope, name)
 
+
 class OneOfKFactorial(Discrete):
+
     def __init__(self, k, scope=None, name=None):
-        Discrete.__init__(self, range(np.product(np.arange(1, k + 1))), scope, name)
+        Discrete.__init__(self, range(np.product(np.arange(1, k + 1))), scope,
+                          name)
+
 
 # abbreviations
 D = Discrete
-

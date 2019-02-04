@@ -1,0 +1,17 @@
+"server_debug": {
+    "max_eval_time_in_minutes": 0.5,
+    "num_samples": 3,
+    "num_repetitions": 3,
+    "logs_folderpath": "logs/benchmarks",
+    "search_name": "server_debug",
+    "use_gpu": 0,
+    "delete_if_exists": 1,
+    "searcher_name_lst": [
+        "random",
+        "smbo_rand_256",
+        "smbo_mcts_256"
+    ],
+    "search_space_name_lst": [
+        "dnn"
+    ]
+}

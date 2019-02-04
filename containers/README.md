@@ -28,19 +28,10 @@ be ran from root folder of the project, i.e., same as it is used for running exa
 Additionally, we also generate build scripts in the `containers` folder for
 sets of containers, e.g., all containers or containers that use Python 2.7.
 
-I have built two Singularity images for darch: for the
-[CPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-cpu.img)
- and for the
-[GPU](https://www.cs.cmu.edu/~negrinho/darch/containers/darch-py27-gpu.img).
-These containers can be moved to your local machine and used to run a Python script
-(provided that you have Singularity installed)
-as `./$CONTAINER_PATH $SCRIPT_PATH`. To open a bash shell inside the container,
-do `singularity shell $CONTAINER_PATH`.
-
 To run a Singularity container with GPU support, use the `--nv` flag, e.g.,
 `singularity shell --nv py27-gpu.img`.
 Check the documentation of [Singularity](http://singularity.lbl.gov/docs-usage)
 for more information on how to run and use Singularity containers.
 
 **Important:** The most battle-tested containers are the Python 2.7 Singularity
-ones. Expect additional adventures for the other ones.
+ones. Expect adventures for the other ones.

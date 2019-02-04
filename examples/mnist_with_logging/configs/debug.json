@@ -1,0 +1,9 @@
+{
+    "num_samples": 3,
+    "max_eval_time_in_minutes": 0.5,
+    "log_output_to_terminal": 0,
+    "folderpath": "logs/mnist",
+    "search_name": "debug",
+    "delete_if_exists": 1,
+    "use_gpu": 0
+}

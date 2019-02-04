@@ -1,0 +1,13 @@
+{
+    "searcher": "evolution_pop=20_samp=20_reg=t",
+    "dataset": "mnist",
+    "search_space": "zoph_sp1",
+    "evaluator": "simple_classification",
+    "eval_epochs": 1,
+    "samples": 25,
+    "searcher_file_name": "searcher_state.json",
+    "save_every": 5,
+    "communicator": "mpi",
+    "search_folder": "logs",
+    "search_name": "evol_20_debug"
+}

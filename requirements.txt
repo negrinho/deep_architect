@@ -1,6 +1,0 @@
-graphviz
-numpy
-scipy
-matplotlib
-six
-sklearn

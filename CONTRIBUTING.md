@@ -1,7 +1,9 @@
-## Guidelines for contributing
+# Contributing
+
+## Introduction
 <!--  Contributions welcome.-->
 We strongly encourage contributions to DeepArchitect.
-If DeepArchitect has been useful to you in your work, show some appreciation by
+If DeepArchitect has been useful to you in your work, please show some appreciation by
 citing it and/or contributing to the codebase, e.g., by refactoring part of your
 code into something that can be generally useful to the community.
 We encourage everyone doing research in architecture search to implement their
@@ -19,6 +21,7 @@ or any other component or functionality that would be useful to include
 in DeepArchitect, please make a pull request that follows the guidelines
 described in this document.
 After reading this document, you will understand:
+
 * what are the different types of contributions that we identify;
 * what is the folder structure for contributions;
 * what is required in terms of tests and documentation for different types of contributions;
@@ -26,14 +29,12 @@ After reading this document, you will understand:
 
 <!-- How to decide exactly what to contribute. -->
 If you have a feature in mind that you would like to add to DeepArchitect but you
-aren't sure if it would be a good fit for inclusion, open a
+are not sure if it would be a good fit for inclusion, open a
 [GitHub issue](https://github.com/negrinho/deep_architect/issues)
 to discuss its scope and suitability.
 This guarantees that your efforts are well-aligned with the project direction.
 The best way to start a discussion is with a code snippet or pseudo-code
 that illustrates an important use case for the feature that you want to implement.
-You can also check the evergrowing list of work items
-[here](https://github.com/negrinho/deep_architect/blob/master/todos.md).
 
 ## Types of contributions
 <!-- The contrib and dev folders and their semantics. -->
@@ -49,7 +50,7 @@ The dev folder serves to store code that contains a sketch of some interesting
 functionality, but due to some reason, it is not fully functional or it
 has not been refactored well enough to be integrated as part of contrib.
 Unmaintained code will be moved to dev upon breakage.
-Code on dev should not be used directly, but it can serve as inspiration
+Code in dev should not be used directly, but it can serve as inspiration and reference
 for additional functionality.
 
 <!-- How code evolves between the different folders. -->
@@ -133,7 +134,7 @@ removing the corresponding folders in `deep_architect/contrib`, `tests/contrib`,
 and `examples/contrib`.
 While an example is not required, we do require a few tests to exercise the
 contributed code and have some guarantee that specific features remain correct
-as the contributed code or the development environment change.
+as the contributed code and the development environment change.
 
 ## Folder structure for contributions
 <!-- Motivation for the design of the contrib folder structure,
@@ -153,11 +154,11 @@ in `examples/contrib`.
 The subfolder in `examples/contrib` is meant for runnable code related to
 or making extensive use of the library code in the `deep_architect/contrib` subfolder.
 We recommend checking existing examples in the
-[repo](https://github.com/negrinho/deep_architect) for determining how to
+[repo](https://github.com/negrinho/darch) for determining how to
 structure and document a new example appropriately.
 
-<!-- The config.json file for storing runnable configurations. -->
-Configurations to run the example should be placed in a JSON configuration
+<!-- storing configurations for running examples. -->
+Each configuration to run the example should be placed in a JSON configuration
 file `$CONFIG_NAME.json` in a folder named `configs` living in the same folder
 of the main file of the example.
 JSON configuration files guarantee that the options that determine the behavior
@@ -166,18 +167,20 @@ This is more manageable, programmable, and configurable than having a command li
 This guarantees that it is easy to maintain and store many different configurations,
 e.g., one configuration where the code is exercised with
 few resources and another configuration where the code is exercised in a
-longer run, e.g., see [here](https://github.com/negrinho/deep_architect/blob/merge_all/examples/tensorflow/benchmarks/).
+longer run, e.g., see [here](https://github.com/negrinho/darch/tree/master/examples/mnist_with_logging).
 Each JSON file corresponds to a different configuration.
 We suggest including a `debug.json` to run a quick experiment to
 validate the functionality of both the code under `contrib/examples` and
 `deep_architect/contrib`.
-We recommend the use of config files for all but the most trivial examples.
+We recommend the use of configuration files for all but the most trivial examples.
+We often use the signature `python path/to/example/main.py -- config_filepath /path/to/config.json`
+for running examples, with all the information to run put in the configuration file.
 
 <!-- Separating the contribution according to the different modular components
 identified in the framework. -->
 Whether contributing examples or libraries, we recommend identifying the
 search spaces, searchers, evaluators, and datasets and splitting them into
-different files, e.g., [see]().
+different files, e.g., [see](https://github.com/negrinho/darch/tree/master/deep_architect/searchers).
 Having these components into multiple files makes the dependencies more
 explicit and improves the reusability of the components.
 The framework is developed around these modular components.
@@ -194,9 +197,13 @@ command line (after Visual Studio Code has been installed) with
 `code --install-extension $EXTENSION_NAME` where `EXTENSION_NAME` should be
 replaced by the name of each of the extensions.
 
+We include a VS Code settings file with the repo which makes uses of
+[yapf](https://github.com/google/yapf) to automatically format the code on save.
+This will allow the contributor to effortlessly maintain formatting consistency with the rest of DeepArchitect.
+
 <!-- Singularity containers for easy running. -->
-We provide Singularity containers (which should be easy to adapt to Docker containers)
-with the development environment.
+We provide Singularity and Docker containers recipes
+for the development environment.
 These can found in `containers` along with additional information on how to build
 them.
 
@@ -216,6 +223,7 @@ Getting the general gist of the design decisions that went in writing this code
 will help you write code that fits well with the existing code.
 This guarantees that the focus stays on the functionality rather than
 in differences in code style.
+We configured an autoformatter in VS Code to accomplish this effortlessly.
 
 <!-- Naming guidelines for variables, functions, and files. -->
 Readable variable names are preferred for function names, function arguments,
@@ -242,7 +250,7 @@ Contributions beyond the ones covered here in detail here are very much encourag
 
 ### Contributing a searcher
 <!-- What does a saercher do in the most widely applicable case. -->
-In most cases, searchers interact with the search space through a
+Searchers interact with the search space through a
 very simple interface: the searcher can ask if all the hyperparameters are
 specified (and therefore, if the specified search space can be compiled to a
 single model that can be evaluated);
@@ -251,32 +259,24 @@ a single unspecified hyperparameter and assign a value to it.
 When a value is assigned to an unspecified hyperparameter, the search space
 transitions, which sometimes gives rise to additional unspecified hyperparameters,
 e.g., after choosing the number of repetitions for a repetition substitution module.
-**TODO: Add the link**.
 
 <!-- General and specific searchers. -->
 The most general searchers rely solely on this simple interface.
-Good examples of general searchers implemented can be found in
-**TODO: Add the link**.
+Good examples of general searchers implemented can be found
+[here](https://github.com/negrinho/darch/tree/master/deep_architect/searchers).
 In more specific cases, namely in reimplementations of searchers proposed in
 specific architecture search papers, there is some coupling between the search
 space and the searcher.
 In this case, the developed searcher expects the search space to have certain
 structure or properties.
-A specific example of a searcher that expects a more specific search space
-and how that is tackled in the implementation of the searcher.
-**TODO: Add the link**.
-<!-- Nonetheless, it is still relevant to keep in mind the decomposition of the
-architecture search problem in search space, searcher, and evaluator.
-Often, even if the architecture search configuration that the user wishes to
-develop cannot be broken neatly into these three components, it may require
-a minimal adaptation of these components (or their interaction) to implement it. -->
+We recommend these types of searchers and search spaces to be kept in a
+contrib folder dedicated to the specific pair.
 
 <!-- Preferences about general versus specific models. -->
 Searchers that do not require a specific structure for the search space are
 preferred.
 Searchers that require some specific characteristics from the search space
 are also possible and often easily implemented in the framework.
-**TODO: Add the link to such a case**
 If the searcher requires some specific search space structure, please document
 this extensively, e.g., by including example search spaces that the searcher
 operates on, by discussing how do these differences compare with the most general
@@ -296,10 +296,7 @@ allowing us to get a sense of the improved performance with respect to
 existing searchers in whatever benchmark settings that the searcher
 intends to address.
 
-We recommend reading this paper and compare the new searcher under one of the
-benchmark settings that were identified there.
-**TODO: Add the link to the non-existing paper.**
-
+<!-- TODO: cut back on the framework independent stuff. -->
 ### Contributing a search space
 <!-- What is the goal of the search space. -->
 A search space encodes the set of architecture structures that
@@ -320,11 +317,6 @@ For example, all substitution modules are framework independent.
 Certain search space functionality that takes other smaller search spaces
 and put them together into a larger search space are also often framework
 independent.
-We have also started an attempt **Add link to the appropriate place**
-to develop a set of basic modules that are independent of the specific
-framework in which they are implemented in.
-These are motivated by the observation that often, simple modules in
-different frameworks.
 
 By this, we mean that the search spaces can be used with different frameworks
 (i.e., backends), not that different backends can be necessarily mixed together.
@@ -339,13 +331,8 @@ problem at hand.
 The goal of introducing new search spaces may be to explore new interesting
 structures and to make them available to other people that want to use them.
 
-<!-- TODO: more detail necessary. -->
-<!-- can we say something else about the evaluator? what else can we do this? -->
-<!-- having some form of search space over the evaluator. -->
-
 ### Contributing an evaluator
 <!-- equate the evaluator with training -->
-
 Evaluators are important in the sense that they determine the function that
 we are optimizing over the search space.
 If the evaluator does not do a good job identifying the models that we in fact
@@ -386,61 +373,12 @@ the search it induces, and by how effective it is in determining the relative
 ordering of models in the search space.
 A good surrogate functions should be able to embed the architecture to be
 evaluated and generate accurate predictions.
-It isn't obvious which surrogate model architectures are effective at capturing
+It is not obvious which surrogate model architectures are effective at capturing
 the properties of an architecture that determine performance.
 We ask the contributor to explore different structures and validate their
 performance.
-Existing implementations of surrogate functions can be found at
-**Add link to the appropriate place**
-
-<!-- TODO: come back here. -->
-
-
-### Contributing by working on work items
-
-**TODO:  check if this is in the README or not.**
-We maintain a list of work items in the `README.md`.
-These work items correspond to features or improvements that remain to be done
-either due to lack of time or lack of sufficiently .
-To work on the work items of either the main project or a contrib folder,
-we suggest that you first create an issue about the
-
-
-<!-- partition the work items into different categories.
-H.0, M.0, L.0; should this be a checklist, moved out of todos.
-Searcher.
-SearchSpace.
--->
-
-<!-- NOTE: this discussion for the  -->
-<!-- contrib.misc.H1000 -->
-
-Numbering for the works items starts at zero for each priority level.
-Once assigned, the number is persistent, meaning that future work items will
-have different higher numbers assigned to them.
-
-
-
-<!-- check Github's issue tracker. This is important. -->
-
-
-
-Next work items:
-
-<!-- Definition of proxy tasks. Why does it make sense to define proxy tasks. -->
-
-
-
-what are the tests that are going to run.
-
-contrib is the library component of your contribution.
-don't commit data files. your library should not require any data files.
-if you main requires data files, then add a README.md on how to download them.
-
-
-
-<!-- check that this is correct. -->
-
+Existing implementations of surrogate functions can be found
+[here](https://github.com/negrinho/darch/tree/master/deep_architect/surrogates).
 
 ## Conclusion
 <!-- What were the topics that were addressed in this document. -->
@@ -449,5 +387,5 @@ Putting these guidelines in place guarantees that the focus is placed on the
 the functionality developed, rather than on the specific arbitrary decisions
 taken to implement it.
 Please make sure that you understand the main points of this document, e.g.,
-in terms of folder organization, documentation, code style, and test requirements,
+in terms of folder organization, documentation, code style, test requirements,
 and different types of contributions.

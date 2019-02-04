@@ -1,9 +1,11 @@
 import deep_architect.core as co
 from six import iteritems
 
+
 class SurrogateModel:
     """Abstract class for a surrogate model.
     """
+
     def eval(self, feats):
         """ Returns a prediction of performance (or other relevant metrics),
         given a feature representation of the architecture.
@@ -23,10 +25,11 @@ class SurrogateModel:
         """
         raise NotImplementedError
 
+
 # extract some simple features from the network. useful for smbo surrogate models.
-def extract_features(inputs, outputs, hs):
-    """Extract a feature representation of a model represented through inputs,
-    outputs, and hyperparameters.
+def extract_features(inputs, outputs):
+    """Extract a feature representation of a model represented through inputs and
+    outputs.
 
     This function has been mostly used for performance prediction on fully
     specified models, i.e., after all the hyperparameters in the search space
@@ -39,8 +42,6 @@ def extract_features(inputs, outputs, hs):
             to inputs of the architecture.
         outputs (dict[str, deep_architect.core.Output]): Dictionary mapping names to outputs
             of the architecture.
-        hs (dict[str, deep_architect.core.Hyperparameter]): Dictionary mappings names to
-            hyperparameters of the architecture.
 
     Returns:
         dict[str, list[str]]:
@@ -52,12 +53,13 @@ def extract_features(inputs, outputs, hs):
     module_feats = []
     connection_feats = []
     module_hyperp_feats = []
-    other_hyperps_feats = []
 
     # getting all the modules
     module_memo = []
+
     def fn(m):
         module_memo.append(m)
+
     co.traverse_backward(outputs.values(), fn)
 
     for m in module_memo:
@@ -75,16 +77,12 @@ def extract_features(inputs, outputs, hs):
 
         # module hyperparameters
         for h_localname, h in iteritems(m.hyperps):
-            mh_feats = "%s/%s : %s = %s" % (
-                m.get_name(), h_localname, h.get_name(), h.get_value())
+            mh_feats = "%s/%s : %s = %s" % (m.get_name(), h_localname,
+                                            h.get_name(), h.get_value())
             module_hyperp_feats.append(mh_feats)
 
-    # other features
-    for h_localname, h in iteritems(hs):
-        oh_feats = "%s : %s = %s" % (h_localname, h.get_name(), h.get_value())
-        other_hyperps_feats.append(oh_feats)
-
-    return {'module_feats' : module_feats,
-            'connection_feats' : connection_feats,
-            'module_hyperp_feats' : module_hyperp_feats,
-            'other_hyperp_feats' : other_hyperps_feats }
+    return {
+        'module_feats': module_feats,
+        'connection_feats': connection_feats,
+        'module_hyperp_feats': module_hyperp_feats,
+    }

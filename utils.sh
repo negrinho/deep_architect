@@ -1,12 +1,110 @@
+# useful functions to work with the repo.
+
+ut_random_run_script_name(){ python -c 'import uuid; print("run_%s.sh" % uuid.uuid4())'; }
+ut_convert_md_to_rst(){ pandoc "$1" -f markdown -t rst -o "$2"; }
+ut_convert_rst_to_md(){ pandoc "$1" -f rst -t markdown -o "$2"; }
+
+ut_extract_python_code_from_docs() {
+    out_fp=`echo "${1%.*}"`".py" &&
+    python docs/main_get_code_from_docs.py \
+        --in_filepath "$1" \
+        --out_filepath "$out_fp";
+}
+
+# NOTE: this updates code in the documentation in place.
+# check that changes are as expected after using.
+ut_update_python_code_in_docs() {
+    code_fp=`echo "${1%.*}"`".py" &&
+    python docs/main_update_code_in_docs.py \
+        --in_doc_filepath "$1" \
+        --in_code_filepath "$code_fp" \
+        --out_filepath "$1";
+}
+
+ut_build_documentation(){
+    export LC_ALL=C && \
+    ut_convert_md_to_rst README.md docs/source/readme.rst && \
+    ut_convert_md_to_rst CONTRIBUTING.md docs/source/contributing.rst && \
+    cd docs && \
+    make clean && \
+    make html && \
+    cd -;
+}
+
+ut_spellcheck_file(){ aspell check "$1"; }
+
+# ut_build_py27_cpu_docker_container(){}
+# ut_build_py27_gpu_docker_container(){}
+ut_build_py27_cpu_singularity_container(){
+    python containers/main.py && \
+    ./containers/singularity/deep_architect-py27-cpu/build.sh;
+}
+# ut_build_py27_gpu_singularity_container(){}
+# ut_build_py36_cpu_docker_container(){}
+# ut_build_py36_gpu_docker_container(){}
+# ut_build_py36_cpu_singularity_container(){}
+# ut_build_py36_gpu_singularity_container(){}
+# ut_run_in_py27_cpu_docker_container(){}
+# ut_run_in_py27_gpu_docker_container(){}
+ut_run_in_py27_cpu_singularity_container(){
+    echo "$1" > "run.sh" && singularity exec containers/singularity/deep_architect-py27-cpu/deep_architect.img bash run.sh;
+}
+ut_bash_in_py27_cpu_singularity_container(){
+    singularity exec containers/singularity/deep_architect-py27-cpu/deep_architect.img bash run.sh;
+}
+# ut_run_in_py27_gpu_singularity_container(){}
+# ut_run_in_py36_cpu_docker_container(){}
+# ut_run_in_py36_gpu_docker_container(){}
+ut_run_in_py36_cpu_singularity_container(){
+    echo "$1" > "run.sh" && singularity exec containers/singularity/deep_architect-py36-cpu/deep_architect.img bash run.sh;
+}
+# ut_run_in_py36_gpu_singularity_container(){}
+# ut_run_fast_tests(){}
+ut_run_all_tests(){
+    set -x && ut_preappend_to_pythonpath "." &&
+    python examples/mnist/main.py &&
+    python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json &&
+    # python examples/benchmarks/main.py --config_filepath examples/benchmarks/configs/debug.json;
+    # ./examples/simplest_multiworker/run.sh debug 2 \
+    # ./tutorials/full_search/launch_file_based_search.sh 2 \
+    # ./tutorials/full_search/launch_mpi_based_search.sh 2 \
+    python examples/framework_starters/main_keras.py &&
+    python examples/framework_starters/main_tensorflow.py &&
+    python examples/framework_starters/main_pytorch.py;
+}
+
+ut_extract_all_doc_code(){
+    ut_extract_python_code_from_docs README.md &&
+    ut_extract_python_code_from_docs docs/source/tutorials/search_space_constructs.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/new_frameworks.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/new_modules.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/new_searchers.rst &&
+    ut_extract_python_code_from_docs docs/source/tutorials/logging_and_visualization.rst;
+}
+
+ut_update_all_doc_code(){
+    ut_update_python_code_in_docs README.md &&
+    ut_update_python_code_in_docs docs/source/tutorials/search_space_constructs.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/new_frameworks.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/new_modules.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/new_searchers.rst &&
+    ut_update_python_code_in_docs docs/source/tutorials/logging_and_visualization.rst;
+}
+
+# NOTE: this is for testing.
+ut_run_all_doc_code(){
+    set +x &&
+    python README.py &&
+    python docs/source/tutorials/search_space_constructs.py &&
+    python docs/source/tutorials/new_frameworks.py &&
+    python docs/source/tutorials/new_modules.py &&
+    python docs/source/tutorials/new_searchers.py &&
+    python docs/source/tutorials/logging_and_visualization.py;
+}
 
 # A large fraction of this code was pulled from research_toolbox
 # https://github.com/negrinho/research_toolbox
 
-ut_get_containing_folderpath() { echo "$(dirname "$1")"; }
-
-ut_run_python_command() { python -c "$1" >&2; }
-
-### NOTE: syncing the folder.
 UT_RSYNC_FLAGS="--archive --update --recursive --verbose"
 ut_sync_folder_to_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
 ut_sync_folder_from_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
@@ -39,58 +137,6 @@ ut_submit_bridges_gpu_job_with_resources() {
 #SBATCH --job-name=\"$2\"
 $1" && ut_run_command_on_bridges "cd \"./$3\" && echo \"$script\" > _run.sh && chmod +x _run.sh && sbatch _run.sh && rm _run.sh";
 }
-
-### NOTE: this needs to be updated.
-
-ut_compute_from_jsonfile() { ut_run_python_command "from deep_architect.utils import read_jsonfile; fn = $1; print fn(read_jsonfile(\"$2\"));"; }
-
-ut_test() { echo "from deep_architect.utils import read_jsonfile; fn = $1; print fn(read_jsonfile(\"$2\"));"; }
-
-ut_compute_from_jsonfile() { ut_run_python_command "import json; with "; }
-
-
-ut_run_example(){
-    folderpath=`ut_get_containing_folderpath "$1"` &&
-    python "$1" --config_filepath "$folderpath/configs/$2.json";
-}
-
-ut_run_all_examples(){
-    export PYTHONPATH=".:$PYTHONPATH" &&
-    ut_run_example examples/tensorflow/mnist_with_logging/main.py debug &&
-    ut_run_example examples/tensorflow/cifar10/main.py debug &&
-    ut_run_example examples/tensorflow/benchmarks/main.py debug;
-}
-
-ut_build_documentation(){ cd docs && make clean && make html && cd -; }
-
-# ut_run_multiworker_example
-# ut_run_singleworker_example
-# ut_run_resume_search_example
-# ut_run_logging_with_visualization_example
-#
-
-# ut_build_gpu_singularity_container(){ }
-# ut_build_cpu_singularity_container(){ }
-# ut_download_cpu_singularity_container(){ }
-# ut_download_cpu_singularity_container(){ }
-
-#### NOTE: I think that this is quite important.
-
-### TODO: this should download the
-# ut_download_data() { }
-
-# NOTE: this should be runable with both containers and both versions of the
-# it is a matter of
-
-# TODO: add the syncronization aspects of the model.
-
-# TODO: in some cases,
-
-# TODO: some utils to sample to run on the models that have been sampled.
-
-# NOTE: there is probably a more standard way of dealing with logging folders.
-
-
 
 ut_show_cpu_info() { lscpu; }
 ut_show_gpu_info() { nvidia-smi; }
@@ -125,20 +171,12 @@ ut_uncompress_folder(){ tar -zxf "$1"; }
 ut_send_mail_message_with_subject_to_address() { echo "$1" | mail "--subject=$2" "$3"; }
 ut_send_mail_message_with_subject_and_attachment_to_address() { echo "$1" | mail "--subject=$2" "--attach=$3" "$4"; }
 
-ut_sleep_in_seconds() { sleep "$1s"; }
-ut_run_every_num_seconds() { watch -n "$2" "$1"; }
-
 ut_run_headless_command() { nohup $1; }
 ut_run_command_on_server() { ssh "$2" -t "$1"; }
 ut_run_command_on_server_on_folder() { ssh "$2" -t "cd \"$3\" && $1"; }
 ut_run_bash_on_server_on_folder() { ssh "$1" -t "cd \"$2\" && bash"; }
 ut_run_python_command() { python -c "$1" >&2; }
 ut_profile_python_with_cprofile() { python -m cProfile -s cumtime $"$1"; }
-
-ut_map_jsonfile() { ut_run_python_command \
-    "from research_toolbox.tb_io import read_jsonfile, write_jsonfile;"\
-    "fn = $1; write_jsonfile(fn(read_jsonfile(\"$2\")), \"$3\");";
-}
 
 ut_get_git_head_sha() { git rev-parse HEAD; }
 ut_show_git_commits_for_file(){ git log --follow -- "$1"; }
@@ -151,13 +189,6 @@ ut_discard_all_git_uncommitted_changes() { git checkout -- .; }
 ut_grep_history() { history | grep "$1"; }
 ut_show_known_hosts() { cat ~/.ssh/config; }
 ut_register_ssh_key_on_server() { ssh-copy-id "$1"; }
-
-ut_create_folder_on_server() { ut_run_command_on_server "mkdir -p \"$1\"" "$2"; }
-ut_find_files_and_exec() { find "$1" -name "$2" -exec "$3" {} \ ; }
-
-UT_RSYNC_FLAGS="--archive --update --recursive --verbose"
-ut_sync_folder_to_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
-ut_sync_folder_from_server() { rsync $UT_RSYNC_FLAGS "$1/" "$2/"; }
 
 ut_show_environment_variables() { printenv; }
 ut_preappend_to_pythonpath() { export PYTHONPATH="$1:$PYTHONPATH"; }
@@ -217,13 +248,6 @@ ut_show_my_jobs_on_bridges() { ut_run_command_on_bridges "squeue -u rpereira"; }
 ut_cancel_job_on_bridges() { ut_run_command_on_bridges "scancel -n \"$1\""; }
 ut_cancel_all_my_jobs_on_bridges() { ut_run_command_on_bridges "scancel -u rpereira"; }
 
-# uses a deepo docker based image.
-# https://www.sylabs.io/guides/2.5.1/user-guide/
-ut_build_py27_cpu_singularity_container() { sudo singularity build --writable py27_cpu.img docker://ufoym/deepo:all-py27-cpu; }
-ut_build_py36_cpu_singularity_container() { sudo singularity build --writable py36_cpu.img docker://ufoym/deepo:all-py36-cpu; }
-ut_build_py27_gpu_singularity_container() { sudo singularity build --writable py27_gpu.img docker://ufoym/deepo:all-py27; }
-ut_build_py36_gpu_singularity_container() { sudo singularity build --writable py36_gpu.img docker://ufoym/deepo:all-py36; }
-
 # TODO: this needs to be adapted.
 ut_install_packages() {
     sudo apt-get install \
@@ -231,12 +255,3 @@ ut_install_packages() {
         mailutils \
         tree;
 }
-
-# NOTE: there are all these things to run locally and what not.
-
-# TODO: how to do the equivalent DOCKER containers.
-# I think that this is going to be interesting.
-
-# NOTE:
-
-# TODO: add a make logo config.

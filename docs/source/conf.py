@@ -17,7 +17,6 @@ import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../..'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = u'DeepArchitect'
@@ -28,7 +27,6 @@ author = u'Renato Negrinho'
 version = u''
 # The full version, including alpha/beta/rc tags
 release = u''
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -41,14 +39,18 @@ release = u''
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
 ]
+
+# # Show documentation for private functions.
+napoleon_include_private_with_doc = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -77,7 +79,6 @@ exclude_patterns = []
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -85,6 +86,7 @@ pygments_style = 'sphinx'
 #
 import sphinx_rtd_theme
 
+# html_theme = 'alabaster'
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
@@ -100,10 +102,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_static_path = ['_static']
 
 html_context = {
-    'css_files': [
-        'https://fonts.googleapis.com/css?family=Lato',
-        '_static/css/pytorch_theme.css'
-    ],
+    'css_files': ['https://fonts.googleapis.com/css?family=Lato'],
 }
 
 # Custom sidebar templates, must be a dictionary that maps document names
@@ -114,19 +113,21 @@ html_context = {
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-# html_sidebars = {
-#     '**': [
-#         'relations.html',  # needs 'show_related': True theme option to display
-#         'searchbox.html',
-#     ]
-# }
+html_sidebars = {
+    '**': [
+        'relations.html',  # needs 'show_related': True theme option to display
+        'searchbox.html',
+    ]
+}
 
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+html_logo = "logo/logo.svg"
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'DeepArchitectdoc'
-
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -156,16 +157,12 @@ latex_documents = [
      u'Renato Negrinho', 'manual'),
 ]
 
-
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'deeparchitect', u'DeepArchitect Documentation',
-     [author], 1)
-]
-
+man_pages = [(master_doc, 'deeparchitect', u'DeepArchitect Documentation',
+              [author], 1)]
 
 # -- Options for Texinfo output ----------------------------------------------
 
@@ -173,11 +170,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'DeepArchitect', u'DeepArchitect Documentation',
-     author, 'DeepArchitect', 'One line description of project.',
-     'Miscellaneous'),
+    (master_doc, 'DeepArchitect', u'DeepArchitect Documentation', author,
+     'DeepArchitect', 'One line description of project.', 'Miscellaneous'),
 ]
-
 
 # -- Extension configuration -------------------------------------------------
 

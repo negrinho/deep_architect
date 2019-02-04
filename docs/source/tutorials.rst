@@ -1,12 +1,11 @@
-.. _tutorials 
 
-DeepArchitect Tutorials 
-=========================
-
-This page also instructs how to go about tutorials 
+Tutorials
+=========
 
 .. toctree::
-    :maxdepth: 1
 
-    tutorials/mnist/mnist_tutorial.rst
-    tutorials/search_space/search_space.rst
+    tutorials/search_space_constructs
+    tutorials/new_modules
+    tutorials/new_searchers
+    tutorials/new_frameworks
+    tutorials/logging_and_visualization

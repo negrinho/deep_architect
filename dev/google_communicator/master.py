@@ -39,10 +39,10 @@ configs = ut.read_jsonfile("./examples/tensorflow/full_benchmarks/experiment_con
 parser = argparse.ArgumentParser("MPI Job for architecture search")
 parser.add_argument('--config', '-c', action='store', dest='config_name',
 default='normal')
-parser.add_argument('--project-id', '-p', action='store', dest='project_id',
-default='normal')
-parser.add_argument('--bucket', '-b', action='store', dest='bucket',
-default='normal')
+# parser.add_argument('--project-id', '-p', action='store', dest='project_id',
+# default='normal')
+# parser.add_argument('--bucket', '-b', action='store', dest='bucket',
+# default='normal')
 
 
 # Other arguments
@@ -76,11 +76,14 @@ search_space_factory = name_to_search_space_factory_fn[config['search_space']](n
 save_every = 1 if 'save_every' not in config else config['save_every']
 searcher = name_to_searcher_fn[config['searcher']](search_space_factory.get_search_space)
 num_epochs = -1 if 'epochs' not in config else config['epochs']
+num_samples = -1 if 'samples' not in config else config['samples']
+eval_epochs = config['eval_epochs']
+
+# SET UP GOOGLE STORE FOLDER
 sl.create_search_folderpath(config['search_folder'], config['search_name'])
 search_data_folder = sl.get_search_data_folderpath(config['search_folder'], config['search_name'])
-
 save_filepath = ut.join_paths((search_data_folder, config['searcher_file_name']))
-eval_epochs = config['eval_epochs']
+
 models_sampled = 0
 epochs = 0
 finished = 0
@@ -99,35 +102,48 @@ if options.resume:
 def update_searcher(message):
     global finished
     global best_accuracy
+    global epochs
     data = json.loads(message.data.decode('utf-8'))
-    results, evaluation_id, searcher_eval_token = data
-    eval_logger = sl.EvaluationLogger(
-        config['search_folder'], config['search_name'], evaluation_id)
-    eval_logger.log_results(results)
+    if not data is 'publish':
+        results, evaluation_id, searcher_eval_token = data
+        eval_logger = sl.EvaluationLogger(
+            config['search_folder'], config['search_name'], evaluation_id)
+        eval_logger.log_results(results)
 
-    searcher.update(results['validation_accuracy'], searcher_eval_token)
-    best_accuracy = max(best_accuracy, results['validation_accuracy'])
-    finished += 1
-    if epochs % save_every == 0:
-        print('Models sampled: %d Best Accuracy: %f' % (finished, best_accuracy))
-        best_accuracy = 0.
+        searcher.update(results['validation_accuracy'], searcher_eval_token)
+        best_accuracy = max(best_accuracy, results['validation_accuracy'])
+        finished += 1
+        epochs += eval_epochs
+        if finished % save_every == 0:
+            print('Models sampled: %d Best Accuracy: %f' % (finished, best_accuracy))
+            best_accuracy = 0.
 
-        searcher.save_state(search_data_folder)
-        state = {
-            'models_finished': finished,
-            'epochs': epochs,
-        }
-        ut.write_jsonfile(state, save_filepath)
+            searcher.save_state(search_data_folder)
+            state = {
+                'models_finished': finished,
+                'epochs': epochs
+            }
+            ut.write_jsonfile(state, save_filepath)
     message.ack()
-
     publish_new_arch()
 
+search_finished = False
 def publish_new_arch():
     global models_sampled
-    global epochs
-    if epochs >= num_epochs:
+    global search_finished
+    kill = num_samples != -1 and finished < num_samples
+    kill = kill or (num_epochs != -1 and epochs < num_epochs)
+    if kill:
         arch = 'kill'
-    else:
+        encoded_results = json.dumps(arch).encode('utf-8')
+        future = publisher.publish(arch_topic, encoded_results)
+        future.result()
+        search_finished = True
+        return
+
+    cont = num_samples == -1 or models_sampled < num_samples
+    cont = cont and (num_epochs == -1 or epochs < num_epochs)
+    if cont:
         eval_logger = sl.EvaluationLogger(
             config['search_folder'], config['search_name'], models_sampled)
         inputs, outputs, hs, vs, searcher_eval_token = searcher.sample()
@@ -136,21 +152,16 @@ def publish_new_arch():
         # eval_logger.log_features(inputs, outputs, hs)
         arch = (vs, models_sampled, searcher_eval_token)
 
-    encoded_results = json.dumps(arch).encode('utf-8')
-    future = publisher.publish(arch_topic, encoded_results)
-    future.result()
-    epochs += eval_epochs
-    models_sampled += 1
+        encoded_results = json.dumps(arch).encode('utf-8')
+        future = publisher.publish(arch_topic, encoded_results)
+        future.result()
+        models_sampled += 1
 
 
 subscriber.subscribe(results_subscription, callback=update_searcher)
-for i in range(len(config['num_workers'])):
-    if epochs < num_epochs:
-        publish_new_arch()
 
-while not epochs < num_epochs:
+while(not search_finished):
     time.sleep(30)
-
 
 subprocess.check_call([
     'gsutil', '-m', 'cp', '-r',

@@ -1,0 +1,13 @@
+{
+    "searcher": "enas_searcher",
+    "dataset": "mnist",
+    "search_space": "enas",
+    "evaluator": "enas_evaluator",
+    "epochs": 20,
+    "searcher_file_name": "searcher_state.json",
+    "save_every": 10,
+    "eager": true,
+    "communicator": "mpi",
+    "search_folder": "logs",
+    "search_name": "enas_debug"
+}

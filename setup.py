@@ -1,56 +1,50 @@
-from setuptools import setup, find_packages
-from codecs import open
-from os import path
-try:  # for pip >= 10
-    from pip._internal.req import parse_requirements
-    from pip._internal import download
-except ImportError:
-    from pip.req import parse_requirements
-    import pip.download
+from setuptools import setup
+from setuptools import find_packages
 
+long_description = """
+DeepArchitect is an architecture search framework with a focus on modularity,
+extensibility, composability, and ease of use.
+DeepArchitect uses composable and modular operators to express search
+spaces over computational graphs that are then passed to search algorithms that
+sample architectures from them with the goal of maximizing a desired performance
+metric.
 
-install_reqs = parse_requirements("requirements.txt", session=download.PipSession())
-install_requires = [str(ir.req) for ir in install_reqs]
+We aim to impact the workflows of researchers and practitioners with DeepArchitect.
+For researchers, DeepArchitect aims to make architecture search research more
+reusable and reproducible by providing them with a modular framework that they
+can use to implement new search algorithms and new search spaces while reusing
+a large amount of existing code.
+For practicioners, DeepArchitect aims to augment their workflow by providing them
+with a tool that allows them to easily write a search space encoding the large
+number of choices involved in designing an architecture and use a search
+algorithm automatically find an architecture in the search space.
 
+DeepArchitect has the following **main components**:
 
-here = path.abspath(path.dirname(__file__))
-
-
-# Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+* a language for writing composable and expressive search spaces over computational
+graphs in arbitrary domains (e.g., Tensorflow, Keras, Pytorch, and even
+non deep learning frameworks such as scikit-learn and preprocessing pipelines);
+* search algorithms that can be used for arbitrary search spaces;
+* logging functionality to easily keep track of the results of a search;
+* visualization functionality to explore and inspect logging information resulting
+from a search experiment.
+"""
 
 setup(
-    name='darch',
-
-    # Versions should comply with PEP440.  For a discussion on single-sourcing
-    # the version across setup.py and the project code, see
-    # https://packaging.python.org/en/latest/single_source_version.html
+    name='deep_architect',
     version='0.1.0',
-
-    description='Deep Architect',
+    description=
+    "DeepArchitect: Architecture search so easy that you'll think it's magic!",
     long_description=long_description,
-
-    # The project's main homepage.
     url='https://github.com/negrinho/darch',
-
-    # Author details
+    license='MIT',
     author='Renato Negrinho',
     author_email='negrinho@cs.cmu.edu',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        # How mature is this project? Common values are
-        #   3 - Alpha
-        #   4 - Beta
-        #   5 - Production/Stable
         'Development Status :: 3 - Alpha',
-
-        # Indicate who your project is intended for
         'Intended Audience :: Science/Research',
-
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
@@ -58,20 +52,14 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
-
-    # What does your project relate to?
-    keywords='deep architect',
-
-    # You can just specify the packages manually here if your project is
-    # simple. Or you can use find_packages().
     packages=['deep_architect'],
-
-    # optional dependencies
-    extras_require = {
-        'torch': ['torch'],
-        'tensorflow': ['tensorflow'],
-        'all': ['tensorflow', 'torch'],
-    },
-
-    install_requires=install_requires
-)
+    install_requires=[
+        'numpy',
+        'scipy',
+        'six',
+    ],
+    extras_require={
+        "docs": ["sphinx"
+                 "sphinx_rtd_theme"],
+        "viz": ['matplotlib', 'graphviz']
+    })

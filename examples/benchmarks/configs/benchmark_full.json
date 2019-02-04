@@ -1,0 +1,17 @@
+{
+    "max_eval_time_in_minutes": 2.0,
+    "num_samples": 256,
+    "num_repetitions": 3,
+    "folderpath": "logs/benchmarks",
+    "search_name": "benchmark_full",
+    "use_gpu": 1,
+    "delete_if_exists": 0,
+    "searcher_name_lst": [
+        "random",
+        "smbo_rand_256",
+        "smbo_mcts_256"
+    ],
+    "search_space_name_lst": [
+        "dnn"
+    ]
+}
