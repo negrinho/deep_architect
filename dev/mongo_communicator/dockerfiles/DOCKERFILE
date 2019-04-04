@@ -1,0 +1,65 @@
+FROM ubuntu:bionic
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+        wget \
+        sudo \
+        gnupg \
+        lsb-release \
+        ca-certificates \
+        build-essential \
+        git \
+        python \
+        python-pip \
+        python-setuptools && \
+    export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
+    echo "deb https://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    apt-get update && \
+    apt-get install -y google-cloud-sdk
+
+RUN pip install wheel && \
+    pip install tensorflow==1.12 && \
+    # pip install google-cloud-storage && \
+    # pip install google-api-python-client && \
+    # pip install oauth2client \
+    pip install future==0.16.0 && \
+    # pip install gax_google_logging_v2==0.8.3 && \
+    pip install numpy==1.14.5 && \
+    pip install setuptools==39.2.0 && \
+    pip install six==1.11.0 && \
+    pip install  --upgrade google-cloud-pubsub && \
+    pip install argparse && \
+    pip install sklearn
+
+# COPY requirements.txt /darch/requirements.txt
+# RUN pip install -r requirements.txt
+
+# RUN echo "deb http://packages.cloud.google.com/apt cloud-sdk-xenial main" | \
+#     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+#     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+#     apt-get update && apt-get install -y google-cloud-sdk
+
+WORKDIR /darch
+# ADD https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz data/
+ADD cifar10.tar.gz data/
+# RUN tar -xzf data/cifar-10-python.tar.gz -C data/
+# RUN mv data/cifar-10-batches-py data/cifar10
+RUN pip install --upgrade google-api-python-client && \
+    pip install --upgrade oauth2client && \
+    pip install --upgrade pymongo
+ENV PYTHONPATH /darch/
+# RUN pip install -r requirements.txt
+
+COPY service-key.json ./
+ENV GOOGLE_APPLICATION_CREDENTIALS=/darch/service-key.json
+RUN gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+
+COPY ./examples /darch/examples
+COPY ./deep_architect /darch/deep_architect
+COPY ./dev /darch/dev
+
+RUN gcloud config set compute/zone us-central1-f
+ENV PYTHONUNBUFFERED 1
+# CMD python dev/google_communicator/worker.py -c search_evol
+#ENTRYPOINT ["python", "dev/google_communicator/wait.py"]

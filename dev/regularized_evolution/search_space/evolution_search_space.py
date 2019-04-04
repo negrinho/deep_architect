@@ -46,16 +46,17 @@ from collections import OrderedDict
 
 import deep_architect.core as co
 import deep_architect.hyperparameters as hp
-import deep_architect.helpers.tensorflow_support as htf
+# import deep_architect.helpers.tensorflow_support as htf
+import dev.helpers.tfeager as htfe
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
-from deep_architect.contrib.deep_learning_backend.tf_ops import (
+from dev.deep_learning_backend.tfe_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
-    fc_layer, global_pool2d)
+    fc_layer, global_pool2d, dropout)
 
 from deep_architect.hyperparameters import Discrete as D
 
-TFM = htf.TensorflowModule
+TFEM = htfe.TFEModule
 const_fn = lambda c: lambda shape: tf.constant(c, shape=shape)
 
 
@@ -265,7 +266,7 @@ def sp2_operation(h_op_name, h_stride, h_filters):
 # make the number filters match, and then adds the inputs together
 def mi_add(num_terms, name=None):
 
-    def compile_fn(di, dh):
+    def cfn(di, dh):
         (_, _, _, min_channels) = di['In0'].get_shape().as_list()
         for i in range(num_terms):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
@@ -275,18 +276,14 @@ def mi_add(num_terms, name=None):
         for i in range(num_terms):
             (_, _, _, channels) = di['In' + str(i)].get_shape().as_list()
             if channels != min_channels:
-                w_dict[i] = tf.Variable(
-                    W_init_fn([1, 1, channels, min_channels]))
-                b_dict[i] = tf.Variable(b_init_fn([min_channels]))
+                conv_dict[i] = tf.layers.Conv2D(
+                    min_channels, 1, 1, use_bias=True, padding='SAME')
 
         def fn(di, isTraining=True):
             trans = []
             for i in range(num_terms):
-                if i in w_dict:
-                    trans.append(
-                        tf.nn.bias_add(
-                            tf.nn.conv2d(di['In' + str(i)], w_dict[i],
-                                         [1, 1, 1, 1], 'SAME'), b_dict[i]))
+                if i in conv_dict:
+                    trans.append(conv_dict[i](di['In' + str(i)]))
                 else:
                     trans.append(di['In' + str(i)])
             total_sum = trans[0]
@@ -296,8 +293,8 @@ def mi_add(num_terms, name=None):
 
         return fn
 
-    return TFM('MultiInputAdd' if name is None else name, {}, compile_fn,
-               ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
+    return TFEM('MultiInputAdd' if name is None else name, {}, cfn,
+                ['In' + str(i) for i in range(num_terms)], ['Out']).get_io()
 
 
 # This module applies a sp1_operation to two inputs, and adds them together
@@ -318,7 +315,7 @@ def sp1_combine(h_op1_name, h_op2_name, h_stride_1, h_stride_2, h_filters):
 # input modules.
 def selector(h_selection, available, scope=None):
 
-    def substitution_fn(selection):
+    def sub_fn(selection):
         ins, outs = available[selection]
         if len(ins) > 1:
             values = list(ins.values())
@@ -326,7 +323,7 @@ def selector(h_selection, available, scope=None):
         return ins, outs
 
     return mo.substitution_module('Selector', {'selection': h_selection},
-                                  substitution_fn, ['In'], ['Out'], scope)
+                                  sub_fn, ['In'], ['Out'], scope)
 
 
 # This module takes in a list of cell inputs, a list of hyperparameters that
@@ -352,7 +349,7 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
         'selection' + str(i): h_selections[i] for i in range(len(h_selections))
     }, dummy_func, ['In'], ['Out'], scope)
 
-    def substitution_fn(**selections):
+    def sub_fn(**selections):
         selected = [False] * len(selections)
         for k in selections:
             selected[selections[k]] = True
@@ -374,7 +371,7 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
 
         return ins, outs
 
-    module._substitution_fn = substitution_fn
+    module._substitution_fn = sub_fn
     return module.get_io()
 
 
@@ -382,15 +379,15 @@ def add_unused(h_selections, available, normal, name=None, scope=None):
 # factorized reduction operation in the amoebanet code.
 def pad_and_shift():
 
-    def compile_fn(di, dh):
+    def cfn(di, dh):
         pad_arr = [[0, 0], [0, 1], [0, 1], [0, 0]]
 
-        def fn(di):
+        def fn(di, isTraining=True):
             return {'Out': tf.pad(di['In'], pad_arr)[:, 1:, 1:, :]}
 
         return fn
 
-    return htf.siso_tensorflow_module('Pad', compile_fn, {})
+    return htfe.siso_tfeager_module('Pad', cfn, {})
 
 
 # This is a module used to concatenate two inputs along the channel dimension.
@@ -398,14 +395,14 @@ def pad_and_shift():
 # code.
 def concat(axis):
 
-    def compile_fn(di, dh):
+    def cfn(di, dh):
 
-        def fn(di):
+        def fn(di, isTraining=True):
             return {'Out': tf.concat(values=[di['In0'], di['In1']], axis=axis)}
 
         return fn
 
-    return TFM('Concat', {}, compile_fn, ['In0', 'In1'], ['Out']).get_io()
+    return TFEM('Concat', {}, cfn, ['In0', 'In1'], ['Out']).get_io()
 
 
 # This operation is used to reduce the size of the input, either by striding
@@ -515,7 +512,7 @@ def ss_repeat(input_layers,
               num_classes,
               scope=None):
 
-    def substitution_fn(N):
+    def sub_fn(N):
         assert N > 0
 
         h_iter = h_filters
@@ -537,12 +534,15 @@ def ss_repeat(input_layers,
                      factorized_reduction(h_iter, D([2]))])
                 input_layers.append(red_cell)
 
-        return mo.siso_sequential(
-            [input_layers[-1],
-             global_pool2d(),
-             fc_layer(D([num_classes]))])
+        return mo.siso_sequential([
+            input_layers[-1],
+            relu(),
+            global_pool2d(),
+            dropout(D([.5])),
+            fc_layer(D([num_classes]))
+        ])
 
-    return mo.substitution_module('SS_repeat', {'N': h_N}, substitution_fn,
+    return mo.substitution_module('SS_repeat', {'N': h_N}, sub_fn,
                                   ['In0', 'In1'], ['Out'], scope)
 
 

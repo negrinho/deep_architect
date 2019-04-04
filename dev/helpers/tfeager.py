@@ -1,3 +1,6 @@
+import numpy as np
+import tensorflow as tf
+
 import deep_architect.core as co
 
 
@@ -91,3 +94,8 @@ def setTraining(output_lst, isTraining):
 def siso_tfeager_module(name, compile_fn, name_to_hyperp, scope=None):
     return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
                      scope).get_io()
+
+
+def get_num_trainable_parameters():
+    return np.sum(
+        [np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()])

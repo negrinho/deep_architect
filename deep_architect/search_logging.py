@@ -232,6 +232,9 @@ class SearchLogger:
             abort_if_exists=abort_if_exists,
             abort_if_notexists=abort_if_notexists)
 
+    def get_search_data_folderpath(self):
+        return get_search_data_folderpath(self.folderpath, self.search_name)
+
 
 def read_evaluation_folder(evaluation_folderpath):
     """Reads all the standard JSON log files associated to a single evaluation.
