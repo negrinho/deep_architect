@@ -6,8 +6,6 @@ import logging
 from deep_architect import search_logging as sl
 from deep_architect import utils as ut
 
-from dev.mongo_communicator.search_space_factory import name_to_search_space_factory_fn
-from dev.mongo_communicator.searcher import name_to_searcher_fn
 from dev.mongo_communicator.mongo_communicator import MongoCommunicator
 
 logging.basicConfig(format='[%(levelname)s] %(asctime)s: %(message)s',
@@ -32,7 +30,7 @@ def process_config_and_args():
         '--config-file',
         action='store',
         dest='config_file',
-        default='/darch/dev/mongo_communicator/experiment_config.json')
+        default='/darch/dev/mongo_communicator/train_best_config.json')
     parser.add_argument('--bucket',
                         '-b',
                         action='store',
@@ -55,17 +53,8 @@ def process_config_and_args():
                         action='store',
                         dest='mongo_port',
                         default=27017)
-    parser.add_argument('--log',
-                        choices=['debug', 'info', 'warning', 'error'],
-                        default='info')
 
     options = parser.parse_args()
-
-    numeric_level = getattr(logging, options.log.upper(), None)
-    if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % options.log)
-    logging.getLogger().setLevel(numeric_level)
-
     configs = ut.read_jsonfile(options.config_file)
     config = configs[options.config_name]
 
@@ -73,23 +62,7 @@ def process_config_and_args():
 
     comm = MongoCommunicator(host=options.mongo_host,
                              port=options.mongo_port,
-                             data_refresher=True,
-                             refresh_period=10)
-
-    datasets = {
-        'cifar10': ('data/cifar10/', 10),
-    }
-
-    _, num_classes = datasets[config['dataset']]
-    search_space_factory = name_to_search_space_factory_fn[
-        config['search_space']](num_classes)
-
-    config['save_every'] = 1 if 'save_every' not in config else config[
-        'save_every']
-    searcher = name_to_searcher_fn[config['searcher']](
-        search_space_factory.get_search_space)
-    config['num_epochs'] = -1 if 'epochs' not in config else config['epochs']
-    config['num_samples'] = -1 if 'samples' not in config else config['samples']
+                             data_refresher=True)
 
     # SET UP GOOGLE STORE FOLDER
     search_logger = sl.SearchLogger(config['search_folder'],
@@ -102,12 +75,7 @@ def process_config_and_args():
     config['search_folder'] = sl.get_search_folderpath(config['search_folder'],
                                                        config['search_name'])
 
-    state = {
-        'epochs': 0,
-        'models_sampled': 0,
-        'finished': 0,
-        'best_accuracy': 0.0
-    }
+    state = {'finished': 0, 'best_accuracy': 0.0}
     if options.resume:
         try:
             download_folder(search_data_folder, config['search_folder'],
@@ -115,14 +83,12 @@ def process_config_and_args():
             searcher.load_state(search_data_folder)
             if ut.file_exists(config['save_filepath']):
                 old_state = ut.read_jsonfile(config['save_filepath'])
-                state['epochs'] = old_state['epochs']
-                state['models_sampled'] = old_state['models_sampled']
                 state['finished'] = old_state['finished']
                 state['best_accuracy'] = old_state['best_accuracy']
         except:
             pass
 
-    return comm, search_logger, searcher, state, config
+    return comm, search_logger, state, config
 
 
 def download_folder(folder, location, bucket):
@@ -144,33 +110,28 @@ def get_topic_name(topic, config):
     return topic + '_' + config['search_name']
 
 
-def update_searcher(message, comm, search_logger, searcher, state, config):
+def update_searcher(message, comm, search_logger, state, config):
     data = message['data']
     if not data == PUBLISH_SIGNAL:
         results = data['results']
         vs = data['vs']
         evaluation_id = data['evaluation_id']
         searcher_eval_token = data['searcher_eval_token']
-
         log_results(results, vs, evaluation_id, searcher_eval_token,
                     search_logger, config)
 
-        searcher.update(results['validation_accuracy'], searcher_eval_token)
         update_searcher_state(state, config, results)
-        save_searcher_state(searcher, state, config, search_logger)
+        save_searcher_state(state, config, search_logger)
 
-    publish_new_arch(comm, searcher, state, config)
+    maybe_publish_kill(comm, state, config)
     comm.finish_processing(get_topic_name(RESULTS_TOPIC, config), message)
 
 
-def save_searcher_state(searcher, state, config, search_logger):
-    logger.info('Models finished: %d Best Accuracy: %f', state['finished'],
+def save_searcher_state(state, config, search_logger):
+    logger.info('Models sampled: %d Best Accuracy: %f', state['finished'],
                 state['best_accuracy'])
-    searcher.save_state(search_logger.get_search_data_folderpath())
     state = {
         'finished': state['finished'],
-        'models_sampled': state['models_sampled'],
-        'epochs': state['epochs'],
         'best_accuracy': state['best_accuracy']
     }
     ut.write_jsonfile(state, config['save_filepath'])
@@ -183,7 +144,6 @@ def update_searcher_state(state, config, results):
     state['best_accuracy'] = max(state['best_accuracy'],
                                  results['validation_accuracy'])
     state['finished'] += 1
-    state['epochs'] += config['eval_epochs']
 
 
 def log_results(results, vs, evaluation_id, searcher_eval_token, search_logger,
@@ -197,52 +157,62 @@ def log_results(results, vs, evaluation_id, searcher_eval_token, search_logger,
                   config['bucket'])
 
 
-def publish_new_arch(comm, searcher, state, config):
-    while comm.check_data_exists(get_topic_name(ARCH_TOPIC, config),
-                                 'evaluation_id', state['models_sampled']):
-        state['models_sampled'] += 1
+def maybe_publish_kill(comm, state, config):
     if should_end_searcher(state, config):
-        logger.info('Search finished, sending kill signal')
-        comm.publish(get_topic_name(ARCH_TOPIC, config), KILL_SIGNAL)
+        logger.info('Search finished')
+        # comm.publish(get_topic_name(ARCH_TOPIC, config), KILL_SIGNAL)
         state['search_finished'] = True
-    elif should_continue(state, config):
-        logger.info('Publishing architecture number %d',
-                    state['models_sampled'])
-        _, _, vs, searcher_eval_token = searcher.sample()
-        arch = {
-            'vs': vs,
-            'evaluation_id': state['models_sampled'],
-            'searcher_eval_token': searcher_eval_token,
-            'eval_hparams': {}
-        }
-        comm.publish(get_topic_name(ARCH_TOPIC, config), arch)
-        state['models_sampled'] += 1
-
-
-def should_continue(state, config):
-    cont = config[
-        'num_samples'] == -1 or state['models_sampled'] < config['num_samples']
-    cont = cont and (config['num_epochs'] == -1 or
-                     state['epochs'] < config['num_epochs'])
-    return cont
 
 
 def should_end_searcher(state, config):
-    kill = config['num_samples'] != -1 and state['finished'] >= config[
-        'num_samples']
-    kill = kill or (config['num_epochs'] != -1 and
-                    state['epochs'] >= config['num_epochs'])
-    return kill
+    return state['finished'] == state['models_sampled']
+
+
+def train_best(comm, state, config):
+    search_results = ut.read_jsonfile(config['results_file'])
+    best_k = list(
+        reversed(
+            sorted(
+                zip(search_results['validation_accuracies'],
+                    search_results['configs']))))[:config['num_architectures']]
+    model_id = 0
+    for rank, (_, vs) in enumerate(best_k):
+        for trial in range(config['num_trials']):
+            for lr in [.1, .05, .025, .01, .005, .001]:
+                for wd in [.0001, .0003, .0005]:
+                    if not comm.check_data_exists(
+                            get_topic_name(ARCH_TOPIC, config), 'evaluation_id',
+                            model_id):
+                        logger.info(
+                            'Publishing trial %d for rank %d architecture',
+                            trial, rank)
+                        arch = {
+                            'vs': vs,
+                            'evaluation_id': model_id,
+                            'searcher_eval_token': {},
+                            'eval_hparams': {
+                                'init_lr': lr,
+                                'weight_decay': wd,
+                                'lr_decay_method': 'cosine'
+                            }
+                        }
+                        comm.publish(get_topic_name(ARCH_TOPIC, config), arch)
+                    model_id += 1
+    state['models_sampled'] = model_id
+    comm.publish(get_topic_name(ARCH_TOPIC, config), KILL_SIGNAL)
 
 
 def main():
-    comm, search_logger, searcher, state, config = process_config_and_args()
+    comm, search_logger, state, config = process_config_and_args()
     logger.info('Using config %s', str(config))
     logger.info('Current state %s', str(state))
     state['search_finished'] = False
-    comm.subscribe(get_topic_name(RESULTS_TOPIC, config),
-                   callback=lambda message: update_searcher(
-                       message, comm, search_logger, searcher, state, config))
+    train_best(comm, state, config)
+    comm.subscribe(
+        get_topic_name(RESULTS_TOPIC, config),
+        callback=lambda message: update_searcher(message, comm, search_logger,
+                                                 state, config),
+    )
     while not state['search_finished']:
         time.sleep(30)
     comm.unsubscribe(get_topic_name(RESULTS_TOPIC, config))

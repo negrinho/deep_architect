@@ -91,8 +91,8 @@ class EvolutionSearcher(Searcher):
     def sample(self):
         if self.initializing:
             inputs, outputs = self.search_space_fn()
-            user_vs, all_vs = random_specify_evolution(
-                list(outputs.values()), self.mutatable)
+            user_vs, all_vs = random_specify_evolution(list(outputs.values()),
+                                                       self.mutatable)
             if len(self.population) >= self.P - 1:
                 self.initializing = False
             return inputs, outputs, all_vs, {
@@ -101,9 +101,8 @@ class EvolutionSearcher(Searcher):
             }
         else:
             sample_inds = sorted(
-                random.sample(
-                    list(range(len(self.population))),
-                    min(self.S, len(self.population))))
+                random.sample(list(range(len(self.population))),
+                              min(self.S, len(self.population))))
             # delete weakest model
             weak_ind = self.get_weakest_model_index(sample_inds)
 
@@ -146,7 +145,7 @@ class EvolutionSearcher(Searcher):
         write_jsonfile(state,
                        join_paths([folder_name, 'evolution_searcher.json']))
 
-    def load(self, folder_name):
+    def load_state(self, folder_name):
         filepath = join_paths([folder_name, 'evolution_searcher.json'])
         if not file_exists(filepath):
             raise RuntimeError("Load file does not exist")
@@ -182,8 +181,9 @@ class EvolutionSearcher(Searcher):
         return sample_inds[max_acc_ind]
 
     def get_best(self, num_models):
-        ranked_population = sorted(
-            self.population, reverse=True, key=lambda tup: tup[2])
+        ranked_population = sorted(self.population,
+                                   reverse=True,
+                                   key=lambda tup: tup[2])
 
         return [(model[2], model[1]) for model in ranked_population[:num_models]
                ]

@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 import deep_architect.core as co
+from deep_architect.hyperparameters import D
 
 
 class TFEModule(co.Module):
@@ -63,6 +64,11 @@ class TFEModule(co.Module):
                  output_names,
                  scope=None):
         co.Module.__init__(self, scope, name)
+        for h in name_to_hyperp:
+            if not isinstance(name_to_hyperp[h], co.Hyperparameter):
+                vs = name_to_hyperp[h] if isinstance(
+                    name_to_hyperp[h], list) else [name_to_hyperp[h]]
+                name_to_hyperp[h] = D(vs)
         self._register(input_names, output_names, name_to_hyperp)
         self._compile_fn = compile_fn
         self.isTraining = True
@@ -74,8 +80,13 @@ class TFEModule(co.Module):
 
     def _forward(self):
         input_name_to_val = self._get_input_values()
-        output_name_to_val = self._fn(
-            input_name_to_val, isTraining=self.isTraining)
+        # print(self.get_name())
+        # print('Inputs: %s' %
+        #       {k: input_name_to_val[k].shape for k in input_name_to_val})
+        output_name_to_val = self._fn(input_name_to_val,
+                                      isTraining=self.isTraining)
+        # print('Outputs: %s' %
+        #       {k: output_name_to_val[k].shape for k in output_name_to_val})
         self._set_output_values(output_name_to_val)
 
     def _update(self):
@@ -94,6 +105,25 @@ def setTraining(output_lst, isTraining):
 def siso_tfeager_module(name, compile_fn, name_to_hyperp, scope=None):
     return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
                      scope).get_io()
+
+
+def siso_tfeager_module_from_tensorflow_op_fn(layer_fn,
+                                              name_to_hyperp,
+                                              scope=None,
+                                              name=None):
+
+    def compile_fn(di, dh):
+        m = layer_fn(**dh)
+
+        def forward_fn(di, isTraining=False):
+            return {"Out": m(di["In"])}
+
+        return forward_fn
+
+    if name is None:
+        name = layer_fn.__name__
+
+    return siso_tfeager_module(name, compile_fn, name_to_hyperp, scope)
 
 
 def get_num_trainable_parameters():

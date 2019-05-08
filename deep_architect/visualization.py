@@ -65,7 +65,7 @@ def draw_graph(output_lst,
     """
     assert print_to_screen or out_folderpath is not None
 
-    g = graphviz.Digraph(format=format)
+    g = graphviz.Digraph()
     edge_fs = '10'
     h_fs = '10'
     penwidth = '1'

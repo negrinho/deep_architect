@@ -1,51 +1,69 @@
 from dev.helpers.tfeager import siso_tfeager_module
+from deep_architect.hyperparameters import D
 import tensorflow as tf
 
 
-def max_pool2d(h_kernel_size, h_stride):
+def max_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
 
     def compile_fn(di, dh):
+        pool = tf.layers.MaxPooling2D(dh['kernel_size'],
+                                      dh['stride'],
+                                      padding=dh['padding'])
 
         def forward_fn(di, isTraining=True):
-            return {
-                'Out':
-                tf.nn.max_pool(di['In'],
-                               [1, dh['kernel_size'], dh['kernel_size'], 1],
-                               [1, dh['stride'], dh['stride'], 1], 'SAME')
-            }
+            return {'Out': pool(di['In'])}
 
         return forward_fn
 
     return siso_tfeager_module('MaxPool2D', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
+        'padding': h_padding
     })
 
 
-def avg_pool2d(h_kernel_size, h_stride):
+def min_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
 
     def compile_fn(di, dh):
+        pool = tf.layers.MaxPooling2D(dh['kernel_size'],
+                                      dh['stride'],
+                                      padding=dh['padding'])
 
-        def fn(di, isTraining=True):
-            return {
-                'Out':
-                tf.nn.avg_pool(di['In'],
-                               [1, dh['kernel_size'], dh['kernel_size'], 1],
-                               [1, dh['stride'], dh['stride'], 1], 'SAME')
-            }
+        def forward_fn(di, isTraining=True):
+            return {'Out': -1 * pool(-1 * di['In'])}
 
-        return fn
+        return forward_fn
+
+    return siso_tfeager_module('MinPool2D', compile_fn, {
+        'kernel_size': h_kernel_size,
+        'stride': h_stride,
+        'padding': h_padding
+    })
+
+
+def avg_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
+
+    def compile_fn(di, dh):
+        pool = tf.layers.AveragePooling2D(dh['kernel_size'],
+                                          dh['stride'],
+                                          padding=dh['padding'])
+
+        def forward_fn(di, isTraining=True):
+            return {'Out': pool(di['In'])}
+
+        return forward_fn
 
     return siso_tfeager_module('MaxPool2D', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
+        'padding': h_padding
     })
 
 
 def batch_normalization():
 
     def compile_fn(di, dh):
-        bn = tf.layers.BatchNormalization()
+        bn = tf.layers.BatchNormalization(momentum=.9, epsilon=1e-5)
 
         def forward_fn(di, isTraining):
             return {'Out': bn(di['In'], training=isTraining)}
@@ -67,17 +85,20 @@ def relu():
     return siso_tfeager_module('ReLU', compile_fn, {})
 
 
-def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
-           h_use_bias):
+def conv2d(h_num_filters,
+           h_filter_width,
+           h_stride=1,
+           h_dilation_rate=1,
+           h_use_bias=True,
+           h_padding='SAME'):
 
     def compile_fn(di, dh):
-        conv = tf.layers.Conv2D(
-            dh['num_filters'],
-            dh['filter_width'],
-            dh['stride'],
-            use_bias=dh['use_bias'],
-            dilation_rate=dh['dilation_rate'],
-            padding='SAME')
+        conv = tf.layers.Conv2D(dh['num_filters'],
+                                dh['filter_width'],
+                                dh['stride'],
+                                use_bias=dh['use_bias'],
+                                dilation_rate=dh['dilation_rate'],
+                                padding=dh['padding'])
 
         def forward_fn(di, isTraining=True):
             return {'Out': conv(di['In'])}
@@ -90,14 +111,21 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
             'filter_width': h_filter_width,
             'stride': h_stride,
             'dilation_rate': h_dilation_rate,
-            'use_bias': h_use_bias
+            'use_bias': h_use_bias,
+            'padding': h_padding
         })
 
 
-def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
-                     h_depth_multiplier, h_use_bias):
+def separable_conv2d(h_num_filters,
+                     h_filter_width,
+                     h_stride=1,
+                     h_dilation_rate=1,
+                     h_depth_multiplier=1,
+                     h_use_bias=True,
+                     h_padding='SAME'):
 
     def compile_fn(di, dh):
+
         conv_op = tf.layers.SeparableConv2D(
             dh['num_filters'],
             dh['filter_width'],
@@ -105,7 +133,7 @@ def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
             dilation_rate=dh['dilation_rate'],
             depth_multiplier=dh['depth_multiplier'],
             use_bias=dh['use_bias'],
-            padding='SAME')
+            padding=dh['padding'])
 
         def fn(di, isTraining=True):
             return {'Out': conv_op(di['In'])}
@@ -120,6 +148,7 @@ def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
             'use_bias': h_use_bias,
             'dilation_rate': h_dilation_rate,
             'depth_multiplier': h_depth_multiplier,
+            'padding': h_padding
         })
 
 
@@ -150,6 +179,18 @@ def global_pool2d():
         return forward_fn
 
     return siso_tfeager_module('GlobalAveragePool', compile_fn, {})
+
+
+def flatten():
+
+    def compile_fn(di, dh):
+
+        def forward_fn(di, isTraining=True):
+            return {'Out': tf.layers.flatten(di['In'])}
+
+        return forward_fn
+
+    return siso_tfeager_module('Flatten', compile_fn, {})
 
 
 def fc_layer(h_num_units):

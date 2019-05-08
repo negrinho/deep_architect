@@ -1,9 +1,8 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: worker-preempt-$JOB_NAME
+  name: master-$JOB_NAME
 spec:
-  parallelism: 5
   template:
     metadata:
       annotations:
@@ -14,14 +13,14 @@ spec:
     spec:
       restartPolicy: OnFailure
       nodeSelector:
-        role: worker-node
+        role: master-node
       containers:
-      - name: worker
+      - name: master
         # The official TensorFlow 1.12 TPU model image built from
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
         image: gcr.io/deeparchitect-219016/darch
         command: ["python"]
-        args: ["dev/mongo_communicator/worker.py", "--config-file", "/darch/dev/mongo_communicator/train_best_config.json", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-t", "$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)"]
+        args: ["dev/mongo_communicator/train_best_master.py", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-r"]
         imagePullPolicy: Always
         # command:
         # - python
@@ -37,13 +36,9 @@ spec:
             # Request a single v2-8 Preemptible Cloud TPU device to train the model.
             # A single v2-8 Preemptible Cloud TPU device consists of 4 chips, each of which
             # has 2 cores, so there are 8 cores in total.
-            cloud-tpus.google.com/preemptible-v2: 8
-            cpu: 1.3
-            #memory: 9Gi
+            cpu: 1.0
           limits:
             # Request a single v2-8 Preemptible Cloud TPU device to train the model.
             # A single v2-8 Preemptible Cloud TPU device consists of 4 chips, each of which
             # has 2 cores, so there are 8 cores in total.
-            cloud-tpus.google.com/preemptible-v2: 8
-            cpu: 1.8
-            #memory: 9.5Gi
+            cpu: 1.9

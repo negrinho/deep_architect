@@ -1,17 +1,17 @@
 FROM ubuntu:bionic
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        curl \
-        wget \
-        sudo \
-        gnupg \
-        lsb-release \
-        ca-certificates \
-        build-essential \
-        git \
-        python \
-        python-pip \
-        python-setuptools && \
+    curl \
+    wget \
+    sudo \
+    gnupg \
+    lsb-release \
+    ca-certificates \
+    build-essential \
+    git \
+    python \
+    python-pip \
+    python-setuptools && \
     export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
     echo "deb https://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
@@ -58,6 +58,7 @@ RUN gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTI
 COPY ./examples /darch/examples
 COPY ./deep_architect /darch/deep_architect
 COPY ./dev /darch/dev
+COPY ./results /darch/results
 
 RUN gcloud config set compute/zone us-central1-f
 ENV PYTHONUNBUFFERED 1

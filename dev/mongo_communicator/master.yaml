@@ -20,7 +20,7 @@ spec:
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
         image: gcr.io/deeparchitect-219016/darch
         command: ["python"]
-        args: ["dev/mongo_communicator/master.py", "-c", "search_evol", "-m", "mongodb-1-servers-vm-0"]
+        args: ["dev/mongo_communicator/master.py", "-c", "ss_nasnet_128_25", "-m", "mongodb-1-servers-vm-0", "-r"]
         imagePullPolicy: Always
         # command:
         # - python
@@ -41,4 +41,4 @@ spec:
             # Request a single v2-8 Preemptible Cloud TPU device to train the model.
             # A single v2-8 Preemptible Cloud TPU device consists of 4 chips, each of which
             # has 2 cores, so there are 8 cores in total.
-            cpu: 1.5
+            cpu: 1.9

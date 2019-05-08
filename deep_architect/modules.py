@@ -110,14 +110,14 @@ class SubstitutionModule(co.Module):
             # test for checking that the inputs and outputs returned by the
             # substitution function are valid.
             if self.allow_input_subset:
-                assert len(self.inputs) <= len(new_inputs) and all(
+                assert len(new_inputs) <= len(self.inputs) and all(
                     name in self.inputs for name in new_inputs)
             else:
                 assert len(self.inputs) == len(new_inputs) and all(
                     name in self.inputs for name in new_inputs)
 
             if self.allow_output_subset:
-                assert len(self.outputs) <= len(new_outputs) and all(
+                assert len(new_outputs) <= len(self.outputs) and all(
                     name in self.outputs for name in new_outputs)
             else:
                 assert len(self.outputs) == len(new_outputs) and all(
@@ -218,15 +218,14 @@ def substitution_module(name,
         (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
             Tuple with dictionaries with the inputs and outputs of the module.
     """
-    return SubstitutionModule(
-        name,
-        name_to_hyperp,
-        substitution_fn,
-        input_names,
-        output_names,
-        scope,
-        allow_input_subset=allow_input_subset,
-        allow_output_subset=allow_output_subset).get_io()
+    return SubstitutionModule(name,
+                              name_to_hyperp,
+                              substitution_fn,
+                              input_names,
+                              output_names,
+                              scope,
+                              allow_input_subset=allow_input_subset,
+                              allow_output_subset=allow_output_subset).get_io()
 
 
 def _get_name(name, default_name):
@@ -273,9 +272,9 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     def substitution_fn(idx):
         return fn_lst[idx]()
 
-    return substitution_module(
-        _get_name(name, "Or"), {'idx': h_or}, substitution_fn, input_names,
-        output_names, scope)
+    return substitution_module(_get_name(name,
+                                         "Or"), {'idx': h_or}, substitution_fn,
+                               input_names, output_names, scope)
 
 
 # TODO: perhaps change slightly the semantics of the repeat parameter.
@@ -328,9 +327,9 @@ def mimo_nested_repeat(fn_first,
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
-    return substitution_module(
-        _get_name(name, "NestedRepeat"), {'num_reps': h_num_repeats},
-        substitution_fn, input_names, output_names, scope)
+    return substitution_module(_get_name(name, "NestedRepeat"),
+                               {'num_reps': h_num_repeats}, substitution_fn,
+                               input_names, output_names, scope)
 
 
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
@@ -368,12 +367,11 @@ def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    return mimo_nested_repeat(
-        fn_first,
-        fn_iter,
-        h_num_repeats, ['In'], ['Out'],
-        scope=scope,
-        name=_get_name(name, "SISONestedRepeat"))
+    return mimo_nested_repeat(fn_first,
+                              fn_iter,
+                              h_num_repeats, ['In'], ['Out'],
+                              scope=scope,
+                              name=_get_name(name, "SISONestedRepeat"))
 
 
 def siso_or(fn_lst, h_or, scope=None, name=None):
@@ -407,11 +405,10 @@ def siso_or(fn_lst, h_or, scope=None, name=None):
             Tuple with dictionaries with the inputs and outputs of the
             substitution module.
     """
-    return mimo_or(
-        fn_lst,
-        h_or, ['In'], ['Out'],
-        scope=scope,
-        name=_get_name(name, "SISOOr"))
+    return mimo_or(fn_lst,
+                   h_or, ['In'], ['Out'],
+                   scope=scope,
+                   name=_get_name(name, "SISOOr"))
 
 
 # NOTE: how to do repeat in the general mimo case.
@@ -454,9 +451,9 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(
-        _get_name(name, "SISORepeat"), {'num_reps': h_num_repeats},
-        substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISORepeat"),
+                               {'num_reps': h_num_repeats}, substitution_fn,
+                               ['In'], ['Out'], scope)
 
 
 def siso_optional(fn, h_opt, scope=None, name=None):
@@ -488,9 +485,8 @@ def siso_optional(fn, h_opt, scope=None, name=None):
     def substitution_fn(opt):
         return fn() if opt else identity()
 
-    return substitution_module(
-        _get_name(name, "SISOOptional"), {'opt': h_opt}, substitution_fn,
-        ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISOOptional"), {'opt': h_opt},
+                               substitution_fn, ['In'], ['Out'], scope)
 
 
 # TODO: improve by not enumerating permutations
@@ -540,9 +536,9 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(
-        _get_name(name, "SISOPermutation"), {'perm_idx': h_perm},
-        substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISOPermutation"),
+                               {'perm_idx': h_perm}, substitution_fn, ['In'],
+                               ['Out'], scope)
 
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
@@ -589,9 +585,9 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
             c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
         return i_inputs, c_outputs
 
-    return substitution_module(
-        _get_name(name, "SISOSplitCombine"), {'num_splits': h_num_splits},
-        substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISOSplitCombine"),
+                               {'num_splits': h_num_splits}, substitution_fn,
+                               ['In'], ['Out'], scope)
 
 
 def preproc_apply_postproc(preproc_fn, apply_fn, postproc_fn):
@@ -627,11 +623,10 @@ def dense_block(h_num_applies,
             o_outputs = prev_a_outputs[-1]
         return (i_inputs, o_outputs)
 
-    return substitution_module(
-        _get_name(name, "DenseBlock"), {
-            "num_applies": h_num_applies,
-            "end_in_combine": h_end_in_combine
-        }, substitution_fn, ["In"], ["Out"], scope)
+    return substitution_module(_get_name(name, "DenseBlock"), {
+        "num_applies": h_num_applies,
+        "end_in_combine": h_end_in_combine
+    }, substitution_fn, ["In"], ["Out"], scope)
 
 
 def siso_residual(main_fn, residual_fn, combine_fn):
