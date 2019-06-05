@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 STARTTIME_KEY = 'startTime'
 ENDTIME_KEY = 'endTime'
 REFRESH_KEY = 'last_refreshed'
+TIME_WORKED_KEY = 'totalTime'
+DATA_KEY = 'data'
 
 
 class MongoCommunicator(object):
@@ -62,39 +64,87 @@ class MongoCommunicator(object):
             self._refresh_thread.terminate()
 
     def _move_stale_data(self):
-        client = MongoClient(self.host, self.port)
+        time.sleep(2)
+        client = MongoClient(self.host, self.port, connect=False)
         db = client['deep-architect']
         while True:
             logger.debug('Resetting stale data in DB')
             for collection in db.list_collection_names():
                 collection = db[collection]
-                stale_docs = collection.update_many(
-                    {
-                        '$and': [{
-                            REFRESH_KEY: {
-                                '$lt':
-                                datetime.now() -
-                                timedelta(seconds=self._refresh_period + 10)
-                            }
-                        }, {
-                            STARTTIME_KEY: {
-                                '$ne': None
-                            }
-                        }, {
-                            ENDTIME_KEY: {
-                                '$eq': None
-                            }
-                        }]
-                    }, {
-                        '$set': {
-                            STARTTIME_KEY: None,
-                            ENDTIME_KEY: None,
-                            REFRESH_KEY: None
+                cursor = collection.find({
+                    '$and': [{
+                        REFRESH_KEY: {
+                            '$lt':
+                            datetime.now() -
+                            timedelta(seconds=self._refresh_period + 10)
                         }
-                    })
-                if stale_docs.modified_count > 0:
-                    logger.info('Resetting %d stale objects in %s',
-                                stale_docs.modified_count, collection.name)
+                    }, {
+                        STARTTIME_KEY: {
+                            '$ne': None
+                        }
+                    }, {
+                        ENDTIME_KEY: {
+                            '$eq': None
+                        }
+                    }]
+                })
+                for doc in cursor:
+                    logger.info('Resetting %s in %s', doc['_id'],
+                                collection.name)
+                    if TIME_WORKED_KEY not in doc:
+                        doc[TIME_WORKED_KEY] = 0.0
+                    doc[TIME_WORKED_KEY] += (
+                        doc[REFRESH_KEY] - doc[STARTTIME_KEY]).total_seconds()
+                    doc[STARTTIME_KEY] = None
+                    doc[ENDTIME_KEY] = None
+                    doc[REFRESH_KEY] = None
+                    collection.update_one(
+                        {
+                            '_id':
+                            doc['_id'],
+                            '$and': [{
+                                REFRESH_KEY: {
+                                    '$lt':
+                                    datetime.now() -
+                                    timedelta(seconds=self._refresh_period + 10)
+                                }
+                            }, {
+                                STARTTIME_KEY: {
+                                    '$ne': None
+                                }
+                            }, {
+                                ENDTIME_KEY: {
+                                    '$eq': None
+                                }
+                            }]
+                        }, {'$set': doc})
+                # stale_docs = collection.update_many(
+                #     {
+                #         '$and': [{
+                #             REFRESH_KEY: {
+                #                 '$lt':
+                #                 datetime.now() -
+                #                 timedelta(seconds=self._refresh_period + 10)
+                #             }
+                #         }, {
+                #             STARTTIME_KEY: {
+                #                 '$ne': None
+                #             }
+                #         }, {
+                #             ENDTIME_KEY: {
+                #                 '$eq': None
+                #             }
+                #         }]
+                #     }, {
+                #         '$set': {
+                #             STARTTIME_KEY: None,
+                #             ENDTIME_KEY: None,
+                #             REFRESH_KEY: None
+                #         }
+                #     })
+                # if stale_docs.modified_count > 0:
+                #     logger.info('Resetting %d stale objects in %s',
+                #                 stale_docs.modified_count, collection.name)
                 # if MongoCommunicator.INTERMEDIATE_SUFFIX in collection:
                 #     intermediate_collection = self._db[collection]
                 #     queue_collection = self._db[collection[:-(
@@ -122,7 +172,7 @@ class MongoCommunicator(object):
         """
         collection = self._db[topic]
         collection.insert_one({
-            'data': data,
+            DATA_KEY: data,
             STARTTIME_KEY: None,
             ENDTIME_KEY: None
         })
@@ -201,9 +251,15 @@ class MongoCommunicator(object):
         collection = self._db[subscription]
         if success:
             data = collection.find_one_and_update(
-                {'_id': data['_id']}, {'$currentDate': {
-                    ENDTIME_KEY: True
-                }},
+                {'_id': data['_id']}, {
+                    '$currentDate': {
+                        ENDTIME_KEY: True
+                    },
+                    '$inc': {
+                        TIME_WORKED_KEY: (data[REFRESH_KEY] -
+                                          data[STARTTIME_KEY]).total_seconds()
+                    }
+                },
                 return_document=ReturnDocument.AFTER)
             # if self._store_intermediate[subscription]:
             # collection.find_one_and_update({'_id': data['_id']})

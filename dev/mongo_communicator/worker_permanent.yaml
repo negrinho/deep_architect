@@ -1,16 +1,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: worker-perm-$JOB_NAME
+  name: worker-perm-$JOB_NAME-$REPETITION
 spec:
-  parallelism: 5
+  parallelism: $NUM_JOBS
   template:
     metadata:
       annotations:
         # The Cloud TPUs that will be created for this Job must support
         # TensorFlow 1.12. This version MUST match
         # the TensorFlow version that your model is built on.
-        tf-version.cloud-tpus.google.com: "1.12"
+        tf-version.cloud-tpus.google.com: "1.13"
     spec:
       restartPolicy: OnFailure
       nodeSelector:
@@ -21,7 +21,7 @@ spec:
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
         image: gcr.io/deeparchitect-219016/darch
         command: ["python"]
-        args: ["dev/mongo_communicator/worker.py", "--config-file", "/darch/dev/mongo_communicator/train_best_config.json", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-t", "$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)"]
+        args: ["dev/mongo_communicator/worker.py", "--config-file", "$CONFIG_FILE", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-t", "$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)", "--repetition", "$REPETITION"]
         imagePullPolicy: Always
         # command:
         # - python

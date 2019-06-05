@@ -58,7 +58,7 @@ def process_config_and_args():
     parser.add_argument('--log',
                         choices=['debug', 'info', 'warning', 'error'],
                         default='info')
-
+    parser.add_argument('--repetition', default=0)
     options = parser.parse_args()
 
     numeric_level = getattr(logging, options.log.upper(), None)
@@ -92,6 +92,8 @@ def process_config_and_args():
     config['num_samples'] = -1 if 'samples' not in config else config['samples']
 
     # SET UP GOOGLE STORE FOLDER
+    config['search_name'] = config['search_name'] + '_' + str(
+        options.repetition)
     search_logger = sl.SearchLogger(config['search_folder'],
                                     config['search_name'])
     search_data_folder = search_logger.get_search_data_folderpath()
@@ -99,8 +101,10 @@ def process_config_and_args():
         (search_data_folder, config['searcher_file_name']))
     config['eval_path'] = sl.get_all_evaluations_folderpath(
         config['search_folder'], config['search_name'])
-    config['search_folder'] = sl.get_search_folderpath(config['search_folder'],
-                                                       config['search_name'])
+    config['full_search_folder'] = sl.get_search_folderpath(
+        config['search_folder'], config['search_name'])
+    config['eval_hparams'] = {} if 'eval_hparams' not in config else config[
+        'eval_hparams']
 
     state = {
         'epochs': 0,
@@ -110,7 +114,7 @@ def process_config_and_args():
     }
     if options.resume:
         try:
-            download_folder(search_data_folder, config['search_folder'],
+            download_folder(search_data_folder, config['full_search_folder'],
                             config['bucket'])
             searcher.load_state(search_data_folder)
             if ut.file_exists(config['save_filepath']):
@@ -141,7 +145,7 @@ def upload_folder(folder, location, bucket):
 
 
 def get_topic_name(topic, config):
-    return topic + '_' + config['search_name']
+    return config['search_folder'] + '_' + config['search_name'] + '_' + topic
 
 
 def update_searcher(message, comm, search_logger, searcher, state, config):
@@ -175,7 +179,7 @@ def save_searcher_state(searcher, state, config, search_logger):
     }
     ut.write_jsonfile(state, config['save_filepath'])
     upload_folder(search_logger.get_search_data_folderpath(),
-                  config['search_folder'], config['bucket'])
+                  config['full_search_folder'], config['bucket'])
     return state
 
 
@@ -213,7 +217,7 @@ def publish_new_arch(comm, searcher, state, config):
             'vs': vs,
             'evaluation_id': state['models_sampled'],
             'searcher_eval_token': searcher_eval_token,
-            'eval_hparams': {}
+            'eval_hparams': config['eval_hparams']
         }
         comm.publish(get_topic_name(ARCH_TOPIC, config), arch)
         state['models_sampled'] += 1

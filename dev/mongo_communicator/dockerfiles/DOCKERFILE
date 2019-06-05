@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get install -y google-cloud-sdk
 
 RUN pip install wheel && \
-    pip install tensorflow==1.12 && \
+    pip install tensorflow==1.13.1 && \
     # pip install google-cloud-storage && \
     # pip install google-api-python-client && \
     # pip install oauth2client \
@@ -29,8 +29,12 @@ RUN pip install wheel && \
     pip install setuptools==39.2.0 && \
     pip install six==1.11.0 && \
     pip install  --upgrade google-cloud-pubsub && \
-    pip install argparse && \
-    pip install sklearn
+    pip install --upgrade argparse && \
+    pip install --upgrade sklearn && \
+    pip install --upgrade google-api-python-client && \
+    pip install --upgrade oauth2client && \
+    pip install --upgrade pymongo && \
+    pip install --upgrade keras
 
 # COPY requirements.txt /darch/requirements.txt
 # RUN pip install -r requirements.txt
@@ -45,9 +49,7 @@ WORKDIR /darch
 ADD cifar10.tar.gz data/
 # RUN tar -xzf data/cifar-10-python.tar.gz -C data/
 # RUN mv data/cifar-10-batches-py data/cifar10
-RUN pip install --upgrade google-api-python-client && \
-    pip install --upgrade oauth2client && \
-    pip install --upgrade pymongo
+
 ENV PYTHONPATH /darch/
 # RUN pip install -r requirements.txt
 

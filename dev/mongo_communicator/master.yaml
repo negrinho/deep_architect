@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: master
+  name: master-$JOB_NAME-$REPETITION
 spec:
   template:
     metadata:
@@ -9,7 +9,7 @@ spec:
         # The Cloud TPUs that will be created for this Job must support
         # TensorFlow 1.12. This version MUST match
         # the TensorFlow version that your model is built on.
-        tf-version.cloud-tpus.google.com: "1.12"
+        tf-version.cloud-tpus.google.com: "1.13"
     spec:
       restartPolicy: OnFailure
       nodeSelector:
@@ -20,7 +20,7 @@ spec:
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
         image: gcr.io/deeparchitect-219016/darch
         command: ["python"]
-        args: ["dev/mongo_communicator/master.py", "-c", "ss_nasnet_128_25", "-m", "mongodb-1-servers-vm-0", "-r"]
+        args: ["dev/mongo_communicator/master.py", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-r", "--repetition", "$REPETITION"]
         imagePullPolicy: Always
         # command:
         # - python

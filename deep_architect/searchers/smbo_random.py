@@ -14,15 +14,25 @@ class SMBOSearcher(Searcher):
 
     def sample(self):
         if np.random.rand() < self.exploration_prob:
-            inputs, outputs = self.search_space_fn()
-            best_vs = random_specify(outputs.values())
+            while True:
+                try:
+                    inputs, outputs = self.search_space_fn()
+                    best_vs = random_specify(outputs.values())
+                    break
+                except ValueError:
+                    pass
         else:
             best_model = None
             best_vs = None
             best_score = -np.inf
-            for _ in range(self.num_samples):
-                inputs, outputs = self.search_space_fn()
-                vs = random_specify(outputs.values())
+            for i in range(self.num_samples):
+                while True:
+                    try:
+                        inputs, outputs = self.search_space_fn()
+                        vs = random_specify(outputs.values())
+                        break
+                    except ValueError:
+                        pass
 
                 feats = extract_features(inputs, outputs)
                 score = self.surr_model.eval(feats)
@@ -41,3 +51,9 @@ class SMBOSearcher(Searcher):
         specify(outputs.values(), searcher_eval_token['vs'])
         feats = extract_features(inputs, outputs)
         self.surr_model.update(val, feats)
+
+    def save_state(self, folder):
+        self.surr_model.save_state(folder)
+
+    def load_state(self, folder):
+        self.surr_model.load_state(folder)

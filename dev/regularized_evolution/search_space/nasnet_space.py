@@ -10,12 +10,9 @@ import deep_architect.hyperparameters as hp
 # import deep_architect.helpers.tensorflow_support as htf
 import dev.helpers.tfeager as htfe
 import deep_architect.modules as mo
-import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
-from dev.deep_learning_backend.tfe_ops import (relu, batch_normalization,
-                                               conv2d, separable_conv2d,
-                                               avg_pool2d, max_pool2d,
-                                               min_pool2d, fc_layer,
-                                               global_pool2d, dropout)
+from dev.deep_learning_backend.tfe_ops import (
+    relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
+    min_pool2d, fc_layer, global_pool2d, dropout, add, flatten)
 
 from deep_architect.hyperparameters import Discrete as D
 
@@ -124,7 +121,10 @@ def check_filters(filters, stride=1):
     def compile_fn(di, dh):
         num_filters = di['In'].shape[-1].value
         if num_filters != filters or stride > 1:
-            conv = tf.layers.Conv2D(filters, 1, strides=stride, padding='SAME')
+            conv = tf.keras.layers.Conv2D(filters,
+                                          1,
+                                          strides=stride,
+                                          padding='SAME')
         else:
             conv = None
 
@@ -156,31 +156,57 @@ def separable_conv_op(filters, filter_size, stride):
     ])
 
 
-def apply_drop_path(x, keep_prob, isTraining):
-    if isTraining:
-        batch_size = tf.shape(x)[0]
-        noise_shape = [batch_size, 1, 1, 1]
-        keep_prob = tf.cast(keep_prob, dtype=x.dtype)
-        random_tensor = keep_prob
-        random_tensor += tf.random_uniform(noise_shape, dtype=x.dtype)
-        binary_tensor = tf.floor(random_tensor)
-        out = tf.div(x, keep_prob) * binary_tensor
-    else:
-        out = x
-    return out
+def apply_drop_path(x, keep_prob):
+    batch_size = tf.shape(x)[0]
+    noise_shape = [batch_size, 1, 1, 1]
+    keep_prob = tf.cast(keep_prob, dtype=x.dtype)
+    random_tensor = keep_prob
+    random_tensor += tf.random_uniform(noise_shape, dtype=x.dtype)
+    binary_tensor = tf.floor(random_tensor)
+    return tf.div(x, keep_prob) * binary_tensor
+
+
+class DropPath(tf.keras.layers.Layer):
+
+    def __init__(self, init_keep_prob, cell_ratio):
+        super(DropPath, self).__init__()
+        self.init_keep_prob = 1 - cell_ratio * (1 - init_keep_prob)
+        self.compute_prob = tf.keras.layers.Lambda(lambda x: 1 - x * (
+            1 - self.init_keep_prob))
+
+    def build(self, shape):
+        super(DropPath, self).build(shape)
+
+    def call(self, input, training=None):
+        if training is None:
+            training = tf.keras.backend.learning_phase()
+        x, progress = input
+        keep_prob = self.compute_prob(progress)
+        return tf.cond(
+            training, lambda: apply_drop_path(x, keep_prob), lambda: x)
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
+    def get_config(self):
+        config = {
+            'init_keep_prob': self.init_keep_prob,
+        }
+        base_config = super(DropPath, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
 
 
 def drop_path(cell_ratio):
 
     def compile_fn(di, dh):
+        drop_path_layer = DropPath(dh['keep_prob'], cell_ratio)
+        progress_layer = tf.keras.layers.Lambda(lambda x: di['In1'])
 
         def forward_fn(di, isTraining=True):
-            init_keep_prob = dh['keep_prob']
-            progress = di['In1']
-            keep_prob = 1 - cell_ratio * (1 - init_keep_prob)
-            keep_prob = 1 - progress * (1 - keep_prob)
-            out = apply_drop_path(di['In0'], keep_prob, isTraining)
-            return {'Out': out}
+            return {
+                'Out': drop_path_layer([di['In0'],
+                                        progress_layer(di['In0'])])
+            }
 
         return forward_fn
 
@@ -274,27 +300,16 @@ def intermediate_node_fn(reduction, input_id, node_id, op_num, filters,
     return op_in, drop_out
 
 
-def add():
-
-    def compile_fn(di, dh):
-
-        def forward_fn(di, isTraining=True):
-            return {'Out': di['In0'] + di['In1']}
-
-        return forward_fn
-
-    return htfe.TFEModule('Add', {}, compile_fn, ['In0', 'In1'],
-                          ['Out']).get_io()
-
-
 def concat(num_ins):
 
     def compile_fn(di, dh):
+        concat = tf.keras.layers.Concatenate(axis=3) if num_ins > 1 else None
 
         def forward_fn(di, isTraining=True):
             return {
                 'Out':
-                tf.concat(values=[di[input_name] for input_name in di], axis=3)
+                concat([di[input_name] for input_name in di])
+                if concat else di['In0']
             }
 
         return forward_fn
@@ -325,34 +340,37 @@ def maybe_factorized_reduction(add_relu=False):
     def compile_fn(di, dh):
         _, _, height, channels = di['In0'].shape.as_list()
         _, _, final_height, final_channels = di['In1'].shape.as_list()
-
+        if add_relu:
+            relu = tf.keras.layers.ReLU()
         if height == final_height and channels == final_channels:
             pass
         elif height == final_height:
-            conv = tf.layers.Conv2D(final_channels, 1)
-            bn = tf.layers.BatchNormalization()
+            conv = tf.keras.layers.Conv2D(final_channels, 1)
+            bn = tf.keras.layers.BatchNormalization()
         else:
-            avg_pool = tf.layers.AveragePooling2D(1, 2, padding='VALID')
-            conv1 = tf.layers.Conv2D(int(final_channels / 2), 1)
-            conv2 = tf.layers.Conv2D(int(final_channels / 2), 1)
-            bn = tf.layers.BatchNormalization()
-            pad_arr = [[0, 0], [0, 1], [0, 1], [0, 0]]
+            avg_pool = tf.keras.layers.AveragePooling2D(1, 2, padding='VALID')
+            conv1 = tf.keras.layers.Conv2D(int(final_channels / 2), 1)
+            conv2 = tf.keras.layers.Conv2D(int(final_channels / 2), 1)
+            bn = tf.keras.layers.BatchNormalization()
+            pad = tf.keras.layers.ZeroPadding2D(((0, 1), (0, 1)))
+            slice_layer = tf.keras.layers.Lambda(lambda x: x[:, 1:, 1:, :])
+            concat = tf.keras.layers.Concatenate(axis=3)
 
         def forward_fn(di, isTraining=True):
-            inp = tf.nn.relu(di['In0']) if add_relu else di['In0']
+            inp = relu(di['In0']) if add_relu else di['In0']
             if height == final_height and channels == final_channels:
                 out = inp
             elif height == final_height:
                 out = conv(inp)
-                out = bn(out, training=isTraining)
+                out = bn(out)
             else:
                 path1 = avg_pool(inp)
                 path1 = conv1(path1)
-                path2 = tf.pad(inp, pad_arr)[:, 1:, 1:, :]
+                path2 = slice_layer(pad(inp))
                 path2 = avg_pool(path2)
                 path2 = conv2(path2)
-                out = tf.concat(values=[path1, path2], axis=3)
-                out = bn(out, training=isTraining)
+                out = concat([path1, path2])
+                out = bn(out)
             return {'Out': out}
 
         return forward_fn
@@ -391,8 +409,8 @@ def create_cell_generator(num_nodes, reduction):
         return cell(
             lambda: cell_input_fn(filters), lambda in_id, node_id, op_num:
             intermediate_node_fn(reduction, in_id, node_id, op_num, filters,
-                                 cell_ratio, cell_ops), add, combine_unused,
-            num_nodes, connection_hparams)
+                                 cell_ratio, cell_ops), lambda: add(2),
+            combine_unused, num_nodes, connection_hparams)
 
     return generate
 
@@ -407,7 +425,9 @@ def global_convolution(h_num_filters):
 
     def compile_fn(di, dh):
         _, h, w, _ = di['In'].shape.as_list()
-        conv = tf.layers.Conv2D(dh['num_filters'], [h, w], use_bias=False)
+        conv = tf.keras.layers.Conv2D(dh['num_filters'], [h, w],
+                                      use_bias=False,
+                                      padding='VALID')
 
         def forward_fn(di, isTraining=True):
             return {'Out': conv(di['In'])}
@@ -417,18 +437,6 @@ def global_convolution(h_num_filters):
     return htfe.siso_tfeager_module('GlobalConv2D', compile_fn, {
         'num_filters': h_num_filters,
     })
-
-
-def flatten():
-
-    def compile_fn(di, dh):
-
-        def forward_fn(di, isTraining=True):
-            return {'Out': tf.layers.flatten(di['In'])}
-
-        return forward_fn
-
-    return htfe.siso_tfeager_module('Flatten', compile_fn, {})
 
 
 def aux_logits():
@@ -453,7 +461,7 @@ def generate_search_space(num_nodes_per_cell, num_normal_cells,
     hp_sharer = hp.HyperparameterSharer()
     hp_sharer.register(
         'drop_path_keep_prob', lambda: D([.7], name='drop_path_keep_prob'))
-    stem_in, stem_out = stem(init_filters * stem_multiplier)
+    stem_in, stem_out = stem(int(init_filters * stem_multiplier))
     progress_in, progress_out = mo.identity()
     global_vars['progress'] = progress_out['Out']
     normal_cell_fn = create_cell_generator(num_nodes_per_cell, False)

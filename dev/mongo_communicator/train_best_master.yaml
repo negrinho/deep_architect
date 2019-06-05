@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: master-$JOB_NAME
+  name: master-$JOB_NAME-$REPETITION
 spec:
   template:
     metadata:
@@ -20,7 +20,7 @@ spec:
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
         image: gcr.io/deeparchitect-219016/darch
         command: ["python"]
-        args: ["dev/mongo_communicator/train_best_master.py", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-r"]
+        args: ["dev/mongo_communicator/train_best_master.py", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-r", "--repetition", "$REPETITION"]
         imagePullPolicy: Always
         # command:
         # - python

@@ -13,7 +13,7 @@ from deep_architect.core import unassigned_independent_hyperparameter_iterator
 
 
 def mutatable(h):
-    return h.get_name().startswith('H.Mutatable')
+    return len(h.vs) > 1
 
 
 def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
@@ -83,7 +83,7 @@ class EvolutionSearcher(Searcher):
         self.S = S
 
         self.population = deque(maxlen=P)
-        self.processing = []
+        # self.processing = []
         self.regularized = regularized
         self.initializing = True
         self.mutatable = mutatable_fn
@@ -104,7 +104,6 @@ class EvolutionSearcher(Searcher):
                 random.sample(list(range(len(self.population))),
                               min(self.S, len(self.population))))
             # delete weakest model
-            weak_ind = self.get_weakest_model_index(sample_inds)
 
             # mutate strongest model
             inputs, outputs = self.search_space_fn()
@@ -114,24 +113,27 @@ class EvolutionSearcher(Searcher):
                 list(outputs.values()), user_vs, all_vs, self.mutatable,
                 self.search_space_fn)
 
-            self.processing.append(self.population[weak_ind])
-            del self.population[weak_ind]
+            # self.processing.append(self.population[weak_ind])
+            # del self.population[weak_ind]
             return inputs, outputs, new_all_vs, {
                 'user_vs': new_user_vs,
                 'all_vs': new_all_vs
             }
 
     def update(self, val, cfg_d):
-        arc = (cfg_d['user_vs'], cfg_d['all_vs'], val)
-        if arc in self.processing:
-            self.processing.remove(arc)
+        if not self.initializing:
+            weak_ind = self.get_weakest_model_index()
+            del self.population[weak_ind]
+        # arc = (cfg_d['user_vs'], cfg_d['all_vs'], val)
+        # if arc in self.processing:
+        #     self.processing.remove(arc)
         self.population.append((cfg_d['user_vs'], cfg_d['all_vs'], val))
 
     def get_searcher_state_token(self):
-        for arc in self.processing:
-            if len(self.population) >= self.P:
-                break
-            self.population.append(arc)
+        # for arc in self.processing:
+        #     if len(self.population) >= self.P:
+        #         break
+        #     self.population.append(arc)
         return {
             "P": self.P,
             "S": self.S,
@@ -157,18 +159,18 @@ class EvolutionSearcher(Searcher):
         self.population = deque(state['population'])
         self.initializing = state['initializing']
 
-    def get_weakest_model_index(self, sample_inds):
+    def get_weakest_model_index(self):
         if self.regularized:
-            return sample_inds[0]
+            return 0
         else:
             min_acc = 1.
             min_acc_ind = -1
-            for i in range(len(sample_inds)):
-                _, _, acc = self.population[sample_inds[i]]
+            for i in range(len(self.population)):
+                _, _, acc = self.population[i]
                 if acc < min_acc:
                     min_acc = acc
                     min_acc_ind = i
-            return sample_inds[min_acc_ind]
+            return min_acc_ind
 
     def get_strongest_model_index(self, sample_inds):
         max_acc = 0.

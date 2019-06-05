@@ -1,3 +1,4 @@
+import os
 import argparse
 import time
 import subprocess
@@ -53,7 +54,7 @@ def process_config_and_args():
                         action='store',
                         dest='mongo_port',
                         default=27017)
-
+    parser.add_argument('--repetition', default=0)
     options = parser.parse_args()
     configs = ut.read_jsonfile(options.config_file)
     config = configs[options.config_name]
@@ -65,6 +66,8 @@ def process_config_and_args():
                              data_refresher=True)
 
     # SET UP GOOGLE STORE FOLDER
+    config['search_name'] = config['search_name'] + '_' + str(
+        options.repetition)
     search_logger = sl.SearchLogger(config['search_folder'],
                                     config['search_name'])
     search_data_folder = search_logger.get_search_data_folderpath()
@@ -72,13 +75,15 @@ def process_config_and_args():
         (search_data_folder, config['searcher_file_name']))
     config['eval_path'] = sl.get_all_evaluations_folderpath(
         config['search_folder'], config['search_name'])
-    config['search_folder'] = sl.get_search_folderpath(config['search_folder'],
-                                                       config['search_name'])
-
+    config['full_search_folder'] = sl.get_search_folderpath(
+        config['search_folder'], config['search_name'])
+    config['results_file'] = os.path.join(
+        config['results_prefix'] + '_' + str(options.repetition),
+        config['results_file'])
     state = {'finished': 0, 'best_accuracy': 0.0}
     if options.resume:
         try:
-            download_folder(search_data_folder, config['search_folder'],
+            download_folder(search_data_folder, config['full_search_folder'],
                             config['bucket'])
             searcher.load_state(search_data_folder)
             if ut.file_exists(config['save_filepath']):
@@ -107,7 +112,7 @@ def upload_folder(folder, location, bucket):
 
 
 def get_topic_name(topic, config):
-    return topic + '_' + config['search_name']
+    return config['search_folder'] + '_' + config['search_name'] + '_' + topic
 
 
 def update_searcher(message, comm, search_logger, state, config):
@@ -136,7 +141,7 @@ def save_searcher_state(state, config, search_logger):
     }
     ut.write_jsonfile(state, config['save_filepath'])
     upload_folder(search_logger.get_search_data_folderpath(),
-                  config['search_folder'], config['bucket'])
+                  config['full_search_folder'], config['bucket'])
     return state
 
 
@@ -193,7 +198,8 @@ def train_best(comm, state, config):
                             'eval_hparams': {
                                 'init_lr': lr,
                                 'weight_decay': wd,
-                                'lr_decay_method': 'cosine'
+                                'lr_decay_method': 'cosine',
+                                'optimizer_type': 'sgd_mom'
                             }
                         }
                         comm.publish(get_topic_name(ARCH_TOPIC, config), arch)

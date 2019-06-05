@@ -65,6 +65,7 @@ def process_config_and_args():
                         action='store',
                         dest='mongo_port',
                         default=27017)
+    parser.add_argument('--repetition', default=0)
     parser.add_argument('--log',
                         choices=['debug', 'info', 'warning', 'error'],
                         default='info')
@@ -92,6 +93,8 @@ def process_config_and_args():
     config['save_every'] = 1 if 'save_every' not in config else config[
         'save_every']
 
+    config['search_name'] = config['search_name'] + '_' + str(
+        options.repetition)
     evaluators = {
         'tpu_classification':
         lambda **kwargs: AdvanceClassifierEvaluator(

@@ -2,6 +2,8 @@ import deep_architect.core as co
 import deep_architect.hyperparameters as hp
 from deep_architect.searchers.common import Searcher
 import numpy as np
+import deep_architect.utils as ut
+import os
 
 
 # keeps the statistics and knows how to update information related to a node.
@@ -66,6 +68,23 @@ class MCTSTreeNode:
     def expand(self, num_children):
         self.children = [MCTSTreeNode(self) for _ in range(num_children)]
 
+    @staticmethod
+    def serialize(node):
+        children = [] if node.children is None else [
+            MCTSTreeNode.serialize(child) for child in node.children
+        ]
+        return (node.num_trials, node.sum_scores, children)
+
+    @staticmethod
+    def deserialize(serialization, parent=None):
+        node = MCTSTreeNode(parent)
+        node.num_trials = serialization[0]
+        node.sum_scores = serialization[1]
+        node.children = [
+            MCTSTreeNode.deserialize(child, node) for child in serialization[2]
+        ]
+        return node
+
 
 class MCTSSearcher(Searcher):
 
@@ -76,19 +95,23 @@ class MCTSSearcher(Searcher):
 
     # NOTE: this operation changes the state of the tree.
     def sample(self):
-        inputs, outputs = self.search_space_fn()
+        while True:
+            try:
+                inputs, outputs = self.search_space_fn()
 
-        h_it = co.unassigned_independent_hyperparameter_iterator(
-            outputs.values())
-        tree_hist, tree_vs = self._tree_walk(h_it)
-        rollout_hist, rollout_vs = self._rollout_walk(h_it)
-        vs = tree_vs + rollout_vs
-        searcher_eval_token = {
-            'tree_hist': tree_hist,
-            'rollout_hist': rollout_hist
-        }
+                h_it = co.unassigned_independent_hyperparameter_iterator(
+                    outputs.values())
+                tree_hist, tree_vs = self._tree_walk(h_it)
+                rollout_hist, rollout_vs = self._rollout_walk(h_it)
+                vs = tree_vs + rollout_vs
+                searcher_eval_token = {
+                    'tree_hist': tree_hist,
+                    'rollout_hist': rollout_hist
+                }
 
-        return inputs, outputs, vs, searcher_eval_token
+                return inputs, outputs, vs, searcher_eval_token
+            except ValueError:
+                pass
 
     def update(self, val, searcher_eval_token):
         node = self.mcts_root_node
@@ -143,3 +166,14 @@ class MCTSSearcher(Searcher):
             else:
                 raise ValueError
         return hist, vs
+
+    def save_state(self, folder):
+        ut.write_jsonfile(
+            {
+                'mcts_root_node': MCTSTreeNode.serialize(self.mcts_root_node),
+            }, os.path.join(folder, 'mcts_searcher_state.json'))
+
+    def load_state(self, folder):
+        state = ut.read_jsonfile(
+            os.path.join(folder, 'mcts_searcher_state.json'))
+        self.mcts_root_node = MCTSTreeNode.deserialize(state['mcts_root_node'])

@@ -8,7 +8,7 @@ import tensorflow as tf
 import dev.helpers.tfeager as htfe
 from dev.deep_learning_backend.tfe_ops import (relu, batch_normalization,
                                                conv2d, max_pool2d, fc_layer,
-                                               dropout, flatten)
+                                               dropout, flatten, add)
 
 import deep_architect.modules as mo
 from deep_architect.hyperparameters import Discrete as D
@@ -74,20 +74,6 @@ def genetic_stage(input_fn, node_fn, output_fn, h_connections, num_nodes):
                                   name_to_hparam,
                                   substitution_fn, ['In'], ['Out'],
                                   scope=None)
-
-
-def add(num_inputs):
-
-    def compile_fn(di, dh):
-
-        def forward_fn(di, isTraining=True):
-            return {'Out': tf.add_n([di[inp] for inp in di])}
-
-        return forward_fn
-
-    return htfe.TFEModule('Add', {}, compile_fn,
-                          ['In' + str(i) for i in range(num_inputs)],
-                          ['Out']).get_io()
 
 
 def intermediate_node_fn(num_inputs, filters):

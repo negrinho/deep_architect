@@ -232,7 +232,7 @@
     "searcher_file_name": "searcher_state.json",
     "save_every": 5,
     "communicator": "mpi",
-    "search_folder": "logs",
+    "search_folder": "neurips_language_ss",
     "search_name": "ss_flat_128_25"
   },
   "ss_nasbench_128_25": {
@@ -245,7 +245,7 @@
     "searcher_file_name": "searcher_state.json",
     "save_every": 5,
     "communicator": "mpi",
-    "search_folder": "logs",
+    "search_folder": "neurips_language_ss",
     "search_name": "ss_nasbench_128_25"
   },
   "ss_genetic_128_25": {
@@ -258,7 +258,7 @@
     "searcher_file_name": "searcher_state.json",
     "save_every": 5,
     "communicator": "mpi",
-    "search_folder": "logs",
+    "search_folder": "neurips_language_ss",
     "search_name": "ss_genetic_128_25"
   },
   "ss_hier_128_25": {
@@ -271,7 +271,7 @@
     "searcher_file_name": "searcher_state.json",
     "save_every": 5,
     "communicator": "mpi",
-    "search_folder": "logs",
+    "search_folder": "neurips_language_ss",
     "search_name": "ss_hier_128_25"
   },
   "ss_nasnet_128_25": {
@@ -284,7 +284,55 @@
     "searcher_file_name": "searcher_state.json",
     "save_every": 5,
     "communicator": "mpi",
-    "search_folder": "logs",
+    "search_folder": "neurips_language_ss",
     "search_name": "ss_nasnet_128_25"
+  },
+  "se_random_256_25": {
+    "searcher": "random",
+    "dataset": "cifar10",
+    "search_space": "genetic",
+    "evaluator": "tpu_classification",
+    "eval_epochs": 25,
+    "samples": 256,
+    "searcher_file_name": "searcher_state.json",
+    "save_every": 5,
+    "search_folder": "neurips_language_search",
+    "search_name": "se_random_256_25"
+  },
+  "se_evol_256_25": {
+    "searcher": "evolution_pop=100_samp=25_reg=t",
+    "dataset": "cifar10",
+    "search_space": "genetic",
+    "evaluator": "tpu_classification",
+    "eval_epochs": 25,
+    "samples": 256,
+    "searcher_file_name": "searcher_state.json",
+    "save_every": 5,
+    "search_folder": "neurips_language_search",
+    "search_name": "se_evol_256_25"
+  },
+  "se_mcts_256_25": {
+    "searcher": "mcts",
+    "dataset": "cifar10",
+    "search_space": "genetic",
+    "evaluator": "tpu_classification",
+    "eval_epochs": 25,
+    "samples": 256,
+    "searcher_file_name": "searcher_state.json",
+    "save_every": 5,
+    "search_folder": "neurips_language_search",
+    "search_name": "se_mcts_256_25"
+  },
+  "se_smbo_256_25": {
+    "searcher": "smbo_optimizer=rand_samples=512",
+    "dataset": "cifar10",
+    "search_space": "genetic",
+    "evaluator": "tpu_classification",
+    "eval_epochs": 25,
+    "samples": 256,
+    "searcher_file_name": "searcher_state.json",
+    "save_every": 5,
+    "search_folder": "neurips_language_search",
+    "search_name": "se_smbo_256_25"
   }
 }

@@ -189,7 +189,10 @@ def create_cell_generator(num_nodes):
         for (in_id, out_id) in itertools.combinations(range(num_nodes + 2), 2)
     ]
 
-    cell_ops = [D(['conv1', 'conv3', 'max3']) for _ in range(num_nodes)]
+    cell_ops = [
+        D(['conv1', 'conv3', 'max3'], name='node_%d' % i)
+        for i in range(num_nodes)
+    ]
 
     def generate(filters):
         return cell(

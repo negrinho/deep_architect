@@ -85,8 +85,11 @@ class TFEModule(co.Module):
         #       {k: input_name_to_val[k].shape for k in input_name_to_val})
         output_name_to_val = self._fn(input_name_to_val,
                                       isTraining=self.isTraining)
-        # print('Outputs: %s' %
-        #       {k: output_name_to_val[k].shape for k in output_name_to_val})
+        # print(
+        #     'Outputs: %s' % {
+        #         k: hasattr(output_name_to_val[k], '_keras_history')
+        #         for k in output_name_to_val
+        #     })
         self._set_output_values(output_name_to_val)
 
     def _update(self):
