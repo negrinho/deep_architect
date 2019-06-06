@@ -2,41 +2,16 @@
 Logging and visualization
 -------------------------
 
-Logging and visualization are important aspects of an architecture search workflow.
-Architecture search provides tremendous opportunity to create insightful visualizations
-based on architecture search results.
+Architecture search provides tremendous opportunity to create insightful visualizations based on architecture search results.
 
-The logging functionality in DeepArchitect allows us to create a folder for
-a search experiment.
-This search log folder contains a folder for each evaluation done during search.
-Each evaluation folder contains a fixed component and a component
-that is specified by the user.
-The fixed component contains a file with the hyperparameters values that define
-the architecture in the search space that is being considered in the search
-experiment and a file with the results obtained for that architecture.
-Both of these files are represented as JSON files in disk.
-The user component allows the user to store any information that may be of
-interest for each particular architecture, e.g., parameters for the evaluated model
-or model predictions on examples of the validation set.
-The logging functionality makes it convenient to manage this folder structure
-with a single subfolder per evaluation.
-The log folder for the whole search experiment keeps user information
-at the search level. For example, if we want to keep checkpoints on the searcher
-as the search progresses.
+The logging functionality in DeepArchitect allows us to create a folder for a search experiment. This search log folder contains a folder for each evaluation done during search. Each evaluation folder contains a fixed component and a component that is specified by the user. The fixed component contains a JSON file with the hyperparameters values that define the architecture and a JSON file with the results obtained for that architecture. The user component allows the user to store additional information for each architecture, e.g., model parameters or example predictions. The logging functionality makes it convenient to manage this folder structure. The log folder for the whole search experiment keeps user information at the search level, e.g., searcher checkpoints.
 
-We point the reader to
-`examples/mnist_with_logging <https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py>`__
-for an example use of logging, and to
-`deep_architect/search_logging.py <https://github.com/negrinho/darch/blob/master/deep_architect/search_logging.py>`__
-for the API definitions.
-We recommend the reader to go through these references
-to get a better grasp of the logging functionality.
+We point the reader to `examples/mnist_with_logging <https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py>`__ for an example use of logging, and to `deep_architect/search_logging.py <https://github.com/negrinho/darch/blob/master/deep_architect/search_logging.py>`__ for the API definitions.
 
 Starting Keras example to adapt for logging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Let us start with a Keras MNIST example (copied from the Keras website),
-and adapt to get a DeepArchitect example using the logging functionality.
+Let us start with a Keras MNIST example (copied from the Keras website), and adapt to get a DeepArchitect example using the logging functionality.
 
 .. code:: python
 
@@ -104,11 +79,9 @@ website.
 Evaluator and search space definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We will adapt this example to create a DeepArchitect example showcasing some of
-the logging and visualization functionalities.
+We will adapt this example to create a DeepArchitect example showcasing some of the logging and visualization functionalities.
 
-It does not make sense to use the test data as validation data, so we will
-create a small validation set out of training set.
+We first create a small validation set out of training set:
 
 .. code:: python
 
@@ -231,9 +204,7 @@ create a small validation set out of training set.
 Main search loop with logging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This creates an initial folder structure that will be progressively filled by
-each of the evaluations. The basic architecture search loop with a single process
-is as follows:
+This creates an initial folder structure that is progressively filled with each of the evaluations. The basic architecture search loop with a single process is as follows:
 
 .. code:: python
 
@@ -264,30 +235,11 @@ is as follows:
         evaluator.last_model.save(model_filepath)
         searcher.update(results["validation_accuracy"], searcher_eval_token)
 
-The above code samples and evaluates three architectures from the search space.
-The results, the corresponding graph, and the saved models are logged to each of the evaluation
-folders. Typically, we may not want to store weights for all the architectures
-evaluated during search as it will lead to large amount of space being consumed.
-In case case only the weights for few architectures are to be kept around, then
-the user can employ different logic to guarantee that the number of stored models
-remains small during search.
+The above code samples and evaluates three architectures from the search space. The results, the corresponding graph, and the saved models are logged to each of the evaluation folders. Typically, we may not want to store weights for all the architectures evaluated as it will lead to a large storage being consumed. In case only the weights for few architectures are to be kept around, then the user can employ different logic to guarantee that the number of stored models remains small during search (e.g., keeping only the best ones).
 
-After running this code, we ask the reader to explore the resulting
-log folder to get a sense of the information that is kept.
-We made the resulting folder available
-`here <https://www.cs.cmu.edu/~negrinho/deep_architect/logging_tutorial.zip>`__ in case the reader does not
-wish to run the code locally, but still wishes to inspect the resulting
-search log folder.
+After running this code, we ask the reader to explore the resulting log folder to get a sense for the information stored. We made the resulting folder available `here <https://www.cs.cmu.edu/~negrinho/deep_architect/logging_tutorial.zip>`__ in case the reader does not wish to run the code locally, but still wishes to inspect the resulting search log folder.
 
 Concluding remarks
 ^^^^^^^^^^^^^^^^^^
 
-Log folders are useful for visualization.
-Architecture search allows us to try many of the
-different architectures and explore different characteristics on each of them.
-We may set the search space with the goal of exploring what
-characteristics lead to better performance. Architecture search, and
-more specifically, DeepArchitect and the workflow that we suggest allows us to
-formulate many of these questions easily and explore the results to gain insight.
-We encourage users of DeepArchitect to think about interesting visualizations
-that can be constructed using architecture search workflows.
+Log folders are useful for visualization and exploration. Architecture search allows us to try many architectures and explore different characteristics of each of them. We may set the search space to explore what characteristics lead to better performance. Architecture search, and more specifically, DeepArchitect and the workflow that we suggest allows us to formulate many of these questions easily and explore the results for insights. We encourage users of DeepArchitect to think about interesting visualizations that can be constructed using architecture search workflows.
