@@ -10,16 +10,13 @@ from six.moves import range
 
 import tensorflow as tf
 import numpy as np
-from tensorflow.python.keras.layers import Lambda
 
 from deep_architect.contrib.misc.datasets.cifar10_tf import Cifar10DataSet
+import deep_architect.contrib.misc.evaluators.tensorflow.gcloud_utils as gcu
 import deep_architect.core as co
 import deep_architect.utils as ut
 import dev.helpers.tfeager as htfe
-import keras.backend as K
 
-# import hooks
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logger = logging.getLogger(__name__)
 
 IMAGE_HEIGHT = 32
@@ -40,36 +37,6 @@ def input_fn(mode, data_dir, batch_size=128, train=True):
     data = Cifar10DataSet(data_dir, subset=mode,
                           use_distortion=train).make_batch(batch_size)
     return data
-
-
-def get_empty_bucket_folder(folder):
-    folder_name = ''
-    while True:
-        num = random.randint(0, sys.maxsize)
-        folder_name = os.path.join(folder, 'eval' + str(num))
-        try:
-            subprocess.check_call(['gsutil', '-q', 'stat', folder_name + '/**'])
-        except subprocess.CalledProcessError:
-            break
-    return folder_name
-
-
-def delete_bucket_folder(folder):
-    try:
-        subprocess.check_call(['gsutil', '-m', 'rm', folder + '/**'])
-    except:
-        pass
-
-
-class EvalCheckpointSaverListener(tf.train.CheckpointSaverListener):
-
-    def __init__(self, estimator, input_fn, steps_per_val_epoch):
-        self.estimator = estimator
-        self.input_fn = input_fn
-        self.steps_per_val_epoch = steps_per_val_epoch
-
-    def after_save(self, session, global_step):
-        self.estimator.evaluate(self.input_fn, steps=self.steps_per_val_epoch)
 
 
 def record_summaries(metric_dict, step):
@@ -97,25 +64,16 @@ def construct_host_fn(metric_dict, model_dir, prefix='', max_queue_size=10):
 
 
 def get_optimizer(optimizer_type, learning_rate):
-    if optimizer_type == 'sgd':
-        optimizer = tf.keras.optimizers.SGD(learning_rate)
+    if optimizer_type == 'adam':
+        return tf.train.AdamOptimizer(learning_rate=learning_rate)
     elif optimizer_type == 'sgd_mom':
-        optimizer = tf.keras.optimizers.SGD(learning_rate, momentum=.9)
-    elif optimizer_type == 'adam':
-        optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
+        return tf.train.MomentumOptimizer(learning_rate, momentum=.9)
     elif optimizer_type == 'rmsprop':
-        optimizer = tf.train.RMSPropOptimizer(learning_rate,
-                                              momentum=.9,
-                                              epsilon=1.0)
-    return optimizer
-
-
-def gen_fn(dataset):
-    iterator = dataset.make_one_shot_iterator()
-
-    next_batch = iterator.get_next()
-    while True:
-        yield K.get_session().run(next_batch)
+        return tf.train.RMSPropOptimizer(learning_rate,
+                                         momentum=.9,
+                                         epsilon=1.0)
+    else:
+        raise ValueError('Optimizer type not recognized: %s' % optimizer_type)
 
 
 class AdvanceClassifierEvaluator:
@@ -165,22 +123,7 @@ class AdvanceClassifierEvaluator:
         self.delete_scratch_after_use = delete_scratch_after_use
         self.num_parameters = -1
 
-    def get_optimizer(self, learning_rate):
-        if self.optimizer_type == 'adam':
-            return tf.train.AdamOptimizer(learning_rate=learning_rate)
-        elif self.optimizer_type == 'sgd_mom':
-            return tf.train.MomentumOptimizer(learning_rate, momentum=.9)
-        elif self.optimizer_type == 'rmsprop':
-            return tf.train.RMSPropOptimizer(learning_rate,
-                                             momentum=.9,
-                                             epsilon=1.0)
-        else:
-            raise ValueError('Optimizer type not recognized: %s' %
-                             self.optimizer_type)
-
     def get_learning_rate(self, step):
-        # total_steps = int(
-        #     self.max_num_training_epochs * self.num_examples / self.batch_size)
         total_steps = int(self.max_num_training_epochs * self.num_examples /
                           self.batch_size)
         if self.lr_decay_method == 'constant':
@@ -221,8 +164,9 @@ class AdvanceClassifierEvaluator:
         if state is not None and 'model_dir' in state:
             model_dir = state['model_dir']
         else:
-            model_dir = get_empty_bucket_folder(self.base_dir)
-            save_fn({'model_dir': model_dir})
+            model_dir = gcu.get_empty_bucket_folder(self.base_dir)
+            if save_fn:
+                save_fn({'model_dir': model_dir})
         logger.info('Using folder %s for evaluation', model_dir)
 
         def metric_fn(labels, predictions):
@@ -242,10 +186,9 @@ class AdvanceClassifierEvaluator:
                     inputs['In0']:
                     features,
                     inputs['In1']:
-                    tf.math.divide(
-                        tf.cast(step, tf.float32),
-                        float(self.steps_per_epoch *
-                              self.max_num_training_epochs))
+                    float(self.steps_per_epoch * self.max_num_training_epochs)
+                    # tf.math.divide(
+                    #     tf.cast(step, tf.float32),
                 })
                 logits = outputs['Out1'].val
                 aux_logits = outputs['Out0'].val
@@ -275,16 +218,8 @@ class AdvanceClassifierEvaluator:
                 logits=aux_logits,
                 weights=.5,
                 reduction=tf.losses.Reduction.MEAN) if 'Out1' in outputs else 0
-            # tf.reduce_sum(
-            #     tf.nn.sparse_softmax_cross_entropy_with_logits(
-            #         logits=logits, labels=labels))
             loss = unreg_loss + l2_loss + aux_loss
             if mode == tf.estimator.ModeKeys.EVAL:
-                # return tf.estimator.EstimatorSpec(mode,
-                #                                   loss=loss,
-                #                                   eval_metric_ops=metric_fn(
-                #                                       labels,
-                #                                       predicted_classes))
                 return tf.contrib.tpu.TPUEstimatorSpec(
                     mode,
                     loss=loss,
@@ -308,12 +243,9 @@ class AdvanceClassifierEvaluator:
                 tf.reduce_mean(
                     tf.cast(tf.equal(predicted_classes, labels), tf.float32))
             }
-            # optimizer = tf.train.RMSPropOptimizer(learning_rate,
-            #                                       momentum=.9,
-            #                                       epsilon=1.0)
-            # optimizer = tf.train.MomentumOptimizer(learning_rate, momentum=.9)
+
             host_fn = None
-            optimizer = self.get_optimizer(learning_rate)
+            optimizer = get_optimizer(self.optimizer_type, learning_rate)
             if self.use_tpu:
                 host_fn = construct_host_fn(metric_dict,
                                             model_dir,
@@ -330,30 +262,13 @@ class AdvanceClassifierEvaluator:
                 train_op = optimizer.apply_gradients(
                     gvs, global_step=tf.train.get_or_create_global_step())
 
-                # train_op = optimizer.minimize(
-                #     loss, global_step=tf.train.get_or_create_global_step())
-            # return tf.estimator.EstimatorSpec(
-            #     mode,
-            #     loss=loss,
-            #     train_op=train_op,
-            # )
             return tf.contrib.tpu.TPUEstimatorSpec(mode,
                                                    loss=loss,
                                                    train_op=train_op,
                                                    host_call=host_fn)
 
-        # NUM_GPUS = 2
-        # strategy = tf.contrib.distribute.MirroredStrategy(num_gpus=NUM_GPUS)
-        # config = tf.estimator.RunConfig(train_distribute=strategy)
-        # gpu_ops = tf.GPUOptions(allow_growth=True)
-        # config = tf.ConfigProto(gpu_options=gpu_ops)
-        # run_config = tf.estimator.RunConfig(
-        #     model_dir=model_dir, session_config=config)
-
-        my_project_name = subprocess.check_output(
-            ['gcloud', 'config', 'get-value', 'project'])
-        my_zone = subprocess.check_output(
-            ['gcloud', 'config', 'get-value', 'compute/zone'])
+        my_project_name = gcu.get_gcloud_project()
+        my_zone = gcu.get_gcloud_zone()
         cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
             self.tpu_name.split(','), zone=my_zone, project=my_project_name)
         run_config = tf.contrib.tpu.RunConfig(
@@ -363,12 +278,10 @@ class AdvanceClassifierEvaluator:
             self.steps_per_epoch,
             keep_checkpoint_max=1,
             log_step_count_steps=self.steps_per_epoch,
-            # session_config=tf.ConfigProto(
-            #     allow_soft_placement=True, log_device_placement=True),
             tpu_config=tf.contrib.tpu.TPUConfig(
                 iterations_per_loop=self.steps_per_epoch, num_shards=8),
         )
-
+        results = {}
         try:
             estimator = tf.contrib.tpu.TPUEstimator(
                 model_fn=model_fn,
@@ -378,12 +291,6 @@ class AdvanceClassifierEvaluator:
                 eval_batch_size=self.batch_size,
                 predict_batch_size=self.batch_size,
                 params={})
-            # estimator = tf.estimator.Estimator(model_fn=model_fn,
-            #                                    model_dir='temp/')
-            seqs = ut.SequenceTracker(abort_if_different_lengths=True)
-
-            best_val_acc = -np.inf
-            stop_counter = self.stop_patience
             timer_manager = ut.TimerManager()
             timer_manager.create_timer('eval')
 
@@ -395,23 +302,12 @@ class AdvanceClassifierEvaluator:
                                              self.data_dir,
                                              batch_size=params['batch_size'],
                                              train=False)
-            # train_hook = hooks.InMemoryEvaluatorHook(
-            #     estimator,
-            #     val_fn,
-            #     steps=self.steps_per_val_epoch,
-            #     every_n_iter=1)
-            # estimator.train(
-            #     input_fn=train_fn,
-            #     steps=1,
-            # )
-            # estimator.evaluate(
-            #     input_fn=val_fn,
-            #     steps=1,
-            # )
             try:
-                estimator.train(input_fn=train_fn,
-                                max_steps=self.steps_per_epoch *
-                                self.max_num_training_epochs)
+                estimator.train(
+                    input_fn=train_fn,
+                    max_steps=2  #self.steps_per_epoch *
+                    # self.max_num_training_epochs
+                )
             except (tf.train.NanLossDuringTrainingError,
                     tf.errors.InvalidArgumentError):
                 logger.warning(
@@ -426,8 +322,8 @@ class AdvanceClassifierEvaluator:
                                              train=False)
 
             timer_manager.tick_timer('eval')
-            eval_results = estimator.evaluate(input_fn=val_fn,
-                                              steps=self.steps_per_val_epoch)
+            eval_results = estimator.evaluate(
+                input_fn=val_fn, steps=2)  #self.steps_per_val_epoch)
             t_infer = (
                 timer_manager.get_time_since_last_tick('eval', 'miliseconds') /
                 Cifar10DataSet.num_examples_per_epoch('validation'))
@@ -435,13 +331,10 @@ class AdvanceClassifierEvaluator:
             val_acc = float(eval_results['accuracy'])
             logger.debug("Validation accuracy: %f", val_acc)
 
-            seqs_dict = seqs.get_dict()
             results = {
                 'validation_accuracy': val_acc,
                 'num_parameters': self.num_parameters,
                 'inference_time_per_example_in_miliseconds': t_infer,
-                # 'num_training_epochs': seqs_dict['epoch_number'],
-                'sequences': seqs_dict,
                 'epoch': int(eval_results['global_step']) / self.steps_per_epoch
             }
             test_fn = lambda params: input_fn('eval',
@@ -449,9 +342,10 @@ class AdvanceClassifierEvaluator:
                                               batch_size=params['batch_size'],
                                               train=False)
 
-            test_results = estimator.evaluate(input_fn=test_fn,
-                                              steps=self.steps_per_test_epoch,
-                                              name='test')
+            test_results = estimator.evaluate(
+                input_fn=test_fn,
+                steps=2,  #self.steps_per_test_epoch,
+                name='test')
             test_acc = float(test_results['accuracy'])
             logger.debug("Test accuracy: %f", test_acc)
             results['test_accuracy'] = test_acc
@@ -460,11 +354,10 @@ class AdvanceClassifierEvaluator:
                 'training_time_in_hours'] = timer_manager.get_time_since_event(
                     'eval', 'start', units='hours')
         except:
-            raise
+            logger.info('Error during evaluation')
         finally:
-            # self.num_archs += 1
             if self.delete_scratch_after_use:
-                delete_bucket_folder(model_dir)
+                gcu.delete_bucket_folder(model_dir)
         return results
 
     def save_state(self, folder):
@@ -472,238 +365,3 @@ class AdvanceClassifierEvaluator:
 
     def load_state(self, folder):
         pass
-
-
-class KerasTPUEvaluator(object):
-
-    def __init__(self,
-                 data_dir,
-                 tpu_name,
-                 max_num_training_epochs=200,
-                 stop_patience=20,
-                 optimizer_type='adam',
-                 batch_size=256,
-                 lr_decay_method='constant',
-                 init_lr=.001,
-                 lr_decay_value=.97,
-                 lr_num_epochs_per_decay=2.4,
-                 lr_warmup_epochs=3.0,
-                 weight_decay=0,
-                 display_step=1,
-                 log_output_to_terminal=True,
-                 base_dir='./scratch',
-                 delete_scratch_after_use=False,
-                 epochs_between_evals=100,
-                 use_tpu=True):
-        self.tpu_name = tpu_name
-        self.num_examples = Cifar10DataSet.num_examples_per_epoch()
-        self.batch_size = batch_size
-        self.data_dir = data_dir
-        self.steps_per_epoch = self.num_examples // self.batch_size
-        self.steps_per_val_epoch = Cifar10DataSet.num_examples_per_epoch(
-            subset='validation') // self.batch_size
-        self.steps_per_test_epoch = Cifar10DataSet.num_examples_per_epoch(
-            subset='eval') // self.batch_size
-        self.max_num_training_epochs = max_num_training_epochs
-        self.epochs_between_evals = epochs_between_evals
-        self.display_step = display_step
-        self.stop_patience = stop_patience
-        self.lr_decay_method = lr_decay_method
-        self.init_lr = init_lr * 8 if use_tpu else init_lr
-        self.lr_decay_value = lr_decay_value
-        self.lr_num_epochs_per_decay = lr_num_epochs_per_decay
-        self.lr_warmup_epochs = lr_warmup_epochs
-        self.weight_decay = weight_decay
-        self.optimizer_type = optimizer_type
-        self.log_output_to_terminal = log_output_to_terminal
-        self.base_dir = base_dir
-        self.use_tpu = use_tpu
-        self.delete_scratch_after_use = delete_scratch_after_use
-        self.num_parameters = -1
-
-    def keras_input_fn(self, dataset):
-
-        def expand_labels(f, labels):
-            return f, tf.expand_dims(labels, 1)
-
-        return dataset.map(expand_labels, num_parallel_calls=2)
-
-    def get_learning_rate(self, step):
-        # total_steps = int(
-        #     self.max_num_training_epochs * self.num_examples / self.batch_size)
-        total_steps = int(self.max_num_training_epochs * self.num_examples /
-                          self.batch_size)
-        if self.lr_decay_method == 'constant':
-            lr = self.init_lr
-        elif self.lr_decay_method == 'cosine':
-            lr = tf.train.cosine_decay(self.init_lr, step, total_steps)
-        elif self.lr_decay_method == 'stepwise':
-            # divide LR by 10 at 1/2, 2/3, and 5/6 of total epochs
-            boundaries = [
-                int(0.5 * total_steps),
-                int(0.667 * total_steps),
-                int(0.833 * total_steps)
-            ]
-            values = [
-                1.0 * self.init_lr, 0.1 * self.init_lr, 0.01 * self.init_lr,
-                0.0001 * self.init_lr
-            ]
-            lr = tf.train.piecewise_constant(step, boundaries, values)
-        else:
-            lr = tf.train.exponential_decay(self.init_lr,
-                                            step,
-                                            self.steps_per_epoch *
-                                            self.lr_num_epochs_per_decay,
-                                            self.lr_decay_value,
-                                            staircase=True)
-            warmup_steps = int(self.lr_warmup_epochs * self.steps_per_epoch)
-            warmup_lr = (self.init_lr * tf.cast(step, tf.float32) /
-                         tf.cast(warmup_steps, tf.float32))
-            lr = tf.cond(step < warmup_steps, lambda: warmup_lr, lambda: lr)
-            lr = tf.maximum(lr, 0.0001 * self.init_lr)
-
-        return lr
-
-    def eval(self, inputs, outputs, save_fn=None, state=None):
-        if state is not None and 'model_dir' in state:
-            model_dir = state['model_dir']
-        else:
-            model_dir = get_empty_bucket_folder(self.base_dir)
-            if save_fn:
-                save_fn({'model_dir': model_dir})
-        print('here')
-        logger.info('Using folder %s for evaluation', model_dir)
-        train_dataset = self.keras_input_fn(
-            input_fn('train',
-                     self.data_dir,
-                     batch_size=self.batch_size,
-                     train=True))
-        val_dataset = self.keras_input_fn(
-            input_fn('validation',
-                     self.data_dir,
-                     batch_size=self.batch_size,
-                     train=False))
-        latest = tf.train.latest_checkpoint(model_dir)
-        print('latest')
-        init_epoch = 0
-        if latest:
-            model = tf.keras.models.load_model(latest)
-            init_epoch = int(latest.split('.')[-4])
-        else:
-            input_placeholder = tf.keras.Input(
-                train_dataset.output_shapes[0][1:])
-            x = input_placeholder
-            # def forward(x):
-            step = tf.train.get_or_create_global_step()
-            if 'In' in inputs:
-                co.forward({inputs['In']: x})
-                logits = outputs['Out'].val
-                logits = tf.keras.layers.Lambda(lambda x: x,
-                                                name='final_logits')(logits)
-                outputs = logits
-                loss_weights = [1.0]
-                losses = lambda y_true, y_pred: tf.keras.losses.sparse_categorical_crossentropy(
-                    y_true, y_pred, from_logits=True)
-                # metrics = [tf.keras.metrics.sparse_categorical_accuracy]
-            else:
-                co.forward({
-                    inputs['In0']:
-                    x,
-                    inputs['In1']:
-                    tf.math.divide(
-                        tf.cast(step, tf.float32),
-                        float(self.steps_per_epoch *
-                              self.max_num_training_epochs))
-                })
-                logits = outputs['Out1'].val
-                aux_logits = outputs['Out0'].val
-                logits = tf.keras.layers.Lambda(lambda x: x,
-                                                name='final_logits')(logits)
-                aux_logits = tf.keras.layers.Lambda(lambda x: x,
-                                                    name='aux_logits')(
-                                                        aux_logits)
-                outputs = [logits, aux_logits]
-                loss_weights = [1.0, .5]
-                # aux_loss = tf.keras.losses.sparse_categorical_crossentropy()
-                losses = [
-                    lambda y_true, y_pred: tf.keras.losses.
-                    sparse_categorical_crossentropy(
-                        y_true, y_pred, from_logits=True), lambda y_true,
-                    y_pred: tf.keras.losses.sparse_categorical_crossentropy(
-                        y_true, y_pred, from_logits=True)
-                ]
-            metrics = {'final_logits': ['sparse_categorical_accuracy']}
-            # logits, aux_logits = Lambda(forward)(input_placeholder)
-            # aux_logits = Lambda(lambda x: x)(aux_logits)
-            model = tf.keras.Model(inputs=input_placeholder, outputs=logits)
-            if self.use_tpu:
-                my_project_name = subprocess.check_output(
-                    ['gcloud', 'config', 'get-value', 'project'])
-                my_zone = subprocess.check_output(
-                    ['gcloud', 'config', 'get-value', 'compute/zone'])
-                cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
-                    self.tpu_name.split(','),
-                    zone=my_zone,
-                    project=my_project_name)
-                strategy = tf.contrib.tpu.TPUDistributionStrategy(
-                    cluster_resolver)
-                model = tf.contrib.tpu.keras_to_tpu_model(model, strategy)
-
-            learning_rate = self.get_learning_rate(step)
-            optimizer = get_optimizer(self.optimizer_type, learning_rate)
-            tf.summary.scalar('learning_rate', learning_rate)
-            tensorboard_callback = tf.keras.callbacks.TensorBoard(
-                log_dir=model_dir)
-            checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-                filepath=os.path.join(
-                    model_dir, 'weights.{epoch:02d}.{val_loss:.2f}.hdf5'),
-                period=(self.max_num_training_epochs // 3) + 1)
-            model.compile(optimizer=optimizer,
-                          loss=losses,
-                          loss_weights=loss_weights,
-                          metrics=metrics)
-        num_parameters = int(
-            np.sum([
-                np.prod(v.get_shape().as_list())
-                for v in set(model.trainable_weights)
-            ]))
-        logger.info('Number of parameters for %s: %d', model_dir,
-                    num_parameters)
-        # print(model.metrics_names)
-        # return model
-        timer_manager = ut.TimerManager()
-        timer_manager.create_timer('eval')
-        training_history = model.fit(
-            lambda: train_dataset,
-            epochs=self.max_num_training_epochs,
-            steps_per_epoch=self.steps_per_epoch,
-            validation_data=lambda: val_dataset,
-            validation_steps=self.steps_per_val_epoch,
-            initial_epoch=init_epoch,
-            callbacks=[tensorboard_callback, checkpoint_callback],
-        )
-        test_dataset = self.keras_input_fn(
-            input_fn('eval',
-                     self.data_dir,
-                     batch_size=self.batch_size,
-                     train=False))
-        test_results = model.evaluate(lambda: test_dataset,
-                                      steps=self.steps_per_test_epoch)
-        return training_history, test_results
-        results = {
-            'validation_accuracy':
-            training_history.history['val_sparse_categorical_accuracy'][-1],
-            'num_parameters':
-            num_parameters,
-            # 'inference_time_per_example_in_miliseconds':
-            # t_infer,
-            # 'num_training_epochs': seqs_dict['epoch_number'],
-            # 'sequences':
-            # seqs_dict,
-            'training_history':
-            training_history.history
-        }
-        results['test_accuracy'] = test_acc
-
-        results['training_time_in_hours'] = timer_manager.get_time_since_event(
-            'eval', 'start', units='hours')

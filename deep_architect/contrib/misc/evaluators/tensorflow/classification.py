@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import os
 import tensorflow as tf
 
 import numpy as np
@@ -9,8 +8,6 @@ import deep_architect.helpers.tensorflow_support as htf
 import deep_architect.utils as ut
 import deep_architect.contrib.misc.gpu_utils as gpu_utils
 from six.moves import range
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class SimpleClassifierEvaluator:
@@ -94,8 +91,8 @@ class SimpleClassifierEvaluator:
         elif self.optimizer_type == 'sgd':
             optimizer = tf.train.GradientDescentOptimizer(learning_rate=lr_pl)
         elif self.optimizer_type == 'sgd_mom':
-            optimizer = tf.train.MomentumOptimizer(
-                learning_rate=lr_pl, momentum=0.99)
+            optimizer = tf.train.MomentumOptimizer(learning_rate=lr_pl,
+                                                   momentum=0.99)
         else:
             raise ValueError("Unknown optimizer.")
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -146,8 +143,8 @@ class SimpleClassifierEvaluator:
                     gpu_id = None
 
             lr = learning_rate_init
-            num_batches = int(
-                self.train_dataset.get_num_examples() / self.batch_size)
+            num_batches = int(self.train_dataset.get_num_examples() /
+                              self.batch_size)
             for epoch in range(self.max_num_training_epochs):
                 avg_loss = 0.
                 for _ in range(num_batches):
@@ -170,11 +167,12 @@ class SimpleClassifierEvaluator:
 
                 # Display logs per epoch step
                 if self.log_output_to_terminal and epoch % self.display_step == 0:
-                    print("time:", "%7.1f" % timer_manager.get_time_since_event(
-                        'eval', 'start'), "epoch:", '%04d' % (epoch + 1),
-                          "loss:", "{:.9f}".format(avg_loss),
-                          "validation_accuracy:", "%.5f" % val_acc,
-                          "learning_rate:", '%.3e' % lr)
+                    print(
+                        "time:", "%7.1f" %
+                        timer_manager.get_time_since_event('eval', 'start'),
+                        "epoch:", '%04d' % (epoch + 1), "loss:",
+                        "{:.9f}".format(avg_loss), "validation_accuracy:",
+                        "%.5f" % val_acc, "learning_rate:", '%.3e' % lr)
 
                 d = {
                     'validation_accuracy':
@@ -186,8 +184,9 @@ class SimpleClassifierEvaluator:
                     'learning_rate':
                     lr,
                     'time_in_minutes':
-                    timer_manager.get_time_since_event(
-                        'eval', 'start', units='minutes'),
+                    timer_manager.get_time_since_event('eval',
+                                                       'start',
+                                                       units='minutes'),
                 }
                 # adding information about gpu utilization if available.
                 if gpu_id is not None:
@@ -221,7 +220,7 @@ class SimpleClassifierEvaluator:
                         save_counter -= 1
                         if save_counter == 0:
                             save_path = saver.save(sess, self.model_path)
-                            # print("Model saved in file: %s" % save_path)
+                            print("Model saved in file: %s" % save_path)
 
                             save_counter = save_patience
                             best_val_acc_saved = val_acc
@@ -236,15 +235,16 @@ class SimpleClassifierEvaluator:
             # load it.
             if best_val_acc_saved > val_acc:
                 saver.restore(sess, self.model_path)
-                # print("Model restored from file: %s" % save_path)
+                print("Model restored from file: %s" % save_path)
 
-            # print("Optimization Finished!")
+            print("Optimization Finished!")
 
             timer_manager.tick_timer('eval')
             val_acc = self._compute_accuracy(sess, X_pl, y_pl, num_correct,
                                              self.val_dataset, eval_feed)
-            t_infer = (timer_manager.get_time_since_last_tick(
-                'eval', 'miliseconds') / self.val_dataset.get_num_examples())
+            t_infer = (
+                timer_manager.get_time_since_last_tick('eval', 'miliseconds') /
+                self.val_dataset.get_num_examples())
 
             print("Validation accuracy: %f" % val_acc)
             seqs_dict = seqs.get_dict()

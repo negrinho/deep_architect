@@ -6,9 +6,10 @@ import itertools
 import tensorflow as tf
 
 import dev.helpers.tfeager as htfe
-from dev.deep_learning_backend.tfe_ops import (relu, batch_normalization,
-                                               conv2d, max_pool2d, fc_layer,
-                                               dropout, flatten, add)
+from dev.deep_learning_backend.tf_keras_ops import (relu, batch_normalization,
+                                                    conv2d, max_pool2d,
+                                                    fc_layer, dropout, flatten,
+                                                    add)
 
 import deep_architect.modules as mo
 from deep_architect.hyperparameters import Discrete as D

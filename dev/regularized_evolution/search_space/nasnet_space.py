@@ -3,6 +3,8 @@ from builtins import str
 from builtins import range
 
 import tensorflow as tf
+from tensorflow.python.keras.utils import tf_utils
+
 from collections import OrderedDict
 
 import deep_architect.core as co
@@ -10,7 +12,7 @@ import deep_architect.hyperparameters as hp
 # import deep_architect.helpers.tensorflow_support as htf
 import dev.helpers.tfeager as htfe
 import deep_architect.modules as mo
-from dev.deep_learning_backend.tfe_ops import (
+from dev.deep_learning_backend.tf_keras_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
     min_pool2d, fc_layer, global_pool2d, dropout, add, flatten)
 
@@ -168,21 +170,24 @@ def apply_drop_path(x, keep_prob):
 
 class DropPath(tf.keras.layers.Layer):
 
-    def __init__(self, init_keep_prob, cell_ratio):
+    def __init__(self, init_keep_prob, cell_ratio, total_steps):
         super(DropPath, self).__init__()
         self.init_keep_prob = 1 - cell_ratio * (1 - init_keep_prob)
         self.compute_prob = tf.keras.layers.Lambda(lambda x: 1 - x * (
             1 - self.init_keep_prob))
+        self.total_steps = total_steps
 
     def build(self, shape):
         super(DropPath, self).build(shape)
+        self.progress = tf.divide(
+            tf.cast(tf.train.get_or_create_global_step(), tf.float32),
+            self.total_steps)
 
-    def call(self, input, training=None):
+    def call(self, x, training=None):
         if training is None:
-            training = tf.keras.backend.learning_phase()
-        x, progress = input
-        keep_prob = self.compute_prob(progress)
-        return tf.cond(
+            training = True
+        keep_prob = self.compute_prob(self.progress)
+        return tf_utils.smart_cond(
             training, lambda: apply_drop_path(x, keep_prob), lambda: x)
 
     def compute_output_shape(self, input_shape):
@@ -191,6 +196,7 @@ class DropPath(tf.keras.layers.Layer):
     def get_config(self):
         config = {
             'init_keep_prob': self.init_keep_prob,
+            'total_steps': self.total_steps
         }
         base_config = super(DropPath, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
@@ -199,14 +205,13 @@ class DropPath(tf.keras.layers.Layer):
 def drop_path(cell_ratio):
 
     def compile_fn(di, dh):
-        drop_path_layer = DropPath(dh['keep_prob'], cell_ratio)
-        progress_layer = tf.keras.layers.Lambda(lambda x: di['In1'])
+        drop_path_layer = DropPath(dh['keep_prob'], cell_ratio, di['In1'])
+
+        # progress_layer = tf.keras.layers.Lambda(lambda x: tf.math.divide(
+        #     tf.cast(step, tf.float32), di['In1']))
 
         def forward_fn(di, isTraining=True):
-            return {
-                'Out': drop_path_layer([di['In0'],
-                                        progress_layer(di['In0'])])
-            }
+            return {'Out': drop_path_layer(di['In0'])}
 
         return forward_fn
 
@@ -296,20 +301,20 @@ def intermediate_node_fn(reduction, input_id, node_id, op_num, filters,
     drop_in, drop_out = miso_optional(lambda: drop_path(cell_ratio),
                                       h_is_not_none)
     drop_in['In0'].connect(op_out['Out'])
-    drop_in['In1'].connect(global_vars['progress'])
+    drop_in['In1'].connect(global_vars['total_steps'])
     return op_in, drop_out
 
 
 def concat(num_ins):
 
     def compile_fn(di, dh):
-        concat = tf.keras.layers.Concatenate(axis=3) if num_ins > 1 else None
+        concat_op = tf.keras.layers.Concatenate(axis=3) if num_ins > 1 else None
 
         def forward_fn(di, isTraining=True):
             return {
                 'Out':
-                concat([di[input_name] for input_name in di])
-                if concat else di['In0']
+                concat_op([di[input_name] for input_name in di])
+                if concat_op else di['In0']
             }
 
         return forward_fn
@@ -462,15 +467,15 @@ def generate_search_space(num_nodes_per_cell, num_normal_cells,
     hp_sharer.register(
         'drop_path_keep_prob', lambda: D([.7], name='drop_path_keep_prob'))
     stem_in, stem_out = stem(int(init_filters * stem_multiplier))
-    progress_in, progress_out = mo.identity()
-    global_vars['progress'] = progress_out['Out']
+    total_steps_in, total_steps_out = mo.identity()
+    global_vars['total_steps'] = total_steps_out['Out']
     normal_cell_fn = create_cell_generator(num_nodes_per_cell, False)
     reduction_cell_fn = create_cell_generator(num_nodes_per_cell, True)
 
     total_cells = num_normal_cells + num_reduction_cells
-    hasReduction = [False] * num_normal_cells
+    has_reduction = [False] * num_normal_cells
     for i in range(num_reduction_cells):
-        hasReduction[int(
+        has_reduction[int(
             float(i + 1) / (num_reduction_cells + 1) * num_normal_cells)] = True
 
     inputs = [stem_out, stem_out]
@@ -482,7 +487,7 @@ def generate_search_space(num_nodes_per_cell, num_normal_cells,
     outs = {}
     cells_created = 0.0
     for i in range(num_normal_cells):
-        if hasReduction[i]:
+        if has_reduction[i]:
             filters *= 2
             connect_new_cell(
                 reduction_cell_fn(filters, (cells_created + 1) / total_cells),
@@ -501,7 +506,7 @@ def generate_search_space(num_nodes_per_cell, num_normal_cells,
                                        dropout(D([1.0])),
                                        fc_layer(D([10]))])
     outs['Out1'] = final_out['Out']
-    return {'In0': stem_in['In'], 'In1': progress_in['In']}, outs
+    return {'In0': stem_in['In'], 'In1': total_steps_in['In']}, outs
 
 
 def connect_new_cell(cell, inputs):

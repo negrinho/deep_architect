@@ -45,12 +45,14 @@ class Cifar10DataSet(object):
         # Dimensions of the images in the CIFAR-10 dataset.
         # See http://www.cs.toronto.edu/~kriz/cifar.html for a description of the
         # input format.
-        features = tf.parse_single_example(
-            serialized_example,
-            features={
-                'image': tf.FixedLenFeature([], tf.string),
-                'label': tf.FixedLenFeature([], tf.int64),
-            })
+        features = tf.parse_single_example(serialized_example,
+                                           features={
+                                               'image':
+                                               tf.FixedLenFeature([],
+                                                                  tf.string),
+                                               'label':
+                                               tf.FixedLenFeature([], tf.int64),
+                                           })
         image = tf.decode_raw(features['image'], tf.uint8)
         image.set_shape([DEPTH * HEIGHT * WIDTH])
 
@@ -73,19 +75,14 @@ class Cifar10DataSet(object):
 
         # Parse records.
         dataset = dataset.map(self.parser, num_parallel_calls=2).cache()
-        #.repeat()
+
         # Potentially shuffle records.
         if self.subset == 'train':
-            # min_queue_examples = int(
-            #     Cifar10DataSet.num_examples_per_epoch(self.subset) * 0.4)
             # Ensure that the capacity is sufficiently large to provide good random
             # shuffling.
             dataset = dataset.apply(
                 tf.data.experimental.shuffle_and_repeat(
                     Cifar10DataSet.num_examples_per_epoch(self.subset)))
-            # dataset = dataset.shuffle(
-            #     buffer_size=min_queue_examples + 3 * batch_size,
-            #     reshuffle_each_iteration=True)
         else:
             dataset = dataset.repeat()
 
@@ -93,8 +90,6 @@ class Cifar10DataSet(object):
         dataset = dataset.map(self.preprocess, num_parallel_calls=2)
         dataset = dataset.batch(batch_size, drop_remainder=True)
         dataset = dataset.prefetch(batch_size)
-        # iterator = dataset.make_one_shot_iterator()
-        # image_batch, label_batch = iterator.get_next()
 
         return dataset
 
@@ -111,6 +106,7 @@ class Cifar10DataSet(object):
     @staticmethod
     def num_examples_per_epoch(subset='train'):
         if subset == 'train':
+            return 512
             return 40000
         elif subset == 'validation':
             return 10000
