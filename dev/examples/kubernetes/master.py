@@ -32,7 +32,7 @@ def process_config_and_args():
         '--config-file',
         action='store',
         dest='config_file',
-        default='/darch/examples/mongo_communicator/experiment_config.json')
+        default='/darch/examples/kubernetes/experiment_config.json')
     parser.add_argument('--bucket',
                         '-b',
                         action='store',
