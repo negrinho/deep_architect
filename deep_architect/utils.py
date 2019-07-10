@@ -416,4 +416,3 @@ def get_config():
     out = cmd.parse()
     cfg = read_jsonfile(out['config_filepath'])
     return cfg
-

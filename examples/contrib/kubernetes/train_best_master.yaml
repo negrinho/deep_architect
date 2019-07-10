@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: master-$JOB_NAME-$REPETITION
+spec:
+  template:
+    metadata:
+      annotations:
+        # The Cloud TPUs that will be created for this Job must support
+        # TensorFlow 1.12. This version MUST match
+        # the TensorFlow version that your model is built on.
+        tf-version.cloud-tpus.google.com: "1.12"
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        role: master-node
+      containers:
+      - name: master
+        # The official TensorFlow 1.12 TPU model image built from
+        # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
+        image: $PROJECT_ID
+        command: ["python"]
+        args: ["dev/mongo_communicator/train_best_master.py", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-r", "--repetition", "$REPETITION"]
+        imagePullPolicy: Always
+        # command:
+        # - python
+        # - /tensorflow_tpu_models/models/official/resnet/resnet_main.py
+        # - --data_dir=gs://cloud-tpu-test-datasets/fake_imagenet
+        # - --model_dir=gs://<my-model-bucket>/resnet
+        # env:
+        # # Point PYTHONPATH to the top level models folder
+        # - name: PYTHONPATH
+        #   value: "/tensorflow_tpu_models/models"
+        resources:
+          requests:
+            # Request a single v2-8 Preemptible Cloud TPU device to train the model.
+            # A single v2-8 Preemptible Cloud TPU device consists of 4 chips, each of which
+            # has 2 cores, so there are 8 cores in total.
+            cpu: 1.0
+          limits:
+            # Request a single v2-8 Preemptible Cloud TPU device to train the model.
+            # A single v2-8 Preemptible Cloud TPU device consists of 4 chips, each of which
+            # has 2 cores, so there are 8 cores in total.
+            cpu: 1.9

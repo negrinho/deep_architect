@@ -1,7 +1,7 @@
 from builtins import str
 import tensorflow as tf
 import deep_architect.modules as mo
-from deep_architect.helpers import tfeager as htfe
+from deep_architect.helpers import tfeager_support as htfe
 
 TFEM = htfe.TFEModule
 
@@ -52,8 +52,8 @@ def keras_batch_normalization(name='default', weight_sharer=None):
     name = name + '_bn'
 
     def compile_fn(di, dh):
-        bn = weight_sharer.get(name, tf.keras.layers.BatchNormalization,
-                               lambda layer: layer.get_weights())
+        bn = weight_sharer.get(name, tf.keras.layers.BatchNormalization, lambda
+                               layer: layer.get_weights())
         if not bn.built:
             with tf.device('/gpu:0'):
                 bn.build(di['In'].get_shape())
@@ -89,9 +89,10 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
         (_, _, _, channels) = di['In'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
 
-        conv_fn = lambda: tf.keras.layers.Conv2D(channels, filter_size, padding='same')
-        conv = weight_sharer.get(name + '_conv_' + str(filter_size), conv_fn,
-                                 lambda layer: layer.get_weights())
+        conv_fn = lambda: tf.keras.layers.Conv2D(
+            channels, filter_size, padding='same')
+        conv = weight_sharer.get(name + '_conv_' + str(filter_size),
+                                 conv_fn, lambda layer: layer.get_weights())
         if not conv.built:
             with tf.device('/gpu:0'):
                 conv.build(di['In'].get_shape())
@@ -113,9 +114,10 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
     def compile_fn(di, dh):
         (_, _, _, channels) = di['In'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
-        conv_fn = lambda: tf.keras.layers.SeparableConv2D(channels, filter_size, padding='same')
-        conv = weight_sharer.get(name + '_dsep_' + str(filter_size), conv_fn,
-                                 lambda layer: layer.get_weights())
+        conv_fn = lambda: tf.keras.layers.SeparableConv2D(
+            channels, filter_size, padding='same')
+        conv = weight_sharer.get(name + '_dsep_' + str(filter_size),
+                                 conv_fn, lambda layer: layer.get_weights())
         if not conv.built:
             with tf.device('/gpu:0'):
                 conv.build(di['In'].get_shape())
@@ -193,8 +195,9 @@ def wrap_relu_batch_norm(io_pair,
     elements = [True, add_relu, add_bn]
     module_fns = [
         lambda: io_pair,
-        relu,
-        lambda: keras_batch_normalization(name=name, weight_sharer=weight_sharer)]
+        relu, lambda: keras_batch_normalization(name=name,
+                                                weight_sharer=weight_sharer)
+    ]
     return mo.siso_sequential(
         [module_fn() for i, module_fn in enumerate(module_fns) if elements[i]])
 
@@ -207,8 +210,8 @@ def wrap_batch_norm_relu(io_pair,
     assert add_relu or add_bn
     elements = [True, add_bn, add_relu]
     module_fns = [
-        lambda: io_pair,
-        lambda: keras_batch_normalization(name=name, weight_sharer=weight_sharer),
-        relu]
+        lambda: io_pair, lambda: keras_batch_normalization(
+            name=name, weight_sharer=weight_sharer), relu
+    ]
     return mo.siso_sequential(
         [module_fn() for i, module_fn in enumerate(module_fns) if elements[i]])

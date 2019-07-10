@@ -69,6 +69,8 @@ def load_cifar10(data_dir,
             if data_format == 'NHWC':
                 X = X.transpose((0, 2, 3, 1))
             X = X.astype('float32')
+            # sub = 1000
+            # X = X[:sub, :, :, :]
 
             # transformations based on the argument options.
             if normalize_range:
@@ -79,7 +81,8 @@ def load_cifar10(data_dir,
 
             # for the labels
             y = np.array(d['labels'])
-
+            # y = y[:sub]
+            # num_images = sub
             if one_hot:
                 y_one_hot = np.zeros((num_images, num_classes), dtype='float32')
                 y_one_hot[np.arange(num_images), y] = 1.0

@@ -78,6 +78,10 @@ class Discrete(co.Hyperparameter):
 
         Asserts ``False`` if the value is not in the list.
         """
+        if val not in self.vs:
+            print(self.get_name())
+            print(self.vs)
+            print(val)
         assert val in self.vs
 
 

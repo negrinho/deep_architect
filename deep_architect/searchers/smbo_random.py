@@ -1,6 +1,6 @@
+import numpy as np
 from deep_architect.searchers.common import random_specify, specify, Searcher
 from deep_architect.surrogates.common import extract_features
-import numpy as np
 
 
 class SMBOSearcher(Searcher):
@@ -20,7 +20,7 @@ class SMBOSearcher(Searcher):
             best_model = None
             best_vs = None
             best_score = -np.inf
-            for _ in range(self.num_samples):
+            for i in range(self.num_samples):
                 inputs, outputs = self.search_space_fn()
                 vs = random_specify(outputs.values())
 
@@ -41,3 +41,9 @@ class SMBOSearcher(Searcher):
         specify(outputs.values(), searcher_eval_token['vs'])
         feats = extract_features(inputs, outputs)
         self.surr_model.update(val, feats)
+
+    def save_state(self, folder):
+        self.surr_model.save_state(folder)
+
+    def load_state(self, folder):
+        self.surr_model.load_state(folder)

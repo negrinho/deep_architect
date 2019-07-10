@@ -13,3 +13,9 @@ class RandomSearcher(Searcher):
 
     def update(self, val, searcher_eval_token):
         pass
+
+    def save_state(self, folder):
+        pass
+
+    def load_state(self, folder):
+        pass

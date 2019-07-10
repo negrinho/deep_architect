@@ -69,17 +69,22 @@ deep_architect.searchers
 deep_architect.helpers
 ----------------------
 
-.. automodule:: deep_architect.helpers.keras
+.. automodule:: deep_architect.helpers.keras_support
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: deep_architect.helpers.pytorch
+.. automodule:: deep_architect.helpers.pytorch_support
     :members:
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: deep_architect.helpers.tensorflow
+.. automodule:: deep_architect.helpers.tensorflow_support
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+.. automodule:: deep_architect.helpers.tfeager_support
     :members:
     :undoc-members:
     :show-inheritance:

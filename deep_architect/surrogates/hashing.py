@@ -1,8 +1,10 @@
-from deep_architect.surrogates.common import SurrogateModel
 import sklearn.linear_model as lm
 import scipy.sparse as sp
 import numpy as np
 from six import iteritems, itervalues
+from deep_architect.surrogates.common import SurrogateModel
+import deep_architect.utils as ut
+import os
 
 
 class HashingSurrogate(SurrogateModel):
@@ -63,3 +65,23 @@ class HashingSurrogate(SurrogateModel):
         X = sp.vstack(self.vecs_lst, format='csr')
         y = np.array(self.vals_lst)
         self.model.fit(X, y)
+
+    def save_state(self, folder):
+        state = {
+            'num_evals': len(self.vecs_lst),
+            'vals_lst': self.vals_lst,
+        }
+        ut.write_jsonfile(state, os.path.join(folder, 'hash_model_state.json'))
+        for i, vecs in enumerate(self.vecs_lst):
+            sp.save_npz(os.path.join(folder, str(i) + '.npz'), vecs)
+
+    def load_state(self, folder):
+        state = ut.read_jsonfile(os.path.join(folder, 'hash_model_state.json'))
+        self.vals_lst = state['vals_lst']
+        num_evals = state['num_evals']
+        for i in range(num_evals):
+            self.vecs_lst.append(
+                sp.load_npz(os.path.join(folder,
+                                         str(i) + '.npz')))
+        if num_evals > 0:
+            self._refit()

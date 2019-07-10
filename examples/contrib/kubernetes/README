@@ -1,0 +1,34 @@
+This folder contains the code to run architecture search using Kubernetes and a
+MongoDB database as a communicator between processes. The searches were run on
+Google Kubernetes Engine using TPUs.
+
+The following is a description of the files:
+    - dockerfiles/DOCKERFILE
+        The dockerfile setting up the container that is created and run by each
+        Kubernetes pod. It sets up all of the necessary prerequisites necessary
+        to run DeepArchitect.
+    - master.py
+        Contains the code that is run by the master/searcher process.
+    - train_best_master.py
+        Contains the code that is run by the master when training the best
+        architectures found by an architecture search to completion.
+    - worker.py
+        Contains the code that is run by the worker/evaluator processes.
+    - search_space_factory.py
+        Contains a reference to every search space used in this example.
+    - searcher.py
+        Contains a reference to every searcher used in this example.
+    - experiment_config.json
+        Config file for architecture searches.
+    - train_best_config.json
+        Config file for when training the best architectures found by an
+        architecture search to completion.
+    - master.yaml
+        Job spec for master/searcher job.
+    - train_best_master.yaml
+        Job spec for master job when training the best architectures found by
+        an architecture search to completion.
+    - worker_permanent.yaml
+        Job spec for worker job. Uses permanent TPUs.
+    - worker_preemptible.yaml
+        Job spec for worker job. Uses preemptible TPUs.

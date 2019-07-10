@@ -6,3 +6,4 @@ temp/
 containers/singularity/*
 containers/docker/*
 *.pyc
+searcher_logs/

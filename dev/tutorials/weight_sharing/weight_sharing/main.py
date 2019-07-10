@@ -13,7 +13,7 @@
 # will use Tensorflow eager.
 
 import tensorflow as tf
-from deep_architect.helpers.tfeager import siso_tfeager_module
+from deep_architect.helpers.tfeager_support import siso_tfeager_module
 
 
 # The WeightSharer object is a simple wrapper around a dictionary that stores a
