@@ -7,7 +7,7 @@ from deep_architect.searchers import common as se
 from deep_architect import search_logging as sl
 from deep_architect import utils as ut
 
-from deep_architect.contrib.misc.evaluators.tensorflow.tpu_estimator_classification import AdvanceClassifierEvaluator
+from deep_architect.contrib.misc.evaluators.tensorflow.tpu_estimator_classification import TPUEstimatorEvaluator
 
 from search_space_factory import name_to_search_space_factory_fn
 from master import (RESULTS_TOPIC, ARCH_TOPIC, KILL_SIGNAL, PUBLISH_SIGNAL,
@@ -31,7 +31,7 @@ def process_config_and_args():
         '--config-file',
         action='store',
         dest='config_file',
-        default='/darch/examples/kubernetes/experiment_config.json')
+        default='/darch/examples/contrib/kubernetes/experiment_config.json')
     # Other arguments
     parser.add_argument('--display-output',
                         '-o',
@@ -95,7 +95,7 @@ def process_config_and_args():
         options.repetition)
     evaluators = {
         'tpu_classification':
-        lambda **kwargs: AdvanceClassifierEvaluator(
+        lambda **kwargs: TPUEstimatorEvaluator(
             'gs://' + config['bucket'] + data_dir,
             options.tpu_name,
             max_num_training_epochs=config['eval_epochs'],

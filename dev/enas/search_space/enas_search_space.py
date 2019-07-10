@@ -10,11 +10,13 @@ from collections import OrderedDict
 import tensorflow as tf
 import numpy as np
 
-from dev.helpers import tfeager as htfe
+from deep_architect.helpers import tfeager_support as htfe
 from deep_architect.hyperparameters import D
-from dev.enas.search_space.common_ops import (
-    conv2D, conv2D_depth_separable, global_pool, dropout, fc_layer,
-    wrap_batch_norm_relu, avg_pool, max_pool, keras_batch_normalization)
+from dev.enas.search_space.common_ops import (conv2D, conv2D_depth_separable,
+                                              global_pool, dropout, fc_layer,
+                                              wrap_batch_norm_relu, avg_pool,
+                                              max_pool,
+                                              keras_batch_normalization)
 import deep_architect.modules as mo
 
 TFEM = htfe.TFEModule
@@ -88,33 +90,36 @@ def enas_conv(out_filters, filter_size, separable, weight_sharer, name):
     io_pair = (conv2D_depth_separable(filter_size, name, weight_sharer)
                if separable else conv2D(filter_size, name, weight_sharer))
     return mo.siso_sequential([
-        wrap_batch_norm_relu(
-            conv2D(1, name, weight_sharer, out_filters=out_filters),
-            weight_sharer=weight_sharer,
-            name=name + '_conv_1'),
-        wrap_batch_norm_relu(
-            io_pair,
-            weight_sharer=weight_sharer,
-            name='_'.join([name, str(filter_size),
-                           str(separable)]))
+        wrap_batch_norm_relu(conv2D(1,
+                                    name,
+                                    weight_sharer,
+                                    out_filters=out_filters),
+                             weight_sharer=weight_sharer,
+                             name=name + '_conv_1'),
+        wrap_batch_norm_relu(io_pair,
+                             weight_sharer=weight_sharer,
+                             name='_'.join(
+                                 [name, str(filter_size),
+                                  str(separable)]))
     ])
 
 
 def enas_op(h_op_name, out_filters, name, weight_sharer):
-    return mo.siso_or({
-        'conv3':
-        lambda: enas_conv(out_filters, 3, False, weight_sharer, name),
-        'conv5':
-        lambda: enas_conv(out_filters, 5, False, weight_sharer, name),
-        'dsep_conv3':
-        lambda: enas_conv(out_filters, 3, True, weight_sharer, name),
-        'dsep_conv5':
-        lambda: enas_conv(out_filters, 5, True, weight_sharer, name),
-        'avg_pool':
-        lambda: avg_pool(D([3]), D([1])),
-        'max_pool':
-        lambda: max_pool(D([3]), D([1]))
-    }, h_op_name)
+    return mo.siso_or(
+        {
+            'conv3':
+            lambda: enas_conv(out_filters, 3, False, weight_sharer, name),
+            'conv5':
+            lambda: enas_conv(out_filters, 5, False, weight_sharer, name),
+            'dsep_conv3':
+            lambda: enas_conv(out_filters, 3, True, weight_sharer, name),
+            'dsep_conv5':
+            lambda: enas_conv(out_filters, 5, True, weight_sharer, name),
+            'avg_pool':
+            lambda: avg_pool(D([3]), D([1])),
+            'max_pool':
+            lambda: max_pool(D([3]), D([1]))
+        }, h_op_name)
 
 
 def enas_repeat_fn(inputs, outputs, layer_id, out_filters, weight_sharer):
@@ -161,10 +166,8 @@ def enas_space(h_num_layers,
         for i in range(1, num_layers + 1):
             inputs, temp_outputs = fn_repeats(inputs, temp_outputs, i,
                                               out_filters, weight_sharer)
-        return inputs, OrderedDict({
-            'Out':
-            temp_outputs['Out' + str(len(temp_outputs) - 1)]
-        })
+        return inputs, OrderedDict(
+            {'Out': temp_outputs['Out' + str(len(temp_outputs) - 1)]})
 
     return mo.substitution_module('ENASModule', {'num_layers': h_num_layers},
                                   substitution_fn, input_names, output_names,
@@ -178,11 +181,11 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
             h_N,
             out_filters,
             #mo.empty,
-            lambda: wrap_batch_norm_relu(
-                conv2D(3, 'stem', weight_sharer, out_filters=out_filters),
-                add_relu=False,
-                weight_sharer=weight_sharer,
-                name='stem'),
+            lambda: wrap_batch_norm_relu(conv2D(
+                3, 'stem', weight_sharer, out_filters=out_filters),
+                                         add_relu=False,
+                                         weight_sharer=weight_sharer,
+                                         name='stem'),
             enas_repeat_fn,
             ['In'],
             ['Out'],
@@ -203,7 +206,8 @@ class SSFEnasnet(mo.SearchSpaceFactory):
         self.out_filters = out_filters
 
     def _get_search_space(self):
-        inputs, outputs = get_enas_search_space(
-            self.num_classes, self.num_layers, self.out_filters,
-            self.weight_sharer)
+        inputs, outputs = get_enas_search_space(self.num_classes,
+                                                self.num_layers,
+                                                self.out_filters,
+                                                self.weight_sharer)
         return inputs, outputs, {}

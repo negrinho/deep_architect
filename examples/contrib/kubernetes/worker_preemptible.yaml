@@ -19,7 +19,7 @@ spec:
       - name: worker
         # The official TensorFlow 1.12 TPU model image built from
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
-        image: gcr.io/deeparchitect-219016/darch
+        image: $PROJECT_ID
         command: ["python"]
         args: ["dev/mongo_communicator/worker.py", "--config-file", "$CONFIG_FILE", "-c", "$SEARCH_NAME", "-m", "mongodb-1-servers-vm-0", "-t", "$(KUBE_GOOGLE_CLOUD_TPU_ENDPOINTS)", "--repetition", "$REPETITION"]
         imagePullPolicy: Always

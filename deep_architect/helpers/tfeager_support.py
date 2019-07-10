@@ -64,12 +64,14 @@ class TFEModule(co.Module):
                  output_names,
                  scope=None):
         co.Module.__init__(self, scope, name)
+        hyperparam_dict = {}
         for h in name_to_hyperp:
             if not isinstance(name_to_hyperp[h], co.Hyperparameter):
-                vs = name_to_hyperp[h] if isinstance(
-                    name_to_hyperp[h], list) else [name_to_hyperp[h]]
-                name_to_hyperp[h] = D(vs)
-        self._register(input_names, output_names, name_to_hyperp)
+                hyperparam_dict[h] = D([name_to_hyperp[h]])
+            else:
+                hyperparam_dict[h] = name_to_hyperp[h]
+
+        self._register(input_names, output_names, hyperparam_dict)
         self._compile_fn = compile_fn
         self.isTraining = True
 
@@ -80,16 +82,8 @@ class TFEModule(co.Module):
 
     def _forward(self):
         input_name_to_val = self._get_input_values()
-        # print(self.get_name())
-        # print('Inputs: %s' %
-        #       {k: input_name_to_val[k].shape for k in input_name_to_val})
         output_name_to_val = self._fn(input_name_to_val,
                                       isTraining=self.isTraining)
-        # print(
-        #     'Outputs: %s' % {
-        #         k: hasattr(output_name_to_val[k], '_keras_history')
-        #         for k in output_name_to_val
-        #     })
         self._set_output_values(output_name_to_val)
 
     def _update(self):

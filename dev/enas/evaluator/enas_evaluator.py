@@ -9,7 +9,7 @@ import tensorflow as tf
 import numpy as np
 
 import deep_architect.core as co
-from deep_architect.helpers.tfeager import setTraining
+from deep_architect.helpers.tfeager_support import setTraining
 
 tfe = tf.contrib.eager
 
@@ -84,8 +84,8 @@ class ENASEvaluator(object):
         loss = 0
         while num_left > 0:
             X_batch, y_batch = dataset.next_batch(self.batch_size)
-            X = tf.convert_to_tensor(X_batch, np.float32)#.gpu()
-            y = tf.convert_to_tensor(y_batch, np.float32)#.gpu()
+            X = tf.convert_to_tensor(X_batch, np.float32)  #.gpu()
+            y = tf.convert_to_tensor(y_batch, np.float32)  #.gpu()
 
             co.forward({inputs['In']: X})
             logits = outputs['Out'].val
@@ -93,8 +93,8 @@ class ENASEvaluator(object):
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
             loss += tf.reduce_sum(
-                tf.nn.softmax_cross_entropy_with_logits(
-                    logits=logits, labels=y))
+                tf.nn.softmax_cross_entropy_with_logits(logits=logits,
+                                                        labels=y))
             nc += num_correct
 
             # update the number of examples left.
@@ -146,9 +146,8 @@ class ENASEvaluator(object):
             setTraining(list(outputs.values()), True)
             with tf.device('/gpu:0'):
                 loss_metric = tfe.metrics.Mean('loss')
-                self.optimizer.minimize(
-                    lambda: self._compute_loss(inputs, outputs, X_batch, y_batch, loss_metric)
-                )
+                self.optimizer.minimize(lambda: self._compute_loss(
+                    inputs, outputs, X_batch, y_batch, loss_metric))
 
             # Log batch info
             self.child_step += 1

@@ -13,12 +13,12 @@ def set_backend(backend):
     global _backend, _func_dict
     if _backend is not None:
         raise RuntimeError('Backend is already specified')
-    if type(backend) is not int or backend < 0 or backend > 3:
+    if type(backend) is not int or backend < 0 or backend > 4:
         raise ValueError('value of backend not valid')
 
     _backend = backend
     if backend is TENSORFLOW:
-        from tf_ops import func_dict
+        from .tf_ops import func_dict
     elif backend is TENSORFLOW_EAGER:
         import tensorflow as tf
         tf_version = tf.__version__.split('.')
@@ -27,14 +27,14 @@ def set_backend(backend):
         if int(tf_version[0]) == 1 and int(tf_version[1]) < 7:
             raise RuntimeError('Tensorflow version too low')
         tf.enable_eager_execution()
-        from tfe_ops import func_dict
+        from .tfe_ops import func_dict
     elif backend is TENSORFLOW_KERAS:
         import tensorflow as tf
-        from tf_keras_ops import func_dict
+        from .tf_keras_ops import func_dict
     elif backend is PYTORCH:
-        from pytorch_ops import func_dict
+        from .pytorch_ops import func_dict
     elif backend is KERAS:
-        from keras_ops import func_dict
+        from .keras_ops import func_dict
     _func_dict = func_dict
     if _func_dict is None:
         raise RuntimeError('Backend %s is not supported' % backend)

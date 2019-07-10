@@ -10,7 +10,7 @@ from deep_architect.contrib.misc.datasets.cifar10_tf import Cifar10DataSet
 import deep_architect.contrib.misc.evaluators.tensorflow.gcloud_utils as gcu
 import deep_architect.core as co
 import deep_architect.utils as ut
-import deep_architect.helpers.tfeager as htfe
+import deep_architect.helpers.tfeager_support as htfe
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def get_optimizer(optimizer_type, learning_rate):
         raise ValueError('Optimizer type not recognized: %s' % optimizer_type)
 
 
-class AdvanceClassifierEvaluator:
+class TPUEstimatorEvaluator:
 
     def __init__(self,
                  data_dir,

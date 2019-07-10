@@ -26,19 +26,23 @@ def calculate_same_padding(h_in, w_in, stride, filter_size):
     return (pad_left, pad_right, pad_top, pad_bottom)
 
 
-def conv2d(h_num_filters, h_filter_size, h_stride, h_use_bias):
+def conv2d(h_num_filters,
+           h_filter_width,
+           h_stride=1,
+           h_dilation_rate=1,
+           h_use_bias=True):
 
     def compile_fn(di, dh):
         (_, channels, height, width) = di['In'].size()
         padding = nn.ZeroPad2d(
             calculate_same_padding(height, width, dh['stride'],
-                                   dh['filter_size']))
-        conv = nn.Conv2d(
-            channels,
-            dh['num_filters'],
-            dh['filter_size'],
-            stride=dh['stride'],
-            bias=dh['use_bias'])
+                                   dh['filter_width']))
+        conv = nn.Conv2d(channels,
+                         dh['num_filters'],
+                         dh['filter_width'],
+                         stride=dh['stride'],
+                         dilation=dh['dilation_rate'],
+                         bias=dh['use_bias'])
 
         def fn(di):
             x = padding(di['In'])
@@ -49,13 +53,14 @@ def conv2d(h_num_filters, h_filter_size, h_stride, h_use_bias):
     return siso_pytorch_module(
         'Conv2D', compile_fn, {
             'num_filters': h_num_filters,
-            'filter_size': h_filter_size,
+            'filter_width': h_filter_width,
             'stride': h_stride,
             'use_bias': h_use_bias,
+            'dilation_rate': h_dilation_rate,
         })
 
 
-def max_pool2d(h_kernel_size, h_stride):
+def max_pool2d(h_kernel_size, h_stride=1):
 
     def compile_fn(di, dh):
         (_, _, height, width) = di['In'].size()
@@ -75,7 +80,8 @@ def max_pool2d(h_kernel_size, h_stride):
         'stride': h_stride
     })
 
- def avg_pool2d(h_kernel_size, h_stride):
+
+def avg_pool2d(h_kernel_size, h_stride=1):
 
     def compile_fn(di, dh):
         (_, _, height, width) = di['In'].size()

@@ -3,8 +3,12 @@ from deep_architect.helpers.tensorflow_support import (siso_tensorflow_module,
 import tensorflow as tf
 
 
-def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
-           h_use_bias):
+def conv2d(h_num_filters,
+           h_filter_width,
+           h_stride=1,
+           h_dilation_rate=1,
+           h_use_bias=True,
+           h_padding='SAME'):
 
     def compile_fn(di, dh):
         conv_op = tf.layers.Conv2D(dh['num_filters'],
@@ -12,7 +16,7 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
                                    dh['stride'],
                                    use_bias=dh['use_bias'],
                                    dilation_rate=dh['dilation_rate'],
-                                   padding='SAME')
+                                   padding=dh['padding'])
 
         def fn(di):
             return {'Out': conv_op(di['In'])}
@@ -26,11 +30,17 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
             'stride': h_stride,
             'use_bias': h_use_bias,
             'dilation_rate': h_dilation_rate,
+            'padding': h_padding
         })
 
 
-def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
-                     h_depth_multiplier, h_use_bias):
+def separable_conv2d(h_num_filters,
+                     h_filter_width,
+                     h_stride=1,
+                     h_dilation_rate=1,
+                     h_depth_multiplier=1,
+                     h_use_bias=True,
+                     h_padding='SAME'):
 
     def compile_fn(di, dh):
         conv_op = tf.layers.SeparableConv2D(
@@ -40,7 +50,7 @@ def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
             dilation_rate=dh['dilation_rate'],
             depth_multiplier=dh['depth_multiplier'],
             use_bias=dh['use_bias'],
-            padding='SAME')
+            padding=dh['padding'])
 
         def fn(di):
             return {'Out': conv_op(di['In'])}
@@ -55,10 +65,11 @@ def separable_conv2d(h_num_filters, h_filter_width, h_stride, h_dilation_rate,
             'use_bias': h_use_bias,
             'dilation_rate': h_dilation_rate,
             'depth_multiplier': h_depth_multiplier,
+            'padding': h_padding
         })
 
 
-def max_pool2d(h_kernel_size, h_stride):
+def max_pool2d(h_kernel_size, h_stride=1):
 
     def compile_fn(di, dh):
 
@@ -78,7 +89,7 @@ def max_pool2d(h_kernel_size, h_stride):
     })
 
 
-def avg_pool2d(h_kernel_size, h_stride):
+def avg_pool2d(h_kernel_size, h_stride=1):
 
     def compile_fn(di, dh):
 

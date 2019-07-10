@@ -18,19 +18,17 @@ from deep_architect import utils as ut
 
 from dev.google_communicator.search_space_factory import name_to_search_space_factory_fn
 
-from deep_architect.contrib.misc.evaluators.tensorflow.tpu_estimator_classification import AdvanceClassifierEvaluator
+from deep_architect.contrib.misc.evaluators.tensorflow.tpu_estimator_classification import TPUEstimatorEvaluator
 
 from deep_architect.communicators.communicator import get_communicator
 import logging
 
 logging.basicConfig()
-PROJECT_ID = 'deeparchitect-219016'
-BUCKET_NAME = 'deep_architect'
+
 publisher = pubsub_v1.PublisherClient()
 subscriber = pubsub_v1.SubscriberClient()
-results_topic = publisher.topic_path(PROJECT_ID, 'results')
-arch_subscription = subscriber.subscription_path(PROJECT_ID,
-                                                 'architectures-sub')
+results_topic = None
+arch_subscription = None
 
 specified = False
 evaluated = False
@@ -70,29 +68,46 @@ def retrieve_message(message):
 def main():
     global specified
     global evaluated
+    global results_topic, arch_subscription
     configs = ut.read_jsonfile(
         "/darch/dev/google_communicator/experiment_config.json")
 
     parser = argparse.ArgumentParser("MPI Job for architecture search")
-    parser.add_argument(
-        '--config',
-        '-c',
-        action='store',
-        dest='config_name',
-        default='search_evol')
+    parser.add_argument('--config',
+                        '-c',
+                        action='store',
+                        dest='config_name',
+                        default='search_evol')
 
     # Other arguments
-    parser.add_argument(
-        '--display-output',
-        '-o',
-        action='store_true',
-        dest='display_output',
-        default=False)
-    parser.add_argument(
-        '--resume', '-r', action='store_true', dest='resume', default=False)
+    parser.add_argument('--display-output',
+                        '-o',
+                        action='store_true',
+                        dest='display_output',
+                        default=False)
+    parser.add_argument('--project-id',
+                        action='store',
+                        dest='project_id',
+                        default='deep-architect')
+    parser.add_argument('--bucket',
+                        '-b',
+                        action='store',
+                        dest='bucket',
+                        default='normal')
+    parser.add_argument('--resume',
+                        '-r',
+                        action='store_true',
+                        dest='resume',
+                        default=False)
 
     options = parser.parse_args()
     config = configs[options.config_name]
+
+    PROJECT_ID = options.project_id
+    BUCKET_NAME = options.bucket
+    results_topic = publisher.topic_path(PROJECT_ID, 'results')
+    arch_subscription = subscriber.subscription_path(PROJECT_ID,
+                                                     'architectures-sub')
 
     datasets = {
         'cifar10': ('/data/cifar10/', 10),
@@ -106,7 +121,7 @@ def main():
 
     evaluators = {
         'tpu_classification':
-        lambda: AdvanceClassifierEvaluator(
+        lambda: TPUEstimatorEvaluator(
             'gs://' + BUCKET_NAME + data_dir,
             max_num_training_epochs=config['eval_epochs'],
             log_output_to_terminal=options.display_output,
@@ -117,8 +132,8 @@ def main():
 
     search_data_folder = sl.get_search_data_folderpath(config['search_folder'],
                                                        config['search_name'])
-    subscription = subscriber.subscribe(
-        arch_subscription, callback=retrieve_message)
+    subscription = subscriber.subscribe(arch_subscription,
+                                        callback=retrieve_message)
     thread = threading.Thread(target=nudge_master)
     thread.start()
     step = 0

@@ -27,13 +27,6 @@ from deep_architect.contrib.misc.evaluators.tensorflow.classification import Sim
 from deep_architect.communicators.communicator import get_communicator
 logging.basicConfig()
 
-PROJECT_ID = 'deeparchitect-219016'
-BUCKET_NAME = 'deep_architect'
-publisher = pubsub_v1.PublisherClient()
-subscriber = pubsub_v1.SubscriberClient()
-results_subscription = subscriber.subscription_path(PROJECT_ID, 'results-sub')
-arch_topic = publisher.topic_path(PROJECT_ID, 'architectures')
-
 configs = ut.read_jsonfile(
     "/darch/dev/google_communicator/experiment_config.json")
 
@@ -43,10 +36,16 @@ parser.add_argument('--config',
                     action='store',
                     dest='config_name',
                     default='normal')
-# parser.add_argument('--project-id', '-p', action='store', dest='project_id',
-# default='normal')
-# parser.add_argument('--bucket', '-b', action='store', dest='bucket',
-# default='normal')
+parser.add_argument('--project-id',
+                    '-p',
+                    action='store',
+                    dest='project_id',
+                    default='normal')
+parser.add_argument('--bucket',
+                    '-b',
+                    action='store',
+                    dest='bucket',
+                    default='normal')
 
 # Other arguments
 parser.add_argument('--resume',
@@ -58,6 +57,12 @@ parser.add_argument('--resume',
 options = parser.parse_args()
 config = configs[options.config_name]
 
+PROJECT_ID = options.project_id
+BUCKET_NAME = options.bucket
+publisher = pubsub_v1.PublisherClient()
+subscriber = pubsub_v1.SubscriberClient()
+results_subscription = subscriber.subscription_path(PROJECT_ID, 'results-sub')
+arch_topic = publisher.topic_path(PROJECT_ID, 'architectures')
 # num_procs = config['num_procs'] if 'num_procs' in config else 0
 # if len(gpu_utils.get_gpu_information()) != 0:
 #     #https://github.com/tensorflow/tensorflow/issues/1888

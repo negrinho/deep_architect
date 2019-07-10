@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import deep_architect.core as co
+from deep_architect.hyperparameters import D
 
 
 class KerasModule(co.Module):
@@ -63,7 +64,14 @@ class KerasModule(co.Module):
                  scope=None):
         co.Module.__init__(self, scope, name)
 
-        self._register(input_names, output_names, name_to_hyperp)
+        hyperparam_dict = {}
+        for h in name_to_hyperp:
+            if not isinstance(name_to_hyperp[h], co.Hyperparameter):
+                hyperparam_dict[h] = D([name_to_hyperp[h]])
+            else:
+                hyperparam_dict[h] = name_to_hyperp[h]
+
+        self._register(input_names, output_names, hyperparam_dict)
         self._compile_fn = compile_fn
 
     def _compile(self):

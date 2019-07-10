@@ -1,4 +1,4 @@
-from deep_architect.helpers.tfeager import siso_tfeager_module, TFEModule
+from deep_architect.helpers.tfeager_support import siso_tfeager_module, TFEModule
 from deep_architect.hyperparameters import D
 import tensorflow as tf
 from tensorflow.python.keras.layers import Lambda
