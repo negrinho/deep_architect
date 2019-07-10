@@ -1,3 +1,4 @@
+#TODO Comments + README
 import argparse
 import pickle
 import json
@@ -37,16 +38,22 @@ configs = ut.read_jsonfile(
     "/darch/dev/google_communicator/experiment_config.json")
 
 parser = argparse.ArgumentParser("MPI Job for architecture search")
-parser.add_argument(
-    '--config', '-c', action='store', dest='config_name', default='normal')
+parser.add_argument('--config',
+                    '-c',
+                    action='store',
+                    dest='config_name',
+                    default='normal')
 # parser.add_argument('--project-id', '-p', action='store', dest='project_id',
 # default='normal')
 # parser.add_argument('--bucket', '-b', action='store', dest='bucket',
 # default='normal')
 
 # Other arguments
-parser.add_argument(
-    '--resume', '-r', action='store_true', dest='resume', default=False)
+parser.add_argument('--resume',
+                    '-r',
+                    action='store_true',
+                    dest='resume',
+                    default=False)
 
 options = parser.parse_args()
 config = configs[options.config_name]
@@ -82,8 +89,8 @@ eval_epochs = config['eval_epochs']
 search_logger = sl.SearchLogger(config['search_folder'], config['search_name'])
 # sl.create_search_folderpath(config['search_folder'], config['search_name'])
 search_data_folder = search_logger.get_search_data_folderpath()
-save_filepath = ut.join_paths((search_data_folder,
-                               config['searcher_file_name']))
+save_filepath = ut.join_paths(
+    (search_data_folder, config['searcher_file_name']))
 eval_path = sl.get_all_evaluations_folderpath(config['search_folder'],
                                               config['search_name'])
 search_folder = sl.get_search_folderpath(config['search_folder'],
@@ -144,8 +151,8 @@ def update_searcher(message):
         finished += 1
         epochs += eval_epochs
         if finished % save_every == 0:
-            print('Models sampled: %d Best Accuracy: %f' % (finished,
-                                                            best_accuracy))
+            print('Models sampled: %d Best Accuracy: %f' %
+                  (finished, best_accuracy))
             best_accuracy = 0.
 
             searcher.save_state(search_data_folder)

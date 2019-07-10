@@ -1,6 +1,6 @@
+import numpy as np
 from deep_architect.searchers.common import random_specify, specify, Searcher
 from deep_architect.surrogates.common import extract_features
-import numpy as np
 
 
 class SMBOSearcher(Searcher):
@@ -14,25 +14,15 @@ class SMBOSearcher(Searcher):
 
     def sample(self):
         if np.random.rand() < self.exploration_prob:
-            while True:
-                try:
-                    inputs, outputs = self.search_space_fn()
-                    best_vs = random_specify(outputs.values())
-                    break
-                except ValueError:
-                    pass
+            inputs, outputs = self.search_space_fn()
+            best_vs = random_specify(outputs.values())
         else:
             best_model = None
             best_vs = None
             best_score = -np.inf
             for i in range(self.num_samples):
-                while True:
-                    try:
-                        inputs, outputs = self.search_space_fn()
-                        vs = random_specify(outputs.values())
-                        break
-                    except ValueError:
-                        pass
+                inputs, outputs = self.search_space_fn()
+                vs = random_specify(outputs.values())
 
                 feats = extract_features(inputs, outputs)
                 score = self.surr_model.eval(feats)

@@ -8,12 +8,8 @@ class RandomSearcher(Searcher):
 
     def sample(self):
         inputs, outputs = self.search_space_fn()
-        while True:
-            try:
-                vs = random_specify(outputs.values())
-                return inputs, outputs, vs, {}
-            except ValueError:
-                inputs, outputs = self.search_space_fn()
+        vs = random_specify(outputs.values())
+        return inputs, outputs, vs, {}
 
     def update(self, val, searcher_eval_token):
         pass

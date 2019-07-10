@@ -1,12 +1,7 @@
 from __future__ import print_function
 
-import os
-import sys
 import gc
-import subprocess
-import random
 import logging
-from six.moves import range
 
 import tensorflow as tf
 import numpy as np
@@ -15,7 +10,7 @@ from deep_architect.contrib.misc.datasets.cifar10_tf import Cifar10DataSet
 import deep_architect.contrib.misc.evaluators.tensorflow.gcloud_utils as gcu
 import deep_architect.core as co
 import deep_architect.utils as ut
-import dev.helpers.tfeager as htfe
+import deep_architect.helpers.tfeager as htfe
 
 logger = logging.getLogger(__name__)
 
@@ -187,8 +182,6 @@ class AdvanceClassifierEvaluator:
                     features,
                     inputs['In1']:
                     float(self.steps_per_epoch * self.max_num_training_epochs)
-                    # tf.math.divide(
-                    #     tf.cast(step, tf.float32),
                 })
                 logits = outputs['Out1'].val
                 aux_logits = outputs['Out0'].val

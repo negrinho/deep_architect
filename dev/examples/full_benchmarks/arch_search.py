@@ -1,5 +1,4 @@
 import argparse
-import pickle
 import deep_architect.utils as ut
 
 from deep_architect.contrib.misc.datasets.loaders import (load_cifar10,
@@ -9,16 +8,13 @@ from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 from deep_architect.searchers import common as se
 from deep_architect.contrib.misc import gpu_utils
 from deep_architect import search_logging as sl
-from deep_architect import utils as ut
 
 from search_space_factory import name_to_search_space_factory_fn
 from searcher import name_to_searcher_fn
 
-from dev.enas.evaluator.enas_evaluator import ENASEvaluator
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from deep_architect.contrib.misc.evaluators.tensorflow.estimator_classification import AdvanceClassifierEvaluator
 
-from deep_architect.communicators.communicator import get_communicator
+from deep_architect.contrib.communicators.communicator import get_communicator
 
 
 def start_searcher(comm,
@@ -62,7 +58,7 @@ def start_searcher(comm,
             if comm.is_ready_to_publish_architecture():
                 eval_logger = sl.EvaluationLogger(folderpath, search_name,
                                                   models_sampled)
-                inputs, outputs, vs, searcher_eval_token = searcher.sample()
+                _, _, vs, searcher_eval_token = searcher.sample()
 
                 eval_logger.log_config(vs, searcher_eval_token)
                 comm.publish_architecture_to_worker(vs, models_sampled,
@@ -118,8 +114,8 @@ def start_worker(comm,
 
     sl.create_search_folderpath(folderpath, search_name)
     search_data_folder = sl.get_search_data_folderpath(folderpath, search_name)
-    save_filepath = ut.join_paths((search_data_folder,
-                                   'worker' + str(comm.get_rank()) + '.json'))
+    save_filepath = ut.join_paths(
+        (search_data_folder, 'worker' + str(comm.get_rank()) + '.json'))
 
     if resume:
         evaluator.load_state(search_data_folder)
@@ -152,18 +148,23 @@ def main():
         "./examples/tensorflow/full_benchmarks/experiment_config.json")
 
     parser = argparse.ArgumentParser("MPI Job for architecture search")
-    parser.add_argument(
-        '--config', '-c', action='store', dest='config_name', default='normal')
+    parser.add_argument('--config',
+                        '-c',
+                        action='store',
+                        dest='config_name',
+                        default='normal')
 
     # Other arguments
-    parser.add_argument(
-        '--display-output',
-        '-o',
-        action='store_true',
-        dest='display_output',
-        default=False)
-    parser.add_argument(
-        '--resume', '-r', action='store_true', dest='resume', default=False)
+    parser.add_argument('--display-output',
+                        '-o',
+                        action='store_true',
+                        dest='display_output',
+                        default=False)
+    parser.add_argument('--resume',
+                        '-r',
+                        action='store_true',
+                        dest='resume',
+                        default=False)
 
     options = parser.parse_args()
     config = configs[options.config_name]
@@ -178,12 +179,7 @@ def main():
     if 'eager' in config and config['eager']:
         import tensorflow as tf
         tf.logging.set_verbosity(tf.logging.ERROR)
-        tfconfig = tf.ConfigProto()
-        tfconfig.gpu_options.allow_growth = True
-        tf.enable_eager_execution(
-            tfconfig
-        )  #, device_policy=tf.contrib.eager.DEVICE_PLACEMENT_SILENT)
-
+        tf.enable_eager_execution()
     datasets = {
         'cifar10': lambda: (load_cifar10('data/cifar10/', one_hot=False), 10),
         'mnist': lambda: (load_mnist('data/mnist/'), 10),
@@ -200,41 +196,29 @@ def main():
             search_space_factory.get_search_space)
         num_samples = -1 if 'samples' not in config else config['samples']
         num_epochs = -1 if 'epochs' not in config else config['epochs']
-        start_searcher(
-            comm,
-            searcher,
-            options.resume,
-            config['search_folder'],
-            config['search_name'],
-            config['searcher_file_name'],
-            num_samples=num_samples,
-            num_epochs=num_epochs,
-            save_every=save_every)
+        start_searcher(comm,
+                       searcher,
+                       options.resume,
+                       config['search_folder'],
+                       config['search_name'],
+                       config['searcher_file_name'],
+                       num_samples=num_samples,
+                       num_epochs=num_epochs,
+                       save_every=save_every)
     else:
-        train_dataset = InMemoryDataset(Xtrain, ytrain, True)
+        train_d_advataset = InMemoryDataset(Xtrain, ytrain, True)
         val_dataset = InMemoryDataset(Xval, yval, False)
         test_dataset = InMemoryDataset(Xtest, ytest, False)
 
         search_path = sl.get_search_folderpath(config['search_folder'],
                                                config['search_name'])
-        ut.create_folder(
-            ut.join_paths([search_path, 'scratch_data']),
-            create_parent_folders=True)
+        ut.create_folder(ut.join_paths([search_path, 'scratch_data']),
+                         create_parent_folders=True)
         scratch_folder = ut.join_paths(
             [search_path, 'scratch_data', 'eval_' + str(comm.get_rank())])
         ut.create_folder(scratch_folder)
 
         evaluators = {
-            'advance_classification':
-            lambda: AdvanceClassifierEvaluator(
-                train_dataset,
-                val_dataset,
-                num_classes,
-                max_num_training_epochs=config['eval_epochs'],
-                stop_patience=25,
-                whiten=True,
-                test_dataset=test_dataset,
-                base_dir=scratch_folder),
             'simple_classification':
             lambda: SimpleClassifierEvaluator(
                 train_dataset,
@@ -244,23 +228,19 @@ def main():
                 max_num_training_epochs=config['eval_epochs'],
                 log_output_to_terminal=options.display_output,
                 test_dataset=test_dataset),
-            'enas_evaluator':
-            lambda: ENASEvaluator(train_dataset, val_dataset, num_classes,
-                                  search_space_factory.weight_sharer)
         }
 
         assert not config['evaluator'].startswith('enas') or hasattr(
             search_space_factory, 'weight_sharer')
         evaluator = evaluators[config['evaluator']]()
 
-        start_worker(
-            comm,
-            evaluator,
-            search_space_factory,
-            config['search_folder'],
-            config['search_name'],
-            resume=options.resume,
-            save_every=save_every)
+        start_worker(comm,
+                     evaluator,
+                     search_space_factory,
+                     config['search_folder'],
+                     config['search_name'],
+                     resume=options.resume,
+                     save_every=save_every)
 
 
 if __name__ == "__main__":

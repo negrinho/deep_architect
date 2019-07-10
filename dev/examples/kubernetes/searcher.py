@@ -1,7 +1,8 @@
 from __future__ import absolute_import
-import deep_architect.searchers.random as ra
 from deep_architect.searchers.regularized_evolution import EvolutionSearcher, mutatable
+import deep_architect.searchers.random as ra
 from deep_architect.searchers.smbo_mcts import SMBOSearcherWithMCTSOptimizer
+from deep_architect.searchers.mcts import MCTSSearcher
 from deep_architect.searchers.smbo_random import SMBOSearcher
 from deep_architect.surrogates.hashing import HashingSurrogate
 
@@ -31,10 +32,12 @@ name_to_searcher_fn = {
     'smbo_optimizer=rand_samples=256':
     lambda ssf: SMBOSearcher(ssf, HashingSurrogate(2048, 1), 256, 0.1),
     'smbo_optimizer=rand_samples=512':
-    lambda ssf: SMBOSearcher(ssf, HashingSurrogate(2048, 1), 512, 0.1),
+    lambda ssf: SMBOSearcher(ssf, HashingSurrogate(2**16, 1), 512, 0.1),
     'smbo_optimizer=mcts_samples=256':
     lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1),
                                               256, 0.1, 1),
+    'mcts':
+    lambda ssf: MCTSSearcher(ssf, exploration_bonus=.33),
     'smbo_optimizer=mcts_samples=512':
     lambda ssf: SMBOSearcherWithMCTSOptimizer(ssf, HashingSurrogate(2048, 1),
                                               512, 0.1, 1),
