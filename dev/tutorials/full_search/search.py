@@ -23,11 +23,14 @@ import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.dnn as dnn
 import deep_architect.searchers.common as se
 
-from deep_architect.communicators.communicator import get_communicator
+from deep_architect.contrib.communicators.communicator import get_communicator
 
 parser = argparse.ArgumentParser(description='Run an architecture search.')
-parser.add_argument(
-    '--comm', '-c', choices=['mpi', 'file'], required=True, default='mpi')
+parser.add_argument('--comm',
+                    '-c',
+                    choices=['mpi', 'file'],
+                    required=True,
+                    default='mpi')
 parser.add_argument('--num-procs', '-n', type=int, default=2)
 args = parser.parse_args()
 
@@ -42,8 +45,8 @@ comm = get_communicator(args.comm, num_procs=args.num_procs)
 num_total_models = 25
 
 # Now we set up the datasets and the search space factory.
-X_train, y_train, X_val, y_val, _, _ = load_mnist(
-    'data/mnist', normalize_range=True)
+X_train, y_train, X_val, y_val, _, _ = load_mnist('data/mnist',
+                                                  normalize_range=True)
 train_dataset = InMemoryDataset(X_train, y_train, True)
 val_dataset = InMemoryDataset(X_val, y_val, False)
 ssf = mo.SearchSpaceFactory(lambda: dnn.dnn_net(10))
@@ -102,8 +105,11 @@ if comm.get_rank() == 0:
 # print('Best architecture accuracy: %f' % searcher.best_acc)
 # print('Best architecture params: %r' % searcher.best_vs)
 else:
-    evaluator = SimpleClassifierEvaluator(
-        train_dataset, val_dataset, 10, './temp', max_num_training_epochs=2)
+    evaluator = SimpleClassifierEvaluator(train_dataset,
+                                          val_dataset,
+                                          10,
+                                          './temp',
+                                          max_num_training_epochs=2)
 
     # This process keeps going until it receives a kill signal from the master
     # process. At that point, it breaks out of its loop and ends.

@@ -1,5 +1,5 @@
 from mpi4py import MPI
-from deep_architect.communicators.communicator import Communicator
+from deep_architect.contrib.communicators.communicator import Communicator
 """
 Tags for the requests used by the communicator
 """
@@ -54,8 +54,8 @@ class MPICommunicator(Communicator):
 
         self.comm.ssend([self.rank], dest=0, tag=READY_REQ)
 
-        (vs, evaluation_id, searcher_eval_token, kill) = self.comm.recv(
-            source=0, tag=MODEL_REQ)
+        (vs, evaluation_id, searcher_eval_token,
+         kill) = self.comm.recv(source=0, tag=MODEL_REQ)
 
         if kill:
             self.done = True
@@ -101,8 +101,8 @@ class MPICommunicator(Communicator):
         """
         test, msg = self.eval_requests[src].test()
         if test:
-            self.eval_requests[src] = self.comm.irecv(
-                source=src + 1, tag=RESULTS_REQ)
+            self.eval_requests[src] = self.comm.irecv(source=src + 1,
+                                                      tag=RESULTS_REQ)
         return msg if test else None
 
     def _kill_worker(self):

@@ -1,9 +1,10 @@
 import os
 import portalocker
 
-from deep_architect.communicators.communicator import Communicator
-from deep_architect.communicators.file_utils import (consume_file, read_file,
-                                                     write_file)
+from deep_architect.contrib.communicators.communicator import Communicator
+from deep_architect.contrib.communicators.file_utils import (consume_file,
+                                                             read_file,
+                                                             write_file)
 
 
 class FileCommunicator(Communicator):
@@ -20,8 +21,9 @@ class FileCommunicator(Communicator):
             pass
 
         # claim a rank for the process
-        lock = portalocker.Lock(
-            os.path.join(dirname, 'init'), mode='a+', flags=portalocker.LOCK_EX)
+        lock = portalocker.Lock(os.path.join(dirname, 'init'),
+                                mode='a+',
+                                flags=portalocker.LOCK_EX)
         lock.acquire()
         fh = lock.fh
         fh.seek(0)

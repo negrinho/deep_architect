@@ -24,7 +24,7 @@ from searcher import name_to_searcher_fn
 from dev.enas.evaluator.enas_evaluator import ENASEvaluator
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 
-from deep_architect.communicators.communicator import get_communicator
+from deep_architect.contrib.communicators.communicator import get_communicator
 logging.basicConfig()
 
 configs = ut.read_jsonfile(

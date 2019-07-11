@@ -20,7 +20,7 @@ from dev.google_communicator.search_space_factory import name_to_search_space_fa
 
 from deep_architect.contrib.misc.evaluators.tensorflow.tpu_estimator_classification import TPUEstimatorEvaluator
 
-from deep_architect.communicators.communicator import get_communicator
+from deep_architect.contrib.communicators.communicator import get_communicator
 import logging
 
 logging.basicConfig()
