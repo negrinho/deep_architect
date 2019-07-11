@@ -58,5 +58,5 @@ setup(
         "docs": ["sphinx"
                  "sphinx_rtd_theme"],
         "viz": ['matplotlib', 'graphviz'],
-        "explorer": []
+        "explorer": ["dash==1.0.1", "dash-daq==0.1.0"]
     })
