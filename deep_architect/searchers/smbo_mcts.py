@@ -1,6 +1,7 @@
 from deep_architect.searchers.common import random_specify, specify, Searcher
 from deep_architect.searchers.mcts import MCTSSearcher
 from deep_architect.surrogates.common import extract_features
+import deep_architect.utils as ut
 import numpy as np
 
 
@@ -53,3 +54,16 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
         self.cnt += 1
         if self.cnt % self.tree_refit_interval == 0:
             self.mcts = MCTSSearcher(self.search_space_fn)
+
+    # NOTE: this has not been tested.
+    def save_state(self, folderpath):
+        self.mcts.save_state(folderpath)
+        self.surr_model.save_state(folderpath)
+        ut.write_jsonfile({"cnt": self.cnt},
+                          ut.join_paths([folderpath, "state.json"]))
+
+    def load_state(self, folderpath):
+        self.mcts.load_state(folderpath)
+        self.surr_model.load_state(folderpath)
+        state = ut.load_jsonfile(ut.join_paths([folderpath, "state.json"]))
+        self.cnt = state["cnt"]

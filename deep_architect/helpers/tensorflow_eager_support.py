@@ -6,7 +6,7 @@ from deep_architect.hyperparameters import D
 
 
 class TensorflowEagerModule(co.Module):
-    """Class for taking TFEager code and wrapping it in a DeepArchitect module.
+    """Class for taking Tensorflow eager code and wrapping it in a DeepArchitect module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
     the information associated to it (e.g., inputs, outputs, and hyperparameters).
@@ -14,7 +14,7 @@ class TensorflowEagerModule(co.Module):
     modules once a module is fully specified, i.e., once all the hyperparameters
     have been chosen.
 
-    The compile operation in this case instantiates any TFEager variables necessary
+    The compile operation in this case instantiates any Tensorflow eager variables necessary
     for the computation associated to this module.
     The forward operation takes the variables that were created in the compile
     operation and constructs the actual computational graph fragment associated
@@ -23,12 +23,12 @@ class TensorflowEagerModule(co.Module):
     See :class:`deep_architect.helpers.tensorflow_support.TensorflowModule` for a similar class for
     Tensorflow. One of the main differences is that Tensorflow deals with
     static computational graphs, so the forward functionality is usually only
-    called once per creation for the graph creation. TFEager requires calling
+    called once per creation for the graph creation. Tensorflow eager requires calling
     forward for each tensor of data that is fed through the network.
 
     .. note::
         This module is abstract, meaning that it does not actually implement
-        any particular TFEager computation. It simply wraps TFEager
+        any particular Tensorflow eager computation. It simply wraps Tensorflow eager
         functionality in a DeepArchitect module. This functionality makes extensive use
         of closures.
 
