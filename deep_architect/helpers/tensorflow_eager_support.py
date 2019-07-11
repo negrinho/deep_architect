@@ -5,7 +5,7 @@ import deep_architect.core as co
 from deep_architect.hyperparameters import D
 
 
-class TFEModule(co.Module):
+class TensorflowEagerModule(co.Module):
     """Class for taking TFEager code and wrapping it in a DeepArchitect module.
 
     This class subclasses :class:`deep_architect.core.Module` as therefore inherits all
@@ -73,7 +73,7 @@ class TFEModule(co.Module):
 
         self._register(input_names, output_names, hyperparam_dict)
         self._compile_fn = compile_fn
-        self.isTraining = True
+        self.is_training = True
 
     def _compile(self):
         input_name_to_val = self._get_input_values()
@@ -83,25 +83,25 @@ class TFEModule(co.Module):
     def _forward(self):
         input_name_to_val = self._get_input_values()
         output_name_to_val = self._fn(input_name_to_val,
-                                      isTraining=self.isTraining)
+                                      is_training=self.is_training)
         self._set_output_values(output_name_to_val)
 
     def _update(self):
         pass
 
 
-def set_is_training(output_lst, isTraining):
+def set_is_training(output_lst, is_training):
 
     def fn(mx):
-        if hasattr(mx, 'isTraining'):
-            mx.isTraining = isTraining
+        if hasattr(mx, 'is_training'):
+            mx.is_training = is_training
 
     co.traverse_backward(output_lst, fn)
 
 
 def siso_tensorflow_eager_module(name, compile_fn, name_to_hyperp, scope=None):
-    return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
-                     scope).get_io()
+    return TensorflowEagerModule(name, name_to_hyperp, compile_fn, ['In'],
+                                 ['Out'], scope).get_io()
 
 
 def siso_tensorflow_eager_module_from_tensorflow_op_fn(layer_fn,
@@ -112,7 +112,7 @@ def siso_tensorflow_eager_module_from_tensorflow_op_fn(layer_fn,
     def compile_fn(di, dh):
         m = layer_fn(**dh)
 
-        def forward_fn(di, isTraining=False):
+        def forward_fn(di, is_training=False):
             return {"Out": m(di["In"])}
 
         return forward_fn

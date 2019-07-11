@@ -42,7 +42,7 @@ def conv2D(filter_size, channels, name):
         conv_fn = lambda: tf.keras.layers.Conv2D(channels, filter_size)
         conv = weight_sharer.get(name, conv_fn)
 
-        def fn(di, isTraining=True):
+        def fn(di, is_training=True):
             return {'Out': conv(di['In'])}
 
         return fn

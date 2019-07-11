@@ -127,7 +127,7 @@ def check_filters(filters, stride=1):
         else:
             conv = None
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             return {'Out': di['In'] if conv is None else conv(di['In'])}
 
         return forward_fn
@@ -204,14 +204,15 @@ def drop_path(cell_ratio):
     def compile_fn(di, dh):
         drop_path_layer = DropPath(dh['keep_prob'], cell_ratio, di['In1'])
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             return {'Out': drop_path_layer(di['In0'])}
 
         return forward_fn
 
-    return htfe.TFEModule('DropPath', {
-        'keep_prob': hp_sharer.get('drop_path_keep_prob')
-    }, compile_fn, ['In0', 'In1'], ['Out']).get_io()
+    return htfe.TensorflowEagerModule(
+        'DropPath', {
+            'keep_prob': hp_sharer.get('drop_path_keep_prob')
+        }, compile_fn, ['In0', 'In1'], ['Out']).get_io()
 
 
 class MISOIdentity(co.Module):
@@ -304,7 +305,7 @@ def concat(num_ins):
     def compile_fn(di, dh):
         concat_op = tf.keras.layers.Concatenate(axis=3) if num_ins > 1 else None
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             return {
                 'Out':
                 concat_op([di[input_name] for input_name in di])
@@ -313,9 +314,9 @@ def concat(num_ins):
 
         return forward_fn
 
-    return htfe.TFEModule('Concat', {}, compile_fn,
-                          ['In' + str(i) for i in range(num_ins)],
-                          ['Out']).get_io()
+    return htfe.TensorflowEagerModule('Concat', {}, compile_fn,
+                                      ['In' + str(i) for i in range(num_ins)],
+                                      ['Out']).get_io()
 
 
 def combine_unused(num_ins):
@@ -355,7 +356,7 @@ def maybe_factorized_reduction(add_relu=False):
             slice_layer = tf.keras.layers.Lambda(lambda x: x[:, 1:, 1:, :])
             concat = tf.keras.layers.Concatenate(axis=3)
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             inp = relu(di['In0']) if add_relu else di['In0']
             if height == final_height and channels == final_channels:
                 out = inp
@@ -374,8 +375,9 @@ def maybe_factorized_reduction(add_relu=False):
 
         return forward_fn
 
-    return htfe.TFEModule('MaybeFactorizedReduction', {}, compile_fn,
-                          ['In0', 'In1'], ['Out']).get_io()
+    return htfe.TensorflowEagerModule('MaybeFactorizedReduction', {},
+                                      compile_fn, ['In0', 'In1'],
+                                      ['Out']).get_io()
 
 
 def cell_input_fn(filters):
@@ -428,7 +430,7 @@ def global_convolution(h_num_filters):
                                       use_bias=False,
                                       padding='VALID')
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             return {'Out': conv(di['In'])}
 
         return forward_fn

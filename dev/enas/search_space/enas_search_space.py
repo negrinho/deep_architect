@@ -19,7 +19,7 @@ from dev.enas.search_space.common_ops import (conv2D, conv2D_depth_separable,
                                               keras_batch_normalization)
 import deep_architect.modules as mo
 
-TFEM = htfe.TFEModule
+TFEM = htfe.TensorflowEagerModule
 
 
 class WeightSharer(object):
@@ -66,7 +66,7 @@ def concatenate_skip_layers(h_connects, weight_sharer):
 
     def compile_fn(di, dh):
 
-        def fn(di, isTraining=True):
+        def fn(di, is_training=True):
             inputs = [
                 di['In' + str(i)]
                 for i in range(len(dh))

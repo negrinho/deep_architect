@@ -117,15 +117,15 @@ def add(num_inputs):
         in_channels = [tf.shape(di[inp])[-1] for inp in di]
         final_channels = tf.reduce_min(in_channels)
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             out = [di[inp][:, :, :, :final_channels] for inp in di]
             return {'Out': tf.add_n(out)}
 
         return forward_fn
 
-    return htfe.TFEModule('Add', {}, compile_fn,
-                          ['In' + str(i) for i in range(num_inputs)],
-                          ['Out']).get_io()
+    return htfe.TensorflowEagerModule(
+        'Add', {}, compile_fn, ['In' + str(i) for i in range(num_inputs)],
+        ['Out']).get_io()
 
 
 def intermediate_node_fn(num_inputs, node_id, filters, cell_ops):
@@ -146,7 +146,7 @@ def concat(num_ins):
 
     def compile_fn(di, dh):
 
-        def forward_fn(di, isTraining=True):
+        def forward_fn(di, is_training=True):
             return {
                 'Out':
                 tf.concat(values=[di[input_name] for input_name in di], axis=3)
@@ -154,9 +154,9 @@ def concat(num_ins):
 
         return forward_fn
 
-    return htfe.TFEModule('Concat', {}, compile_fn,
-                          ['In' + str(i) for i in range(num_ins)],
-                          ['Out']).get_io()
+    return htfe.TensorflowEagerModule('Concat', {}, compile_fn,
+                                      ['In' + str(i) for i in range(num_ins)],
+                                      ['Out']).get_io()
 
 
 def create_cell_generator(num_nodes):

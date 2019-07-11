@@ -108,7 +108,7 @@ def concat(num_inputs):
         if num_inputs > 1:
             concat = Concatenate()
 
-        def forward_fn(di, isTraining=False):
+        def forward_fn(di, is_training=False):
             return {
                 "Out":
                 concat([v for name, v in iteritems(di)])
@@ -117,8 +117,8 @@ def concat(num_inputs):
 
         return forward_fn
 
-    return htfe.TFEModule("ConcatCombiner", {}, compile_fn, input_names,
-                          ['Out']).get_io()
+    return htfe.TensorflowEagerModule("ConcatCombiner", {}, compile_fn,
+                                      input_names, ['Out']).get_io()
 
 
 def create_motif_hyperp(motif_info):
