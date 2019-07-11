@@ -68,6 +68,10 @@ class PyTorchModule(co.Module):
                  output_names,
                  scope=None):
         co.Module.__init__(self, scope, name)
+        # NOTE: the automatic conversion of python values or objects to
+        # hyperparameters might be deprecated soon if it is found that it
+        # leads to poor coding practices. explicit creation of hyperparameters
+        # is preferred.
         hyperparam_dict = {}
         for h in name_to_hyperp:
             if not isinstance(name_to_hyperp[h], co.Hyperparameter):

@@ -9,4 +9,3 @@ Tutorials
     tutorials/new_searchers
     tutorials/new_frameworks
     tutorials/logging_and_visualization
-    tutorials/deep_learning_frameworks.rst

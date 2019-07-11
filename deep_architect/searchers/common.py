@@ -61,6 +61,14 @@ class Searcher:
         """
         raise NotImplementedError
 
+    # TODO: needs to be changed to a nicer API. use sparsely.
+    # NOTE: this solution only allows a single saved state per frolder.
+    def save_state(self, folderpath):
+        raise NotImplementedError
+
+    def load_state(self, folderpath):
+        raise NotImplementedError
+
 
 # TODO: generalize this for other types of hyperparameters. currently only supports
 # discrete hyperparameters.

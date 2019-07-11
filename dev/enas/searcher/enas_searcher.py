@@ -59,10 +59,14 @@ class ENASSearcher(Searcher):
         self.name = name
 
         self._create_params()
-        self.opt = tf.train.AdamOptimizer(
-            self.learning_rate, beta1=0.0, epsilon=1e-3, use_locking=True)
-        self.train_step = tfe.Variable(
-            0, dtype=tf.int32, trainable=False, name="train_step")
+        self.opt = tf.train.AdamOptimizer(self.learning_rate,
+                                          beta1=0.0,
+                                          epsilon=1e-3,
+                                          use_locking=True)
+        self.train_step = tfe.Variable(0,
+                                       dtype=tf.int32,
+                                       trainable=False,
+                                       name="train_step")
 
         all_variables = self.variables + self.opt.variables() + [
             self.train_step
@@ -101,12 +105,12 @@ class ENASSearcher(Searcher):
                 print("Step: %d,    Reward: %f,    Loss:%f" %
                       (self.train_step, val, loss.numpy()))
 
-    def save_state(self, folder_name):
-        checkpoint_prefix = os.path.join(folder_name, "enas_searcher")
+    def save_state(self, folderpath):
+        checkpoint_prefix = os.path.join(folderpath, "enas_searcher")
         self.saver.save(checkpoint_prefix, global_step=self.train_step)
 
-    def load(self, folder_name):
-        self.saver.restore(tf.train.latest_checkpoint(folder_name))
+    def load(self, folderpath):
+        self.saver.restore(tf.train.latest_checkpoint(folderpath))
 
     def _create_params(self):
         self.variables = []
@@ -117,40 +121,40 @@ class ENASSearcher(Searcher):
                     self.w_lstm = []
                     for layer_id in range(self.lstm_num_layers):
                         with tf.variable_scope("layer_{}".format(layer_id)):
-                            w = tfe.Variable(
-                                initializer(
-                                    [2 * self.lstm_size, 4 * self.lstm_size]),
-                                name="w")
+                            w = tfe.Variable(initializer(
+                                [2 * self.lstm_size, 4 * self.lstm_size]),
+                                             name="w")
                             self.w_lstm.append(w)
                     self.variables.extend(self.w_lstm)
 
-                self.g_emb = tfe.Variable(
-                    initializer([1, self.lstm_size]), name="g_emb")
+                self.g_emb = tfe.Variable(initializer([1, self.lstm_size]),
+                                          name="g_emb")
                 with tf.variable_scope("emb"):
-                    self.w_emb = tfe.Variable(
-                        initializer([self.num_branches, self.lstm_size]),
-                        name="w")
+                    self.w_emb = tfe.Variable(initializer(
+                        [self.num_branches, self.lstm_size]),
+                                              name="w")
                 with tf.variable_scope("softmax"):
-                    self.w_soft = tfe.Variable(
-                        initializer([self.lstm_size, self.num_branches]),
-                        name="w")
+                    self.w_soft = tfe.Variable(initializer(
+                        [self.lstm_size, self.num_branches]),
+                                               name="w")
 
                 with tf.variable_scope("attention"):
-                    self.w_attn_1 = tfe.Variable(
-                        initializer([self.lstm_size, self.lstm_size]),
-                        name="w_1")
-                    self.w_attn_2 = tfe.Variable(
-                        initializer([self.lstm_size, self.lstm_size]),
-                        name="w_2")
-                    self.v_attn = tfe.Variable(
-                        initializer([self.lstm_size, 1]), name="v")
+                    self.w_attn_1 = tfe.Variable(initializer(
+                        [self.lstm_size, self.lstm_size]),
+                                                 name="w_1")
+                    self.w_attn_2 = tfe.Variable(initializer(
+                        [self.lstm_size, self.lstm_size]),
+                                                 name="w_2")
+                    self.v_attn = tfe.Variable(initializer([self.lstm_size, 1]),
+                                               name="v")
                 self.variables.extend([
                     self.g_emb, self.w_emb, self.w_soft, self.w_attn_1,
                     self.w_attn_2, self.v_attn
                 ])
 
-                self.baseline = tfe.Variable(
-                    0.0, dtype=tf.float32, trainable=False)
+                self.baseline = tfe.Variable(0.0,
+                                             dtype=tf.float32,
+                                             trainable=False)
 
     def _sample(self):
         """Build the sampler ops and the log_prob ops."""
@@ -275,15 +279,15 @@ class ENASSearcher(Searcher):
                         idx += layer_id
 
                         skip_prob = tf.sigmoid(logit)
-                        kl = skip_prob * tf.log(
-                            old_div(skip_prob, skip_targets))
+                        kl = skip_prob * tf.log(old_div(skip_prob,
+                                                        skip_targets))
                         kl = tf.reduce_sum(kl)
                         skip_penaltys.append(kl)
 
                         log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
                             logits=logit, labels=skip)
-                        log_probs.append(
-                            tf.reduce_sum(log_prob, keep_dims=True))
+                        log_probs.append(tf.reduce_sum(log_prob,
+                                                       keep_dims=True))
 
                         skip = tf.to_float(skip)
                         skip = tf.reshape(skip, [1, layer_id])
@@ -313,6 +317,6 @@ class ENASSearcher(Searcher):
                 loss += self.skip_weight * skip_penaltys
 
             grads = tape.gradient(loss, self.variables)
-            self.opt.apply_gradients(
-                list(zip(grads, self.variables)), global_step=self.train_step)
+            self.opt.apply_gradients(list(zip(grads, self.variables)),
+                                     global_step=self.train_step)
         return loss

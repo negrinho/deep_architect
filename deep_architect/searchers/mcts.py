@@ -68,6 +68,7 @@ class MCTSTreeNode:
     def expand(self, num_children):
         self.children = [MCTSTreeNode(self) for _ in range(num_children)]
 
+    #### TODO: remove serialize and deserialize and
     @staticmethod
     def serialize(node):
         children = [] if node.children is None else [
@@ -167,13 +168,13 @@ class MCTSSearcher(Searcher):
                 raise ValueError
         return hist, vs
 
-    def save_state(self, folder):
+    def save_state(self, folderpath):
         ut.write_jsonfile(
             {
                 'mcts_root_node': MCTSTreeNode.serialize(self.mcts_root_node),
-            }, os.path.join(folder, 'mcts_searcher_state.json'))
+            }, ut.join_paths([folderpath, 'mcts_searcher_state.json']))
 
-    def load_state(self, folder):
+    def load_state(self, folderpath):
         state = ut.read_jsonfile(
-            os.path.join(folder, 'mcts_searcher_state.json'))
+            ut.join_paths([folderpath, 'mcts_searcher_state.json']))
         self.mcts_root_node = MCTSTreeNode.deserialize(state['mcts_root_node'])

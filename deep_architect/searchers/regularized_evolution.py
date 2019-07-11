@@ -7,9 +7,10 @@ from builtins import range
 import random
 from collections import deque
 
-from deep_architect.utils import join_paths, write_jsonfile, read_jsonfile, file_exists
+import deep_architect.utils as ut
 from deep_architect.searchers.common import Searcher, random_specify_hyperparameter
 from deep_architect.core import unassigned_independent_hyperparameter_iterator
+import numpy as np
 
 
 def mutatable(h):
@@ -107,8 +108,8 @@ class EvolutionSearcher(Searcher):
 
             # mutate strongest model
             inputs, outputs = self.search_space_fn()
-            user_vs, all_vs, _ = self.population[self.get_strongest_model_index(
-                sample_inds)]
+            user_vs, all_vs, _ = self.population[
+                self._get_strongest_model_index(sample_inds)]
             inputs, outputs, new_user_vs, new_all_vs = mutate(
                 list(outputs.values()), user_vs, all_vs, self.mutatable,
                 self.search_space_fn)
@@ -120,60 +121,55 @@ class EvolutionSearcher(Searcher):
                 'all_vs': new_all_vs
             }
 
-    def update(self, val, cfg_d):
+    def update(self, val, searcher_eval_token):
         if not self.initializing:
-            weak_ind = self.get_weakest_model_index()
+            weak_ind = self._get_weakest_model_index()
             del self.population[weak_ind]
-        self.population.append((cfg_d['user_vs'], cfg_d['all_vs'], val))
+        self.population.append((searcher_eval_token['user_vs'],
+                                searcher_eval_token['all_vs'], val))
 
-    def get_searcher_state_token(self):
-        return {
+    def save_state(self, folderpath):
+        filepath = ut.join_paths([folderpath, 'evolution_searcher.json'])
+        state = {
             "P": self.P,
             "S": self.S,
             "population": list(self.population),
             "regularized": self.regularized,
             "initializing": self.initializing,
         }
+        ut.write_jsonfile(state, filepath)
 
-    def save_state(self, folder_name):
-        state = self.get_searcher_state_token()
-        write_jsonfile(state,
-                       join_paths([folder_name, 'evolution_searcher.json']))
-
-    def load_state(self, folder_name):
-        filepath = join_paths([folder_name, 'evolution_searcher.json'])
-        if not file_exists(filepath):
-            raise RuntimeError("Load file does not exist")
-
-        state = read_jsonfile(filepath)
+    def load_state(self, folderpath):
+        filepath = ut.join_paths([folderpath, 'evolution_searcher.json'])
+        state = ut.read_jsonfile(filepath)
         self.P = state["P"]
         self.S = state["S"]
         self.regularized = state['regularized']
         self.population = deque(state['population'])
         self.initializing = state['initializing']
 
-    def get_weakest_model_index(self):
+    def _get_weakest_model_index(self):
         if self.regularized:
             return 0
         else:
-            min_acc = 1.
-            min_acc_ind = -1
+            min_score = np.inf
+            min_score_ind = None
             for i in range(len(self.population)):
-                _, _, acc = self.population[i]
-                if acc < min_acc:
-                    min_acc = acc
-                    min_acc_ind = i
-            return min_acc_ind
+                _, _, score = self.population[i]
+                if score < min_score:
+                    min_score = score
+                    min_score_ind = i
+            return min_score_ind
 
-    def get_strongest_model_index(self, sample_inds):
-        max_acc = 0.
-        max_acc_ind = -1
+    def _get_strongest_model_index(self, sample_inds):
+        max_score = -np.inf
+        max_score_ind = -1
         for i in range(len(sample_inds)):
-            _, _, acc = self.population[sample_inds[i]]
-            if acc > max_acc:
-                max_acc = acc
-                max_acc_ind = i
-        return sample_inds[max_acc_ind]
+            _, _, score = self.population[sample_inds[i]]
+            if score > max_score:
+                max_score = score
+                max_score_ind = i
+        return sample_inds[max_score_ind]
 
     def get_best(self, num_models):
         ranked_population = sorted(self.population,

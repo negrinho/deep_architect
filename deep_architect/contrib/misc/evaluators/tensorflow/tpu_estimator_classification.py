@@ -353,8 +353,8 @@ class TPUEstimatorEvaluator:
                 gcu.delete_bucket_folder(model_dir)
         return results
 
-    def save_state(self, folder):
+    def save_state(self, folderpath):
         pass
 
-    def load_state(self, folder):
+    def load_state(self, folderpath):
         pass

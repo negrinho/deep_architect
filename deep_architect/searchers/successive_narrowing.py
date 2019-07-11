@@ -49,10 +49,11 @@ class SuccessiveNarrowing(se.Searcher):
 
 
 # run simple successive narrowing on a single machine.
-def run_successive_narrowing(
-        search_space_fn, num_initial_samples, initial_budget, get_evaluator,
-        extract_val_fn, num_samples_reduction_factor, budget_increase_factor,
-        num_rounds, get_evaluation_logger):
+def run_successive_narrowing(search_space_fn, num_initial_samples,
+                             initial_budget, get_evaluator, extract_val_fn,
+                             num_samples_reduction_factor,
+                             budget_increase_factor, num_rounds,
+                             get_evaluation_logger):
 
     num_samples = num_initial_samples
     searcher = SuccessiveNarrowing(search_space_fn, num_initial_samples,

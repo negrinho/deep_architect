@@ -42,8 +42,8 @@ class SMBOSearcher(Searcher):
         feats = extract_features(inputs, outputs)
         self.surr_model.update(val, feats)
 
-    def save_state(self, folder):
-        self.surr_model.save_state(folder)
+    def save_state(self, folderpath):
+        self.surr_model.save_state(folderpath)
 
-    def load_state(self, folder):
-        self.surr_model.load_state(folder)
+    def load_state(self, folderpath):
+        self.surr_model.load_state(folderpath)
