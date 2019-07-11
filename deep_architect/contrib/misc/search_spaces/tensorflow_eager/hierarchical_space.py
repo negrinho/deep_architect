@@ -7,7 +7,7 @@ import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.utils as ut
 import deep_architect.helpers.tensorflow_eager_support as htfe
-from deep_architect.contrib.deep_learning_backend.tfe_ops import batch_normalization
+from deep_architect.contrib.deep_learning_backend.tensorflow_eager_ops import batch_normalization
 
 D = hp.Discrete
 

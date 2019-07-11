@@ -9,7 +9,7 @@ import deep_architect.core as co
 import deep_architect.hyperparameters as hp
 import deep_architect.helpers.tensorflow_eager_support as htfe
 import deep_architect.modules as mo
-from deep_architect.contrib.deep_learning_backend.tf_keras_ops import (
+from deep_architect.contrib.deep_learning_backend.tensorflow_keras_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
     min_pool2d, fc_layer, global_pool2d, dropout, add, flatten)
 

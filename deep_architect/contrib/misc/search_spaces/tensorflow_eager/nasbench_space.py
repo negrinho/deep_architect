@@ -9,7 +9,7 @@ from collections import OrderedDict
 import deep_architect.helpers.tensorflow_eager_support as htfe
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
-from deep_architect.contrib.deep_learning_backend.tfe_ops import (
+from deep_architect.contrib.deep_learning_backend.tensorflow_eager_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
     min_pool2d, fc_layer, global_pool2d, dropout)
 

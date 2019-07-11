@@ -18,7 +18,7 @@ def set_backend(backend):
 
     _backend = backend
     if backend is TENSORFLOW:
-        from .tf_ops import func_dict
+        from .tensorflow_ops import func_dict
     elif backend is TENSORFLOW_EAGER:
         import tensorflow as tf
         tf_version = tf.__version__.split('.')
@@ -27,10 +27,10 @@ def set_backend(backend):
         if int(tf_version[0]) == 1 and int(tf_version[1]) < 7:
             raise RuntimeError('Tensorflow version too low')
         tf.enable_eager_execution()
-        from .tfe_ops import func_dict
+        from .tensorflow_eager_ops import func_dict
     elif backend is TENSORFLOW_KERAS:
         import tensorflow as tf
-        from .tf_keras_ops import func_dict
+        from .tensorflow_keras_ops import func_dict
     elif backend is PYTORCH:
         from .pytorch_ops import func_dict
     elif backend is KERAS:
