@@ -90,7 +90,7 @@ class TFEModule(co.Module):
         pass
 
 
-def setTraining(output_lst, isTraining):
+def set_is_training(output_lst, isTraining):
 
     def fn(mx):
         if hasattr(mx, 'isTraining'):
@@ -99,15 +99,15 @@ def setTraining(output_lst, isTraining):
     co.traverse_backward(output_lst, fn)
 
 
-def siso_tfeager_module(name, compile_fn, name_to_hyperp, scope=None):
+def siso_tensorflow_eager_module(name, compile_fn, name_to_hyperp, scope=None):
     return TFEModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
                      scope).get_io()
 
 
-def siso_tfeager_module_from_tensorflow_op_fn(layer_fn,
-                                              name_to_hyperp,
-                                              scope=None,
-                                              name=None):
+def siso_tensorflow_eager_module_from_tensorflow_op_fn(layer_fn,
+                                                       name_to_hyperp,
+                                                       scope=None,
+                                                       name=None):
 
     def compile_fn(di, dh):
         m = layer_fn(**dh)
@@ -120,7 +120,7 @@ def siso_tfeager_module_from_tensorflow_op_fn(layer_fn,
     if name is None:
         name = layer_fn.__name__
 
-    return siso_tfeager_module(name, compile_fn, name_to_hyperp, scope)
+    return siso_tensorflow_eager_module(name, compile_fn, name_to_hyperp, scope)
 
 
 def get_num_trainable_parameters():

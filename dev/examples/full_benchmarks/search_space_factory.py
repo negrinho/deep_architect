@@ -1,8 +1,8 @@
-from deep_architect.contrib.misc.search_spaces.tfeager.nasnet_space import SSF_NasnetA
-from deep_architect.contrib.misc.search_spaces.tfeager.genetic_space import SSF_Genetic
-from deep_architect.contrib.misc.search_spaces.tfeager.nasbench_space import SSF_Nasbench
+from deep_architect.contrib.misc.search_spaces.tensorflow_eager.nasnet_space import SSF_NasnetA
+from deep_architect.contrib.misc.search_spaces.tensorflow_eager.genetic_space import SSF_Genetic
+from deep_architect.contrib.misc.search_spaces.tensorflow_eager.nasbench_space import SSF_Nasbench
 from deep_architect.contrib.misc.search_spaces.tensorflow.dnn import dnn_net
-from deep_architect.contrib.misc.search_spaces.tfeager.hierarchical_space import (
+from deep_architect.contrib.misc.search_spaces.tensorflow_eager.hierarchical_space import (
     flat_search_space, hierarchical_search_space)
 from deep_architect.modules import SearchSpaceFactory
 

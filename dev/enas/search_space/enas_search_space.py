@@ -10,7 +10,7 @@ from collections import OrderedDict
 import tensorflow as tf
 import numpy as np
 
-from deep_architect.helpers import tfeager_support as htfe
+from deep_architect.helpers import tensorflow_eager_support as htfe
 from deep_architect.hyperparameters import D
 from dev.enas.search_space.common_ops import (conv2D, conv2D_depth_separable,
                                               global_pool, dropout, fc_layer,

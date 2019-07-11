@@ -15,7 +15,7 @@ from deep_architect.contrib.misc.datasets.cifar10_tf import Cifar10DataSet
 import deep_architect.contrib.misc.evaluators.tensorflow.gcloud_utils as gcu
 import deep_architect.core as co
 import deep_architect.utils as ut
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 
 logger = logging.getLogger(__name__)
 

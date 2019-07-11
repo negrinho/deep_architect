@@ -9,7 +9,7 @@ import tensorflow as tf
 import numpy as np
 
 import deep_architect.core as co
-from deep_architect.helpers.tfeager_support import setTraining
+from deep_architect.helpers.tensorflow_eager_support import set_is_training
 
 tfe = tf.contrib.eager
 
@@ -80,7 +80,7 @@ class ENASEvaluator(object):
     def _compute_accuracy(self, inputs, outputs, dataset):
         nc = 0
         num_left = dataset.get_num_examples()
-        setTraining(list(outputs.values()), False)
+        set_is_training(list(outputs.values()), False)
         loss = 0
         while num_left > 0:
             X_batch, y_batch = dataset.next_batch(self.batch_size)
@@ -143,7 +143,7 @@ class ENASEvaluator(object):
         else:
             # Update child model parameters
             X_batch, y_batch = self.train_dataset.next_batch(self.batch_size)
-            setTraining(list(outputs.values()), True)
+            set_is_training(list(outputs.values()), True)
             with tf.device('/gpu:0'):
                 loss_metric = tfe.metrics.Mean('loss')
                 self.optimizer.minimize(lambda: self._compute_loss(

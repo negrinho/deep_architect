@@ -1,4 +1,4 @@
-from deep_architect.helpers.tfeager_support import siso_tfeager_module, TFEModule
+from deep_architect.helpers.tensorflow_eager_support import siso_tensorflow_eager_module, TFEModule
 from deep_architect.hyperparameters import D
 import tensorflow as tf
 
@@ -15,7 +15,7 @@ def max_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
 
         return forward_fn
 
-    return siso_tfeager_module('MaxPool2D', compile_fn, {
+    return siso_tensorflow_eager_module('MaxPool2D', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
         'padding': h_padding
@@ -34,7 +34,7 @@ def min_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
 
         return forward_fn
 
-    return siso_tfeager_module('MinPool2D', compile_fn, {
+    return siso_tensorflow_eager_module('MinPool2D', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
         'padding': h_padding
@@ -53,7 +53,7 @@ def avg_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
 
         return forward_fn
 
-    return siso_tfeager_module('MaxPool2D', compile_fn, {
+    return siso_tensorflow_eager_module('MaxPool2D', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
         'padding': h_padding
@@ -70,7 +70,7 @@ def batch_normalization():
 
         return forward_fn
 
-    return siso_tfeager_module('BatchNormalization', compile_fn, {})
+    return siso_tensorflow_eager_module('BatchNormalization', compile_fn, {})
 
 
 def relu():
@@ -82,7 +82,7 @@ def relu():
 
         return forward_fn
 
-    return siso_tfeager_module('ReLU', compile_fn, {})
+    return siso_tensorflow_eager_module('ReLU', compile_fn, {})
 
 
 def conv2d(h_num_filters,
@@ -105,7 +105,7 @@ def conv2d(h_num_filters,
 
         return forward_fn
 
-    return siso_tfeager_module(
+    return siso_tensorflow_eager_module(
         'Conv2D', compile_fn, {
             'num_filters': h_num_filters,
             'filter_width': h_filter_width,
@@ -140,7 +140,7 @@ def separable_conv2d(h_num_filters,
 
         return fn
 
-    return siso_tfeager_module(
+    return siso_tensorflow_eager_module(
         'SeparableConv2D', compile_fn, {
             'num_filters': h_num_filters,
             'filter_width': h_filter_width,
@@ -165,8 +165,8 @@ def dropout(h_keep_prob):
 
         return forward_fn
 
-    return siso_tfeager_module('Dropout', compile_fn,
-                               {'keep_prob': h_keep_prob})
+    return siso_tensorflow_eager_module('Dropout', compile_fn,
+                                        {'keep_prob': h_keep_prob})
 
 
 def global_pool2d():
@@ -178,7 +178,7 @@ def global_pool2d():
 
         return forward_fn
 
-    return siso_tfeager_module('GlobalAveragePool', compile_fn, {})
+    return siso_tensorflow_eager_module('GlobalAveragePool', compile_fn, {})
 
 
 def flatten():
@@ -190,7 +190,7 @@ def flatten():
 
         return forward_fn
 
-    return siso_tfeager_module('Flatten', compile_fn, {})
+    return siso_tensorflow_eager_module('Flatten', compile_fn, {})
 
 
 def fc_layer(h_num_units):
@@ -203,8 +203,8 @@ def fc_layer(h_num_units):
 
         return forward_fn
 
-    return siso_tfeager_module('FCLayer', compile_fn,
-                               {'num_units': h_num_units})
+    return siso_tensorflow_eager_module('FCLayer', compile_fn,
+                                        {'num_units': h_num_units})
 
 
 def add(num_inputs):

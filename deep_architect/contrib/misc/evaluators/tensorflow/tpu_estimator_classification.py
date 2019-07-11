@@ -10,7 +10,7 @@ from deep_architect.contrib.misc.datasets.cifar10_tf import Cifar10DataSet
 import deep_architect.contrib.misc.evaluators.tensorflow.gcloud_utils as gcu
 import deep_architect.core as co
 import deep_architect.utils as ut
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ IMAGE_WIDTH = 32
 IMAGE_DEPTH = 3
 
 
-def setRecompile(output_lst, recompile):
+def set_recompile(output_lst, recompile):
 
     def fn(mx):
         mx._is_compiled = not recompile
@@ -168,10 +168,10 @@ class TPUEstimatorEvaluator:
             return {'accuracy': tf.metrics.accuracy(labels, predictions)}
 
         def model_fn(features, labels, mode, params):
-            setRecompile(outputs.values(), True)
+            set_recompile(outputs.values(), True)
             gc.collect()
-            htfe.setTraining(outputs.values(),
-                             mode == tf.estimator.ModeKeys.TRAIN)
+            htfe.set_is_training(outputs.values(),
+                                 mode == tf.estimator.ModeKeys.TRAIN)
             step = tf.train.get_or_create_global_step()
             if 'In' in inputs:
                 co.forward({inputs['In']: features})

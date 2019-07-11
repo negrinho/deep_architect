@@ -13,7 +13,7 @@
 # will use Tensorflow eager.
 
 import tensorflow as tf
-from deep_architect.helpers.tfeager_support import siso_tfeager_module
+from deep_architect.helpers.tensorflow_eager_support import siso_tensorflow_eager_module
 
 
 # The WeightSharer object is a simple wrapper around a dictionary that stores a
@@ -47,7 +47,7 @@ def conv2D(filter_size, channels, name):
 
         return fn
 
-    return siso_tfeager_module('Conv2D', compile_fn, {})
+    return siso_tensorflow_eager_module('Conv2D', compile_fn, {})
 
 
 conv_original = conv2D(3, 32, 'conv_layer')

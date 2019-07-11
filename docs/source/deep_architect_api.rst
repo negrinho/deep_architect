@@ -84,7 +84,7 @@ deep_architect.helpers
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: deep_architect.helpers.tfeager_support
+.. automodule:: deep_architect.helpers.tensorflow_eager_support
     :members:
     :undoc-members:
     :show-inheritance:

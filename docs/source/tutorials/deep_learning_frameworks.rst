@@ -144,9 +144,9 @@ architecture, set the architecture to use training mode, and call `co.forward()`
 
     elif backend.get_backend() == backend.TENSORFLOW_EAGER:
         import tensorflow as tf
-        import deep_architect.helpers.tfeager_support as htfe
+        import deep_architect.helpers.tensorflow_eager_support as htfe
         tf.enable_eager_execution()
-        htfe.setTraining(outs.values(), True)
+        htfe.set_is_training(outs.values(), True)
         co.forward({ins['In']: tf.constant(X_batch)})
         logit_vals = outs['Out'].val
 

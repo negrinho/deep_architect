@@ -5,7 +5,7 @@ import itertools
 
 import tensorflow as tf
 
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 from deep_architect.contrib.deep_learning_backend.tf_keras_ops import (
     relu, batch_normalization, conv2d, max_pool2d, fc_layer, dropout, flatten,
     add)

@@ -6,7 +6,7 @@ import itertools
 import tensorflow as tf
 from collections import OrderedDict
 
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 import deep_architect.modules as mo
 import deep_architect.contrib.misc.search_spaces.tensorflow.cnn2d as cnn2d
 from deep_architect.contrib.deep_learning_backend.tfe_ops import (

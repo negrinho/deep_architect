@@ -1,7 +1,7 @@
 from builtins import str
 import tensorflow as tf
 import deep_architect.modules as mo
-from deep_architect.helpers import tfeager_support as htfe
+from deep_architect.helpers import tensorflow_eager_support as htfe
 
 TFEM = htfe.TFEModule
 
@@ -21,7 +21,7 @@ def avg_pool(h_kernel_size, h_stride):
 
         return fn
 
-    return htfe.siso_tfeager_module('AvgPool', compile_fn, {
+    return htfe.siso_tensorflow_eager_module('AvgPool', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
     })
@@ -42,7 +42,7 @@ def max_pool(h_kernel_size, h_stride):
 
         return fn
 
-    return htfe.siso_tfeager_module('MaxPool2D', compile_fn, {
+    return htfe.siso_tensorflow_eager_module('MaxPool2D', compile_fn, {
         'kernel_size': h_kernel_size,
         'stride': h_stride,
     })
@@ -67,7 +67,8 @@ def keras_batch_normalization(name='default', weight_sharer=None):
 
         return fn
 
-    return htfe.siso_tfeager_module('BatchNormalization', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('BatchNormalization', compile_fn,
+                                             {})
 
 
 def relu():
@@ -80,7 +81,7 @@ def relu():
 
         return fn
 
-    return htfe.siso_tfeager_module('ReLU', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('ReLU', compile_fn, {})
 
 
 def conv2D(filter_size, name, weight_sharer, out_filters=None):
@@ -106,7 +107,7 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
 
         return fn
 
-    return htfe.siso_tfeager_module('Conv2D', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('Conv2D', compile_fn, {})
 
 
 def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
@@ -131,7 +132,7 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
 
         return fn
 
-    return htfe.siso_tfeager_module('Conv2DSeparable', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('Conv2DSeparable', compile_fn, {})
 
 
 def global_pool():
@@ -144,7 +145,7 @@ def global_pool():
 
         return fn
 
-    return htfe.siso_tfeager_module('GlobalPool', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('GlobalPool', compile_fn, {})
 
 
 def dropout(keep_prob):
@@ -161,7 +162,7 @@ def dropout(keep_prob):
 
         return fn
 
-    return htfe.siso_tfeager_module('Dropout', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('Dropout', compile_fn, {})
 
 
 def fc_layer(num_classes, name, weight_sharer):
@@ -183,7 +184,7 @@ def fc_layer(num_classes, name, weight_sharer):
 
         return fn
 
-    return htfe.siso_tfeager_module('FC_Layer', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('FC_Layer', compile_fn, {})
 
 
 def wrap_relu_batch_norm(io_pair,

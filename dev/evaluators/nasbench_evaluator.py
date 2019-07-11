@@ -1,6 +1,6 @@
 from nasbench import api
 import deep_architect.core as co
-import deep_architect.contrib.misc.search_spaces.tfeager.nasbench_space as nb
+import deep_architect.contrib.misc.search_spaces.tensorflow_eager.nasbench_space as nb
 INPUT = 'input'
 OUTPUT = 'output'
 node_op_names = {

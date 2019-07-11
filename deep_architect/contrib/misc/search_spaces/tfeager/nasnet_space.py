@@ -7,7 +7,7 @@ from tensorflow.python.keras.utils import tf_utils
 
 import deep_architect.core as co
 import deep_architect.hyperparameters as hp
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 import deep_architect.modules as mo
 from deep_architect.contrib.deep_learning_backend.tf_keras_ops import (
     relu, batch_normalization, conv2d, separable_conv2d, avg_pool2d, max_pool2d,
@@ -132,7 +132,7 @@ def check_filters(filters, stride=1):
 
         return forward_fn
 
-    return htfe.siso_tfeager_module('CheckFilters', compile_fn, {})
+    return htfe.siso_tensorflow_eager_module('CheckFilters', compile_fn, {})
 
 
 def pool_op(filters, filter_size, stride, pool_type):
@@ -433,7 +433,7 @@ def global_convolution(h_num_filters):
 
         return forward_fn
 
-    return htfe.siso_tfeager_module('GlobalConv2D', compile_fn, {
+    return htfe.siso_tensorflow_eager_module('GlobalConv2D', compile_fn, {
         'num_filters': h_num_filters,
     })
 

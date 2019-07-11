@@ -12,7 +12,7 @@ import deep_architect.helpers.tensorflow as htf
 import deep_architect.utils as ut
 import deep_architect.contrib.misc.gpu_utils as gpu_utils
 import deep_architect.contrib.misc.datasets.augmentation as aug
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 from six.moves import range
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 IMAGE_HEIGHT = 32
@@ -29,7 +29,7 @@ def get_feature_columns():
     return feature_columns
 
 
-def setRecompile(output_lst, recompile):
+def set_recompile(output_lst, recompile):
 
     def fn(mx):
         mx._is_compiled = not recompile
@@ -146,10 +146,10 @@ class AdvanceClassifierEvaluator:
             images = tf.reshape(images,
                                 shape=(-1, IMAGE_HEIGHT, IMAGE_WIDTH,
                                        IMAGE_DEPTH))
-            setRecompile(outputs.values(), True)
+            set_recompile(outputs.values(), True)
             gc.collect()
-            htfe.setTraining(outputs.values(),
-                             mode == tf.estimator.ModeKeys.TRAIN)
+            htfe.set_is_training(outputs.values(),
+                                 mode == tf.estimator.ModeKeys.TRAIN)
             co.forward({inputs['In']: images})
             logits = outputs['Out'].val
 

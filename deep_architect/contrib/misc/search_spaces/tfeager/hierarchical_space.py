@@ -6,14 +6,14 @@ from tensorflow.keras.layers import (GlobalAveragePooling2D, Dense, Conv2D,
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.utils as ut
-import deep_architect.helpers.tfeager_support as htfe
+import deep_architect.helpers.tensorflow_eager_support as htfe
 from deep_architect.contrib.deep_learning_backend.tfe_ops import batch_normalization
 
 D = hp.Discrete
 
 
 def conv2d(filters, kernel_size, stride=1, activation_fn='linear'):
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         lambda: Conv2D(filters,
                        kernel_size,
                        strides=stride,
@@ -32,7 +32,7 @@ def conv2d_cell(filters, kernel_size, stride=1):
 
 
 def depthwise_conv2d(kernel_size, stride=1, activation_fn='linear'):
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         lambda: DepthwiseConv2D(kernel_size,
                                 strides=stride,
                                 padding='same',
@@ -49,7 +49,7 @@ def depthwise_conv2d_cell(kernel_size, stride=1):
 
 
 def separable_conv2d(filters, kernel_size, stride=1, activation_fn='linear'):
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         lambda: SeparableConv2D(filters,
                                 kernel_size,
                                 strides=stride,
@@ -69,14 +69,14 @@ def separable_conv2d_cell(filters, kernel_size, stride=1):
 
 # max-pooling
 def max_pooling(pool_size, stride=1):
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         lambda: MaxPooling2D(pool_size, strides=stride, padding='same'), {},
         name="MaxPooling2D_%dx%d" % (pool_size, pool_size))
 
 
 # average-pooling
 def average_pooling(pool_size, stride=1):
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         lambda: AveragePooling2D(pool_size, strides=stride, padding='same'), {},
         name="AveragePooling2D_%dx%d" % (pool_size, pool_size))
 
@@ -87,12 +87,12 @@ def average_pooling(pool_size, stride=1):
 
 
 def global_average_pooling():
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         GlobalAveragePooling2D, {})
 
 
 def dense(units):
-    return htfe.siso_tfeager_module_from_tensorflow_op_fn(
+    return htfe.siso_tensorflow_eager_module_from_tensorflow_op_fn(
         lambda: Dense(units), {})
 
 
