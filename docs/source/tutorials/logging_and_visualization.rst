@@ -6,7 +6,7 @@ Architecture search provides tremendous opportunity to create insightful visuali
 
 The logging functionality in DeepArchitect allows us to create a folder for a search experiment. This search log folder contains a folder for each evaluation done during search. Each evaluation folder contains a fixed component and a component that is specified by the user. The fixed component contains a JSON file with the hyperparameters values that define the architecture and a JSON file with the results obtained for that architecture. The user component allows the user to store additional information for each architecture, e.g., model parameters or example predictions. The logging functionality makes it convenient to manage this folder structure. The log folder for the whole search experiment keeps user information at the search level, e.g., searcher checkpoints.
 
-We point the reader to `examples/mnist_with_logging <https://github.com/negrinho/darch/blob/master/examples/mnist_with_logging/main.py>`__ for an example use of logging, and to `deep_architect/search_logging.py <https://github.com/negrinho/darch/blob/master/deep_architect/search_logging.py>`__ for the API definitions.
+We point the reader to `examples/mnist_with_logging <https://github.com/negrinho/deep_architect/blob/master/examples/mnist_with_logging/main.py>`__ for an example use of logging, and to `deep_architect/search_logging.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/search_logging.py>`__ for the API definitions.
 
 Starting Keras example to adapt for logging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

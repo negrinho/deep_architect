@@ -50,7 +50,7 @@ The starting point for implementing a new module is the the helper for the frame
 
         Args:
             name (str): Name of the module
-            name_to_hyperp (dict[str,darch.core.Hyperparameter]): Dictionary of
+            name_to_hyperp (dict[str,deep_architect.core.Hyperparameter]): Dictionary of
                 hyperparameters that the model depends on. The keys are the local
                 names of the hyperparameters.
             compile_fn ((dict[str,object], dict[str,object]) -> (dict[str,object] -> dict[str,object])):
@@ -63,7 +63,7 @@ The starting point for implementing a new module is the the helper for the frame
                 values that they will take during training and test.
             input_names (list[str]): List of names for the inputs.
             output_names (list[str]): List of names for the outputs.
-            scope (darch.core.Scope, optional): Scope where the module will be
+            scope (deep_architect.core.Scope, optional): Scope where the module will be
                 registered.
         """
 
@@ -349,7 +349,7 @@ A substitution module has hyperparameters and a substitution function that retur
 
 Substitution modules disappear from the graph when the substitution is performed. The substitution function may itself return a graph fragment containing substitution modules. When there are only basic modules left and all the hyperparameters have been assigned values, the search space is fully specified and we can call the compile and forward functions for each of the basic modules in in it.
 
-Substitution modules delay the choice of a structural property of the search space until some hyperparameters are assigned values. These are very helpful to encode complex and expressive search spaces. We have defined a few useful substitution modules in `deep_architect/modules.py <https://github.com/negrinho/darch/blob/master/deep_architect/modules.py>`_. Similar to the basic module definition that we looked above, it is more convenient to deal with the dictionaries of inputs and the dictionaries of outputs than directly with the modules, so we define this function
+Substitution modules delay the choice of a structural property of the search space until some hyperparameters are assigned values. These are very helpful to encode complex and expressive search spaces. We have defined a few useful substitution modules in `deep_architect/modules.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/modules.py>`_. Similar to the basic module definition that we looked above, it is more convenient to deal with the dictionaries of inputs and the dictionaries of outputs than directly with the modules, so we define this function
 
 .. code:: python
 

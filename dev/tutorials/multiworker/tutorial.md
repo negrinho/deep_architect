@@ -137,9 +137,9 @@ def main(args):
 Running on Pittsburgh Supercomputing Center (Bridges)
 -----------------------------------------------------
 To run the above example on the bridges server:
-- Create a folder darch inside your Bridges working directory ($SCRATCH). Have at least deep_architect and the examples folder inside the darch directory.
-- Download mnist file 'mnist.npz' from https://s3.amazonaws.com/img-datasets/mnist.npz (or any other link with mnist.npz). Create folder named datasets inside darch and place 'mnist.npz' in there.
-- Start at the root directory, type in 'export PYTHONPATH=${PYTHONPATH}:/path/to/darch/'
+- Create a folder deep_architect inside your Bridges working directory ($SCRATCH). Have at least deep_architect and the examples folder inside the deep_architect directory.
+- Download mnist file 'mnist.npz' from https://s3.amazonaws.com/img-datasets/mnist.npz (or any other link with mnist.npz). Create folder named datasets inside deep_architect and place 'mnist.npz' in there.
+- Start at the root directory, type in 'export PYTHONPATH=${PYTHONPATH}:/path/to/deep_architect/'
 - Run python examples/tutorials/multiworker/master.py
 
 In addition, you can inspect the log in 'logs/mnist_multiworker'

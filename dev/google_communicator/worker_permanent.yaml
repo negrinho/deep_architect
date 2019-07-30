@@ -19,7 +19,7 @@ spec:
       - name: worker
         # The official TensorFlow 1.12 TPU model image built from
         # https://github.com/tensorflow/tpu/blob/r1.12/tools/docker/Dockerfile.
-        image: gcr.io/deeparchitect-219016/darch
+        image: gcr.io/deeparchitect-219016/deep_architect
         command: ["python"]
         args: ["dev/google_communicator/worker.py", "-c", "search_evol"]
         imagePullPolicy: Always

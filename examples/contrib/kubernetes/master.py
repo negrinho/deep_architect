@@ -32,7 +32,8 @@ def process_config_and_args():
         '--config-file',
         action='store',
         dest='config_file',
-        default='/darch/examples/contrib/kubernetes/experiment_config.json')
+        default=
+        '/deep_architect/examples/contrib/kubernetes/experiment_config.json')
     parser.add_argument('--bucket',
                         '-b',
                         action='store',

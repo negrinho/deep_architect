@@ -59,7 +59,7 @@ First, you must set the backend framework to be used. DeepArchitect simply
 uses the module implementations specific to the framework being used. If a
 module is not implemented for a given framework, a RuntimeError is raised.
 The implementations for the framework specific modules are
-`here <https://github.com/negrinho/darch/blob/master/deep_architect/contrib/deep_learning_backend>`__.
+`here <https://github.com/negrinho/deep_architect/blob/master/deep_architect/contrib/deep_learning_backend>`__.
 The four backends currently supported are TENSORFLOW, TENSORFLOW_EAGER,
 PYTORCH, and KERAS. In the following example, we use TENSORFLOW_EAGER.
 

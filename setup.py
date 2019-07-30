@@ -36,7 +36,7 @@ setup(
     description=
     "DeepArchitect: Architecture search so easy that you'll think it's magic!",
     long_description=long_description,
-    url='https://github.com/negrinho/darch',
+    url='https://github.com/negrinho/deep_architect',
     license='MIT',
     author='Renato Negrinho',
     author_email='negrinho@cs.cmu.edu',

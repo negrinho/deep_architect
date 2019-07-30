@@ -73,7 +73,7 @@ in `examples/contrib`.
 The subfolder in `examples/contrib` is meant for runnable code related to
 or making extensive use of the library code in the `deep_architect/contrib` subfolder.
 We recommend checking existing examples in the
-[repo](https://github.com/negrinho/darch) for determining how to
+[repo](https://github.com/negrinho/deep_architect) for determining how to
 structure and document a new example appropriately.
 
 <!-- storing configurations for running examples. -->
@@ -86,7 +86,7 @@ This is more manageable, programmable, and configurable than having a command li
 This guarantees that it is easy to maintain and store many different configurations,
 e.g., one configuration where the code is exercised with
 few resources and another configuration where the code is exercised in a
-longer run, e.g., see [here](https://github.com/negrinho/darch/tree/master/examples/mnist_with_logging).
+longer run, e.g., see [here](https://github.com/negrinho/deep_architect/tree/master/examples/mnist_with_logging).
 Each JSON file corresponds to a different configuration.
 We suggest including a `debug.json` to run a quick experiment to
 validate the functionality of both the code under `contrib/examples` and
@@ -99,7 +99,7 @@ for running examples, with all the information to run put in the configuration f
 identified in the framework. -->
 Whether contributing examples or libraries, we recommend identifying the
 search spaces, searchers, evaluators, and datasets and splitting them into
-different files, e.g., [see](https://github.com/negrinho/darch/tree/master/deep_architect/searchers).
+different files, e.g., [see](https://github.com/negrinho/deep_architect/tree/master/deep_architect/searchers).
 Having these components into multiple files makes the dependencies more
 explicit and improves the reusability of the components.
 The framework is developed around these modular components.
@@ -140,7 +140,7 @@ In this section, we identify the most natural contributions for DeepArchitect. T
 Searchers interact with the search space through a very simple interface: the searcher can ask if all the hyperparameters are specified (and therefore, if the specified search space can be compiled to a single model that can be evaluated); if the search space is not specified, the searcher can ask for a single unspecified hyperparameter and assign a value to it. When a value is assigned to an unspecified hyperparameter, the search space transitions, which sometimes gives rise to additional unspecified hyperparameters, e.g., after choosing the number of repetitions for a repetition substitution module.
 
 <!-- General and specific searchers. -->
-The most general searchers rely solely on this simple interface. Good examples of general searchers implemented can be found [here](https://github.com/negrinho/darch/tree/master/deep_architect/searchers). In more specific cases, namely in reimplementations of searchers proposed in specific architecture search papers, there is some coupling between the search space and the searcher. In this case, the developed searcher expects the search space to have certain structure or properties. We recommend these types of searchers and search spaces to be kept in a contrib folder dedicated to the specific pair.
+The most general searchers rely solely on this simple interface. Good examples of general searchers implemented can be found [here](https://github.com/negrinho/deep_architect/tree/master/deep_architect/searchers). In more specific cases, namely in reimplementations of searchers proposed in specific architecture search papers, there is some coupling between the search space and the searcher. In this case, the developed searcher expects the search space to have certain structure or properties. We recommend these types of searchers and search spaces to be kept in a contrib folder dedicated to the specific pair.
 
 <!-- Preferences about general versus specific models. -->
 Searchers that work with arbitrary search space are preferred. Searchers that require specific properties from the search space are also often easily implemented in the framework. If the searcher requires specific search space properties, document this, e.g., by including example of search spaces that the searcher operates on, by discussing how do these differences compare with the most general case, and by discussing how are these differences supported by the DeepArchitect framework. All searchers should be accompanied by documentation, at the very least a docstring, and ideally both a docstring and an example exercising the searcher.
@@ -167,7 +167,7 @@ It is worth to consider the introduction of new evaluators for specific tasks. F
 <!-- On the importance of surrogate models. -->
 Sequential model-based optimization (SMBO) searchers use surrogate models extensively. Given a surrogate function predicting a quantity related to performance, a SMBO searcher optimizes this function (often approximately) to pick the architecture to evaluate next. The quantity predicted by the surrogate model does not need to be the performance metric of interest, it can simply be a score that preserves the ordering of the models in the space according to the performance metric of interest. Surrogate models also extend naturally to multi-objective optimization.
 
-The quality of a surrogate function can be evaluated both by the quality of the search it induces, and by how effective it is in determining the relative ordering of models in the search space. A good surrogate functions should be able to embed the architecture to be evaluated and generate accurate predictions. It is unclear which surrogate models are effectively predict performance well. We ask the contributor to explore different structures and validate their performance. Existing implementations of surrogate functions can be found [here](https://github.com/negrinho/darch/tree/master/deep_architect/surrogates).
+The quality of a surrogate function can be evaluated both by the quality of the search it induces, and by how effective it is in determining the relative ordering of models in the search space. A good surrogate functions should be able to embed the architecture to be evaluated and generate accurate predictions. It is unclear which surrogate models are effectively predict performance well. We ask the contributor to explore different structures and validate their performance. Existing implementations of surrogate functions can be found [here](https://github.com/negrinho/deep_architect/tree/master/deep_architect/surrogates).
 
 ## Conclusion
 <!-- What were the topics that were addressed in this document. -->

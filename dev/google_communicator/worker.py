@@ -70,7 +70,7 @@ def main():
     global evaluated
     global results_topic, arch_subscription
     configs = ut.read_jsonfile(
-        "/darch/dev/google_communicator/experiment_config.json")
+        "/deep_architect/dev/google_communicator/experiment_config.json")
 
     parser = argparse.ArgumentParser("MPI Job for architecture search")
     parser.add_argument('--config',

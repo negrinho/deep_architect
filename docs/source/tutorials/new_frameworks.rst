@@ -55,7 +55,7 @@ Keras helpers
 ^^^^^^^^^^^^^
 
 Let us look at the Keras helper defined in
-`deep_architect/helpers/keras.py <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`_.
+`deep_architect/helpers/keras.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/helpers/keras.py>`_.
 
 .. code:: python
 
@@ -98,7 +98,7 @@ Let us look at the Keras helper defined in
 
         Args:
             name (str): Name of the module
-            name_to_hyperp (dict[str,darch.core.Hyperparameter]): Dictionary of
+            name_to_hyperp (dict[str,deep_architect.core.Hyperparameter]): Dictionary of
                 hyperparameters that the model depends on. The keys are the local
                 names of the hyperparameters.
             compile_fn ((dict[str,object], dict[str,object]) -> (dict[str,object] -> dict[str,object])):
@@ -111,7 +111,7 @@ Let us look at the Keras helper defined in
                 values that they will take during training and test.
             input_names (list[str]): List of names for the inputs.
             output_names (list[str]): List of names for the outputs.
-            scope (darch.core.Scope, optional): Scope where the module will be
+            scope (deep_architect.core.Scope, optional): Scope where the module will be
                 registered.
         """
 
@@ -231,9 +231,9 @@ As modules with a single input and a single output are common, we defined a few 
     model.summary()
     vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
 
-We refer the reader to `deep_architect.helpers.keras_support <https://github.com/negrinho/darch/blob/master/deep_architect/helpers/keras.py>`__ if the reader wishes to inspect the implementation of this function and how does it fit with the previous definition for a Keras module. These functions require minimal additional code. These auxiliary functions are convenient to reduce boilerplate for some of the most common use cases. As we have seen, it is possible to express everything that we need using :code:`KerasModule`, with the other functions used for convenience for common specific cases.
+We refer the reader to `deep_architect.helpers.keras_support <https://github.com/negrinho/deep_architect/blob/master/deep_architect/helpers/keras.py>`__ if the reader wishes to inspect the implementation of this function and how does it fit with the previous definition for a Keras module. These functions require minimal additional code. These auxiliary functions are convenient to reduce boilerplate for some of the most common use cases. As we have seen, it is possible to express everything that we need using :code:`KerasModule`, with the other functions used for convenience for common specific cases.
 
-Calls to :py:func:`deep_architect.core.forward` call the individual module forward and compile functions as defined in :code:`KerasModule` and passed as argument during the instantiation. We invite the reader to inspect :py:func:`deep_architect.core.forward` (found `here <https://github.com/negrinho/darch/blob/master/deep_architect/core.py>`__) to understand how it is implemented using graph traversal. This is sufficient to specialize the general module code in :py:mod:`deep_architect.core` to support basic modules from Keras.
+Calls to :py:func:`deep_architect.core.forward` call the individual module forward and compile functions as defined in :code:`KerasModule` and passed as argument during the instantiation. We invite the reader to inspect :py:func:`deep_architect.core.forward` (found `here <https://github.com/negrinho/deep_architect/blob/master/deep_architect/core.py>`__) to understand how it is implemented using graph traversal. This is sufficient to specialize the general module code in :py:mod:`deep_architect.core` to support basic modules from Keras.
 
 Pytorch helpers
 ^^^^^^^^^^^^^^^

@@ -36,7 +36,7 @@ RUN pip install wheel && \
     pip install --upgrade pymongo && \
     pip install --upgrade keras
 
-# COPY requirements.txt /darch/requirements.txt
+# COPY requirements.txt /deep_architect/requirements.txt
 # RUN pip install -r requirements.txt
 
 # RUN echo "deb http://packages.cloud.google.com/apt cloud-sdk-xenial main" | \
@@ -44,23 +44,23 @@ RUN pip install wheel && \
 #     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
 #     apt-get update && apt-get install -y google-cloud-sdk
 
-WORKDIR /darch
+WORKDIR /deep_architect
 # ADD https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz data/
 ADD cifar10.tar.gz data/
 # RUN tar -xzf data/cifar-10-python.tar.gz -C data/
 # RUN mv data/cifar-10-batches-py data/cifar10
 
-ENV PYTHONPATH /darch/
+ENV PYTHONPATH /deep_architect/
 # RUN pip install -r requirements.txt
 
 COPY service-key.json ./
-ENV GOOGLE_APPLICATION_CREDENTIALS=/darch/service-key.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/deep_architect/service-key.json
 RUN gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
-COPY ./examples /darch/examples
-COPY ./deep_architect /darch/deep_architect
-COPY ./dev /darch/dev
-COPY ./results /darch/results
+COPY ./examples /deep_architect/examples
+COPY ./deep_architect /deep_architect/deep_architect
+COPY ./dev /deep_architect/dev
+COPY ./results /deep_architect/results
 
 RUN gcloud config set compute/zone us-central1-f
 ENV PYTHONUNBUFFERED 1

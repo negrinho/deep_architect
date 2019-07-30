@@ -69,11 +69,11 @@
 #
 # Running the program (perhaps better to add a script)
 # ---
-# • The main file for this tutorial is under darch/examples/tensorflow/mnist/main.py.
+# • The main file for this tutorial is under deep_architect/examples/tensorflow/mnist/main.py.
 # • To run the program:
-# 	○ Set PYTHONPATH to point to darch location
+# 	○ Set PYTHONPATH to point to deep_architect location
 # 	○ Activate tensorflow ifusing virtualenv.
-# 	○ In darch directory, run python2 examples/tensorflow/mnist/main.py
+# 	○ In deep_architect directory, run python2 examples/tensorflow/mnist/main.py
 # 	○ Show picture of running program - figure 3.
 #
 # Getting start
@@ -82,12 +82,12 @@
 
 ### ${CODE}
 
-from darch.contrib.datasets.loaders import load_mnist
-from darch.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
-from darch.contrib.datasets.dataset import InMemoryDataset
-import darch.contrib.search_spaces.tensorflow.dnn as css_dnn
-import darch.modules as mo
-import darch.searchers as se
+from deep_architect.contrib.datasets.loaders import load_mnist
+from deep_architect.contrib.evaluators.tensorflow.classification import SimpleClassifierEvaluator
+from deep_architect.contrib.datasets.dataset import InMemoryDataset
+import deep_architect.contrib.search_spaces.tensorflow.dnn as css_dnn
+import deep_architect.modules as mo
+import deep_architect.searchers as se
 
 class SSF0(mo.SearchSpaceFactory): pass
 
@@ -121,10 +121,10 @@ if __name__ == '__main__':
 
 ### ${CODE}
 
-import darch.modules as mo
+import deep_architect.modules as mo
 import tensorflow as tf
 import numpy as np
-from darch.contrib.search_spaces.tensorflow.common import siso_tfm, D
+from deep_architect.contrib.search_spaces.tensorflow.common import siso_tfm, D
 
 ### ${MARKDOWN}
 
@@ -338,7 +338,7 @@ searcher = se.RandomSearcher(search_space_factory.get_search_space)
 # ---
 # * Brief overview of evaluator: once we sample an architecture, we need to evaluate how good this architecture is. This typically involves the normal training and validating procedure. The evaluator typically returns the best validation metric (accuracy, F1, etc.) of each architecture, and we select the best architecture based on that. More in Evaluator section.
 #
-# * In this tutorial we will use a simple classifier evaluator. The full code is under darch/contrib/evaluators/tensorflow/classfication.py.
+# * In this tutorial we will use a simple classifier evaluator. The full code is under deep_architect/contrib/evaluators/tensorflow/classfication.py.
 #
 # * Highlights:
 # 	* _compute_accuracy function: this function specifies how to compute the accuracy on validation set. We simply use correct predictions divided by total predictions.
@@ -379,4 +379,4 @@ def main():
 
 # (Optional-- Recommended) Logging
 # ---
-# * Logging is an important aspect of architecture search. This is because there are many information that needs to be stored for evaluation and future iterations. For logging please refer to darch/examples/tensorflow/mnist_with_logging/main.py
+# * Logging is an important aspect of architecture search. This is because there are many information that needs to be stored for evaluation and future iterations. For logging please refer to deep_architect/examples/tensorflow/mnist_with_logging/main.py

@@ -28,7 +28,7 @@ from deep_architect.contrib.communicators.communicator import get_communicator
 logging.basicConfig()
 
 configs = ut.read_jsonfile(
-    "/darch/dev/google_communicator/experiment_config.json")
+    "/deep_architect/dev/google_communicator/experiment_config.json")
 
 parser = argparse.ArgumentParser("MPI Job for architecture search")
 parser.add_argument('--config',

@@ -196,11 +196,11 @@ Let us now see a SMBO searcher, which is more complex than the random searcher. 
             feats = extract_features(inputs, outputs)
             self.surr_model.update(val, feats)
 
-This searcher can be found in `searchers/smbo_random.py <https://github.com/negrinho/darch/blob/master/deep_architect/searchers/smbo_random.py>`_. A SMBO (surrogate model based optimization) searcher relies on a surrogate function on the space of architectures that gives us a performance estimate or a score.
+This searcher can be found in `searchers/smbo_random.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/searchers/smbo_random.py>`_. A SMBO (surrogate model based optimization) searcher relies on a surrogate function on the space of architectures that gives us a performance estimate or a score.
 
 An architecture from the search space is sampled by optimizing the surrogate function. In the implementation above, the optimization of the surrogate function is done by sampling a number of random architectures from the search space, evaluating the surrogate function for each of them, and picking the best one. Additionally, we pick an architecture at random with fixed probability.
 
-In this case, updates to the searcher correspond to updates to the surrogate function with observed results. The searcher policy hopefully improves as the surrogate function becomes more accurate as we get more data for the search space. The API definition for a surrogate function can be found in `surrogates/common.py <https://github.com/negrinho/darch/blob/master/deep_architect/surrogates/common.py>`__.
+In this case, updates to the searcher correspond to updates to the surrogate function with observed results. The searcher policy hopefully improves as the surrogate function becomes more accurate as we get more data for the search space. The API definition for a surrogate function can be found in `surrogates/common.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/surrogates/common.py>`__.
 
 Concluding remarks
 ^^^^^^^^^^^^^^^^^^

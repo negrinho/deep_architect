@@ -37,7 +37,7 @@ class KerasModule(co.Module):
 
     Args:
         name (str): Name of the module
-        name_to_hyperp (dict[str,darch.core.Hyperparameter]): Dictionary of
+        name_to_hyperp (dict[str,deep_architect.core.Hyperparameter]): Dictionary of
             hyperparameters that the model depends on. The keys are the local
             names of the hyperparameters.
         compile_fn ((dict[str,object], dict[str,object]) -> (dict[str,object] -> dict[str,object])):
@@ -50,7 +50,7 @@ class KerasModule(co.Module):
             values that they will take during training and test.
         input_names (list[str]): List of names for the inputs.
         output_names (list[str]): List of names for the outputs.
-        scope (darch.core.Scope, optional): Scope where the module will be
+        scope (deep_architect.core.Scope, optional): Scope where the module will be
             registered.
 
     """
