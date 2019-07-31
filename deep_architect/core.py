@@ -530,13 +530,13 @@ class Module(Addressable):
         assert name not in self.outputs
         self.outputs[name] = Output(self, self.scope, name)
 
-    def _register_hyperparameter(self, h, name):
+    def _register_hyperparameter(self, name, h):
         """Registers an hyperparameter that the module depends on.
 
         Args:
+            name (str): Local name to give to the hyperparameter.
             h (deep_architect.core.Hyperparameter): Hyperparameter that the
                 module depends on.
-            name (str): Local name to give to the hyperparameter.
         """
         assert isinstance(h, Hyperparameter) and name not in self.hyperps
         self.hyperps[name] = h
@@ -558,8 +558,8 @@ class Module(Addressable):
             self._register_input(name)
         for name in output_names:
             self._register_output(name)
-        for name, h in iteritems(name_to_hyperp):
-            self._register_hyperparameter(h, name)
+        for name in sorted(name_to_hyperp):
+            self._register_hyperparameter(name, name_to_hyperp[name])
 
     def _get_input_values(self):
         """Get the values associated to the inputs of the module.
@@ -572,7 +572,6 @@ class Module(Addressable):
         """
         return {name: ix.val for name, ix in iteritems(self.inputs)}
 
-    # TODO: refactor this function to _get_hyperparameter_values.
     def _get_hyperp_values(self):
         """Get the values of the hyperparameters.
 

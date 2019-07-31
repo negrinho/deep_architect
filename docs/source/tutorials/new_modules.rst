@@ -302,7 +302,7 @@ First, consider the definition of a substitution module.
             if (not self._is_done) and all(
                     h.has_value_assigned() for h in itervalues(self.hyperps)):
                 dh = {name: h.get_value() for name, h in iteritems(self.hyperps)}
-                new_inputs, new_outputs = self._substitution_fn(**dh)
+                new_inputs, new_outputs = self._substitution_fn(dh)
 
                 # test for checking that the inputs and outputs returned by the
                 # substitution function are valid.
@@ -512,7 +512,7 @@ Let us now look at a more complex use of a custom substitution module.
     def motif(submotif_fn, num_nodes):
         assert num_nodes >= 1
 
-        def substitution_fn(**dh):
+        def substitution_fn(dh):
             print dh
             node_id_to_node_ids_used = {i: [i - 1] for i in range(1, num_nodes)}
             for name, v in iteritems(dh):

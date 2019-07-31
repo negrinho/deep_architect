@@ -68,18 +68,18 @@ class TensorflowModule(co.Module):
                  scope=None):
         co.Module.__init__(self, scope, name)
 
-        # NOTE: the automatic conversion of python values or objects to
-        # hyperparameters might be deprecated soon if it is found that it
-        # leads to poor coding practices. explicit creation of hyperparameters
-        # is preferred.
-        hyperparam_dict = {}
-        for h in name_to_hyperp:
-            if not isinstance(name_to_hyperp[h], co.Hyperparameter):
-                hyperparam_dict[h] = D([name_to_hyperp[h]])
-            else:
-                hyperparam_dict[h] = name_to_hyperp[h]
+        # # NOTE: the automatic conversion of python values or objects to
+        # # hyperparameters might be deprecated soon if it is found that it
+        # # leads to poor coding practices. explicit creation of hyperparameters
+        # # is preferred.
+        # hyperparam_dict = {}
+        # for h in name_to_hyperp:
+        #     if not isinstance(name_to_hyperp[h], co.Hyperparameter):
+        #         hyperparam_dict[h] = D([name_to_hyperp[h]])
+        #     else:
+        #         hyperparam_dict[h] = name_to_hyperp[h]
 
-        self._register(input_names, output_names, hyperparam_dict)
+        self._register(input_names, output_names, name_to_hyperp)
         self._compile_fn = compile_fn
 
     def _compile(self):

@@ -16,14 +16,10 @@ from six import iteritems, itervalues
 
 
 def conv2d_with_relu(filters, kernel_size):
-    return hke.siso_keras_module_from_keras_layer_fn(
-        lambda: Conv2D(
-            filters,
-            kernel_size,
-            padding='same',
-            activation='relu',
-            use_bias=False), {},
-        name="Conv2D")
+    return hke.siso_keras_module_from_keras_layer_fn(lambda: Conv2D(
+        filters, kernel_size, padding='same', activation='relu', use_bias=False
+    ), {},
+                                                     name="Conv2D")
 
 
 def batch_normalization():
@@ -52,7 +48,7 @@ def combine_with_sum(num_inputs):
 
 def conv_stage(filters, kernel_size, num_nodes):
 
-    def substitution_fn(**dh):
+    def substitution_fn(dh):
         print dh
         any_in_stage = any(v for v in itervalues(dh))
 
@@ -100,12 +96,12 @@ def conv_stage(filters, kernel_size, num_nodes):
                             j = in_ids[0]
                             s_outputs = node_id_to_outputs[j]
 
-                        (n_inputs, n_outputs) = conv2d_cell(
-                            filters, kernel_size)
+                        (n_inputs,
+                         n_outputs) = conv2d_cell(filters, kernel_size)
                         n_inputs["In"].connect(s_outputs["Out"])
                     else:
-                        (n_inputs, n_outputs) = conv2d_cell(
-                            filters, kernel_size)
+                        (n_inputs,
+                         n_outputs) = conv2d_cell(filters, kernel_size)
                         n_inputs["In"].connect(in_outputs['Out'])
                     node_id_to_outputs[i] = n_outputs
 
@@ -138,11 +134,10 @@ def conv_stage(filters, kernel_size, num_nodes):
             "in_node_id": j
         }): D([0, 1]) for i in range(num_nodes) for j in range(i)
     }
-    return mo.substitution_module(
-        "ConvStage",
-        name_to_hyperp,
-        substitution_fn, ["In"], ["Out"],
-        scope=None)
+    return mo.substitution_module("ConvStage",
+                                  name_to_hyperp,
+                                  substitution_fn, ["In"], ["Out"],
+                                  scope=None)
 
 
 (inputs, outputs

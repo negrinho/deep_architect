@@ -159,11 +159,11 @@ def enas_space(h_num_layers,
                weight_sharer,
                scope=None):
 
-    def substitution_fn(num_layers):
-        assert num_layers > 0
+    def substitution_fn(dh):
+        assert dh["num_layers"] > 0
         inputs, outputs = fn_first()
         temp_outputs = OrderedDict(outputs)
-        for i in range(1, num_layers + 1):
+        for i in range(1, dh["num_layers"] + 1):
             inputs, temp_outputs = fn_repeats(inputs, temp_outputs, i,
                                               out_filters, weight_sharer)
         return inputs, OrderedDict(

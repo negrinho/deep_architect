@@ -19,7 +19,7 @@ from deep_architect.hyperparameters import Bool
 
 def cell(input_fn, node_fn, output_fn, h_connections, num_nodes, channels):
 
-    def substitution_fn(**dh):
+    def substitution_fn(dh):
         num_ins = [
             sum([dh['%d_%d' % (in_id, out_id)]
                  for in_id in range(out_id)])

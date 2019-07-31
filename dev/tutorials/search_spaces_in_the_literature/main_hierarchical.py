@@ -80,7 +80,7 @@ def base_motif():
 def motif(submotif_fn, num_nodes):
     assert num_nodes >= 1
 
-    def substitution_fn(**dh):
+    def substitution_fn(dh):
         print dh
         node_id_to_node_ids_used = {i: [i - 1] for i in range(1, num_nodes)}
         for name, v in iteritems(dh):

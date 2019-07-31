@@ -22,7 +22,7 @@ hp_sharer = hp.HyperparameterSharer()
 def cell(input_fn, node_fn, combine_fn, unused_combine_fn, num_nodes,
          hyperparameters):
 
-    def substitution_fn(**dh):
+    def substitution_fn(dh):
         c_ins, c_outs = input_fn()
         nodes = [c_outs['Out0'], c_outs['Out1']]
         used_node = [False] * (num_nodes + 2)
@@ -241,8 +241,8 @@ class MISOIdentity(co.Module):
 
 def miso_optional(fn, h_opt):
 
-    def substitution_fn(opt):
-        return fn() if opt else MISOIdentity().get_io()
+    def substitution_fn(dh):
+        return fn() if dh["opt"] else MISOIdentity().get_io()
 
     return mo.substitution_module("MISOOptional", {'opt': h_opt},
                                   substitution_fn, ['In0', 'In1'], ['Out'],

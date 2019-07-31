@@ -105,7 +105,7 @@ class SubstitutionModule(co.Module):
         if (not self._is_done) and all(
                 h.has_value_assigned() for h in itervalues(self.hyperps)):
             dh = {name: h.get_value() for name, h in iteritems(self.hyperps)}
-            new_inputs, new_outputs = self._substitution_fn(**dh)
+            new_inputs, new_outputs = self._substitution_fn(dh)
 
             # test for checking that the inputs and outputs returned by the
             # substitution function are valid.
@@ -269,8 +269,8 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
             substitution module.
     """
 
-    def substitution_fn(idx):
-        return fn_lst[idx]()
+    def substitution_fn(dh):
+        return fn_lst[dh["idx"]]()
 
     return substitution_module(_get_name(name,
                                          "Or"), {'idx': h_or}, substitution_fn,
@@ -320,10 +320,10 @@ def mimo_nested_repeat(fn_first,
             substitution module.
     """
 
-    def substitution_fn(num_reps):
-        assert num_reps > 0
+    def substitution_fn(dh):
+        assert dh["num_reps"] > 0
         inputs, outputs = fn_first()
-        for _ in range(1, num_reps):
+        for _ in range(1, dh["num_reps"]):
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
@@ -434,18 +434,18 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             substitution module.
     """
 
-    def substitution_fn(num_reps):
-        assert num_reps > 0
+    def substitution_fn(dh):
+        assert dh["num_reps"] > 0
         # instantiating all the graph fragments.
         inputs_lst = []
         outputs_lst = []
-        for _ in range(num_reps):
+        for _ in range(dh["num_reps"]):
             inputs, outputs = fn()
             inputs_lst.append(inputs)
             outputs_lst.append(outputs)
 
         # creating the sequential connection of the graph fragments.
-        for i in range(1, num_reps):
+        for i in range(1, dh["num_reps"]):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
             next_inputs['In'].connect(prev_outputs['Out'])
@@ -482,8 +482,8 @@ def siso_optional(fn, h_opt, scope=None, name=None):
             substitution module.
     """
 
-    def substitution_fn(opt):
-        return fn() if opt else identity()
+    def substitution_fn(dh):
+        return fn() if dh["opt"] else identity()
 
     return substitution_module(_get_name(name, "SISOOptional"), {'opt': h_opt},
                                substitution_fn, ['In'], ['Out'], scope)
@@ -516,9 +516,9 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             substitution module.
     """
 
-    def substitution_fn(perm_idx):
+    def substitution_fn(dh):
         g = itertools.permutations(range(len(fn_lst)))
-        for _ in range(perm_idx + 1):
+        for _ in range(dh["perm_idx"] + 1):
             idxs = next(g)
 
         inputs_lst = []
@@ -575,12 +575,12 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
             resulting search space graph.
     """
 
-    def substitution_fn(num_splits):
-        inputs_lst, outputs_lst = zip(*[fn() for _ in range(num_splits)])
-        c_inputs, c_outputs = combine_fn(num_splits)
+    def substitution_fn(dh):
+        inputs_lst, outputs_lst = zip(*[fn() for _ in range(dh["num_splits"])])
+        c_inputs, c_outputs = combine_fn(dh["num_splits"])
 
         i_inputs, i_outputs = identity()
-        for i in range(num_splits):
+        for i in range(dh["num_splits"]):
             i_outputs['Out'].connect(inputs_lst[i]['In'])
             c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
         return i_inputs, c_outputs
@@ -601,23 +601,23 @@ def dense_block(h_num_applies,
                 scope=None,
                 name=None):
 
-    def substitution_fn(num_applies, end_in_combine):
-        assert num_applies > 0
+    def substitution_fn(dh):
+        assert dh["num_applies"] > 0
         (i_inputs, i_outputs) = identity()
         prev_a_outputs = [i_outputs]
         prev_c_outputs = [i_outputs]
-        for idx in range(num_applies):
+        for idx in range(dh["num_applies"]):
             (a_inputs, a_outputs) = apply_fn()
             a_inputs['In'].connect(prev_c_outputs[-1]["Out"])
             prev_a_outputs.append(a_outputs)
 
-            if idx < num_applies - 1 or end_in_combine:
+            if idx < dh["num_applies"] - 1 or dh["end_in_combine"]:
                 (c_inputs, c_outputs) = combine_fn(idx + 2)
                 for i, iter_outputs in enumerate(prev_a_outputs):
                     c_inputs["In%d" % i].connect(iter_outputs["Out"])
                 prev_c_outputs.append(c_outputs)
 
-        if end_in_combine:
+        if dh["end_in_combine"]:
             o_outputs = prev_c_outputs[-1]
         else:
             o_outputs = prev_a_outputs[-1]

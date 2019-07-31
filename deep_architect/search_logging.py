@@ -47,8 +47,8 @@ def create_search_folderpath(folderpath,
     assert not (abort_if_exists and ut.folder_exists(search_folderpath))
 
     if not ut.folder_exists(search_folderpath):
-        ut.create_folder(
-            search_folderpath, create_parent_folders=create_parent_folders)
+        ut.create_folder(search_folderpath,
+                         create_parent_folders=create_parent_folders)
         ut.create_folder(search_data_folderpath)
         ut.create_folder(all_evaluations_folderpath)
 
@@ -92,14 +92,12 @@ class EvaluationLogger:
             self.evaluation_folderpath))
         assert (not abort_if_notexists) or ut.folder_exists(
             self.evaluation_folderpath)
-        ut.create_folder(
-            self.evaluation_folderpath,
-            abort_if_exists=abort_if_exists,
-            create_parent_folders=True)
-        ut.create_folder(
-            self.evaluation_data_folderpath,
-            abort_if_exists=abort_if_exists,
-            create_parent_folders=True)
+        ut.create_folder(self.evaluation_folderpath,
+                         abort_if_exists=abort_if_exists,
+                         create_parent_folders=True)
+        ut.create_folder(self.evaluation_data_folderpath,
+                         abort_if_exists=abort_if_exists,
+                         create_parent_folders=True)
 
         self.config_filepath = ut.join_paths(
             [self.evaluation_folderpath, 'config.json'])
@@ -214,26 +212,21 @@ class SearchLogger:
         self.folderpath = folderpath
         self.search_name = search_name
 
-        create_search_folderpath(
-            folderpath,
-            search_name,
-            abort_if_exists=abort_if_exists,
-            delete_if_exists=delete_if_exists,
-            create_parent_folders=True)
+        create_search_folderpath(folderpath,
+                                 search_name,
+                                 abort_if_exists=abort_if_exists,
+                                 delete_if_exists=delete_if_exists,
+                                 create_parent_folders=True)
 
     def get_evaluation_logger(self,
                               evaluation_id,
                               abort_if_exists=False,
                               abort_if_notexists=False):
-        return EvaluationLogger(
-            self.folderpath,
-            self.search_name,
-            evaluation_id,
-            abort_if_exists=abort_if_exists,
-            abort_if_notexists=abort_if_notexists)
-
-    def get_search_data_folderpath(self):
-        return get_search_data_folderpath(self.folderpath, self.search_name)
+        return EvaluationLogger(self.folderpath,
+                                self.search_name,
+                                evaluation_id,
+                                abort_if_exists=abort_if_exists,
+                                abort_if_notexists=abort_if_notexists)
 
 
 def read_evaluation_folder(evaluation_folderpath):

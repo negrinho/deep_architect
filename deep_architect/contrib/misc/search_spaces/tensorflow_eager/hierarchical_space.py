@@ -191,7 +191,7 @@ def create_motif(
             lambda: mo.identity()
         ][dh['operation'] - 1]()
 
-    def substitution_fn(**dh):
+    def substitution_fn(dh):
         num_nodes = motif_info[level]['num_nodes']
         ops = [[] for _ in range(motif_info[level]['num_nodes'])]
         ops[0].append(mo.identity())
