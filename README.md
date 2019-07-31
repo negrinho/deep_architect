@@ -120,11 +120,11 @@ def model_search_space():
 
 
 (inputs, outputs) = mo.SearchSpaceFactory(model_search_space).get_search_space()
-random_specify(outputs.values())
+random_specify(outputs)
 inputs_val = Input((784,))
 co.forward({inputs["In"]: inputs_val})
 outputs_val = outputs["Out"].val
-vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
+vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
 model = Model(inputs=inputs_val, outputs=outputs_val)
 model.summary()
 

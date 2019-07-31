@@ -142,11 +142,11 @@ def conv_stage(filters, kernel_size, num_nodes):
 
 (inputs, outputs
 ) = mo.SearchSpaceFactory(lambda: conv_stage(32, 3, 8)).get_search_space()
-random_specify(outputs.values())
-# for h in co.unassigned_independent_hyperparameter_iterator(outputs.values()):
+random_specify(outputs)
+# for h in co.unassigned_independent_hyperparameter_iterator(outputs):
 #     h.assign_value(1)
 
-vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
+vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
 
 # inputs_val = Input((32, 32, 3))
 # co.forward({inputs["In"]: inputs_val})

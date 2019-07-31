@@ -101,7 +101,7 @@ class MCTSSearcher(Searcher):
                 inputs, outputs = self.search_space_fn()
 
                 h_it = co.unassigned_independent_hyperparameter_iterator(
-                    outputs.values())
+                    outputs)
                 tree_hist, tree_vs = self._tree_walk(h_it)
                 rollout_hist, rollout_vs = self._rollout_walk(h_it)
                 vs = tree_vs + rollout_vs

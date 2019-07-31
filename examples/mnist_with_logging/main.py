@@ -67,7 +67,7 @@ def main():
             eval_logger.log_config(hyperp_value_lst, eval_token)
             eval_logger.log_results(results)
             vi.draw_graph(
-                outputs.values(),
+                outputs,
                 draw_module_hyperparameter_info=True,
                 print_to_screen=False,
                 out_folderpath=eval_logger.get_evaluation_data_folderpath())

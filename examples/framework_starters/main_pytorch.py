@@ -190,7 +190,7 @@ def main():
             # try setting draw_module_hyperparameter_info=False and
             # draw_hyperparameters=True for a different visualization.
             vi.draw_graph(
-                outputs.values(),
+                outputs,
                 draw_module_hyperparameter_info=False,
                 draw_hyperparameters=True)
 

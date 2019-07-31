@@ -88,7 +88,7 @@ class ENASSearcher(Searcher):
         vs = []
         for i, h in enumerate(
                 unassigned_independent_hyperparameter_iterator(
-                    list(outputs.values()), list(hs.values()))):
+                    outputs, list(hs.values()))):
             if h.get_name() in hyp_values:
                 v = h.vs[hyp_values[h.get_name()]]
                 h.assign_value(v)

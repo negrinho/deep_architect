@@ -19,12 +19,12 @@ IMAGE_WIDTH = 32
 IMAGE_DEPTH = 3
 
 
-def set_recompile(output_lst, recompile):
+def set_recompile(outputs, recompile):
 
     def fn(mx):
         mx._is_compiled = not recompile
 
-    co.traverse_backward(output_lst, fn)
+    co.traverse_backward(outputs, fn)
     logger.debug('set_recompile')
 
 
@@ -168,10 +168,9 @@ class TPUEstimatorEvaluator:
             return {'accuracy': tf.metrics.accuracy(labels, predictions)}
 
         def model_fn(features, labels, mode, params):
-            set_recompile(outputs.values(), True)
+            set_recompile(outputs, True)
             gc.collect()
-            htfe.set_is_training(outputs.values(),
-                                 mode == tf.estimator.ModeKeys.TRAIN)
+            htfe.set_is_training(outputs, mode == tf.estimator.ModeKeys.TRAIN)
             step = tf.train.get_or_create_global_step()
             if 'In' in inputs:
                 co.forward({inputs['In']: features})

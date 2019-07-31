@@ -111,7 +111,7 @@ The evaluator takes in 2 parameters: the config file that contains the hyperpara
 The key thing is retrieving the architecture. Besides the hyperparameter information from the config file, we need the inputs and outputs object. Thus, similar to the searcher, we also have the identical ```get_search_space``` function to get the inputs and outputs from the search space. Together with the config file, we can specify our architecture using the function
 
 ```python
-specify(outputs.values(), hs, h_values["hyperp_value_lst"])
+specify(outputs, hs, h_values["hyperp_value_lst"])
 ```
 
 where outputs is the outputs obtained from get_search_space functions, hs is extra hyperparameter values (learning rate, optimizer, etc), and h_values is retrieved from the config file. Below is the key excerpt from the evaluator
@@ -129,7 +129,7 @@ def main(args):
     evaluator = SimpleClassifierEvaluator((x_train, y_train),                              num_classes, max_num_training_epochs=5)
     inputs, outputs = get_search_space(num_classes)()
     h_values = ut.read_jsonfile(args.config)
-    specify(outputs.values(), hs, h_values["hyperp_value_lst"]) # hs is "extra" hyperparameters
+    specify(outputs, hs, h_values["hyperp_value_lst"]) # hs is "extra" hyperparameters
     results = evaluator.evaluate(inputs, outputs)
     ut.write_jsonfile(results, args.result_fp)
 ```

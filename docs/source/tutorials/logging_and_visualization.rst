@@ -228,7 +228,7 @@ This creates an initial folder structure that is progressively filled with each 
         eval_logger.log_results(results)
         user_folderpath = eval_logger.get_evaluation_data_folderpath()
         vi.draw_graph(
-            outputs.values(),
+            outputs,
             draw_module_hyperparameter_info=False,
             out_folderpath=user_folderpath)
         model_filepath = ut.join_paths([user_folderpath, 'model.h5'])

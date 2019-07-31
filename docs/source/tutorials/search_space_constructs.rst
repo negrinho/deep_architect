@@ -65,7 +65,7 @@ In DeepArchitect, we have implemented some auxiliary tools to visualize the sear
 
     import deep_architect.visualization as vi
     vi.draw_graph(
-        outputs.values(),
+        outputs,
         draw_module_hyperparameter_info=False,
         graph_name='graph0_first')
 
@@ -76,7 +76,7 @@ In the graph, modules are represented by rectangles and hyperparameters are repr
 .. code:: python
 
     import deep_architect.searchers.common as seco
-    vs = seco.random_specify(outputs.values())
+    vs = seco.random_specify(outputs)
     x = Input(shape=(784,))
     co.forward({inputs["In"]: x})
     y = outputs["Out"].val
@@ -87,7 +87,7 @@ In the graph, modules are represented by rectangles and hyperparameters are repr
 .. code:: python
 
     vi.draw_graph(
-        outputs.values(),
+        outputs,
         draw_module_hyperparameter_info=False,
         graph_name='graph0_last')
 
@@ -98,7 +98,7 @@ Edges between hyperparameters and modules have been labeled with the values chos
     (inputs, outputs) = wrap_search_space_fn(search_space0)()
 
     vi.draw_graph_evolution(
-        outputs.values(),
+        outputs,
         vs,
         '.',
         draw_module_hyperparameter_info=False,
@@ -125,7 +125,7 @@ In the previous search space, the hyperparameter values were chosen independentl
 
     (inputs, outputs) = wrap_search_space_fn(search_space1)()
     vi.draw_graph(
-        outputs.values(),
+        outputs,
         draw_module_hyperparameter_info=False,
         graph_name='graph1_first')
 
@@ -154,7 +154,7 @@ A dependent hyperparameters has its value assigned as a function of the values o
 
     (inputs, outputs) = wrap_search_space_fn(search_space2)()
     vi.draw_graph(
-        outputs.values(),
+        outputs,
         draw_module_hyperparameter_info=False,
         graph_name='graph2_first')
 
@@ -164,11 +164,11 @@ See below for the graph transition with successive value assignments to hyperpar
 
 .. code:: python
 
-    vs = seco.random_specify(outputs.values())
+    vs = seco.random_specify(outputs)
     (inputs, outputs) = wrap_search_space_fn(search_space2)()
 
     vi.draw_graph_evolution(
-        outputs.values(),
+        outputs,
         vs,
         '.',
         draw_module_hyperparameter_info=False,
@@ -208,11 +208,11 @@ The optional module takes a thunk (this terminology comes from programming langu
 
 .. code:: python
 
-    vs = seco.random_specify(outputs.values())
+    vs = seco.random_specify(outputs)
     (inputs, outputs) = wrap_search_space_fn(search_space3)()
 
     vi.draw_graph_evolution(
-        outputs.values(),
+        outputs,
         vs,
         '.',
         draw_module_hyperparameter_info=False,
@@ -248,11 +248,11 @@ i.e., all these modules will have the same number of units.
 
 .. code:: python
 
-    vs = seco.random_specify(outputs.values())
+    vs = seco.random_specify(outputs)
     (inputs, outputs) = wrap_search_space_fn(search_space4)()
 
     vi.draw_graph_evolution(
-        outputs.values(),
+        outputs,
         vs,
         '.',
         draw_module_hyperparameter_info=False,
@@ -288,10 +288,10 @@ Take one minute to think about the graph transitions for this search space; then
 
 .. code:: python
 
-    vs = seco.random_specify(outputs.values())
+    vs = seco.random_specify(outputs)
     (inputs, outputs) = wrap_search_space_fn(search_space5)()
     vi.draw_graph_evolution(
-        outputs.values(),
+        outputs,
         vs,
         '.',
         draw_module_hyperparameter_info=False,

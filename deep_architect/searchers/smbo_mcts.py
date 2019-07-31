@@ -23,7 +23,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
     def sample(self):
         if np.random.rand() < self.exploration_prob:
             inputs, outputs = self.search_space_fn()
-            best_vs = random_specify(outputs.values())
+            best_vs = random_specify(outputs)
         # TODO: ignoring the size of the model here.
         # TODO: needs to add the exploration bonus.
         else:
@@ -47,7 +47,7 @@ class SMBOSearcherWithMCTSOptimizer(Searcher):
 
     def update(self, val, searcher_eval_token):
         (inputs, outputs) = self.search_space_fn()
-        specify(outputs.values(), searcher_eval_token['vs'])
+        specify(outputs, searcher_eval_token['vs'])
         feats = extract_features(inputs, outputs)
         self.surr_model.update(val, feats)
 

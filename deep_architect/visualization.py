@@ -12,7 +12,7 @@ def running_max(vs):
     return np.maximum.accumulate(vs)
 
 
-def draw_graph(output_lst,
+def draw_graph(outputs,
                draw_hyperparameters=True,
                draw_io_labels=True,
                draw_module_hyperparameter_info=True,
@@ -45,8 +45,9 @@ def draw_graph(output_lst,
         implemented correctly.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs from which we
-            can reach all the modules in the search space by backwards traversal.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs from which we can reach all the modules in the search space
+            by backwards traversal.
         draw_hyperparameters (bool, optional): Draw hyperparameter nodes in the
             graph, representing the dependencies between hyperparameters and
             modules.
@@ -84,19 +85,17 @@ def draw_graph(output_lst,
             assert ox_localname is not None
             label = ix_localname + ':' + ox_localname
 
-        g.edge(
-            ox.get_module().get_name(),
-            ix.get_module().get_name(),
-            label=label,
-            fontsize=edge_fs)
+        g.edge(ox.get_module().get_name(),
+               ix.get_module().get_name(),
+               label=label,
+               fontsize=edge_fs)
 
     def _draw_unconnected_input(ix_localname, ix):
-        g.node(
-            ix.get_name(),
-            shape='invhouse',
-            penwidth=penwidth,
-            fillcolor='firebrick',
-            style='filled')
+        g.node(ix.get_name(),
+               shape='invhouse',
+               penwidth=penwidth,
+               fillcolor='firebrick',
+               style='filled')
         g.edge(ix.get_name(), ix.get_module().get_name())
 
     def _draw_module_hyperparameter(m, h_localname, h):
@@ -114,8 +113,10 @@ def draw_graph(output_lst,
             else:
                 label = h_localname
 
-            g.edge(
-                h.get_name(), h_dep.get_name(), label=label, fontsize=edge_fs)
+            g.edge(h.get_name(),
+                   h_dep.get_name(),
+                   label=label,
+                   fontsize=edge_fs)
 
     def _draw_module_hyperparameter_info(m):
         g.node(
@@ -127,12 +128,11 @@ def draw_graph(output_lst,
             ]) + ">")
 
     def _draw_output_terminal(ox_localname, ox):
-        g.node(
-            ox.get_name(),
-            shape='house',
-            penwidth=penwidth,
-            fillcolor='deepskyblue',
-            style='filled')
+        g.node(ox.get_name(),
+               shape='house',
+               penwidth=penwidth,
+               fillcolor='deepskyblue',
+               style='filled')
         g.edge(ox.get_module().get_name(), ox.get_name())
 
     nodes = set()
@@ -156,41 +156,39 @@ def draw_graph(output_lst,
         return False
 
     # generate most of the graph.
-    co.traverse_backward(output_lst, fn)
+    co.traverse_backward(outputs, fn)
 
     # drawing the hyperparameter graph.
     if draw_hyperparameters:
-        hs = co.get_all_hyperparameters(output_lst)
+        hs = co.get_all_hyperparameters(outputs)
 
         for h in hs:
             if isinstance(h, co.DependentHyperparameter):
                 _draw_dependent_hyperparameter_relations(h)
 
-            g.node(
-                h.get_name(),
-                fontsize=h_fs,
-                fillcolor='darkseagreen',
-                style='filled')
+            g.node(h.get_name(),
+                   fontsize=h_fs,
+                   fillcolor='darkseagreen',
+                   style='filled')
 
     # add the output terminals.
-    for m in co.extract_unique_modules(output_lst):
+    for m in co.extract_unique_modules(outputs):
         for ox_localname, ox in iteritems(m.outputs):
             _draw_output_terminal(ox_localname, ox)
 
     # minor adjustments to attributes.
     for s in nodes:
-        g.node(
-            s,
-            shape='rectangle',
-            penwidth=penwidth,
-            fillcolor='goldenrod',
-            style='filled')
+        g.node(s,
+               shape='rectangle',
+               penwidth=penwidth,
+               fillcolor='goldenrod',
+               style='filled')
 
     if print_to_screen or out_folderpath is not None:
         g.render(graph_name, out_folderpath, view=print_to_screen, cleanup=True)
 
 
-def draw_graph_evolution(output_lst,
+def draw_graph_evolution(outputs,
                          hyperp_value_lst,
                          out_folderpath,
                          graph_name='graph',
@@ -200,7 +198,7 @@ def draw_graph_evolution(output_lst,
 
     def draw_fn(i):
         return draw_graph(
-            output_lst,
+            outputs,
             draw_hyperparameters=draw_hyperparameters,
             draw_io_labels=draw_io_labels,
             draw_module_hyperparameter_info=draw_module_hyperparameter_info,
@@ -209,7 +207,7 @@ def draw_graph_evolution(output_lst,
             print_to_screen=False)
 
     draw_fn(0)
-    h_iter = co.unassigned_independent_hyperparameter_iterator(output_lst)
+    h_iter = co.unassigned_independent_hyperparameter_iterator(outputs)
     for i, v in enumerate(hyperp_value_lst):
         h = h_iter.next()
         h.assign_value(v)
@@ -256,8 +254,11 @@ class LinePlot:
         for d in self.data:
             fmt = (self.color_to_str.get(d['color'], '') +
                    self.line_type_to_str.get(d['line_type'], ''))
-            plt.errorbar(
-                d['xs'], d['ys'], yerr=d['err'], label=d['label'], fmt=fmt)
+            plt.errorbar(d['xs'],
+                         d['ys'],
+                         yerr=d['err'],
+                         label=d['label'],
+                         fmt=fmt)
 
         if self.title is not None:
             plt.title(self.title)

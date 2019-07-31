@@ -83,7 +83,7 @@ def main(args):
                                           max_num_training_epochs=5)
     inputs, outputs = get_search_space(num_classes)()
     h_values = ut.read_jsonfile(args.config)
-    specify(outputs.values(), hs,
+    specify(outputs, hs,
             h_values["hyperp_value_lst"])  # hs is "extra" hyperparameters
     results = evaluator.evaluate(inputs, outputs)
     ut.write_jsonfile(results, args.result_fp)

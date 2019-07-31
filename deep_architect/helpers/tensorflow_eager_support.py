@@ -94,13 +94,13 @@ class TensorflowEagerModule(co.Module):
         pass
 
 
-def set_is_training(output_lst, is_training):
+def set_is_training(outputs, is_training):
 
     def fn(mx):
         if hasattr(mx, 'is_training'):
             mx.is_training = is_training
 
-    co.traverse_backward(output_lst, fn)
+    co.traverse_backward(outputs, fn)
 
 
 def siso_tensorflow_eager_module(name, compile_fn, name_to_hyperp, scope=None):

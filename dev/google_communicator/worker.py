@@ -143,7 +143,7 @@ def main():
         if arch_data:
             vs, evaluation_id, searcher_eval_token = arch_data
             inputs, outputs = search_space_factory.get_search_space()
-            se.specify(outputs.values(), vs)
+            se.specify(outputs, vs)
             print('Evaluating architecture')
             results = evaluator.eval(inputs, outputs)
             print('Evaluated architecture')

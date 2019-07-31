@@ -2,6 +2,10 @@ from collections import OrderedDict
 from six import iterkeys, itervalues, iteritems
 
 
+def sorted_values_by_key(d):
+    return [d[k] for k in sorted(d)]
+
+
 class OrderedSet:
 
     def __init__(self):
@@ -711,7 +715,7 @@ def determine_module_eval_seq(input_lst):
     return module_seq
 
 
-def traverse_backward(output_lst, fn):
+def traverse_backward(outputs, fn):
     """Backward traversal function through the graph.
 
     Traverses the graph going from outputs to inputs. The provided function is
@@ -721,11 +725,13 @@ def traverse_backward(output_lst, fn):
     :func:`get_unassigned_hyperparameters`. See also: :func:`traverse_forward`.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named of
+            outputs to start the traversal at.
         fn ((deep_architect.core.Module) -> (bool)): Function to apply to each
             module. Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
+    output_lst = sorted_values_by_key(outputs)
     ms = extract_unique_modules(output_lst)
     for m in ms:
         is_over = fn(m)
@@ -740,7 +746,7 @@ def traverse_backward(output_lst, fn):
                         ms.append(m_prev)
 
 
-def traverse_forward(input_lst, fn):
+def traverse_forward(inputs, fn):
     """Forward traversal function through the graph.
 
     Traverses the graph going from inputs to outputs. The provided function is
@@ -750,11 +756,13 @@ def traverse_forward(input_lst, fn):
     See also: :func:`traverse_backward`.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of inputs to start the traversal at.
+        inputs (dict[str, deep_architect.core.Input]): Dictionary of named inputs
+            to start the traversal at.
         fn ((deep_architect.core.Module) -> (bool)): Function to apply to each
             module. Returns ``True`` if the traversal is to be stopped.
     """
     memo = set()
+    input_lst = sorted_values_by_key(inputs)
     ms = extract_unique_modules(input_lst)
     for m in ms:
         is_over = fn(m)
@@ -770,23 +778,24 @@ def traverse_forward(input_lst, fn):
                             ms.append(m_next)
 
 
-def get_modules_with_cond(output_lst, cond_fn):
+def get_modules_with_cond(outputs, cond_fn):
     ms = OrderedSet()
 
     def fn(m):
         if cond_fn(m):
             ms.add(m)
 
-    traverse_backward(output_lst, fn)
+    traverse_backward(outputs, fn)
     return ms
 
 
-def is_specified(output_lst):
+def is_specified(outputs):
     """Checks if all the hyperparameters reachable by traversing backward from
     the outputs have been set.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs to start the traversal at.
 
     Returns:
         bool: ``True`` if all the hyperparameters have been set. ``False`` otherwise.
@@ -800,7 +809,7 @@ def is_specified(output_lst):
                 return True
         return False
 
-    traverse_backward(output_lst, fn)
+    traverse_backward(outputs, fn)
     return is_spec[0]
 
 
@@ -837,7 +846,7 @@ def forward(input_to_val, _module_seq=None):
                 ix.val = ox.val
 
 
-def get_unconnected_inputs(output_lst):
+def get_unconnected_inputs(outputs):
     """Get the inputs that are reachable going backward from the provided outputs,
     but are not connected to any outputs.
 
@@ -845,8 +854,8 @@ def get_unconnected_inputs(output_lst):
     :func:`forward`.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to start the
-            backward traversal at.
+        outputs (list[deep_architect.core.Output]): Dictionary of named outputs
+            to start the backward traversal at.
 
     Returns:
         list[deep_architect.core.Input]:
@@ -861,11 +870,11 @@ def get_unconnected_inputs(output_lst):
                 ix_lst.append(ix)
         return False
 
-    traverse_backward(output_lst, fn)
+    traverse_backward(outputs, fn)
     return ix_lst
 
 
-def get_unconnected_outputs(input_lst):
+def get_unconnected_outputs(inputs):
     """Get the outputs that are reachable going forward from the provided inputs,
     but are not connected to outputs.
 
@@ -873,8 +882,8 @@ def get_unconnected_outputs(input_lst):
     these outputs.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of input to start the
-            forward traversal at.
+        inputs (dict[str, deep_architect.core.Input]): Dictionary of named
+            inputs to start the forward traversal at.
 
     Returns:
         list[deep_architect.core.Output]:
@@ -889,11 +898,11 @@ def get_unconnected_outputs(input_lst):
                 ox_lst.append(ox)
         return False
 
-    traverse_forward(input_lst, fn)
+    traverse_forward(inputs, fn)
     return ox_lst
 
 
-def get_all_hyperparameters(output_lst):
+def get_all_hyperparameters(outputs):
     """Going backward from the outputs provided, gets all hyperparameters.
 
     Hyperparameters that can be reached by traversing dependency links between
@@ -905,7 +914,8 @@ def get_all_hyperparameters(output_lst):
     :func:`deep_architect.modules.siso_or`, and :func:`deep_architect.modules.siso_repeat`.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to start the traversal at.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs to start the traversal at.
 
     Returns:
         OrderedSet[deep_architect.core.Hyperparameter]:
@@ -940,11 +950,11 @@ def get_all_hyperparameters(output_lst):
                     _add_reachable_hs(h)
         return False
 
-    traverse_backward(output_lst, fn)
+    traverse_backward(outputs, fn)
     return visited_hs
 
 
-def get_unassigned_independent_hyperparameters(output_lst):
+def get_unassigned_independent_hyperparameters(outputs):
     """Going backward from the outputs provided, gets all the independent
     hyperparameters that are not set yet.
 
@@ -955,17 +965,17 @@ def get_unassigned_independent_hyperparameters(output_lst):
     :func:`deep_architect.modules.siso_or`, and :func:`deep_architect.modules.siso_repeat`.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs to
-            start the traversal at.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs to start the traversal at.
 
     Returns:
         OrderedSet[deep_architect.core.Hyperparameter]:
             Ordered set of hyperparameters that are currently present in the
             graph and not have been assigned a value yet.
     """
-    assert not is_specified(output_lst)
+    assert not is_specified(outputs)
     unassigned_indep_hs = OrderedSet()
-    for h in get_all_hyperparameters(output_lst):
+    for h in get_all_hyperparameters(outputs):
         if not isinstance(
                 h, DependentHyperparameter) and not h.has_value_assigned():
             unassigned_indep_hs.add(h)
@@ -976,7 +986,7 @@ def get_unassigned_independent_hyperparameters(output_lst):
 # this can be done through a flag.
 
 
-def unassigned_independent_hyperparameter_iterator(output_lst):
+def unassigned_independent_hyperparameter_iterator(outputs):
     """Returns an iterator over the hyperparameters that are not specified in
     the current search space.
 
@@ -989,17 +999,17 @@ def unassigned_independent_hyperparameter_iterator(output_lst):
         iterator will never terminate.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of output which by being
-            traversed back will reach all the modules in the search space, and
-            correspondingly all the current unspecified hyperparameters of the
-            search space.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs which by being traversed back will reach all the
+            modules in the search space, and correspondingly all the current
+            unspecified hyperparameters of the search space.
 
     Yields:
         (deep_architect.core.Hyperparameter):
             Next unspecified hyperparameter of the search space.
     """
-    while not is_specified(output_lst):
-        hs = get_unassigned_independent_hyperparameters(output_lst)
+    while not is_specified(outputs):
+        hs = get_unassigned_independent_hyperparameters(outputs)
         for h in hs:
             if not h.has_value_assigned():
                 yield h

@@ -73,13 +73,13 @@ to create a specific architecture. Here, we assign the hyperparameters randomly.
 .. code:: python
 
     ins, outs = get_search_space(10)
-    random_specify(outs.values())
+    random_specify(outs)
 
 You can now view the fully specified architecture.
 
 .. code:: python
 
-    viz.draw_graph(outs.values())
+    viz.draw_graph(outs)
 
 The next step is to load the data. Since CIFAR-10 is small enough, we'll load
 it into memory. (Note, Pytorch expects the data to be formatted
@@ -124,7 +124,7 @@ First the Tensorflow graph framework.
 
     # This gets all of the other placeholders needed during training, such as
     # indicators for batch norm and dropout layers
-    train_feed, _ = htf.get_feed_dicts(outs.values())
+    train_feed, _ = htf.get_feed_dicts(outs)
     train_feed.update({X_pl: X_batch, y_pl: y_batch})
 
     # Now, simply run the graph as you normally would.
@@ -146,7 +146,7 @@ architecture, set the architecture to use training mode, and call `co.forward()`
         import tensorflow as tf
         import deep_architect.helpers.tensorflow_eager_support as htfe
         tf.enable_eager_execution()
-        htfe.set_is_training(outs.values(), True)
+        htfe.set_is_training(outs, True)
         co.forward({ins['In']: tf.constant(X_batch)})
         logit_vals = outs['Out'].val
 
@@ -161,7 +161,7 @@ Eager framework.
     elif backend.get_backend() == backend.PYTORCH:
         import torch
         import deep_architect.helpers.pytorch_support as hpy
-        hpy.train(outs.values())
+        hpy.train(outs)
         co.forward({ins['In']: torch.Tensor(X_batch)})
         logit_vals = outs['Out'].val
 
@@ -181,8 +181,8 @@ agnostic and framework specific modules.
         ins, outs = mo.siso_sequential([in_node, (ins, outs)])
         _, input_layer = in_node
         co.forward({ins['In']: X.shape[1:]})
-        model = keras.Model(inputs=[inp.val for inp in input_layer.values()],
-                            outputs=[out.val for out in outs.values()])
+        model = keras.Model(inputs=[inp.val for inp in input_layer],
+                            outputs=[out.val for out in outs])
         model.compile(loss=keras.losses.categorical_crossentropy,
                     optimizer=keras.optimizers.Adadelta(),
                     metrics=['accuracy'])

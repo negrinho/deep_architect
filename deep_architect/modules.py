@@ -166,9 +166,9 @@ def hyperparameter_aggregator(name_to_hyperp, scope=None, name=None):
     return HyperparameterAggregator(name_to_hyperp, scope, name).get_io()
 
 
-def get_hyperparameter_aggregators(output_lst):
+def get_hyperparameter_aggregators(outputs):
     co.get_modules_with_cond(
-        output_lst, lambda m: isinstance(m, HyperparameterAggregator))
+        outputs, lambda m: isinstance(m, HyperparameterAggregator))
 
 
 def substitution_module(name,

@@ -79,7 +79,7 @@ class SimpleClassifierEvaluator:
         lr_pl = tf.placeholder("float")
         co.forward({inputs['In']: X_pl})
         logits = outputs['Out'].val
-        train_feed, eval_feed = htf.get_feed_dicts(outputs.values())
+        train_feed, eval_feed = htf.get_feed_dicts(outputs)
         saver = tf.train.Saver()
 
         # define loss and optimizer
@@ -167,12 +167,11 @@ class SimpleClassifierEvaluator:
 
                 # Display logs per epoch step
                 if self.log_output_to_terminal and epoch % self.display_step == 0:
-                    print(
-                        "time:", "%7.1f" %
-                        timer_manager.get_time_since_event('eval', 'start'),
-                        "epoch:", '%04d' % (epoch + 1), "loss:",
-                        "{:.9f}".format(avg_loss), "validation_accuracy:",
-                        "%.5f" % val_acc, "learning_rate:", '%.3e' % lr)
+                    print("time:", "%7.1f" %
+                          timer_manager.get_time_since_event('eval', 'start'),
+                          "epoch:", '%04d' % (epoch + 1), "loss:",
+                          "{:.9f}".format(avg_loss), "validation_accuracy:",
+                          "%.5f" % val_acc, "learning_rate:", '%.3e' % lr)
 
                 d = {
                     'validation_accuracy':

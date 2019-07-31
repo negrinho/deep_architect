@@ -43,7 +43,7 @@ def main():
         if not logger.results_exist():
             eval_cfg = logger.read_config()
             inputs, outputs = ss.search_space_fn()
-            specify(outputs.values(), eval_cfg["hyperp_value_lst"])
+            specify(outputs, eval_cfg["hyperp_value_lst"])
             results = evaluator.eval(inputs, outputs)
             logger.log_results(results)
 

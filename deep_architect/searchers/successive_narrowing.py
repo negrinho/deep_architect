@@ -18,14 +18,14 @@ class SuccessiveNarrowing(se.Searcher):
         self.queue = []
         for _ in range(num_initial_samples):
             inputs, outputs = search_space_fn()
-            hyperp_value_lst = se.random_specify(outputs.values())
+            hyperp_value_lst = se.random_specify(outputs)
             self.queue.append(hyperp_value_lst)
 
     def sample(self):
         assert self.idx < len(self.queue)
         hyperp_value_lst = self.queue[self.idx]
         (inputs, outputs) = self.search_space_fn()
-        se.specify(outputs.values(), hyperp_value_lst)
+        se.specify(outputs, hyperp_value_lst)
         idx = self.idx
         self.idx += 1
         return inputs, outputs, hyperp_value_lst, {"idx": idx}

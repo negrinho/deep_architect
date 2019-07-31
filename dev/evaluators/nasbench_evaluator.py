@@ -31,8 +31,7 @@ class NasbenchEvaluator:
         matrix = [[0] * self.num_nodes_per_cell
                   for _ in range(self.num_nodes_per_cell)]
         for i, h in enumerate(
-                co.unassigned_independent_hyperparameter_iterator(
-                    outputs.values())):
+                co.unassigned_independent_hyperparameter_iterator(outputs)):
             h_name = h.get_name().split('-')[-2]
             if 'node' in h_name:
                 node_num = int(h_name.split('_')[-1])

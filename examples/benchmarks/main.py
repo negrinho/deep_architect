@@ -32,7 +32,7 @@ def run_searcher(searcher, evaluator, num_samples, get_evaluation_logger):
         evaluation_logger.log_config(hyperp_value_lst, searcher_eval_token)
         evaluation_logger.log_results(results)
         vi.draw_graph(
-            outputs.values(),
+            outputs,
             True,
             True,
             print_to_screen=False,

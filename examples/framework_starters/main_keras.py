@@ -73,9 +73,9 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         mo.siso_repeat(
-            lambda: dnn_cell(
-                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
-                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2, 4])),
+            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+                             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
+                             D([0.25, 0.5, 0.75])), D([1, 2, 4])),
         dense(D([num_classes]))
     ])
 
@@ -110,17 +110,15 @@ class SimpleClassifierEvaluator:
         probs = Activation('softmax')(logits)
 
         model = Model(inputs=[inputs['In'].val], outputs=[probs])
-        model.compile(
-            optimizer=Adam(lr=self.learning_rate),
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy'])
+        model.compile(optimizer=Adam(lr=self.learning_rate),
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
         model.summary()
-        history = model.fit(
-            self.X_train,
-            self.y_train,
-            batch_size=self.batch_size,
-            epochs=self.num_training_epochs,
-            validation_data=(self.X_val, self.y_val))
+        history = model.fit(self.X_train,
+                            self.y_train,
+                            batch_size=self.batch_size,
+                            epochs=self.num_training_epochs,
+                            validation_data=(self.X_val, self.y_val))
 
         results = {'validation_accuracy': history.history['val_acc'][-1]}
         return results
@@ -160,10 +158,9 @@ def main():
         if show_graph:
             # try setting draw_module_hyperparameter_info=False and
             # draw_hyperparameters=True for a different visualization.
-            vi.draw_graph(
-                outputs.values(),
-                draw_module_hyperparameter_info=False,
-                draw_hyperparameters=True)
+            vi.draw_graph(outputs,
+                          draw_module_hyperparameter_info=False,
+                          draw_hyperparameters=True)
         results = evaluator.evaluate(inputs, outputs)
         # updating the searcher. no-op for the random searcher.
         searcher.update(results['validation_accuracy'], searcher_eval_token)

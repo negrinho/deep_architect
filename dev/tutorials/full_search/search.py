@@ -125,7 +125,7 @@ else:
         # unspecified search space, and recreate the architecture using the values of
         # the hyperparameters received by the worker.
         inputs, outputs = ssf.get_search_space()
-        se.specify(outputs.values(), vs)
+        se.specify(outputs, vs)
         results = evaluator.eval(inputs, outputs)
         comm.publish_results_to_master(results, evaluation_id,
                                        searcher_eval_token)

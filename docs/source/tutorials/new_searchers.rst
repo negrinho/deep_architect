@@ -99,7 +99,7 @@ value to each of the unassigned hyperparameters.
 
         def sample(self):
             inputs, outputs = self.search_space_fn()
-            vs = random_specify(outputs.values())
+            vs = random_specify(outputs)
             return inputs, outputs, vs, {}
 
         def update(self, val, searcher_eval_token):
@@ -169,14 +169,14 @@ Let us now see a SMBO searcher, which is more complex than the random searcher. 
         def sample(self):
             if np.random.rand() < self.eps_prob:
                 inputs, outputs = self.search_space_fn()
-                best_vs = random_specify(outputs.values())
+                best_vs = random_specify(outputs)
             else:
                 best_model = None
                 best_vs = None
                 best_score = -np.inf
                 for _ in range(self.num_samples):
                     inputs, outputs = self.search_space_fn()
-                    vs = random_specify(outputs.values())
+                    vs = random_specify(outputs)
 
                     feats = extract_features(inputs, outputs)
                     score = self.surr_model.eval(feats)
@@ -192,7 +192,7 @@ Let us now see a SMBO searcher, which is more complex than the random searcher. 
 
         def update(self, val, searcher_eval_token):
             (inputs, outputs) = self.search_space_fn()
-            specify(outputs.values(), searcher_eval_token['vs'])
+            specify(outputs, searcher_eval_token['vs'])
             feats = extract_features(inputs, outputs)
             self.surr_model.update(val, feats)
 

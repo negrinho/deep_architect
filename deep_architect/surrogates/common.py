@@ -60,7 +60,7 @@ def extract_features(inputs, outputs):
     def fn(m):
         module_memo.append(m)
 
-    co.traverse_backward(outputs.values(), fn)
+    co.traverse_backward(outputs, fn)
 
     for m in module_memo:
         # module features

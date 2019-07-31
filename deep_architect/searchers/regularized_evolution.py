@@ -17,11 +17,11 @@ def mutatable(h):
     return len(h.vs) > 1
 
 
-def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
+def mutate(outputs, user_vs, all_vs, mutatable_fn, search_space_fn):
     mutate_candidates = []
     new_vs = list(user_vs)
     for i, h in enumerate(
-            co.unassigned_independent_hyperparameter_iterator(output_lst)):
+            co.unassigned_independent_hyperparameter_iterator(outputs)):
         if mutatable_fn(h):
             mutate_candidates.append(h)
         h.assign_value(all_vs[i])
@@ -40,15 +40,14 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
         new_vs = new_vs[:m_ind + 1]
 
     inputs, outputs = search_space_fn()
-    output_lst = list(outputs.values())
-    all_vs = specify_evolution(output_lst, mutatable_fn, new_vs)
+    all_vs = specify_evolution(outputs, mutatable_fn, new_vs)
     return inputs, outputs, new_vs, all_vs
 
 
-def random_specify_evolution(output_lst, mutatable_fn):
+def random_specify_evolution(outputs, mutatable_fn):
     user_vs = []
     all_vs = []
-    for h in co.unassigned_independent_hyperparameter_iterator(output_lst):
+    for h in co.unassigned_independent_hyperparameter_iterator(outputs):
         v = random_specify_hyperparameter(h)
         if mutatable_fn(h):
             user_vs.append(v)
@@ -56,11 +55,11 @@ def random_specify_evolution(output_lst, mutatable_fn):
     return user_vs, all_vs
 
 
-def specify_evolution(output_lst, mutatable_fn, user_vs):
+def specify_evolution(outputs, mutatable_fn, user_vs):
     vs_idx = 0
     vs = []
     for i, h in enumerate(
-            co.unassigned_independent_hyperparameter_iterator(output_lst)):
+            co.unassigned_independent_hyperparameter_iterator(outputs)):
         if mutatable_fn(h):
             if vs_idx >= len(user_vs):
                 user_vs.append(h.vs[random.randint(0, len(h.vs) - 1)])
@@ -92,8 +91,7 @@ class EvolutionSearcher(Searcher):
     def sample(self):
         if self.initializing:
             inputs, outputs = self.search_space_fn()
-            user_vs, all_vs = random_specify_evolution(list(outputs.values()),
-                                                       self.mutatable)
+            user_vs, all_vs = random_specify_evolution(outputs, self.mutatable)
             if len(self.population) >= self.P - 1:
                 self.initializing = False
             return inputs, outputs, all_vs, {
@@ -111,8 +109,7 @@ class EvolutionSearcher(Searcher):
             user_vs, all_vs, _ = self.population[
                 self._get_strongest_model_index(sample_inds)]
             inputs, outputs, new_user_vs, new_all_vs = mutate(
-                list(outputs.values()), user_vs, all_vs, self.mutatable,
-                self.search_space_fn)
+                outputs, user_vs, all_vs, self.mutatable, self.search_space_fn)
 
             # self.processing.append(self.population[weak_ind])
             # del self.population[weak_ind]

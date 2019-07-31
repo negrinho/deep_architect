@@ -125,15 +125,15 @@ def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn,
     return siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope)
 
 
-def get_feed_dicts(output_lst):
+def get_feed_dicts(outputs):
     """Get the training and evaluation dictionaries that map placeholders to the
     values that they should take during training and evaluation, respectively
     (e.g., used for dropout or batch normalization).
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of outputs of the model
-            (i.e., with no unspecified hyperparameters available) sampled
-            from the search space.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs of the model (i.e., with no unspecified hyperparameters
+            available) sampled from the search space.
 
     Returns:
         (dict, dict):
@@ -151,7 +151,7 @@ def get_feed_dicts(output_lst):
             eval_feed.update(x.eval_feed)
         return False
 
-    co.traverse_backward(output_lst, fn)
+    co.traverse_backward(outputs, fn)
     return (train_feed, eval_feed)
 
 

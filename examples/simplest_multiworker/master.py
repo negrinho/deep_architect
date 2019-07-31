@@ -15,12 +15,11 @@ def main():
     # Creating the searcher.
     searcher = RandomSearcher(ss.search_space_fn)
     # Creating the search folder for logging information.
-    sl.create_search_folderpath(
-        cfg['folderpath'],
-        cfg['search_name'],
-        abort_if_exists=cfg["abort_if_exists"],
-        delete_if_exists=cfg['delete_if_exists'],
-        create_parent_folders=True)
+    sl.create_search_folderpath(cfg['folderpath'],
+                                cfg['search_name'],
+                                abort_if_exists=cfg["abort_if_exists"],
+                                delete_if_exists=cfg['delete_if_exists'],
+                                create_parent_folders=True)
     # Search loop.
     for evaluation_id in range(cfg['num_samples']):
         logger = sl.EvaluationLogger(cfg["folderpath"], cfg["search_name"],
@@ -31,7 +30,7 @@ def main():
             # Logging results (including graph).
             logger.log_config(hyperp_value_lst, searcher_eval_token)
             vi.draw_graph(
-                outputs.values(),
+                outputs,
                 draw_module_hyperparameter_info=False,
                 print_to_screen=False,
                 out_folderpath=logger.get_evaluation_data_folderpath())

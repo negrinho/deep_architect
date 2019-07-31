@@ -196,14 +196,14 @@ A minimal example to go from this wrapper code to an instantiated Keras model is
     h_use_bias = D([0, 1])
     (inputs, outputs) = conv2d(h_filters, h_kernel_size, h_strides, h_activation,
                                h_use_bias)
-    random_specify(outputs.values())
+    random_specify(outputs)
     co.forward({inputs["In"]: x})
     out = outputs["Out"].val
     model = Model(inputs=x, outputs=out)
     model.summary()
 
     import deep_architect.visualization as vi
-    vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
+    vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
 
 As modules with a single input and a single output are common, we defined a few simplified functions that directly work with the Keras definition. The goal of these functions is to reduce boilerplate and provide a more concise workflow. For example, the above function could be expressed in the same way as:
 
@@ -229,7 +229,7 @@ As modules with a single input and a single output are common, we defined a few 
     out = outputs["Out"].val
     model = Model(inputs=x, outputs=out)
     model.summary()
-    vi.draw_graph(outputs.values(), draw_module_hyperparameter_info=False)
+    vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
 
 We refer the reader to `deep_architect.helpers.keras_support <https://github.com/negrinho/deep_architect/blob/master/deep_architect/helpers/keras.py>`__ if the reader wishes to inspect the implementation of this function and how does it fit with the previous definition for a Keras module. These functions require minimal additional code. These auxiliary functions are convenient to reduce boilerplate for some of the most common use cases. As we have seen, it is possible to express everything that we need using :code:`KerasModule`, with the other functions used for convenience for common specific cases.
 

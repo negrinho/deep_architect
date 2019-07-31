@@ -177,7 +177,7 @@ def main():
                 'eval_hparams'] if 'eval_hparams' in state['arch_data'] else {}
             logger.info('Evaluating architecture %d', evaluation_id)
             inputs, outputs = search_space_factory.get_search_space()
-            se.specify(outputs.values(), vs)
+            se.specify(outputs, vs)
             eval_state = comm.get_value(get_topic_name(ARCH_TOPIC, config),
                                         'evaluation_id', evaluation_id)
             if eval_state is not None and 'data' in eval_state and 'state' in eval_state[

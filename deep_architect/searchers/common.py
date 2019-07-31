@@ -89,26 +89,26 @@ def random_specify_hyperparameter(hyperp):
     return v
 
 
-def random_specify(output_lst):
+def random_specify(outputs):
     """Chooses random values to all the unspecified hyperparameters.
 
     The hyperparameters will be specified after this call, meaning that the
     compile and forward functionalities will be available for being called.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of output which by being
-            traversed back will reach all the modules in the search space, and
-            correspondingly all the current unspecified hyperparameters of the
-            search space.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs which by being traversed back will reach all the modules
+            in the search space, and correspondingly all the current
+            unspecified hyperparameters of the search space.
     """
     hyperp_value_lst = []
-    for h in co.unassigned_independent_hyperparameter_iterator(output_lst):
+    for h in co.unassigned_independent_hyperparameter_iterator(outputs):
         v = random_specify_hyperparameter(h)
         hyperp_value_lst.append(v)
     return hyperp_value_lst
 
 
-def specify(output_lst, hyperp_value_lst):
+def specify(outputs, hyperp_value_lst):
     """Specify the parameters in the search space using the sequence of values
     passed as argument.
 
@@ -121,12 +121,12 @@ def specify(output_lst, hyperp_value_lst):
         from fully unspecified to fully specified. Be careful otherwise.
 
     Args:
-        output_lst (list[deep_architect.core.Output]): List of output which by being
-            traversed back will reach all the modules in the search space, and
-            correspondingly all the current unspecified hyperparameters of the
-            search space.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs which by being traversed back will reach all the modules
+            in the search space, and correspondingly all the current
+            unspecified hyperparameters of the search space.
         hyperp_value_lst (list[object]): List of values used to specify the hyperparameters.
     """
     for i, h in enumerate(
-            co.unassigned_independent_hyperparameter_iterator(output_lst)):
+            co.unassigned_independent_hyperparameter_iterator(outputs)):
         h.assign_value(hyperp_value_lst[i])

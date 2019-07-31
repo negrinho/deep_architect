@@ -125,7 +125,7 @@ def siso_pytorch_module_from_pytorch_layer_fn(layer_fn,
 
 # NOTE: this is done for the case where all the PyTorch modules are created
 # using the helper here described, i.e., it assumes the existence of pyth_modules.
-def _call_fn_on_pytorch_module(output_lst, fn):
+def _call_fn_on_pytorch_module(outputs, fn):
 
     def fn_iter(mx):
         if hasattr(mx, 'pyth_modules'):
@@ -133,38 +133,38 @@ def _call_fn_on_pytorch_module(output_lst, fn):
                 fn(pyth_m)
         return False
 
-    co.traverse_backward(output_lst, fn_iter)
+    co.traverse_backward(outputs, fn_iter)
 
 
-def get_pytorch_modules(output_lst):
+def get_pytorch_modules(outputs):
     all_modules = set()
-    _call_fn_on_pytorch_module(output_lst, all_modules.add)
+    _call_fn_on_pytorch_module(outputs, all_modules.add)
     return all_modules
 
 
-def train(output_lst):
+def train(outputs):
     """Applies :meth:`torch.nn.Module.train` to all modules needed to compute the outputs."""
-    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.train())
+    _call_fn_on_pytorch_module(outputs, lambda pyth_m: pyth_m.train())
 
 
-def eval(output_lst):
+def eval(outputs):
     """Applies :meth:`torch.nn.Module.eval` to all modules needed to compute the outputs."""
-    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.eval())
+    _call_fn_on_pytorch_module(outputs, lambda pyth_m: pyth_m.eval())
 
 
 # TODO: this needs to be changed.
-def cuda(output_lst, *args, **kwargs):
+def cuda(outputs, *args, **kwargs):
     _call_fn_on_pytorch_module(
-        output_lst, lambda pyth_m: pyth_m.cuda(*args, **kwargs))
+        outputs, lambda pyth_m: pyth_m.cuda(*args, **kwargs))
 
 
-def cpu(output_lst):
+def cpu(outputs):
     """Applies :meth:`torch.nn.Module.cpu` to all modules needed to compute the outputs."""
-    _call_fn_on_pytorch_module(output_lst, lambda pyth_m: pyth_m.cpu())
+    _call_fn_on_pytorch_module(outputs, lambda pyth_m: pyth_m.cpu())
 
 
-def parameters(output_lst):
-    pyth_modules = get_pytorch_modules(output_lst)
+def parameters(outputs):
+    pyth_modules = get_pytorch_modules(outputs)
     ps = set()
     for pyth_m in pyth_modules:
         ps.update(pyth_m.parameters())
@@ -217,7 +217,7 @@ class PyTorchModel(nn.Module):
         }
 
         if not self._is_compiled:
-            modules = get_pytorch_modules(self.outputs.values())
+            modules = get_pytorch_modules(self.outputs)
             for i, m in enumerate(modules):
                 self.add_module(str(i), m)
             self._is_compiled = True

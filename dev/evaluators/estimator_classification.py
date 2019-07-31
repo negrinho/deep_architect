@@ -29,12 +29,12 @@ def get_feature_columns():
     return feature_columns
 
 
-def set_recompile(output_lst, recompile):
+def set_recompile(outputs, recompile):
 
     def fn(mx):
         mx._is_compiled = not recompile
 
-    co.traverse_backward(output_lst, fn)
+    co.traverse_backward(outputs, fn)
 
 
 def input_fn(features, labels, batch_size=128, train=True):
@@ -146,10 +146,9 @@ class AdvanceClassifierEvaluator:
             images = tf.reshape(images,
                                 shape=(-1, IMAGE_HEIGHT, IMAGE_WIDTH,
                                        IMAGE_DEPTH))
-            set_recompile(outputs.values(), True)
+            set_recompile(outputs, True)
             gc.collect()
-            htfe.set_is_training(outputs.values(),
-                                 mode == tf.estimator.ModeKeys.TRAIN)
+            htfe.set_is_training(outputs, mode == tf.estimator.ModeKeys.TRAIN)
             co.forward({inputs['In']: images})
             logits = outputs['Out'].val
 
@@ -252,12 +251,11 @@ class AdvanceClassifierEvaluator:
 
             # Display logs per epoch step
             if self.log_output_to_terminal and epoch % self.display_step == 0:
-                print(
-                    "time:", "%7.1f" %
-                    timer_manager.get_time_since_event('eval', 'start'),
-                    "epoch:", '%04d' % (epoch + 1), "validation loss:",
-                    "{:.9f}".format(eval_results['loss']),
-                    "validation_accuracy:", "%.5f" % val_acc)
+                print("time:", "%7.1f" %
+                      timer_manager.get_time_since_event('eval', 'start'),
+                      "epoch:", '%04d' % (epoch + 1), "validation loss:",
+                      "{:.9f}".format(eval_results['loss']),
+                      "validation_accuracy:", "%.5f" % val_acc)
 
             d = {
                 'validation_accuracy':

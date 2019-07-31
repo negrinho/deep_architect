@@ -147,7 +147,7 @@ class SimpleClassifierEvaluator:
         lr_pl = tf.placeholder("float")
         co.forward({inputs['In']: X_pl})
         logits = outputs['Out'].val
-        train_feed, eval_feed = htf.get_feed_dicts(outputs.values())
+        train_feed, eval_feed = htf.get_feed_dicts(outputs)
 
         # define loss and optimizer
         loss = tf.reduce_mean(
@@ -226,7 +226,7 @@ def main():
             # try setting draw_module_hyperparameter_info=False and
             # draw_hyperparameters=True for a different visualization.
             vi.draw_graph(
-                outputs.values(),
+                outputs,
                 draw_module_hyperparameter_info=False,
                 draw_hyperparameters=True)
         results = evaluator.evaluate(inputs, outputs)

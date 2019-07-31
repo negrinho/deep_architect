@@ -132,7 +132,7 @@ def start_worker(comm,
         vs, evaluation_id, searcher_eval_token = arch
 
         inputs, outputs = search_space_factory.get_search_space()
-        se.specify(outputs.values(), vs)
+        se.specify(outputs, vs)
         results = evaluator.eval(inputs, outputs)
         step += 1
         if step % save_every == 0:
