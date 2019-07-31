@@ -66,6 +66,7 @@ class HashingSurrogate(SurrogateModel):
         y = np.array(self.vals_lst)
         self.model.fit(X, y)
 
+    # TODO: improve
     def save_state(self, folderpath):
         state = {
             'num_evals': len(self.vecs_lst),
@@ -76,6 +77,7 @@ class HashingSurrogate(SurrogateModel):
         for i, vecs in enumerate(self.vecs_lst):
             sp.save_npz(ut.join_paths([folderpath, str(i) + '.npz']), vecs)
 
+    # TODO: improve
     def load_state(self, folderpath):
         state = ut.read_jsonfile(
             ut.join_paths([folderpath, 'hash_model_state.json']))

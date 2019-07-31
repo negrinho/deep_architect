@@ -9,7 +9,7 @@ from collections import deque
 
 import deep_architect.utils as ut
 from deep_architect.searchers.common import Searcher, random_specify_hyperparameter
-from deep_architect.core import unassigned_independent_hyperparameter_iterator
+import deep_architect.core as co
 import numpy as np
 
 
@@ -21,7 +21,7 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
     mutate_candidates = []
     new_vs = list(user_vs)
     for i, h in enumerate(
-            unassigned_independent_hyperparameter_iterator(output_lst)):
+            co.unassigned_independent_hyperparameter_iterator(output_lst)):
         if mutatable_fn(h):
             mutate_candidates.append(h)
         h.assign_value(all_vs[i])
@@ -48,7 +48,7 @@ def mutate(output_lst, user_vs, all_vs, mutatable_fn, search_space_fn):
 def random_specify_evolution(output_lst, mutatable_fn):
     user_vs = []
     all_vs = []
-    for h in unassigned_independent_hyperparameter_iterator(output_lst):
+    for h in co.unassigned_independent_hyperparameter_iterator(output_lst):
         v = random_specify_hyperparameter(h)
         if mutatable_fn(h):
             user_vs.append(v)
@@ -60,7 +60,7 @@ def specify_evolution(output_lst, mutatable_fn, user_vs):
     vs_idx = 0
     vs = []
     for i, h in enumerate(
-            unassigned_independent_hyperparameter_iterator(output_lst)):
+            co.unassigned_independent_hyperparameter_iterator(output_lst)):
         if mutatable_fn(h):
             if vs_idx >= len(user_vs):
                 user_vs.append(h.vs[random.randint(0, len(h.vs) - 1)])
