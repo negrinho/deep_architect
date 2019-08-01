@@ -172,7 +172,7 @@ def draw_graph(outputs,
                    style='filled')
 
     # add the output terminals.
-    for m in co.extract_unique_modules(outputs):
+    for m in co.extract_unique_modules(outputs.values()):
         for ox_localname, ox in iteritems(m.outputs):
             _draw_output_terminal(ox_localname, ox)
 
