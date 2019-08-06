@@ -261,7 +261,7 @@ class DependentHyperparameter(Hyperparameter):
     values of some other hyperparameters, rather than set independently.
 
     Args:
-        fn ((...) -> (object)): Function used to compute the value of the
+        fn (dict[str, object] -> object): Function used to compute the value of the
             hyperparameter based on the values of the dependent hyperparameters.
         hyperps (dict[str, deep_architect.core.Hyperparameter]): Dictionary mapping
             names to hyperparameters. The names used in the dictionary should
@@ -272,13 +272,12 @@ class DependentHyperparameter(Hyperparameter):
             in the scope is derived.
     """
 
-    def __init__(self, fn, hyperps, scope=None, name=None, unpack_kwargs=True):
+    def __init__(self, fn, hyperps, scope=None, name=None):
         Hyperparameter.__init__(self, scope, name)
         # NOTE: this assert may or may not be necessary.
         # assert isinstance(hyperps, OrderedDict)
         self._hyperps = OrderedDict([(k, hyperps[k]) for k in sorted(hyperps)])
         self._fn = fn
-        self.unpack_kwargs = unpack_kwargs
 
         # registering the dependencies.
         for h in itervalues(self._hyperps):
@@ -292,13 +291,8 @@ class DependentHyperparameter(Hyperparameter):
         """
         # assert not self.has_value_assigned()
         if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
-            kwargs = {
-                name: h.get_value() for name, h in iteritems(self._hyperps)
-            }
-            if self.unpack_kwargs:
-                v = self._fn(**kwargs)
-            else:
-                v = self._fn(kwargs)
+            dh = {name: h.get_value() for name, h in iteritems(self._hyperps)}
+            v = self._fn(dh)
             self.assign_value(v)
 
     def _check_value(self, val):

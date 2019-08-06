@@ -117,7 +117,7 @@ def concat(num_inputs):
 
         return forward_fn
 
-    return htfe.TensorflowEagerModule("ConcatCombiner", {}, compile_fn,
+    return htfe.TensorflowEagerModule("ConcatCombiner", compile_fn, {},
                                       input_names, ['Out']).get_io()
 
 
@@ -230,7 +230,7 @@ def create_motif(
             output = conv_outs
         return ops[0][0][0], output
 
-    return mo.substitution_module('Motif_Level_%d' % level, dh, substitution_fn,
+    return mo.substitution_module('Motif_Level_%d' % level, substitution_fn, dh,
                                   ['In'], ['Out'], None)
 
 

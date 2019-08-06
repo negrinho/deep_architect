@@ -169,9 +169,9 @@ def enas_space(h_num_layers,
         return inputs, OrderedDict(
             {'Out': temp_outputs['Out' + str(len(temp_outputs) - 1)]})
 
-    return mo.substitution_module('ENASModule', {'num_layers': h_num_layers},
-                                  substitution_fn, input_names, output_names,
-                                  scope)
+    return mo.substitution_module('ENASModule', substitution_fn,
+                                  {'num_layers': h_num_layers}, input_names,
+                                  output_names, scope)
 
 
 def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):

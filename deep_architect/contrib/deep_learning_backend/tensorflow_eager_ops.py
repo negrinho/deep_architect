@@ -219,7 +219,7 @@ def add(num_inputs):
 
         return forward_fn
 
-    return TensorflowEagerModule('Add', {}, compile_fn,
+    return TensorflowEagerModule('Add', compile_fn, {},
                                  ['In' + str(i) for i in range(num_inputs)],
                                  ['Out']).get_io()
 

@@ -44,9 +44,6 @@ class PyTorchModule(co.Module):
 
     Args:
         name (str): Name of the module
-        name_to_hyperp (dict[str,deep_architect.core.Hyperparameter]): Dictionary of
-            hyperparameters that the model depends on. The keys are the local
-            names of the hyperparameters.
         compile_fn ((dict[str,object], dict[str,object]) -> ((dict[str,object]) -> (dict[str,object], list[torch.nn.Modules]))):
             The first function takes two dictionaries with
             keys corresponding to `input_names` and `output_names` and returns
@@ -54,6 +51,9 @@ class PyTorchModule(co.Module):
             `input_names` and returns a dictionary with keys corresponding
             to `output_names` and a list of Pytorch modules involved in the
             computation of the DeepArchitect module.
+        name_to_hyperp (dict[str,deep_architect.core.Hyperparameter]): Dictionary of
+            hyperparameters that the model depends on. The keys are the local
+            names of the hyperparameters.
         input_names (list[str]): List of names for the inputs.
         output_names (list[str]): List of names for the outputs.
         scope (deep_architect.core.Scope, optional): Scope where the module will be
@@ -62,8 +62,8 @@ class PyTorchModule(co.Module):
 
     def __init__(self,
                  name,
-                 name_to_hyperp,
                  compile_fn,
+                 name_to_hyperp,
                  input_names,
                  output_names,
                  scope=None):
@@ -96,7 +96,7 @@ class PyTorchModule(co.Module):
 
 
 def siso_pytorch_module(name, compile_fn, name_to_hyperp, scope=None):
-    return PyTorchModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
+    return PyTorchModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
                          scope).get_io()
 
 

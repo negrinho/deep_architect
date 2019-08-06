@@ -71,8 +71,8 @@ def genetic_stage(input_fn, node_fn, output_fn, h_connections, num_nodes):
             itertools.combinations(range(1, num_nodes + 1), 2)):
         name_to_hparam['%d_%d' % hparam] = h_connections[ix]
     return mo.substitution_module('GeneticStage',
-                                  name_to_hparam,
-                                  substitution_fn, ['In'], ['Out'],
+                                  substitution_fn,
+                                  name_to_hparam, ['In'], ['Out'],
                                   scope=None)
 
 

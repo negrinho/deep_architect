@@ -54,15 +54,15 @@ class SubstitutionModule(co.Module):
 
     Args:
         name (str): Name used to derive an unique name for the module.
-        name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]): Dictionary of
-            name to hyperparameters that are needed for the substitution function.
-            The names of the hyperparameters should be in correspondence to the
-            name of the arguments of the substitution function.
-        substitution_fn ((...) -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output]):
+        substitution_fn (dict[str, object] -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output]):
             Function that is called with the values of hyperparameters and
             returns the inputs and the outputs of the
             network fragment to put in the place the substitution module
             currently is.
+        name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]): Dictionary of
+            name to hyperparameters that are needed for the substitution function.
+            The names of the hyperparameters should be in correspondence to the
+            name of the arguments of the substitution function.
         input_names (list[str]): List of the input names of the substitution module.
         output_name (list[str]): List of the output names of the substitution module.
         scope ((deep_architect.core.Scope, optional)) Scope in which the module will be
@@ -79,8 +79,8 @@ class SubstitutionModule(co.Module):
 
     def __init__(self,
                  name,
-                 name_to_hyperp,
                  substitution_fn,
+                 name_to_hyperp,
                  input_names,
                  output_names,
                  scope=None,
@@ -172,11 +172,11 @@ def get_hyperparameter_aggregators(outputs):
 
 
 def substitution_module(name,
-                        name_to_hyperp,
                         substitution_fn,
+                        name_to_hyperp,
                         input_names,
                         output_names,
-                        scope,
+                        scope=None,
                         allow_input_subset=False,
                         allow_output_subset=False):
     """Same as the substitution module, but directly works with the dictionaries of
@@ -193,15 +193,15 @@ def substitution_module(name,
 
     Args:
         name (str): Name used to derive an unique name for the module.
-        name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]): Dictionary of
-            name to hyperparameters that are needed for the substitution function.
-            The names of the hyperparameters should be in correspondence to the
-            name of the arguments of the substitution function.
-        substitution_fn ((...) -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output]):
+        substitution_fn (dict[str, object] -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output]):
             Function that is called with the values of hyperparameters and
             values of inputs and returns the inputs and the outputs of the
             network fragment to put in the place the substitution module
             currently is.
+        name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]): Dictionary of
+            name to hyperparameters that are needed for the substitution function.
+            The names of the hyperparameters should be in correspondence to the
+            name of the arguments of the substitution function.
         input_names (list[str]): List of the input names of the substitution module.
         output_name (list[str]): List of the output names of the substitution module.
         scope (deep_architect.core.Scope): Scope in which the module will be registered.
@@ -219,8 +219,8 @@ def substitution_module(name,
             Tuple with dictionaries with the inputs and outputs of the module.
     """
     return SubstitutionModule(name,
-                              name_to_hyperp,
                               substitution_fn,
+                              name_to_hyperp,
                               input_names,
                               output_names,
                               scope,
@@ -272,9 +272,8 @@ def mimo_or(fn_lst, h_or, input_names, output_names, scope=None, name=None):
     def substitution_fn(dh):
         return fn_lst[dh["idx"]]()
 
-    return substitution_module(_get_name(name,
-                                         "Or"), {'idx': h_or}, substitution_fn,
-                               input_names, output_names, scope)
+    return substitution_module(_get_name(name, "Or"), substitution_fn,
+                               {'idx': h_or}, input_names, output_names, scope)
 
 
 # TODO: perhaps change slightly the semantics of the repeat parameter.
@@ -327,9 +326,9 @@ def mimo_nested_repeat(fn_first,
             inputs, outputs = fn_iter(inputs, outputs)
         return inputs, outputs
 
-    return substitution_module(_get_name(name, "NestedRepeat"),
-                               {'num_reps': h_num_repeats}, substitution_fn,
-                               input_names, output_names, scope)
+    return substitution_module(_get_name(name, "NestedRepeat"), substitution_fn,
+                               {'num_reps': h_num_repeats}, input_names,
+                               output_names, scope)
 
 
 def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
@@ -451,9 +450,9 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISORepeat"),
-                               {'num_reps': h_num_repeats}, substitution_fn,
-                               ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISORepeat"), substitution_fn,
+                               {'num_reps': h_num_repeats}, ['In'], ['Out'],
+                               scope)
 
 
 def siso_optional(fn, h_opt, scope=None, name=None):
@@ -485,8 +484,8 @@ def siso_optional(fn, h_opt, scope=None, name=None):
     def substitution_fn(dh):
         return fn() if dh["opt"] else identity()
 
-    return substitution_module(_get_name(name, "SISOOptional"), {'opt': h_opt},
-                               substitution_fn, ['In'], ['Out'], scope)
+    return substitution_module(_get_name(name, "SISOOptional"), substitution_fn,
+                               {'opt': h_opt}, ['In'], ['Out'], scope)
 
 
 # TODO: improve by not enumerating permutations
@@ -536,9 +535,9 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             next_inputs['In'].connect(prev_outputs['Out'])
         return inputs_lst[0], outputs_lst[-1]
 
-    return substitution_module(_get_name(name, "SISOPermutation"),
-                               {'perm_idx': h_perm}, substitution_fn, ['In'],
-                               ['Out'], scope)
+    return substitution_module(_get_name(name,
+                                         "SISOPermutation"), substitution_fn,
+                               {'perm_idx': h_perm}, ['In'], ['Out'], scope)
 
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
@@ -586,7 +585,7 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
         return i_inputs, c_outputs
 
     return substitution_module(_get_name(name, "SISOSplitCombine"),
-                               {'num_splits': h_num_splits}, substitution_fn,
+                               substitution_fn, {'num_splits': h_num_splits},
                                ['In'], ['Out'], scope)
 
 
@@ -623,10 +622,10 @@ def dense_block(h_num_applies,
             o_outputs = prev_a_outputs[-1]
         return (i_inputs, o_outputs)
 
-    return substitution_module(_get_name(name, "DenseBlock"), {
+    return substitution_module(_get_name(name, "DenseBlock"), substitution_fn, {
         "num_applies": h_num_applies,
         "end_in_combine": h_end_in_combine
-    }, substitution_fn, ["In"], ["Out"], scope)
+    }, ["In"], ["Out"], scope)
 
 
 def siso_residual(main_fn, residual_fn, combine_fn):

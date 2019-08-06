@@ -106,8 +106,8 @@ def cell(input_fn, node_fn, output_fn, h_connections, num_nodes, channels):
                                                        2)):
         name_to_hparam['%d_%d' % hparam] = h_connections[ix]
     return mo.substitution_module('NasbenchCell',
-                                  name_to_hparam,
-                                  substitution_fn, ['In'], ['Out'],
+                                  substitution_fn,
+                                  name_to_hparam, ['In'], ['Out'],
                                   scope=None)
 
 
@@ -124,7 +124,7 @@ def add(num_inputs):
         return forward_fn
 
     return htfe.TensorflowEagerModule(
-        'Add', {}, compile_fn, ['In' + str(i) for i in range(num_inputs)],
+        'Add', compile_fn, {}, ['In' + str(i) for i in range(num_inputs)],
         ['Out']).get_io()
 
 
@@ -154,7 +154,7 @@ def concat(num_ins):
 
         return forward_fn
 
-    return htfe.TensorflowEagerModule('Concat', {}, compile_fn,
+    return htfe.TensorflowEagerModule('Concat', compile_fn, {},
                                       ['In' + str(i) for i in range(num_ins)],
                                       ['Out']).get_io()
 

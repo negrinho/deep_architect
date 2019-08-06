@@ -57,7 +57,7 @@ def cell(input_fn, node_fn, combine_fn, unused_combine_fn, num_nodes,
         '%d_%d' % (i // 2, i % 2): hyperparameters[i]
         for i in range(len(hyperparameters))
     }
-    return mo.substitution_module('Cell', name_to_hyperp, substitution_fn,
+    return mo.substitution_module('Cell', substitution_fn, name_to_hyperp,
                                   ['In0', 'In1'], ['Out'], None)
 
 
@@ -210,9 +210,9 @@ def drop_path(cell_ratio):
         return forward_fn
 
     return htfe.TensorflowEagerModule(
-        'DropPath', {
+        'DropPath', compile_fn, {
             'keep_prob': hp_sharer.get('drop_path_keep_prob')
-        }, compile_fn, ['In0', 'In1'], ['Out']).get_io()
+        }, ['In0', 'In1'], ['Out']).get_io()
 
 
 class MISOIdentity(co.Module):
@@ -244,15 +244,16 @@ def miso_optional(fn, h_opt):
     def substitution_fn(dh):
         return fn() if dh["opt"] else MISOIdentity().get_io()
 
-    return mo.substitution_module("MISOOptional", {'opt': h_opt},
-                                  substitution_fn, ['In0', 'In1'], ['Out'],
+    return mo.substitution_module("MISOOptional",
+                                  substitution_fn, {'opt': h_opt},
+                                  ['In0', 'In1'], ['Out'],
                                   scope=None)
 
 
 def intermediate_node_fn(reduction, input_id, node_id, op_num, filters,
                          cell_ratio, cell_ops):
     stride = 2 if reduction and input_id < 2 else 1
-    h_is_not_none = co.DependentHyperparameter(lambda op: op != 'none', {
+    h_is_not_none = co.DependentHyperparameter(lambda dh: dh["op"] != 'none', {
         'op':
         cell_ops[node_id * 2 + op_num]
     })
@@ -314,7 +315,7 @@ def concat(num_ins):
 
         return forward_fn
 
-    return htfe.TensorflowEagerModule('Concat', {}, compile_fn,
+    return htfe.TensorflowEagerModule('Concat', compile_fn, {},
                                       ['In' + str(i) for i in range(num_ins)],
                                       ['Out']).get_io()
 
@@ -375,9 +376,8 @@ def maybe_factorized_reduction(add_relu=False):
 
         return forward_fn
 
-    return htfe.TensorflowEagerModule('MaybeFactorizedReduction', {},
-                                      compile_fn, ['In0', 'In1'],
-                                      ['Out']).get_io()
+    return htfe.TensorflowEagerModule('MaybeFactorizedReduction', compile_fn,
+                                      {}, ['In0', 'In1'], ['Out']).get_io()
 
 
 def cell_input_fn(filters):

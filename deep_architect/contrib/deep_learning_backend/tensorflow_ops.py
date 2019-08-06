@@ -144,9 +144,8 @@ def relu():
 
 
 def add():
-    return TensorflowModule('Add',
-                            {}, lambda: lambda In0, In1: tf.add(In0, In1),
-                            ['In0', 'In1'], ['Out']).get_io()
+    return TensorflowModule('Add', lambda: lambda In0, In1: tf.add(In0, In1),
+                            {}, ['In0', 'In1'], ['Out']).get_io()
 
 
 def global_pool2d():

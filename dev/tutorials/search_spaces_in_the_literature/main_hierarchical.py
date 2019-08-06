@@ -127,7 +127,7 @@ def motif(submotif_fn, num_nodes):
         }): D([0, 1]) for i in range(1, num_nodes) for j in range(i - 1)
     }
     return mo.substitution_module(
-        "Motif", name_to_hyperp, substitution_fn, ["In"], ["Out"], scope=None)
+        "Motif", substitution_fn, name_to_hyperp, ["In"], ["Out"], scope=None)
 
 
 (inputs, outputs) = mo.SearchSpaceFactory(

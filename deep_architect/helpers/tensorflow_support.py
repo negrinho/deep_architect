@@ -61,8 +61,8 @@ class TensorflowModule(co.Module):
 
     def __init__(self,
                  name,
-                 name_to_hyperp,
                  compile_fn,
+                 name_to_hyperp,
                  input_names,
                  output_names,
                  scope=None):
@@ -97,7 +97,7 @@ class TensorflowModule(co.Module):
 
 
 def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
-    return TensorflowModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
+    return TensorflowModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
                             scope).get_io()
 
 

@@ -135,8 +135,8 @@ def conv_stage(filters, kernel_size, num_nodes):
         }): D([0, 1]) for i in range(num_nodes) for j in range(i)
     }
     return mo.substitution_module("ConvStage",
-                                  name_to_hyperp,
-                                  substitution_fn, ["In"], ["Out"],
+                                  substitution_fn,
+                                  name_to_hyperp, ["In"], ["Out"],
                                   scope=None)
 
 

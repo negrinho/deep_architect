@@ -142,7 +142,7 @@ A dependent hyperparameters has its value assigned as a function of the values o
     def search_space2():
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
-        h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
+        h_units_dep = co.DependentHyperparameter(lambda dh: 2 * dh["units"],
                                                  {"units": h_units})
 
         return mo.siso_sequential([
@@ -191,7 +191,7 @@ We have implemented many structural transformations as substitution modules in D
     def search_space3():
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
-        h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
+        h_units_dep = co.DependentHyperparameter(lambda dh: 2 * dh["units"],
                                                  {"units": h_units})
         h_opt = D([0, 1])
 
@@ -228,7 +228,7 @@ Another simple substitution module is one that repeats a graph fragment in a ser
     def search_space4():
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
-        h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
+        h_units_dep = co.DependentHyperparameter(lambda dh: 2 * dh["units"],
                                                  {"units": h_units})
         h_opt = D([0, 1])
         h_num_repeats = D([1, 2, 4])
@@ -267,7 +267,7 @@ Substitution modules can be used in any place a module is needed, e.g., they can
     def search_space5():
         h_activation = D(["relu", "sigmoid"])
         h_units = D([32, 64, 128, 256])
-        h_units_dep = co.DependentHyperparameter(lambda units: 2 * units,
+        h_units_dep = co.DependentHyperparameter(lambda dh: 2 * dh["units"],
                                                  {"units": h_units})
         h_opt = D([0, 1])
         h_num_repeats = D([1, 2, 4])
