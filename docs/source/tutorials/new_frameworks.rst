@@ -153,7 +153,7 @@ The code is compact and self-explanatory. We pass a function called :code:`compi
             m = Conv2D(**dh)
 
             def forward_fn(di):
-                return {"Out": m(di["In"])}
+                return {"out": m(di["in"])}
 
             return forward_fn
 
@@ -164,7 +164,7 @@ The code is compact and self-explanatory. We pass a function called :code:`compi
                 "strides": h_strides,
                 "activation": h_activation,
                 "use_bias": h_use_bias
-            }, compile_fn, ["In"], ["Out"]).get_io()
+            }, compile_fn, ["in"], ["out"]).get_io()
 
 A few points to pay attention to:
 
@@ -197,8 +197,8 @@ A minimal example to go from this wrapper code to an instantiated Keras model is
     (inputs, outputs) = conv2d(h_filters, h_kernel_size, h_strides, h_activation,
                                h_use_bias)
     random_specify(outputs)
-    co.forward({inputs["In"]: x})
-    out = outputs["Out"].val
+    co.forward({inputs["in"]: x})
+    out = outputs["out"].val
     model = Model(inputs=x, outputs=out)
     model.summary()
 
@@ -225,8 +225,8 @@ As modules with a single input and a single output are common, we defined a few 
 
     (inputs, outputs) = conv2d(h_filters, h_kernel_size, h_strides, h_activation,
                                h_use_bias)
-    co.forward({inputs["In"]: x})
-    out = outputs["Out"].val
+    co.forward({inputs["in"]: x})
+    out = outputs["out"].val
     model = Model(inputs=x, outputs=out)
     model.summary()
     vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
@@ -286,7 +286,7 @@ We can see that the implementation for PyTorch is essentially the same as the on
             m = Conv2D(**dh)
 
             def forward_fn(di):
-                return {"Out": m(di["In"])}
+                return {"out": m(di["in"])}
 
             return forward_fn
 
@@ -297,7 +297,7 @@ We can see that the implementation for PyTorch is essentially the same as the on
                 "strides": h_strides,
                 "activation": h_activation,
                 "use_bias": h_use_bias
-            }, compile_fn, ["In"], ["Out"]).get_io()
+            }, compile_fn, ["in"], ["out"]).get_io()
 
 
     def conv2d_pytorch(h_filters, h_kernel_size, h_strides, h_activation,

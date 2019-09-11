@@ -149,8 +149,8 @@ class AdvanceClassifierEvaluator:
             set_recompile(outputs, True)
             gc.collect()
             htfe.set_is_training(outputs, mode == tf.estimator.ModeKeys.TRAIN)
-            co.forward({inputs['In']: images})
-            logits = outputs['Out'].val
+            co.forward({inputs['in']: images})
+            logits = outputs['out'].val
 
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             predicted_classes = tf.argmax(logits, 1)

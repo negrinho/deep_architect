@@ -172,18 +172,18 @@ class TPUEstimatorEvaluator:
             gc.collect()
             htfe.set_is_training(outputs, mode == tf.estimator.ModeKeys.TRAIN)
             step = tf.train.get_or_create_global_step()
-            if 'In' in inputs:
-                co.forward({inputs['In']: features})
-                logits = outputs['Out'].val
+            if 'in' in inputs:
+                co.forward({inputs['in']: features})
+                logits = outputs['out'].val
             else:
                 co.forward({
-                    inputs['In0']:
+                    inputs['in0']:
                     features,
-                    inputs['In1']:
+                    inputs['in1']:
                     float(self.steps_per_epoch * self.max_num_training_epochs)
                 })
-                logits = outputs['Out1'].val
-                aux_logits = outputs['Out0'].val
+                logits = outputs['out1'].val
+                aux_logits = outputs['out0'].val
 
             predicted_classes = tf.argmax(logits, 1, output_type=tf.int32)
             if mode == tf.estimator.ModeKeys.PREDICT:
@@ -209,7 +209,7 @@ class TPUEstimatorEvaluator:
                 onehot_labels=onehot_labels,
                 logits=aux_logits,
                 weights=.5,
-                reduction=tf.losses.Reduction.MEAN) if 'Out1' in outputs else 0
+                reduction=tf.losses.Reduction.MEAN) if 'out1' in outputs else 0
             loss = unreg_loss + l2_loss + aux_loss
             if mode == tf.estimator.ModeKeys.EVAL:
                 return tf.contrib.tpu.TPUEstimatorSpec(

@@ -14,7 +14,7 @@ def dense(h_units):
         Dense = tf.keras.layers.Dense(dh['units'])
 
         def fn(di):  # forward function
-            return {'Out': Dense(di['In'])}
+            return {'out': Dense(di['in'])}
 
         return fn
 
@@ -27,7 +27,7 @@ def flatten():
         Flatten = tf.keras.layers.Flatten()
 
         def fn(di):
-            return {'Out': Flatten(di['In'])}
+            return {'out': Flatten(di['in'])}
 
         return fn
 
@@ -41,14 +41,14 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = tf.keras.layers.Activation('relu')(di['In'])
+                Out = tf.keras.layers.Activation('relu')(di['in'])
             elif nonlin_name == 'tanh':
-                Out = tf.keras.layers.Activation('tanh')(di['In'])
+                Out = tf.keras.layers.Activation('tanh')(di['in'])
             elif nonlin_name == 'elu':
-                Out = tf.keras.layers.Activation('elu')(di['In'])
+                Out = tf.keras.layers.Activation('elu')(di['in'])
             else:
                 raise ValueError
-            return {"Out": Out}
+            return {"out": Out}
 
         return fn
 
@@ -61,7 +61,7 @@ def dropout(h_keep_prob):
         Dropout = tf.keras.layers.Dropout(dh['keep_prob'])
 
         def fn(di):
-            return {'Out': Dropout(di['In'])}
+            return {'out': Dropout(di['in'])}
 
         return fn
 
@@ -74,7 +74,7 @@ def batch_normalization():
         bn = tf.keras.layers.BatchNormalization()
 
         def fn(di):
-            return {'Out': bn(di['In'])}
+            return {'out': bn(di['in'])}
 
         return fn
 
@@ -99,14 +99,16 @@ def dnn_net_simple(num_classes):
     # defining search space topology
     model = mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: mo.siso_sequential([
-            dense(h_num_hidden),
-            nonlinearity(h_nonlin_name),
-            mo.siso_permutation([
-                lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
-                lambda: mo.siso_optional(batch_normalization, h_opt_bn),
-            ], h_perm)
-        ]), h_num_repeats),
+        mo.siso_repeat(
+            lambda: mo.siso_sequential([
+                dense(h_num_hidden),
+                nonlinearity(h_nonlin_name),
+                mo.siso_permutation([
+                    lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
+                                             h_opt_drop),
+                    lambda: mo.siso_optional(batch_normalization, h_opt_bn),
+                ], h_perm)
+            ]), h_num_repeats),
         dense(D([num_classes]))
     ])
 
@@ -119,7 +121,8 @@ def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
         dense(h_num_hidden),
         nonlinearity(h_nonlin_name),
         mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob), h_opt_drop),
+            lambda: mo.siso_optional(lambda: dropout(h_drop_keep_prob),
+                                     h_opt_drop),
             lambda: mo.siso_optional(batch_normalization, h_opt_bn),
         ], h_swap)
     ])
@@ -132,11 +135,12 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         flatten(),
-        mo.siso_repeat(lambda: dnn_cell(
-            D([64, 128, 256, 512, 1024]),
-            h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-            D([0.25, 0.5, 0.75])), D([1, 2])),
-        dense(D([num_classes]))])
+        mo.siso_repeat(
+            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+                             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
+                             D([0.25, 0.5, 0.75])), D([1, 2])),
+        dense(D([num_classes]))
+    ])
 
 
 import deep_architect.searchers.random as se
@@ -176,23 +180,21 @@ class SimpleClassifierEvaluator:
         (x_train, y_train) = self.train_dataset
 
         X = tf.keras.layers.Input(x_train[0].shape)
-        co.forward({inputs['In']: X})
-        logits = outputs['Out'].val
+        co.forward({inputs['in']: X})
+        logits = outputs['out'].val
         probs = tf.keras.layers.Softmax()(logits)
-        model = tf.keras.models.Model(
-            inputs=[inputs['In'].val], outputs=[probs])
+        model = tf.keras.models.Model(inputs=[inputs['in'].val],
+                                      outputs=[probs])
         optimizer = tf.keras.optimizers.Adam(lr=self.learning_rate)
-        model.compile(
-            optimizer=optimizer,
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy'])
+        model.compile(optimizer=optimizer,
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
         model.summary()
-        history = model.fit(
-            x_train,
-            y_train,
-            batch_size=self.batch_size,
-            epochs=self.max_num_training_epochs,
-            validation_split=self.val_split)
+        history = model.fit(x_train,
+                            y_train,
+                            batch_size=self.batch_size,
+                            epochs=self.max_num_training_epochs,
+                            validation_split=self.val_split)
 
         results = {'val_acc': history.history['val_acc'][-1]}
         return results

@@ -39,14 +39,14 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = Activation('relu')(di['In'])
+                Out = Activation('relu')(di['in'])
             elif nonlin_name == 'tanh':
-                Out = Activation('tanh')(di['In'])
+                Out = Activation('tanh')(di['in'])
             elif nonlin_name == 'elu':
-                Out = Activation('elu')(di['In'])
+                Out = Activation('elu')(di['in'])
             else:
                 raise ValueError
-            return {"Out": Out}
+            return {"out": Out}
 
         return fn
 
@@ -105,11 +105,11 @@ class SimpleClassifierEvaluator:
         keras.backend.clear_session()
 
         X = Input(self.X_train[0].shape)
-        co.forward({inputs['In']: X})
-        logits = outputs['Out'].val
+        co.forward({inputs['in']: X})
+        logits = outputs['out'].val
         probs = Activation('softmax')(logits)
 
-        model = Model(inputs=[inputs['In'].val], outputs=[probs])
+        model = Model(inputs=[inputs['in'].val], outputs=[probs])
         model.compile(optimizer=Adam(lr=self.learning_rate),
                       loss='sparse_categorical_crossentropy',
                       metrics=['accuracy'])

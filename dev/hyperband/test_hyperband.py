@@ -15,7 +15,7 @@ def flatten():
     def compile_fn(di, dh):
         Flatten = keras.layers.Flatten()
         def fn(di):
-            return {'Out': Flatten(di['In'])}
+            return {'out': Flatten(di['in'])}
         return fn
     return siso_tfm('Flatten', compile_fn, {}) # use siso_tfm for now
 
@@ -23,7 +23,7 @@ def dense(h_units):
     def compile_fn(di, dh):
         Dense = keras.layers.Dense(dh['units'])
         def fn(di):
-            return {'Out' : Dense(di['In'])}
+            return {'out' : Dense(di['in'])}
         return fn
     return siso_tfm('Dense', compile_fn, {'units' : h_units})
 
@@ -32,14 +32,14 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = keras.layers.Activation('relu')(di['In'])
+                Out = keras.layers.Activation('relu')(di['in'])
             elif nonlin_name == 'tanh':
-                Out = keras.layers.Activation('tanh')(di['In'])
+                Out = keras.layers.Activation('tanh')(di['in'])
             elif nonlin_name == 'elu':
-                Out = keras.layers.Activation('elu')(di['In'])
+                Out = keras.layers.Activation('elu')(di['in'])
             else:
                 raise ValueError
-            return {"Out" : Out}
+            return {"out" : Out}
         return fn
     return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
@@ -47,7 +47,7 @@ def dropout(h_keep_prob):
     def compile_fn(di, dh):
         Dropout = keras.layers.Dropout(dh['keep_prob'])
         def fn(di):
-            return {'Out' : Dropout(di['In'])}
+            return {'out' : Dropout(di['in'])}
         return fn
     return siso_tfm('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
@@ -55,7 +55,7 @@ def batch_normalization():
     def compile_fn(di, dh):
         bn = keras.layers.BatchNormalization()
         def fn(di):
-            return {'Out' : bn(di['In'])}
+            return {'out' : bn(di['in'])}
         return fn
     return siso_tfm('BatchNormalization', compile_fn, {})
 
@@ -131,10 +131,10 @@ class SimpleClassifierEvaluator:
         (x_train, y_train) = self.train_dataset
 
         X = keras.layers.Input(x_train[0].shape)
-        co.forward({inputs['In'] : X})
-        logits = outputs['Out'].val
+        co.forward({inputs['in'] : X})
+        logits = outputs['out'].val
         probs = keras.layers.Softmax()(logits)
-        model = keras.models.Model(inputs=[inputs['In'].val], outputs=[probs])
+        model = keras.models.Model(inputs=[inputs['in'].val], outputs=[probs])
         optimizer = keras.optimizers.Adam(lr=self.learning_rate)
         model.compile(optimizer=optimizer,
                     loss='sparse_categorical_crossentropy',

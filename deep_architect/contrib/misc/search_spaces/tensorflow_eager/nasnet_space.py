@@ -24,7 +24,7 @@ def cell(input_fn, node_fn, combine_fn, unused_combine_fn, num_nodes,
 
     def substitution_fn(dh):
         c_ins, c_outs = input_fn()
-        nodes = [c_outs['Out0'], c_outs['Out1']]
+        nodes = [c_outs['out0'], c_outs['out1']]
         used_node = [False] * (num_nodes + 2)
         for i in range(num_nodes):
             # Get indices of hidden states to be combined
@@ -34,22 +34,22 @@ def cell(input_fn, node_fn, combine_fn, unused_combine_fn, num_nodes,
             # Transform hidden states
             h0 = node_fn(idx0, i, 0)
             h1 = node_fn(idx1, i, 1)
-            h0[0]['In'].connect(nodes[idx0])
-            h1[0]['In'].connect(nodes[idx1])
+            h0[0]['in'].connect(nodes[idx0])
+            h1[0]['in'].connect(nodes[idx1])
             used_node[idx0] = used_node[idx1] = True
 
             # Combine hidden states
             h = combine_fn()
-            h[0]['In0'].connect(h0[1]['Out'])
-            h[0]['In1'].connect(h1[1]['Out'])
+            h[0]['in0'].connect(h0[1]['out'])
+            h[0]['in1'].connect(h1[1]['out'])
 
-            nodes.append(h[1]['Out'])
+            nodes.append(h[1]['out'])
 
         ins, outs = unused_combine_fn(sum(not used for used in used_node))
         input_id = 0
         for ix, node in enumerate(nodes):
             if not used_node[ix]:
-                ins['In' + str(input_id)].connect(node)
+                ins['in' + str(input_id)].connect(node)
                 input_id += 1
         return c_ins, outs
 
@@ -58,7 +58,7 @@ def cell(input_fn, node_fn, combine_fn, unused_combine_fn, num_nodes,
         for i in range(len(hyperparameters))
     }
     return mo.substitution_module('Cell', substitution_fn, name_to_hyperp,
-                                  ['In0', 'In1'], ['Out'], None)
+                                  ['in0', 'in1'], ['out'], None)
 
 
 def SP1_ops(name=None, reduction=False):
@@ -118,7 +118,7 @@ def full_conv_op(filters, filter_size, stride, dilation_rate,
 def check_filters(filters, stride=1):
 
     def compile_fn(di, dh):
-        num_filters = di['In'].shape[-1].value
+        num_filters = di['in'].shape[-1].value
         if num_filters != filters or stride > 1:
             conv = tf.keras.layers.Conv2D(filters,
                                           1,
@@ -128,7 +128,7 @@ def check_filters(filters, stride=1):
             conv = None
 
         def forward_fn(di, is_training=True):
-            return {'Out': di['In'] if conv is None else conv(di['In'])}
+            return {'out': di['in'] if conv is None else conv(di['in'])}
 
         return forward_fn
 
@@ -202,17 +202,17 @@ class DropPath(tf.keras.layers.Layer):
 def drop_path(cell_ratio):
 
     def compile_fn(di, dh):
-        drop_path_layer = DropPath(dh['keep_prob'], cell_ratio, di['In1'])
+        drop_path_layer = DropPath(dh['keep_prob'], cell_ratio, di['in1'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': drop_path_layer(di['In0'])}
+            return {'out': drop_path_layer(di['in0'])}
 
         return forward_fn
 
     return htfe.TensorflowEagerModule(
         'DropPath', compile_fn, {
             'keep_prob': hp_sharer.get('drop_path_keep_prob')
-        }, ['In0', 'In1'], ['Out']).get_io()
+        }, ['in0', 'in1'], ['out']).get_io()
 
 
 class MISOIdentity(co.Module):
@@ -228,15 +228,15 @@ class MISOIdentity(co.Module):
 
     def __init__(self, scope=None, name=None):
         co.Module.__init__(self, scope, name)
-        self._register_input("In0")
-        self._register_input("In1")
-        self._register_output("Out")
+        self._register_input("in0")
+        self._register_input("in1")
+        self._register_output("out")
 
     def _compile(self):
         pass
 
     def _forward(self):
-        self.outputs['Out'].val = self.inputs['In0'].val
+        self.outputs['out'].val = self.inputs['in0'].val
 
 
 def miso_optional(fn, h_opt):
@@ -246,7 +246,7 @@ def miso_optional(fn, h_opt):
 
     return mo.substitution_module("MISOOptional",
                                   substitution_fn, {'opt': h_opt},
-                                  ['In0', 'In1'], ['Out'],
+                                  ['in0', 'in1'], ['out'],
                                   scope=None)
 
 
@@ -296,8 +296,8 @@ def intermediate_node_fn(reduction, input_id, node_id, op_num, filters,
         }, cell_ops[node_id * 2 + op_num])
     drop_in, drop_out = miso_optional(lambda: drop_path(cell_ratio),
                                       h_is_not_none)
-    drop_in['In0'].connect(op_out['Out'])
-    drop_in['In1'].connect(global_vars['total_steps'])
+    drop_in['in0'].connect(op_out['out'])
+    drop_in['in1'].connect(global_vars['total_steps'])
     return op_in, drop_out
 
 
@@ -308,16 +308,16 @@ def concat(num_ins):
 
         def forward_fn(di, is_training=True):
             return {
-                'Out':
+                'out':
                 concat_op([di[input_name] for input_name in di])
-                if concat_op else di['In0']
+                if concat_op else di['in0']
             }
 
         return forward_fn
 
     return htfe.TensorflowEagerModule('Concat', compile_fn, {},
-                                      ['In' + str(i) for i in range(num_ins)],
-                                      ['Out']).get_io()
+                                      ['in' + str(i) for i in range(num_ins)],
+                                      ['out']).get_io()
 
 
 def combine_unused(num_ins):
@@ -328,10 +328,10 @@ def combine_unused(num_ins):
     last_in, last_out = inputs[-1]
     for i in range(num_ins):
         f_in, f_out = inputs[i]
-        factorized[i][0]['In0'].connect(f_out['Out'])
-        factorized[i][0]['In1'].connect(last_out['Out'])
-        di['In' + str(i)] = f_in['In']
-        concat_ins['In' + str(i)].connect(factorized[i][1]['Out'])
+        factorized[i][0]['in0'].connect(f_out['out'])
+        factorized[i][0]['in1'].connect(last_out['out'])
+        di['in' + str(i)] = f_in['in']
+        concat_ins['in' + str(i)].connect(factorized[i][1]['out'])
 
     return di, concat_outs
 
@@ -339,8 +339,8 @@ def combine_unused(num_ins):
 def maybe_factorized_reduction(add_relu=False):
 
     def compile_fn(di, dh):
-        _, _, height, channels = di['In0'].shape.as_list()
-        _, _, final_height, final_channels = di['In1'].shape.as_list()
+        _, _, height, channels = di['in0'].shape.as_list()
+        _, _, final_height, final_channels = di['in1'].shape.as_list()
         if add_relu:
             relu = tf.keras.layers.ReLU()
         if height == final_height and channels == final_channels:
@@ -358,7 +358,7 @@ def maybe_factorized_reduction(add_relu=False):
             concat = tf.keras.layers.Concatenate(axis=3)
 
         def forward_fn(di, is_training=True):
-            inp = relu(di['In0']) if add_relu else di['In0']
+            inp = relu(di['in0']) if add_relu else di['in0']
             if height == final_height and channels == final_channels:
                 out = inp
             elif height == final_height:
@@ -372,26 +372,26 @@ def maybe_factorized_reduction(add_relu=False):
                 path2 = conv2(path2)
                 out = concat([path1, path2])
                 out = bn(out)
-            return {'Out': out}
+            return {'out': out}
 
         return forward_fn
 
     return htfe.TensorflowEagerModule('MaybeFactorizedReduction', compile_fn,
-                                      {}, ['In0', 'In1'], ['Out']).get_io()
+                                      {}, ['in0', 'in1'], ['out']).get_io()
 
 
 def cell_input_fn(filters):
     prev_input = mo.identity()
     cur_input = wrap_relu_batch_norm(conv2d(D([filters]), D([1])))
     transformed_prev_input = maybe_factorized_reduction(add_relu=True)
-    transformed_prev_input[0]['In0'].connect(prev_input[1]['Out'])
-    transformed_prev_input[0]['In1'].connect(cur_input[1]['Out'])
+    transformed_prev_input[0]['in0'].connect(prev_input[1]['out'])
+    transformed_prev_input[0]['in1'].connect(cur_input[1]['out'])
     return {
-        'In0': prev_input[0]['In'],
-        'In1': cur_input[0]['In']
+        'in0': prev_input[0]['in'],
+        'in1': cur_input[0]['in']
     }, {
-        'Out0': transformed_prev_input[1]['Out'],
-        'Out1': cur_input[1]['Out']
+        'out0': transformed_prev_input[1]['out'],
+        'out1': cur_input[1]['out']
     }
 
 
@@ -425,13 +425,13 @@ def stem(filters):
 def global_convolution(h_num_filters):
 
     def compile_fn(di, dh):
-        _, h, w, _ = di['In'].shape.as_list()
+        _, h, w, _ = di['in'].shape.as_list()
         conv = tf.keras.layers.Conv2D(dh['num_filters'], [h, w],
                                       use_bias=False,
                                       padding='VALID')
 
         def forward_fn(di, is_training=True):
-            return {'Out': conv(di['In'])}
+            return {'out': conv(di['in'])}
 
         return forward_fn
 
@@ -464,7 +464,7 @@ def generate_search_space(num_nodes_per_cell, num_normal_cells,
         'drop_path_keep_prob', lambda: D([.7], name='drop_path_keep_prob'))
     stem_in, stem_out = stem(int(init_filters * stem_multiplier))
     total_steps_in, total_steps_out = mo.identity()
-    global_vars['total_steps'] = total_steps_out['Out']
+    global_vars['total_steps'] = total_steps_out['out']
     normal_cell_fn = create_cell_generator(num_nodes_per_cell, False)
     reduction_cell_fn = create_cell_generator(num_nodes_per_cell, True)
 
@@ -494,20 +494,20 @@ def generate_search_space(num_nodes_per_cell, num_normal_cells,
         cells_created += 1.0
         if i == aux_loss_idx:
             aux_in, aux_out = aux_logits()
-            aux_in['In'].connect(inputs[-1]['Out'])
-            outs['Out0'] = aux_out['Out']
+            aux_in['in'].connect(inputs[-1]['out'])
+            outs['out0'] = aux_out['out']
     _, final_out = mo.siso_sequential([(None, inputs[-1]),
                                        relu(),
                                        global_pool2d(),
                                        dropout(D([1.0])),
                                        fc_layer(D([10]))])
-    outs['Out1'] = final_out['Out']
-    return {'In0': stem_in['In'], 'In1': total_steps_in['In']}, outs
+    outs['out1'] = final_out['out']
+    return {'in0': stem_in['in'], 'in1': total_steps_in['in']}, outs
 
 
 def connect_new_cell(cell, inputs):
-    cell[0]['In0'].connect(inputs[-2]['Out'])
-    cell[0]['In1'].connect(inputs[-1]['Out'])
+    cell[0]['in0'].connect(inputs[-2]['out'])
+    cell[0]['in1'].connect(inputs[-1]['out'])
     inputs.append(cell[1])
 
 

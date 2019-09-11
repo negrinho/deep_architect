@@ -58,5 +58,5 @@ class DyNetModule(co.Module):
 
 def siso_dynet_module(name, compile_fn, name_to_hyperp, scope=None):
     "Dynet module for single-input, single-output"
-    return DyNetModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
+    return DyNetModule(name, compile_fn, name_to_hyperp, ['in'], ['out'],
                        scope).get_io()

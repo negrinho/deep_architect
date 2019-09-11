@@ -87,8 +87,8 @@ class ENASEvaluator(object):
             X = tf.convert_to_tensor(X_batch, np.float32)  #.gpu()
             y = tf.convert_to_tensor(y_batch, np.float32)  #.gpu()
 
-            co.forward({inputs['In']: X})
-            logits = outputs['Out'].val
+            co.forward({inputs['in']: X})
+            logits = outputs['out'].val
 
             correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y, 1))
             num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
@@ -108,8 +108,8 @@ class ENASEvaluator(object):
     def _compute_loss(self, inputs, outputs, X, y, loss_metric):
         X = tf.constant(X).gpu()
         y = tf.constant(y).gpu()
-        co.forward({inputs['In']: X})
-        logits = outputs['Out'].val
+        co.forward({inputs['in']: X})
+        logits = outputs['out'].val
         loss = tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y))
         loss_metric(loss)

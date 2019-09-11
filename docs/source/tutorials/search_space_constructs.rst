@@ -78,8 +78,8 @@ In the graph, modules are represented by rectangles and hyperparameters are repr
     import deep_architect.searchers.common as seco
     vs = seco.random_specify(outputs)
     x = Input(shape=(784,))
-    co.forward({inputs["In"]: x})
-    y = outputs["Out"].val
+    co.forward({inputs["in"]: x})
+    y = outputs["out"].val
     print(vs)
 
 :py:func:`deep_architect.searchers.common.random_specify` iterates over independent hyperparameters that have not yet been assigned a value and chooses a value uniformly at random from the set of possible values. After all hyperparameters have been assigned values, we have the following search space:

@@ -14,7 +14,7 @@ def max_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
                                             padding=dh['padding'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': pool(di['In'])}
+            return {'out': pool(di['in'])}
 
         return forward_fn
 
@@ -34,7 +34,7 @@ def min_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
         negate = tf.keras.layers.Lambda(lambda x: -1 * x, name='negate')
 
         def forward_fn(di, is_training=True):
-            return {'Out': negate(pool(negate(di['In'])))}
+            return {'out': negate(pool(negate(di['in'])))}
 
         return forward_fn
 
@@ -54,7 +54,7 @@ def avg_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
 
         def forward_fn(di, is_training=True):
 
-            return {'Out': pool(di['In'])}
+            return {'out': pool(di['in'])}
 
         return forward_fn
 
@@ -71,7 +71,7 @@ def batch_normalization():
         bn = tf.keras.layers.BatchNormalization(momentum=.9, epsilon=1e-5)
 
         def forward_fn(di, is_training):
-            return {'Out': bn(di['In'])}
+            return {'out': bn(di['in'])}
 
         return forward_fn
 
@@ -84,7 +84,7 @@ def relu():
         relu = tf.keras.layers.ReLU()
 
         def forward_fn(di, is_training=True):
-            return {'Out': relu(di['In'])}
+            return {'out': relu(di['in'])}
 
         return forward_fn
 
@@ -107,7 +107,7 @@ def conv2d(h_num_filters,
                                       padding=dh['padding'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': conv(di['In'])}
+            return {'out': conv(di['in'])}
 
         return forward_fn
 
@@ -142,7 +142,7 @@ def separable_conv2d(h_num_filters,
             padding=dh['padding'])
 
         def fn(di, is_training=True):
-            return {'Out': conv_op(di['In'])}
+            return {'out': conv_op(di['in'])}
 
         return fn
 
@@ -191,11 +191,11 @@ def dropout(h_keep_prob):
         dropout_op = Dropout(1 - dh['keep_prob'])
 
         def forward_fn(di, is_training=True):
-            # out = tf.nn.dropout(di['In'], dh['keep_prob'])
+            # out = tf.nn.dropout(di['in'], dh['keep_prob'])
             # else:
-            #     out = di['In']
-            out = dropout_op(di['In'])
-            return {'Out': out}
+            #     out = di['in']
+            out = dropout_op(di['in'])
+            return {'out': out}
 
         return forward_fn
 
@@ -209,7 +209,7 @@ def global_pool2d():
         pool = tf.keras.layers.GlobalAveragePooling2D()
 
         def forward_fn(di, is_training=True):
-            return {'Out': pool(di['In'])}
+            return {'out': pool(di['in'])}
 
         return forward_fn
 
@@ -222,7 +222,7 @@ def flatten():
         flatten = tf.keras.layers.Flatten()
 
         def forward_fn(di, is_training=True):
-            return {'Out': flatten(di['In'])}
+            return {'out': flatten(di['in'])}
 
         return forward_fn
 
@@ -235,7 +235,7 @@ def fc_layer(h_num_units):
         fc = tf.keras.layers.Dense(dh['num_units'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': fc(di['In'])}
+            return {'out': fc(di['in'])}
 
         return forward_fn
 
@@ -252,15 +252,15 @@ def add(num_inputs):
             add = None
 
         def forward_fn(di, is_training=True):
-            out = add([di[inp] for inp in di]) if add else di['In0']
+            out = add([di[inp] for inp in di]) if add else di['in0']
 
-            return {'Out': out}
+            return {'out': out}
 
         return forward_fn
 
     return TensorflowEagerModule('Add', compile_fn, {},
-                                 ['In' + str(i) for i in range(num_inputs)],
-                                 ['Out']).get_io()
+                                 ['in' + str(i) for i in range(num_inputs)],
+                                 ['out']).get_io()
 
 
 func_dict = {

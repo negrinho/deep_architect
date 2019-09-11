@@ -16,27 +16,27 @@ class Identity(co.Module):
 
     def __init__(self, scope=None, name=None):
         co.Module.__init__(self, scope, name)
-        self._register_input("In")
-        self._register_output("Out")
+        self._register_input("in")
+        self._register_output("out")
 
     def _compile(self):
         pass
 
     def _forward(self):
-        self.outputs['Out'].val = self.inputs['In'].val
+        self.outputs['out'].val = self.inputs['in'].val
 
 
 class HyperparameterAggregator(co.Module):
 
     def __init__(self, name_to_hyperp, scope=None, name=None):
         co.Module.__init__(self, scope, name)
-        self._register(["In"], ["Out"], name_to_hyperp)
+        self._register(["in"], ["out"], name_to_hyperp)
 
     def _compile(self):
         pass
 
     def _forward(self):
-        self.outputs['Out'].val = self.inputs['In'].val
+        self.outputs['out'].val = self.inputs['in'].val
 
 
 class SubstitutionModule(co.Module):
@@ -368,7 +368,7 @@ def siso_nested_repeat(fn_first, fn_iter, h_num_repeats, scope=None, name=None):
     """
     return mimo_nested_repeat(fn_first,
                               fn_iter,
-                              h_num_repeats, ['In'], ['Out'],
+                              h_num_repeats, ['in'], ['out'],
                               scope=scope,
                               name=_get_name(name, "SISONestedRepeat"))
 
@@ -405,7 +405,7 @@ def siso_or(fn_lst, h_or, scope=None, name=None):
             substitution module.
     """
     return mimo_or(fn_lst,
-                   h_or, ['In'], ['Out'],
+                   h_or, ['in'], ['out'],
                    scope=scope,
                    name=_get_name(name, "SISOOr"))
 
@@ -447,11 +447,11 @@ def siso_repeat(fn, h_num_repeats, scope=None, name=None):
         for i in range(1, dh["num_reps"]):
             prev_outputs = outputs_lst[i - 1]
             next_inputs = inputs_lst[i]
-            next_inputs['In'].connect(prev_outputs['Out'])
+            next_inputs['in'].connect(prev_outputs['out'])
         return inputs_lst[0], outputs_lst[-1]
 
     return substitution_module(_get_name(name, "SISORepeat"), substitution_fn,
-                               {'num_reps': h_num_repeats}, ['In'], ['Out'],
+                               {'num_reps': h_num_repeats}, ['in'], ['out'],
                                scope)
 
 
@@ -485,7 +485,7 @@ def siso_optional(fn, h_opt, scope=None, name=None):
         return fn() if dh["opt"] else identity()
 
     return substitution_module(_get_name(name, "SISOOptional"), substitution_fn,
-                               {'opt': h_opt}, ['In'], ['Out'], scope)
+                               {'opt': h_opt}, ['in'], ['out'], scope)
 
 
 # TODO: improve by not enumerating permutations
@@ -532,12 +532,12 @@ def siso_permutation(fn_lst, h_perm, scope=None, name=None):
             next_inputs = inputs_lst[i]
 
             # NOTE: to extend this, think about the connection structure.
-            next_inputs['In'].connect(prev_outputs['Out'])
+            next_inputs['in'].connect(prev_outputs['out'])
         return inputs_lst[0], outputs_lst[-1]
 
     return substitution_module(_get_name(name,
                                          "SISOPermutation"), substitution_fn,
-                               {'perm_idx': h_perm}, ['In'], ['Out'], scope)
+                               {'perm_idx': h_perm}, ['in'], ['out'], scope)
 
 
 def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
@@ -580,13 +580,13 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
 
         i_inputs, i_outputs = identity()
         for i in range(dh["num_splits"]):
-            i_outputs['Out'].connect(inputs_lst[i]['In'])
-            c_inputs['In' + str(i)].connect(outputs_lst[i]['Out'])
+            i_outputs['out'].connect(inputs_lst[i]['in'])
+            c_inputs['in' + str(i)].connect(outputs_lst[i]['out'])
         return i_inputs, c_outputs
 
     return substitution_module(_get_name(name, "SISOSplitCombine"),
                                substitution_fn, {'num_splits': h_num_splits},
-                               ['In'], ['Out'], scope)
+                               ['in'], ['out'], scope)
 
 
 def preproc_apply_postproc(preproc_fn, apply_fn, postproc_fn):
@@ -607,13 +607,13 @@ def dense_block(h_num_applies,
         prev_c_outputs = [i_outputs]
         for idx in range(dh["num_applies"]):
             (a_inputs, a_outputs) = apply_fn()
-            a_inputs['In'].connect(prev_c_outputs[-1]["Out"])
+            a_inputs['in'].connect(prev_c_outputs[-1]["out"])
             prev_a_outputs.append(a_outputs)
 
             if idx < dh["num_applies"] - 1 or dh["end_in_combine"]:
                 (c_inputs, c_outputs) = combine_fn(idx + 2)
                 for i, iter_outputs in enumerate(prev_a_outputs):
-                    c_inputs["In%d" % i].connect(iter_outputs["Out"])
+                    c_inputs["in%d" % i].connect(iter_outputs["out"])
                 prev_c_outputs.append(c_outputs)
 
         if dh["end_in_combine"]:
@@ -625,7 +625,7 @@ def dense_block(h_num_applies,
     return substitution_module(_get_name(name, "DenseBlock"), substitution_fn, {
         "num_applies": h_num_applies,
         "end_in_combine": h_end_in_combine
-    }, ["In"], ["Out"], scope)
+    }, ["in"], ["out"], scope)
 
 
 def siso_residual(main_fn, residual_fn, combine_fn):
@@ -664,11 +664,11 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     (c_inputs, c_outputs) = combine_fn()
 
     i_inputs, i_outputs = identity()
-    i_outputs['Out'].connect(m_inputs['In'])
-    i_outputs['Out'].connect(r_inputs['In'])
+    i_outputs['out'].connect(m_inputs['in'])
+    i_outputs['out'].connect(r_inputs['in'])
 
-    m_outputs['Out'].connect(c_inputs['In0'])
-    r_outputs['Out'].connect(c_inputs['In1'])
+    m_outputs['out'].connect(c_inputs['in0'])
+    r_outputs['out'].connect(c_inputs['in1'])
 
     return i_inputs, c_outputs
 
@@ -690,7 +690,7 @@ def siso_sequential(io_lst):
 
     prev_outputs = io_lst[0][1]
     for next_inputs, next_outputs in io_lst[1:]:
-        prev_outputs['Out'].connect(next_inputs['In'])
+        prev_outputs['out'].connect(next_inputs['in'])
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
 
@@ -700,8 +700,8 @@ def buffer_io(inputs, outputs):
     for name, ix in iteritems(inputs):
         if isinstance(ix.get_module(), SubstitutionModule):
             b_inputs, b_outputs = identity()
-            b_outputs['Out'].connect(ix)
-            buffered_ix = b_inputs['In']
+            b_outputs['out'].connect(ix)
+            buffered_ix = b_inputs['in']
         else:
             buffered_ix = ix
         buffered_inputs[name] = buffered_ix
@@ -710,8 +710,8 @@ def buffer_io(inputs, outputs):
     for name, ox in iteritems(outputs):
         if isinstance(ox.get_module(), SubstitutionModule):
             b_inputs, b_outputs = identity()
-            ox.connect(b_inputs['In'])
-            buffered_ox = b_outputs['Out']
+            ox.connect(b_inputs['in'])
+            buffered_ox = b_outputs['out']
         else:
             buffered_ox = ox
         buffered_outputs[name] = buffered_ox

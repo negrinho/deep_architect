@@ -81,22 +81,22 @@ def cell(input_fn, node_fn, output_fn, h_connections, num_nodes, channels):
         for out_id in range(1, num_nodes + 1):
             if dh['%d_%d' % (0, out_id)]:
                 proj_in, proj_out = input_fn(vertex_channels[out_id])
-                nodes[0][1]['Out'].connect(proj_in['In'])
-                proj_out['Out'].connect(
-                    nodes[out_id][0]['In' + str(num_connected[out_id])])
+                nodes[0][1]['out'].connect(proj_in['in'])
+                proj_out['out'].connect(
+                    nodes[out_id][0]['in' + str(num_connected[out_id])])
                 num_connected[out_id] += 1
         for in_id in range(1, num_nodes + 1):
             for out_id in range(in_id + 1, num_nodes + 2):
                 if dh['%d_%d' % (in_id, out_id)]:
-                    nodes[in_id][1]['Out'].connect(
-                        nodes[out_id][0]['In' + str(num_connected[out_id])])
+                    nodes[in_id][1]['out'].connect(
+                        nodes[out_id][0]['in' + str(num_connected[out_id])])
                     num_connected[out_id] += 1
         if dh['%d_%d' % (0, num_nodes + 1)]:
             proj_in, proj_out = input_fn(channels)
             add_in, add_out = add(2)
-            nodes[0][1]['Out'].connect(proj_in['In'])
-            proj_out['Out'].connect(add_in['In0'])
-            nodes[-1][1]['Out'].connect(add_in['In1'])
+            nodes[0][1]['out'].connect(proj_in['in'])
+            proj_out['out'].connect(add_in['in0'])
+            nodes[-1][1]['out'].connect(add_in['in1'])
             nodes[-1] = (add_in, add_out)
 
         return nodes[0][0], nodes[-1][1]
@@ -107,7 +107,7 @@ def cell(input_fn, node_fn, output_fn, h_connections, num_nodes, channels):
         name_to_hparam['%d_%d' % hparam] = h_connections[ix]
     return mo.substitution_module('NasbenchCell',
                                   substitution_fn,
-                                  name_to_hparam, ['In'], ['Out'],
+                                  name_to_hparam, ['in'], ['out'],
                                   scope=None)
 
 
@@ -119,13 +119,13 @@ def add(num_inputs):
 
         def forward_fn(di, is_training=True):
             out = [di[inp][:, :, :, :final_channels] for inp in di]
-            return {'Out': tf.add_n(out)}
+            return {'out': tf.add_n(out)}
 
         return forward_fn
 
     return htfe.TensorflowEagerModule(
-        'Add', compile_fn, {}, ['In' + str(i) for i in range(num_inputs)],
-        ['Out']).get_io()
+        'Add', compile_fn, {}, ['in' + str(i) for i in range(num_inputs)],
+        ['out']).get_io()
 
 
 def intermediate_node_fn(num_inputs, node_id, filters, cell_ops):
@@ -148,15 +148,15 @@ def concat(num_ins):
 
         def forward_fn(di, is_training=True):
             return {
-                'Out':
+                'out':
                 tf.concat(values=[di[input_name] for input_name in di], axis=3)
             }
 
         return forward_fn
 
     return htfe.TensorflowEagerModule('Concat', compile_fn, {},
-                                      ['In' + str(i) for i in range(num_ins)],
-                                      ['Out']).get_io()
+                                      ['in' + str(i) for i in range(num_ins)],
+                                      ['out']).get_io()
 
 
 def create_cell_generator(num_nodes):

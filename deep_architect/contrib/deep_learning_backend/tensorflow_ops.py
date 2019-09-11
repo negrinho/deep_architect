@@ -19,7 +19,7 @@ def conv2d(h_num_filters,
                                    padding=dh['padding'])
 
         def fn(di):
-            return {'Out': conv_op(di['In'])}
+            return {'out': conv_op(di['in'])}
 
         return fn
 
@@ -53,7 +53,7 @@ def separable_conv2d(h_num_filters,
             padding=dh['padding'])
 
         def fn(di):
-            return {'Out': conv_op(di['In'])}
+            return {'out': conv_op(di['in'])}
 
         return fn
 
@@ -75,8 +75,8 @@ def max_pool2d(h_kernel_size, h_stride=1):
 
         def fn(di):
             return {
-                'Out':
-                tf.nn.max_pool(di['In'],
+                'out':
+                tf.nn.max_pool(di['in'],
                                [1, dh['kernel_size'], dh['kernel_size'], 1],
                                [1, dh['stride'], dh['stride'], 1], 'SAME')
             }
@@ -95,8 +95,8 @@ def avg_pool2d(h_kernel_size, h_stride=1):
 
         def fn(di):
             return {
-                'Out':
-                tf.nn.avg_pool(di['In'],
+                'out':
+                tf.nn.avg_pool(di['in'],
                                [1, dh['kernel_size'], dh['kernel_size'], 1],
                                [1, dh['stride'], dh['stride'], 1], 'SAME')
             }
@@ -115,7 +115,7 @@ def dropout(h_keep_prob):
         p = tf.placeholder(tf.float32)
 
         def fn(di):
-            return {'Out': tf.nn.dropout(di['In'], p)}
+            return {'out': tf.nn.dropout(di['in'], p)}
 
         return fn, {p: dh['keep_prob']}, {p: 1.0}
 
@@ -130,7 +130,7 @@ def batch_normalization():
 
         def fn(di):
             return {
-                'Out': tf.layers.batch_normalization(di['In'], training=p_var)
+                'out': tf.layers.batch_normalization(di['in'], training=p_var)
             }
 
         return fn, {p_var: 1}, {p_var: 0}
@@ -140,12 +140,12 @@ def batch_normalization():
 
 def relu():
     return siso_tensorflow_module(
-        'ReLU', lambda di, dh: lambda di: {'Out': tf.nn.relu(di['In'])}, {})
+        'ReLU', lambda di, dh: lambda di: {'out': tf.nn.relu(di['in'])}, {})
 
 
 def add():
     return TensorflowModule('Add', lambda: lambda In0, In1: tf.add(In0, In1),
-                            {}, ['In0', 'In1'], ['Out']).get_io()
+                            {}, ['in0', 'in1'], ['out']).get_io()
 
 
 def global_pool2d():
@@ -153,7 +153,7 @@ def global_pool2d():
     def compile_fn(di, dh):
 
         def fn(di):
-            return {'Out': tf.reduce_mean(di['In'], [1, 2])}
+            return {'out': tf.reduce_mean(di['in'], [1, 2])}
 
         return fn
 
@@ -166,7 +166,7 @@ def fc_layer(h_num_units):
         fc = tf.layers.Dense(dh['num_units'])
 
         def fn(di):
-            return {'Out': fc(di['In'])}
+            return {'out': fc(di['in'])}
 
         return fn
 

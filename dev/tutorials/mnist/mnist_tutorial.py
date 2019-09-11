@@ -140,13 +140,13 @@ from deep_architect.contrib.search_spaces.tensorflow.common import siso_tfm, D
 
 def affine_simplified(h_m):
     def compile_fn(di, dh):
-        shape = di['In'].get_shape().as_list()
+        shape = di['in'].get_shape().as_list()
         n = np.product(shape[1:])
             def fn(di):
-                In = di['In']
+                In = di['in']
                 if len(shape) > 2:
                     In = tf.reshape(In, [-1, n])
-                return {'Out' : tf.layers.dense(In, dh['m'])}
+                return {'out' : tf.layers.dense(In, dh['m'])}
         return fn
     return siso_tfm('AffineSimplified', compile_fn, {'m' : h_m})
 
@@ -162,18 +162,18 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = tf.nn.relu(di['In'])
+                Out = tf.nn.relu(di['in'])
             elif nonlin_name == 'relu6':
-                Out = tf.nn.relu6(di['In'])
+                Out = tf.nn.relu6(di['in'])
             elif nonlin_name == 'crelu':
-                Out = tf.nn.crelu(di['In'])
+                Out = tf.nn.crelu(di['in'])
             elif nonlin_name == 'elu':
-                Out = tf.nn.elu(di['In'])
+                Out = tf.nn.elu(di['in'])
             elif nonlin_name == 'softplus':
-                Out = tf.nn.softplus(di['In'])
+                Out = tf.nn.softplus(di['in'])
             else:
                 raise ValueError
-            return {"Out" : Out}
+            return {"out" : Out}
     return fn
 return siso_tfm('Nonlinearity', compile_fn, {'nonlin_name' : h_nonlin_name})
 
@@ -187,7 +187,7 @@ def dropout(h_keep_prob):
     def compile_fn(di, dh):
         p = tf.placeholder(tf.float32)
         def fn(di):
-            return {'Out' : tf.nn.dropout(di['In'], p)}
+            return {'out' : tf.nn.dropout(di['in'], p)}
     return fn, {p : dh['keep_prob']}, {p : 1.0}
 return siso_tfm('Dropout', compile_fn, {'keep_prob' : h_keep_prob})
 
@@ -201,7 +201,7 @@ def batch_normalization():
     def compile_fn(di, dh):
         p_var = tf.placeholder(tf.bool)
         def fn(di):
-            return {'Out' : tf.layers.batch_normalization(di['In'], training=p_var)}
+            return {'out' : tf.layers.batch_normalization(di['in'], training=p_var)}
     return fn, {p_var : 1}, {p_var : 0}
 return siso_tfm('BatchNormalization', compile_fn, {})
 
@@ -347,7 +347,7 @@ searcher = se.RandomSearcher(search_space_factory.get_search_space)
 
 ### ${CODE}
 
-co.forward({inputs['In'] : X_pl})
+co.forward({inputs['in'] : X_pl})
 
 ### ${MARKDOWN}
 

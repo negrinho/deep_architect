@@ -97,7 +97,7 @@ class TensorflowModule(co.Module):
 
 
 def siso_tensorflow_module(name, compile_fn, name_to_hyperp, scope=None):
-    return TensorflowModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
+    return TensorflowModule(name, compile_fn, name_to_hyperp, ['in'], ['out'],
                             scope).get_io()
 
 
@@ -110,7 +110,7 @@ def siso_tensorflow_module_from_tensorflow_op_fn(layer_fn,
         m = layer_fn(**dh)
 
         def forward_fn(di):
-            return {"Out": m(di["In"])}
+            return {"out": m(di["in"])}
 
         return forward_fn
 

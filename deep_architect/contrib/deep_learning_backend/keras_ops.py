@@ -2,7 +2,7 @@ from keras import layers
 from deep_architect.helpers.keras_support import siso_keras_module
 from deep_architect.hyperparameters import Discrete as D
 """
-di['In'] is expected to be a tuple representing the shape of a single input
+di['in'] is expected to be a tuple representing the shape of a single input
 """
 
 
@@ -11,11 +11,11 @@ def input_node():
     def compile_fn(di, dh):
 
         def fn(di):
-            return {'Out': layers.Input(di['In'])}
+            return {'out': layers.Input(di['in'])}
 
         return fn
 
-    return siso_keras_module('Input', compile_fn, {})
+    return siso_keras_module('input', compile_fn, {})
 
 
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
@@ -27,7 +27,7 @@ def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
                               padding='SAME')
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -48,7 +48,7 @@ def avg_pool2d(h_kernel_size, h_stride):
                                         padding='same')
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -66,7 +66,7 @@ def max_pool2d(h_kernel_size, h_stride):
                                     padding='same')
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -84,7 +84,7 @@ def avg_pool2d(h_kernel_size, h_stride):
                                         padding='same')
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -100,7 +100,7 @@ def dropout(h_keep_prob):
         layer = layers.Dropout(dh['keep_prob'])
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -113,7 +113,7 @@ def batch_normalization():
         layer = layers.BatchNormalization()
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -126,7 +126,7 @@ def activation(h_activation):
         layer = layers.Activation(dh['activation'])
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -144,7 +144,7 @@ def global_pool2d():
         layer = layers.GlobalAveragePooling2D()
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 
@@ -157,7 +157,7 @@ def fc_layer(h_num_units):
         layer = layers.Dense(dh['num_units'])
 
         def fn(di):
-            return {'Out': layer(di['In'])}
+            return {'out': layer(di['in'])}
 
         return fn
 

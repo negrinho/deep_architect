@@ -157,9 +157,9 @@ class KerasTPUEvaluator(object):
                 train_dataset.output_shapes[0][1:])
             x = input_placeholder
             step = tf.train.get_or_create_global_step()
-            if 'In' in inputs:
-                co.forward({inputs['In']: x})
-                logits = outputs['Out'].val
+            if 'in' in inputs:
+                co.forward({inputs['in']: x})
+                logits = outputs['out'].val
                 logits = tf.keras.layers.Lambda(lambda x: x,
                                                 name='final_logits')(logits)
                 output_tensors = [
@@ -174,13 +174,13 @@ class KerasTPUEvaluator(object):
                 accuracy_metric_name = 'sparse_categorical_accuracy'
             else:
                 co.forward({
-                    inputs['In0']:
+                    inputs['in0']:
                     x,
-                    inputs['In1']:
+                    inputs['in1']:
                     float(self.steps_per_epoch * self.max_num_training_epochs)
                 })
-                logits = outputs['Out1'].val
-                aux_logits = outputs['Out0'].val
+                logits = outputs['out1'].val
+                aux_logits = outputs['out0'].val
                 logits = tf.keras.layers.Lambda(lambda x: x,
                                                 name='final_logits')(logits)
                 aux_logits = tf.keras.layers.Lambda(lambda x: x,

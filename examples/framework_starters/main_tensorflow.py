@@ -30,7 +30,7 @@ def dropout(h_drop_rate):
         p = tf.placeholder(tf.float32)
 
         def fn(di):
-            return {'Out': tf.nn.dropout(di['In'], p)}
+            return {'out': tf.nn.dropout(di['in'], p)}
 
         return fn, {p: 1.0 - dh['drop_rate']}, {p: 1.0}
 
@@ -47,7 +47,7 @@ def batch_normalization():
         bn = tf.layers.BatchNormalization()
 
         def fn(di):
-            return {'Out': bn(di['In'], training=p_var)}
+            return {'out': bn(di['in'], training=p_var)}
 
         return fn, {p_var: 1}, {p_var: 0}
 
@@ -61,14 +61,14 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = tf.nn.relu(di['In'])
+                Out = tf.nn.relu(di['in'])
             elif nonlin_name == 'tanh':
-                Out = tf.nn.tanh(di['In'])
+                Out = tf.nn.tanh(di['in'])
             elif nonlin_name == 'elu':
-                Out = tf.nn.elu(di['In'])
+                Out = tf.nn.elu(di['in'])
             else:
                 raise ValueError
-            return {"Out": Out}
+            return {"out": Out}
 
         return fn
 
@@ -95,9 +95,9 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         mo.siso_repeat(
-            lambda: dnn_cell(
-                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
-                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2, 4])),
+            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+                             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
+                             D([0.25, 0.5, 0.75])), D([1, 2, 4])),
         dense(D([num_classes]))
     ])
 
@@ -145,8 +145,8 @@ class SimpleClassifierEvaluator:
         X_pl = tf.placeholder("float", [None] + self.in_dim)
         y_pl = tf.placeholder("float", [None, self.num_classes])
         lr_pl = tf.placeholder("float")
-        co.forward({inputs['In']: X_pl})
-        logits = outputs['Out'].val
+        co.forward({inputs['in']: X_pl})
+        logits = outputs['out'].val
         train_feed, eval_feed = htf.get_feed_dicts(outputs)
 
         # define loss and optimizer
@@ -165,8 +165,8 @@ class SimpleClassifierEvaluator:
         with tf.Session() as sess:
             sess.run(init)
 
-            num_batches = int(
-                self.train_dataset.get_num_examples() / self.batch_size)
+            num_batches = int(self.train_dataset.get_num_examples() /
+                              self.batch_size)
             for epoch in range(self.num_training_epochs):
                 avg_loss = 0.
                 for _ in range(num_batches):
@@ -204,8 +204,8 @@ def main():
     show_graph = False
 
     # load data
-    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(
-        'data/mnist', flatten=True)
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist('data/mnist',
+                                                                  flatten=True)
     train_dataset = InMemoryDataset(X_train, y_train, True)
     val_dataset = InMemoryDataset(X_val, y_val, False)
     test_dataset = InMemoryDataset(X_test, y_test, False)
@@ -225,10 +225,9 @@ def main():
         if show_graph:
             # try setting draw_module_hyperparameter_info=False and
             # draw_hyperparameters=True for a different visualization.
-            vi.draw_graph(
-                outputs,
-                draw_module_hyperparameter_info=False,
-                draw_hyperparameters=True)
+            vi.draw_graph(outputs,
+                          draw_module_hyperparameter_info=False,
+                          draw_hyperparameters=True)
         results = evaluator.evaluate(inputs, outputs)
         # updating the searcher. no-op for the random searcher.
         searcher.update(results['validation_accuracy'], searcher_eval_token)

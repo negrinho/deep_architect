@@ -43,7 +43,7 @@ def conv2D(filter_size, channels, name):
         conv = weight_sharer.get(name, conv_fn)
 
         def fn(di, is_training=True):
-            return {'Out': conv(di['In'])}
+            return {'out': conv(di['in'])}
 
         return fn
 

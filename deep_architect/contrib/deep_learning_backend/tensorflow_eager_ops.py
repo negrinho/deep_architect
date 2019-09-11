@@ -11,7 +11,7 @@ def max_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
                                       padding=dh['padding'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': pool(di['In'])}
+            return {'out': pool(di['in'])}
 
         return forward_fn
 
@@ -30,7 +30,7 @@ def min_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
                                       padding=dh['padding'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': -1 * pool(-1 * di['In'])}
+            return {'out': -1 * pool(-1 * di['in'])}
 
         return forward_fn
 
@@ -49,7 +49,7 @@ def avg_pool2d(h_kernel_size, h_stride=1, h_padding='SAME'):
                                           padding=dh['padding'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': pool(di['In'])}
+            return {'out': pool(di['in'])}
 
         return forward_fn
 
@@ -66,7 +66,7 @@ def batch_normalization():
         bn = tf.layers.BatchNormalization(momentum=.9, epsilon=1e-5)
 
         def forward_fn(di, is_training):
-            return {'Out': bn(di['In'], training=is_training)}
+            return {'out': bn(di['in'], training=is_training)}
 
         return forward_fn
 
@@ -78,7 +78,7 @@ def relu():
     def compile_fn(di, dh):
 
         def forward_fn(di, is_training=True):
-            return {'Out': tf.nn.relu(di['In'])}
+            return {'out': tf.nn.relu(di['in'])}
 
         return forward_fn
 
@@ -101,7 +101,7 @@ def conv2d(h_num_filters,
                                 padding=dh['padding'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': conv(di['In'])}
+            return {'out': conv(di['in'])}
 
         return forward_fn
 
@@ -136,7 +136,7 @@ def separable_conv2d(h_num_filters,
             padding=dh['padding'])
 
         def fn(di, is_training=True):
-            return {'Out': conv_op(di['In'])}
+            return {'out': conv_op(di['in'])}
 
         return fn
 
@@ -158,10 +158,10 @@ def dropout(h_keep_prob):
 
         def forward_fn(di, is_training=True):
             if is_training:
-                out = tf.nn.dropout(di['In'], dh['keep_prob'])
+                out = tf.nn.dropout(di['in'], dh['keep_prob'])
             else:
-                out = di['In']
-            return {'Out': out}
+                out = di['in']
+            return {'out': out}
 
         return forward_fn
 
@@ -174,7 +174,7 @@ def global_pool2d():
     def compile_fn(di, dh):
 
         def forward_fn(di, is_training=True):
-            return {'Out': tf.reduce_mean(di['In'], [1, 2])}
+            return {'out': tf.reduce_mean(di['in'], [1, 2])}
 
         return forward_fn
 
@@ -186,7 +186,7 @@ def flatten():
     def compile_fn(di, dh):
 
         def forward_fn(di, is_training=True):
-            return {'Out': tf.layers.flatten(di['In'])}
+            return {'out': tf.layers.flatten(di['in'])}
 
         return forward_fn
 
@@ -199,7 +199,7 @@ def fc_layer(h_num_units):
         fc = tf.layers.Dense(dh['num_units'])
 
         def forward_fn(di, is_training=True):
-            return {'Out': fc(di['In'])}
+            return {'out': fc(di['in'])}
 
         return forward_fn
 
@@ -213,15 +213,15 @@ def add(num_inputs):
 
         def forward_fn(di, is_training=True):
             out = tf.add_n([di[inp] for inp in di
-                           ]) if len(di) > 1 else di['In0']
+                           ]) if len(di) > 1 else di['in0']
 
-            return {'Out': out}
+            return {'out': out}
 
         return forward_fn
 
     return TensorflowEagerModule('Add', compile_fn, {},
-                                 ['In' + str(i) for i in range(num_inputs)],
-                                 ['Out']).get_io()
+                                 ['in' + str(i) for i in range(num_inputs)],
+                                 ['out']).get_io()
 
 
 func_dict = {

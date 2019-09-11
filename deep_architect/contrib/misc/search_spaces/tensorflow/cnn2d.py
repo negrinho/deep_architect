@@ -19,13 +19,13 @@ def kaiming2015delving_initializer_conv(gain=1.0):
 def conv2d(h_num_filters, h_filter_width, h_stride, h_use_bias):
 
     def compile_fn(di, dh):
-        conv_op = tf.layers.Conv2D(
-            dh['num_filters'], (dh['filter_width'],) * 2, (dh['stride'],) * 2,
-            use_bias=dh['use_bias'],
-            padding='SAME')
+        conv_op = tf.layers.Conv2D(dh['num_filters'], (dh['filter_width'],) * 2,
+                                   (dh['stride'],) * 2,
+                                   use_bias=dh['use_bias'],
+                                   padding='SAME')
 
         def forward_fn(di):
-            return {'Out': conv_op(di['In'])}
+            return {'out': conv_op(di['in'])}
 
         return forward_fn
 
@@ -44,8 +44,8 @@ def max_pool2d(h_kernel_size, h_stride):
 
         def forward_fn(di):
             return {
-                'Out':
-                tf.nn.max_pool(di['In'],
+                'out':
+                tf.nn.max_pool(di['in'],
                                [1, dh['kernel_size'], dh['kernel_size'], 1],
                                [1, dh['stride'], dh['stride'], 1], 'SAME')
             }
@@ -73,9 +73,9 @@ def conv_net(h_num_spatial_reductions):
     h_opt_drop = D([0, 1])
     h_keep_prob = D([0.25, 0.5, 0.75, 1.0])
 
-    get_conv_cell = lambda stride: conv_cell(
-        D([32, 64, 128, 256, 512]), D([1, 3, 5]), h_swap, h_opt_drop,
-        h_keep_prob, stride)
+    get_conv_cell = lambda stride: conv_cell(D([32, 64, 128, 256, 512]),
+                                             D([1, 3, 5]), h_swap, h_opt_drop,
+                                             h_keep_prob, stride)
 
     get_reduction_cell = lambda: get_conv_cell(2)
     get_normal_cell = lambda: get_conv_cell(1)
@@ -90,11 +90,11 @@ def conv_net(h_num_spatial_reductions):
 def spatial_squeeze(h_pool_op, h_num_hidden):
 
     def compile_fn(di, dh):
-        (_, height, width, _) = di['In'].get_shape().as_list()
+        (_, height, width, _) = di['in'].get_shape().as_list()
         conv_op = tf.layers.Conv2D(dh['num_hidden'], (1, 1), (1, 1))
 
         def forward_fn(di):
-            out = conv_op(di['In'])
+            out = conv_op(di['in'])
             if dh['pool_op'] == 'max' or dh['pool_op'] == 'avg':
                 out = tf.nn.pool(out, [height, width], dh['pool_op'].upper(),
                                  'VALID')
@@ -102,7 +102,7 @@ def spatial_squeeze(h_pool_op, h_num_hidden):
             else:
                 raise ValueError
             out = tf.squeeze(out, [1, 2])
-            return {'Out': out}
+            return {'out': out}
 
         return forward_fn
 

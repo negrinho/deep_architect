@@ -77,8 +77,8 @@ class SimpleClassifierEvaluator:
         X_pl = tf.placeholder("float", [None] + self.in_dim)
         y_pl = tf.placeholder("float", [None, self.num_classes])
         lr_pl = tf.placeholder("float")
-        co.forward({inputs['In']: X_pl})
-        logits = outputs['Out'].val
+        co.forward({inputs['in']: X_pl})
+        logits = outputs['out'].val
         train_feed, eval_feed = htf.get_feed_dicts(outputs)
         saver = tf.train.Saver()
 

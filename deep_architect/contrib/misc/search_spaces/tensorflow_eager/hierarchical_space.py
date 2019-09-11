@@ -102,7 +102,7 @@ def combine_with_concat(num_inputs, channels):
 
 
 def concat(num_inputs):
-    input_names = ["In%d" % i for i in range(num_inputs)]
+    input_names = ["in%d" % i for i in range(num_inputs)]
 
     def compile_fn(di, dh):
         if num_inputs > 1:
@@ -110,15 +110,15 @@ def concat(num_inputs):
 
         def forward_fn(di, is_training=False):
             return {
-                "Out":
+                "out":
                 concat([v for name, v in iteritems(di)])
-                if num_inputs > 1 else di['In0']
+                if num_inputs > 1 else di['in0']
             }
 
         return forward_fn
 
     return htfe.TensorflowEagerModule("ConcatCombiner", compile_fn, {},
-                                      input_names, ['Out']).get_io()
+                                      input_names, ['out']).get_io()
 
 
 def create_motif_hyperp(motif_info):
@@ -215,23 +215,23 @@ def create_motif(
                             level - 1,
                             num_channels,
                         ))
-                    ops[out_node][-1][0]['In'].connect(
-                        output_ops[in_node][1]['Out'])
+                    ops[out_node][-1][0]['in'].connect(
+                        output_ops[in_node][1]['out'])
             assert (len(ops[out_node]) > 0)
             concat_ins, concat_out = combine_with_concat(
                 len(ops[out_node]), num_channels)
             for ix, (ins, outs) in enumerate(ops[out_node]):
-                outs['Out'].connect(concat_ins['In%d' % ix])
+                outs['out'].connect(concat_ins['in%d' % ix])
             output_ops.append((concat_ins, concat_out))
         output = output_ops[-1][1]
         if level == 2:
             conv_ins, conv_outs = conv2d_cell(num_channels, 1)
-            output['Out'].connect(conv_ins['In'])
+            output['out'].connect(conv_ins['in'])
             output = conv_outs
         return ops[0][0][0], output
 
     return mo.substitution_module('Motif_Level_%d' % level, substitution_fn, dh,
-                                  ['In'], ['Out'], None)
+                                  ['in'], ['out'], None)
 
 
 # NOTE: description on page 6 of paper

@@ -68,22 +68,22 @@ def concatenate_skip_layers(h_connects, weight_sharer):
 
         def fn(di, is_training=True):
             inputs = [
-                di['In' + str(i)]
+                di['in' + str(i)]
                 for i in range(len(dh))
                 if dh['select_' + str(i)]
             ]
-            inputs.append(di['In' + str(len(dh))])
+            inputs.append(di['in' + str(len(dh))])
             with tf.device('/gpu:0'):
                 out = tf.add_n(inputs)
-                return {'Out': tf.add_n(inputs)}
+                return {'out': tf.add_n(inputs)}
 
         return fn
 
     return TFEM(
         'SkipConcat',
         {'select_' + str(i): h_connects[i] for i in range(len(h_connects))},
-        compile_fn, ['In' + str(i) for i in range(len(h_connects) + 1)],
-        ['Out']).get_io()
+        compile_fn, ['in' + str(i) for i in range(len(h_connects) + 1)],
+        ['out']).get_io()
 
 
 def enas_conv(out_filters, filter_size, separable, weight_sharer, name):
@@ -129,7 +129,7 @@ def enas_repeat_fn(inputs, outputs, layer_id, out_filters, weight_sharer):
     #h_enas_op = D(['max_pool'], name='op_' + str(layer_id))
     op_inputs, op_outputs = enas_op(h_enas_op, out_filters,
                                     'op_' + str(layer_id), weight_sharer)
-    outputs[list(outputs.keys())[-1]].connect(op_inputs['In'])
+    outputs[list(outputs.keys())[-1]].connect(op_inputs['in'])
 
     #Skip connections
     h_connects = [
@@ -139,14 +139,14 @@ def enas_repeat_fn(inputs, outputs, layer_id, out_filters, weight_sharer):
     skip_inputs, skip_outputs = concatenate_skip_layers(h_connects,
                                                         weight_sharer)
     for i in range(len(h_connects)):
-        outputs[list(outputs.keys())[i]].connect(skip_inputs['In' + str(i)])
-    op_outputs['Out'].connect(skip_inputs['In' + str(len(h_connects))])
+        outputs[list(outputs.keys())[i]].connect(skip_inputs['in' + str(i)])
+    op_outputs['out'].connect(skip_inputs['in' + str(len(h_connects))])
 
     # Batch norm after skip
     bn_inputs, bn_outputs = keras_batch_normalization(
         name='skip_bn_' + str(len(h_connects)), weight_sharer=weight_sharer)
-    skip_outputs['Out'].connect(bn_inputs['In'])
-    outputs['Out' + str(len(outputs))] = bn_outputs['Out']
+    skip_outputs['out'].connect(bn_inputs['in'])
+    outputs['out' + str(len(outputs))] = bn_outputs['out']
     return inputs, outputs
 
 
@@ -167,7 +167,7 @@ def enas_space(h_num_layers,
             inputs, temp_outputs = fn_repeats(inputs, temp_outputs, i,
                                               out_filters, weight_sharer)
         return inputs, OrderedDict(
-            {'Out': temp_outputs['Out' + str(len(temp_outputs) - 1)]})
+            {'out': temp_outputs['out' + str(len(temp_outputs) - 1)]})
 
     return mo.substitution_module('ENASModule', substitution_fn,
                                   {'num_layers': h_num_layers}, input_names,
@@ -187,8 +187,8 @@ def get_enas_search_space(num_classes, num_layers, out_filters, weight_sharer):
                                          weight_sharer=weight_sharer,
                                          name='stem'),
             enas_repeat_fn,
-            ['In'],
-            ['Out'],
+            ['in'],
+            ['out'],
             weight_sharer),
         global_pool(),
         dropout(keep_prob=.9),

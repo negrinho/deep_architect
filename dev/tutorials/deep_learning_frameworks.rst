@@ -119,8 +119,8 @@ First the Tensorflow graph framework.
     # framework after the graph is compiled.
     X_pl = tf.placeholder("float", [None] + in_dim)
     y_pl = tf.placeholder("float", [None, 10])
-    co.forward({ins['In']: X_pl})
-    logits = outs['Out'].val
+    co.forward({ins['in']: X_pl})
+    logits = outs['out'].val
 
     # This gets all of the other placeholders needed during training, such as
     # indicators for batch norm and dropout layers
@@ -147,8 +147,8 @@ architecture, set the architecture to use training mode, and call `co.forward()`
         import deep_architect.helpers.tensorflow_eager_support as htfe
         tf.enable_eager_execution()
         htfe.set_is_training(outs, True)
-        co.forward({ins['In']: tf.constant(X_batch)})
-        logit_vals = outs['Out'].val
+        co.forward({ins['in']: tf.constant(X_batch)})
+        logit_vals = outs['out'].val
 
 PyTorch
 ^^^^^^^
@@ -162,8 +162,8 @@ Eager framework.
         import torch
         import deep_architect.helpers.pytorch_support as hpy
         hpy.train(outs)
-        co.forward({ins['In']: torch.Tensor(X_batch)})
-        logit_vals = outs['Out'].val
+        co.forward({ins['in']: torch.Tensor(X_batch)})
+        logit_vals = outs['out'].val
 
 Keras
 ^^^^^
@@ -180,7 +180,7 @@ agnostic and framework specific modules.
         in_node = input_node()
         ins, outs = mo.siso_sequential([in_node, (ins, outs)])
         _, input_layer = in_node
-        co.forward({ins['In']: X.shape[1:]})
+        co.forward({ins['in']: X.shape[1:]})
         model = keras.Model(inputs=[inp.val for inp in input_layer],
                             outputs=[out.val for out in outs])
         model.compile(loss=keras.losses.categorical_crossentropy,

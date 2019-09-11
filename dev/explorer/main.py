@@ -24,6 +24,7 @@ import deep_architect.utils as ut
 # - fix the layout. it used to be correct.
 # - more complex inspection and selection tools
 # - requires major layout fixes for Dash 1.0.
+### TODO: I would rewrite this completely to remove the object-orientedness
 
 # the code below mostly takes a demonstrative role at this point.
 

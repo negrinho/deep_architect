@@ -122,8 +122,8 @@ We first create a small validation set out of training set:
 
         def eval(self, inputs, outputs):
             x = Input((784,), dtype='float32')
-            co.forward({inputs["In"]: x})
-            y = outputs["Out"].val
+            co.forward({inputs["in"]: x})
+            y = outputs["out"].val
             model = Model(inputs=x, outputs=y)
 
             model.summary()

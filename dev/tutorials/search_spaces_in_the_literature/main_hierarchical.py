@@ -41,7 +41,7 @@ def conv2d_cell(filters, kernel_size):
 def combine_with_concat(num_inputs):
 
     m = co.Module(name="ConcatCombiner")
-    m._register(["In%d" % i for i in range(num_inputs)], ['Out'], {})
+    m._register(["in%d" % i for i in range(num_inputs)], ['out'], {})
     return m.get_io()
 
 
@@ -105,14 +105,14 @@ def motif(submotif_fn, num_nodes):
             for j in node_ids_used:
                 inputs, outputs = submotif_fn()
                 j_outputs = node_id_to_outputs[j]
-                inputs["In"].connect(j_outputs["Out"])
+                inputs["in"].connect(j_outputs["out"])
                 outputs_lst.append(outputs)
 
             # if necessary, concatenate the results going into a node
             if num_edges > 1:
                 c_inputs, c_outputs = combine_with_concat(num_edges)
                 for idx, outputs in enumerate(outputs_lst):
-                    c_inputs["In%d" % idx].connect(outputs["Out"])
+                    c_inputs["in%d" % idx].connect(outputs["out"])
             else:
                 c_outputs = outputs_lst[0]
             node_id_to_outputs.append(c_outputs)
@@ -127,7 +127,7 @@ def motif(submotif_fn, num_nodes):
         }): D([0, 1]) for i in range(1, num_nodes) for j in range(i - 1)
     }
     return mo.substitution_module(
-        "Motif", substitution_fn, name_to_hyperp, ["In"], ["Out"], scope=None)
+        "Motif", substitution_fn, name_to_hyperp, ["in"], ["out"], scope=None)
 
 
 (inputs, outputs) = mo.SearchSpaceFactory(
@@ -141,8 +141,8 @@ for h in co.unassigned_independent_hyperparameter_iterator(outputs):
 vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
 
 # inputs_val = Input((32, 32, 3))
-# co.forward({inputs["In"]: inputs_val})
-# outputs_val = outputs["Out"].val
+# co.forward({inputs["in"]: inputs_val})
+# outputs_val = outputs["out"].val
 
 # model = Model(inputs=inputs_val, outputs=outputs_val)
 # model.summary()

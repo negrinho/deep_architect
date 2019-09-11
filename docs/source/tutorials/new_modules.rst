@@ -130,7 +130,7 @@ See below for a typical implementation of a module using these auxiliary functio
             m_bn = BatchNormalization()
 
             def forward_fn(di):
-                return {"Out": m_bn(m_conv(di["In"]))}
+                return {"out": m_bn(m_conv(di["in"]))}
 
             return forward_fn
 
@@ -138,7 +138,7 @@ See below for a typical implementation of a module using these auxiliary functio
             "filters": h_filters,
             "kernel_size": h_kernel_size,
             'strides': h_strides
-        }, ["In"], ["Out"])
+        }, ["in"], ["out"])
 
 The forward function is defined via a closure. When compile is called, we have specific values for the module inputs (which in this example, are Keras tensor nodes). We can interact with these objects during compilation (e.g., look up dimensions for the input tensors). The compile function is called with a dictionary of inputs (whose keys are input names and whose values are input values) and a dictionary of outputs (whose keys are hyperparameter names and whose values are hyperparameter values). The forward function is called with a dictionary of input values. Values for the hyperparameters are accessible (due to being in the closure), but they are often not needed in the forward function.
 
@@ -150,10 +150,10 @@ While the above definition is a bit verbose, we expect it to be clear. We introd
 .. code:: python
 
     def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
-        return KerasModule(name, name_to_hyperp, compile_fn, ['In'], ['Out'],
+        return KerasModule(name, name_to_hyperp, compile_fn, ['in'], ['out'],
                            scope).get_io()
 
-This saves us writing the names of the inputs and outputs for the single-input single-output case. As the reader becomes familiar with DeepArchitect, the reader will notice that we use In/Out names for single-input/single-output modules and In0, In1, .../Out0, Out1, ... for modules that often have multiple inputs/outputs. These names are arbitrary and can be chosen differently.
+This saves us writing the names of the inputs and outputs for the single-input single-output case. As the reader becomes familiar with DeepArchitect, the reader will notice that we use in/out names for single-input/single-output modules and in0, in1, .../out0, out1, ... for modules that often have multiple inputs/outputs. These names are arbitrary and can be chosen differently.
 
 Using this function, the above example would be similar except that we would not need to name the input and output explicitly.
 
@@ -167,7 +167,7 @@ Using this function, the above example would be similar except that we would not
             m_bn = BatchNormalization()
 
             def forward_fn(di):
-                return {"Out": m_bn(m_conv(di["In"]))}
+                return {"out": m_bn(m_conv(di["in"]))}
 
             return forward_fn
 
@@ -193,7 +193,7 @@ Another useful auxiliary function creates a module directly from a function (e.g
             m = layer_fn(**dh)
 
             def forward_fn(di):
-                return {"Out": m(di["In"])}
+                return {"out": m(di["in"])}
 
             return forward_fn
 
@@ -500,7 +500,7 @@ Optional is a special case of a substitution module. If the hyperparameter is su
 
         return substitution_module(
             _get_name(name, "SISOOptional"), {'opt': h_opt}, substitution_fn,
-            ['In'], ['Out'], scope)
+            ['in'], ['out'], scope)
 
 An example of a complex substitution module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -536,14 +536,14 @@ Let us now look at a more complex use of a custom substitution module.
                 for j in node_ids_used:
                     inputs, outputs = submotif_fn()
                     j_outputs = node_id_to_outputs[j]
-                    inputs["In"].connect(j_outputs["Out"])
+                    inputs["in"].connect(j_outputs["out"])
                     outputs_lst.append(outputs)
 
                 # if necessary, concatenate the results going into a node
                 if num_edges > 1:
                     c_inputs, c_outputs = combine_with_concat(num_edges)
                     for idx, outputs in enumerate(outputs_lst):
-                        c_inputs["In%d" % idx].connect(outputs["Out"])
+                        c_inputs["in%d" % idx].connect(outputs["out"])
                 else:
                     c_outputs = outputs_lst[0]
                 node_id_to_outputs.append(c_outputs)
@@ -558,7 +558,7 @@ Let us now look at a more complex use of a custom substitution module.
             }): D([0, 1]) for i in range(1, num_nodes) for j in range(i - 1)
         }
         return mo.substitution_module(
-            "Motif", name_to_hyperp, substitution_fn, ["In"], ["Out"], scope=None)
+            "Motif", name_to_hyperp, substitution_fn, ["in"], ["out"], scope=None)
 
 This substitution module implements the notion of a motif inspired by this `paper <https://arxiv.org/abs/1711.00436>`_. This substitution module delays the creation of the motif structure until hyperparameters determining the connections of the motif are assigned values. The notion of a motif defined in the paper is recursive. The motif function takes a submotif function.
 

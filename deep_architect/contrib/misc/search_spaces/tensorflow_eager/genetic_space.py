@@ -50,18 +50,18 @@ def genetic_stage(input_fn, node_fn, output_fn, h_connections, num_nodes):
         for in_id in range(1, num_nodes + 1):
             # Connect nodes with no input to original input
             if num_ins[in_id - 1] == 0 and nodes[in_id] is not None:
-                nodes[0][1]['Out'].connect(nodes[in_id][0]['In0'])
+                nodes[0][1]['out'].connect(nodes[in_id][0]['in0'])
             # Connect nodes with no output to final output node
             if num_outs[in_id - 1] == 0 and nodes[in_id] is not None:
-                nodes[in_id][1]['Out'].connect(nodes[-1][0]['In%d' %
+                nodes[in_id][1]['out'].connect(nodes[-1][0]['in%d' %
                                                             num_connected[-1]])
                 num_connected[-1] += 1
 
             # Connect internal nodes
             for out_id in range(in_id + 1, num_nodes + 1):
                 if dh['%d_%d' % (in_id, out_id)] == 1:
-                    nodes[in_id][1]['Out'].connect(
-                        nodes[out_id][0]['In' + str(num_connected[out_id])])
+                    nodes[in_id][1]['out'].connect(
+                        nodes[out_id][0]['in' + str(num_connected[out_id])])
                     num_connected[out_id] += 1
         return nodes[0][0], nodes[-1][1]
 
@@ -72,7 +72,7 @@ def genetic_stage(input_fn, node_fn, output_fn, h_connections, num_nodes):
         name_to_hparam['%d_%d' % hparam] = h_connections[ix]
     return mo.substitution_module('GeneticStage',
                                   substitution_fn,
-                                  name_to_hparam, ['In'], ['Out'],
+                                  name_to_hparam, ['in'], ['out'],
                                   scope=None)
 
 

@@ -36,23 +36,23 @@ def xavier_initializer_affine(gain=1.0):
 # modules
 def relu():
     return siso_tensorflow_module(
-        'ReLU', lambda di, dh: lambda di: {'Out': tf.nn.relu(di['In'])}, {})
+        'ReLU', lambda di, dh: lambda di: {'out': tf.nn.relu(di['in'])}, {})
 
 
 def affine(h_num_hidden, h_W_init_fn, h_b_init_fn):
 
     def compile_fn(di, dh):
         m = dh['num_hidden']
-        shape = di['In'].get_shape().as_list()
+        shape = di['in'].get_shape().as_list()
         n = np.product(shape[1:])
         W = tf.Variable(dh['W_init_fn']([n, m]))
         b = tf.Variable(dh['b_init_fn']([m]))
 
         def forward_fn(di):
-            In = di['In']
+            In = di['in']
             if len(shape) > 2:
                 In = tf.reshape(In, [-1, n])
-            return {'Out': tf.add(tf.matmul(In, W), b)}
+            return {'out': tf.add(tf.matmul(In, W), b)}
 
         return forward_fn
 
@@ -70,7 +70,7 @@ def dropout(h_keep_prob):
         p = tf.placeholder(tf.float32)
 
         def forward_fn(di):
-            return {'Out': tf.nn.dropout(di['In'], p)}
+            return {'out': tf.nn.dropout(di['in'], p)}
 
         return forward_fn, {p: dh['keep_prob']}, {p: 1.0}
 
@@ -85,7 +85,7 @@ def batch_normalization():
 
         def forward_fn(di):
             return {
-                'Out': tf.layers.batch_normalization(di['In'], training=p_var)
+                'out': tf.layers.batch_normalization(di['in'], training=p_var)
             }
 
         return forward_fn, {p_var: 1}, {p_var: 0}
@@ -96,14 +96,14 @@ def batch_normalization():
 def affine_simplified(h_num_hidden):
 
     def compile_fn(di, dh):
-        shape = di['In'].get_shape().as_list()
+        shape = di['in'].get_shape().as_list()
         n = np.product(shape[1:])
 
         def forward_fn(di):
-            In = di['In']
+            In = di['in']
             if len(shape) > 2:
                 In = tf.reshape(In, [-1, n])
-            return {'Out': tf.layers.dense(In, dh['num_hidden'])}
+            return {'out': tf.layers.dense(In, dh['num_hidden'])}
 
         return forward_fn
 
@@ -118,18 +118,18 @@ def nonlinearity(h_nonlin_name):
         def forward_fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = tf.nn.relu(di['In'])
+                Out = tf.nn.relu(di['in'])
             elif nonlin_name == 'relu6':
-                Out = tf.nn.relu6(di['In'])
+                Out = tf.nn.relu6(di['in'])
             elif nonlin_name == 'crelu':
-                Out = tf.nn.crelu(di['In'])
+                Out = tf.nn.crelu(di['in'])
             elif nonlin_name == 'elu':
-                Out = tf.nn.elu(di['In'])
+                Out = tf.nn.elu(di['in'])
             elif nonlin_name == 'softplus':
-                Out = tf.nn.softplus(di['In'])
+                Out = tf.nn.softplus(di['in'])
             else:
                 raise ValueError
-            return {"Out": Out}
+            return {"out": Out}
 
         return forward_fn
 
@@ -158,8 +158,8 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1], name='Mutatable_sub')
     return mo.siso_sequential([
         mo.siso_repeat(
-            lambda: dnn_cell(
-                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
-                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2])),
+            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+                             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
+                             D([0.25, 0.5, 0.75])), D([1, 2])),
         affine_simplified(D([num_classes]))
     ])

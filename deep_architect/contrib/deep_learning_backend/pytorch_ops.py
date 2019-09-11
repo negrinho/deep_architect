@@ -33,7 +33,7 @@ def conv2d(h_num_filters,
            h_use_bias=True):
 
     def compile_fn(di, dh):
-        (_, channels, height, width) = di['In'].size()
+        (_, channels, height, width) = di['in'].size()
         padding = nn.ZeroPad2d(
             calculate_same_padding(height, width, dh['stride'],
                                    dh['filter_width']))
@@ -45,8 +45,8 @@ def conv2d(h_num_filters,
                          bias=dh['use_bias'])
 
         def fn(di):
-            x = padding(di['In'])
-            return {'Out': conv(x)}
+            x = padding(di['in'])
+            return {'out': conv(x)}
 
         return fn, [conv, padding]
 
@@ -63,15 +63,15 @@ def conv2d(h_num_filters,
 def max_pool2d(h_kernel_size, h_stride=1):
 
     def compile_fn(di, dh):
-        (_, _, height, width) = di['In'].size()
+        (_, _, height, width) = di['in'].size()
         padding = nn.ZeroPad2d(
             calculate_same_padding(height, width, dh['stride'],
                                    dh['kernel_size']))
         max_pool = nn.MaxPool2d(dh['kernel_size'], stride=dh['stride'])
 
         def fn(di):
-            x = padding(di['In'])
-            return {'Out': max_pool(x)}
+            x = padding(di['in'])
+            return {'out': max_pool(x)}
 
         return fn, [padding, max_pool]
 
@@ -84,15 +84,15 @@ def max_pool2d(h_kernel_size, h_stride=1):
 def avg_pool2d(h_kernel_size, h_stride=1):
 
     def compile_fn(di, dh):
-        (_, _, height, width) = di['In'].size()
+        (_, _, height, width) = di['in'].size()
         padding = nn.ZeroPad2d(
             calculate_same_padding(height, width, dh['stride'],
                                    dh['kernel_size']))
         avg_pool = nn.AvgPool2d(dh['kernel_size'], stride=dh['stride'])
 
         def fn(di):
-            x = padding(di['In'])
-            return {'Out': avg_pool(x)}
+            x = padding(di['in'])
+            return {'out': avg_pool(x)}
 
         return fn, [padding, avg_pool]
 
@@ -108,7 +108,7 @@ def dropout(h_keep_prob):
         dropout_layer = nn.Dropout(p=dh['keep_prob'])
 
         def fn(di):
-            return {'Out': dropout_layer(di['In'])}
+            return {'out': dropout_layer(di['in'])}
 
         return fn, [dropout_layer]
 
@@ -119,11 +119,11 @@ def dropout(h_keep_prob):
 def batch_normalization():
 
     def compile_fn(di, dh):
-        (_, channels, _, _) = di['In'].size()
+        (_, channels, _, _) = di['in'].size()
         batch_norm = nn.BatchNorm2d(channels)
 
         def fn(di):
-            return {'Out': batch_norm(di['In'])}
+            return {'out': batch_norm(di['in'])}
 
         return fn, [batch_norm]
 
@@ -135,7 +135,7 @@ def relu():
     def compile_fn(di, dh):
 
         def fn(di):
-            return {'Out': F.relu(di['In'])}
+            return {'out': F.relu(di['in'])}
 
         return fn, []
 
@@ -145,12 +145,12 @@ def relu():
 def global_pool2d():
 
     def compile_fn(di, dh):
-        (_, _, height, width) = di['In'].size()
+        (_, _, height, width) = di['in'].size()
 
         def fn(di):
-            x = F.avg_pool2d(di['In'], (height, width))
+            x = F.avg_pool2d(di['in'], (height, width))
             x = torch.squeeze(x, 2)
-            return {'Out': torch.squeeze(x, 2)}
+            return {'out': torch.squeeze(x, 2)}
 
         return fn, []
 
@@ -160,11 +160,11 @@ def global_pool2d():
 def fc_layer(h_num_units):
 
     def compile_fn(di, dh):
-        (_, channels) = di['In'].size()
+        (_, channels) = di['in'].size()
         fc = nn.Linear(channels, dh['num_units'])
 
         def fn(di):
-            return {'Out': fc(di['In'])}
+            return {'out': fc(di['in'])}
 
         return fn, [fc]
 

@@ -15,12 +15,12 @@ D = hp.Discrete
 def flatten():
 
     def compile_fn(di, dh):
-        shape = di['In'].dim()
+        shape = di['in'].dim()
         n = np.product(shape[0])
         Flatten = dy.reshape
 
         def fn(di):
-            return {'Out': Flatten(di['In'], (n,))}
+            return {'out': Flatten(di['in'], (n,))}
 
         return fn
 
@@ -30,17 +30,17 @@ def flatten():
 def dense(h_u):
 
     def compile_fn(di, dh):
-        shape = di['In'].dim()  # ((r, c), batch_dim)
+        shape = di['in'].dim()  # ((r, c), batch_dim)
         m, n = dh['units'], shape[0][0]
         pW = M.get_collection().add_parameters((m, n))
         pb = M.get_collection().add_parameters((m, 1))
         Dense = dy.affine_transform
 
         def fn(di):
-            In = di['In']
+            In = di['in']
             W, b = pW.expr(), pb.expr()
-            # return {'Out': W*In + b}
-            return {'Out': Dense([b, W, In])}
+            # return {'out': W*In + b}
+            return {'out': Dense([b, W, In])}
 
         return fn
 
@@ -55,14 +55,14 @@ def nonlinearity(h_nonlin_name):
         def fn(di):
             nonlin_name = dh['nonlin_name']
             if nonlin_name == 'relu':
-                Out = dy.rectify(di['In'])
+                Out = dy.rectify(di['in'])
             elif nonlin_name == 'elu':
-                Out = dy.elu(di['In'])
+                Out = dy.elu(di['in'])
             elif nonlin_name == 'tanh':
-                Out = dy.tanh(di['In'])
+                Out = dy.tanh(di['in'])
             else:
                 raise ValueError
-            return {'Out': Out}
+            return {'out': Out}
 
         return fn
 
@@ -77,7 +77,7 @@ def dropout(h_keep_prob):
         Dropout = dy.dropout
 
         def fn(di):
-            return {'Out': Dropout(di['In'], p)}
+            return {'out': Dropout(di['in'], p)}
 
         return fn
 
@@ -93,9 +93,8 @@ def dnn_net_simple(num_classes):
         [0, 1])  # dropout optional hyperparameter; 0 is exclude, 1 is include
     h_drop_keep_prob = D([0.25, 0.5,
                           0.75])  # dropout probability to choose from
-    h_num_hidden = D(
-        [64, 128, 256, 512,
-         1024])  # number of hidden units for affine transform module
+    h_num_hidden = D([64, 128, 256, 512, 1024
+                     ])  # number of hidden units for affine transform module
     h_num_repeats = D([1, 2])  # 1 is appearing once, 2 is appearing twice
 
     # defining search space topology
@@ -127,9 +126,8 @@ def dnn_net(num_classes):
     return mo.siso_sequential([
         flatten(),
         mo.siso_repeat(
-            lambda: dnn_cell(
-                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_opt_drop,
-                D([0.25, 0.5, 0.75])), D([1, 2])),
+            lambda: dnn_cell(D([64, 128, 256, 512, 1024]), h_nonlin_name,
+                             h_opt_drop, D([0.25, 0.5, 0.75])), D([1, 2])),
         dense(D([num_classes]))
     ])
 
@@ -159,8 +157,8 @@ def main():
     best_val_acc, best_architecture = 0., -1
 
     # donwload and normalize data, using test as val for simplicity
-    X_train, y_train, X_val, y_val, _, _ = load_mnist(
-        'data/mnist', normalize_range=True)
+    X_train, y_train, X_val, y_val, _, _ = load_mnist('data/mnist',
+                                                      normalize_range=True)
 
     # defining evaluator
     evaluator = SimpleClassifierEvaluator((X_train, y_train), (X_val, y_val),
@@ -215,8 +213,8 @@ class SimpleClassifierEvaluator:
         for (label, img) in self.val_dataset:
             dy.renew_cg()
             x = dy.inputVector(img)
-            co.forward({inputs['In']: x})
-            logits = outputs['Out'].val
+            co.forward({inputs['in']: x})
+            logits = outputs['out'].val
             pred = np.argmax(logits.npvalue())
             if (label == pred): correct += 1
         return (1.0 * correct / len(self.val_dataset))
@@ -236,8 +234,8 @@ class SimpleClassifierEvaluator:
                 losses = []
                 for (label, img) in minibatch:
                     x = dy.inputVector(img)
-                    co.forward({inputs['In']: x})
-                    logits = outputs['Out'].val
+                    co.forward({inputs['in']: x})
+                    logits = outputs['out'].val
                     loss = dy.pickneglogsoftmax(logits, label)
                     losses.append(loss)
                 mbloss = dy.esum(losses) / mbsize
@@ -248,9 +246,9 @@ class SimpleClassifierEvaluator:
 
             val_acc = self.compute_accuracy(inputs, outputs)
             if self.log_output_to_terminal and epoch % self.display_step == 0:
-                print("epoch:", '%d' % (epoch + 1), "loss:", "{:.9f}".format(
-                    total_loss / num_batches), "validation_accuracy:",
-                      "%.5f" % val_acc)
+                print("epoch:", '%d' % (epoch + 1), "loss:",
+                      "{:.9f}".format(total_loss / num_batches),
+                      "validation_accuracy:", "%.5f" % val_acc)
 
         val_acc = self.compute_accuracy(inputs, outputs)
         return {'val_acc': val_acc}

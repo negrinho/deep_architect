@@ -99,7 +99,7 @@ def keras_module(name,
 
 
 def siso_keras_module(name, compile_fn, name_to_hyperp, scope=None):
-    return KerasModule(name, compile_fn, name_to_hyperp, ['In'], ['Out'],
+    return KerasModule(name, compile_fn, name_to_hyperp, ['in'], ['out'],
                        scope).get_io()
 
 
@@ -112,7 +112,7 @@ def siso_keras_module_from_keras_layer_fn(layer_fn,
         m = layer_fn(**dh)
 
         def forward_fn(di):
-            return {"Out": m(di["In"])}
+            return {"out": m(di["in"])}
 
         return forward_fn
 

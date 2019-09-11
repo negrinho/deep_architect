@@ -48,22 +48,20 @@ class SimpleClassifierEvaluator:
         (x_train, y_train) = self.train_dataset
 
         X = keras.layers.Input(x_train[0].shape)
-        co.forward({inputs['In']: X})
-        logits = outputs['Out'].val
+        co.forward({inputs['in']: X})
+        logits = outputs['out'].val
         probs = keras.layers.Softmax()(logits)
-        model = keras.models.Model(inputs=[inputs['In'].val], outputs=[probs])
+        model = keras.models.Model(inputs=[inputs['in'].val], outputs=[probs])
         optimizer = keras.optimizers.Adam(lr=self.learning_rate)
-        model.compile(
-            optimizer=optimizer,
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy'])
+        model.compile(optimizer=optimizer,
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
         model.summary()
-        history = model.fit(
-            x_train,
-            y_train,
-            batch_size=self.batch_size,
-            epochs=self.max_num_training_epochs,
-            validation_split=self.val_split)
+        history = model.fit(x_train,
+                            y_train,
+                            batch_size=self.batch_size,
+                            epochs=self.max_num_training_epochs,
+                            validation_split=self.val_split)
 
         results = {'val_accuracy': history.history['val_acc'][-1]}
         return results
@@ -99,12 +97,11 @@ if __name__ == "__main__":
         help=
         'Config file that contains the hyperparameters values determined by DeepArchitect.'
     )
-    parser.add_argument(
-        '--result_fp',
-        type=str,
-        default='',
-        required=True,
-        help='Filepath to store result of each worker.')
+    parser.add_argument('--result_fp',
+                        type=str,
+                        default='',
+                        required=True,
+                        help='Filepath to store result of each worker.')
 
     args = parser.parse_args()
     main(args)

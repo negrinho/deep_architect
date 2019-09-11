@@ -22,11 +22,11 @@ D = hp.Discrete
 def dense(h_units):
 
     def compile_fn(di, dh):
-        (_, in_features) = di['In'].size()
+        (_, in_features) = di['in'].size()
         m = nn.Linear(in_features, dh['units'])
 
         def fn(di):
-            return {'Out': m(di['In'])}
+            return {'out': m(di['in'])}
 
         return fn, [m]
 
@@ -59,11 +59,11 @@ def dropout(h_drop_rate):
 def batch_normalization():
 
     def compile_fn(di, dh):
-        (_, in_features) = di['In'].size()
+        (_, in_features) = di['in'].size()
         bn = nn.BatchNorm1d(in_features)
 
         def fn(di):
-            return {'Out': bn(di['In'])}
+            return {'out': bn(di['in'])}
 
         return fn, [bn]
 
@@ -89,9 +89,9 @@ def dnn_net(num_classes):
     h_opt_bn = D([0, 1])
     return mo.siso_sequential([
         mo.siso_repeat(
-            lambda: dnn_cell(
-                D([64, 128, 256, 512, 1024]), h_nonlin_name, h_swap, h_opt_drop,
-                h_opt_bn, D([0.25, 0.5, 0.75])), D([1, 2, 4])),
+            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+                             h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
+                             D([0.25, 0.5, 0.75])), D([1, 2, 4])),
         dense(D([num_classes]))
     ])
 
@@ -127,15 +127,15 @@ class SimpleClassifierEvaluator:
         network.eval()
         # NOTE: instantiation of parameters requires passing data through the
         # model once.
-        network.forward({'In': torch.zeros(self.batch_size, self.in_features)})
+        network.forward({'in': torch.zeros(self.batch_size, self.in_features)})
         optimizer = optim.Adam(network.parameters(), lr=self.learning_rate)
         network.train()
         for epoch in range(self.num_training_epochs):
             for _ in range(self.num_train_batches):
                 data, target = self.train_dataset.next_batch(self.batch_size)
                 optimizer.zero_grad()
-                output = network({'In': torch.FloatTensor(data)})
-                loss = F.cross_entropy(output["Out"], torch.LongTensor(target))
+                output = network({'in': torch.FloatTensor(data)})
+                loss = F.cross_entropy(output["out"], torch.LongTensor(target))
                 loss.backward()
                 optimizer.step()
 
@@ -149,8 +149,8 @@ class SimpleClassifierEvaluator:
         with torch.no_grad():
             for _ in range(self.num_val_batches):
                 data, target = self.val_dataset.next_batch(self.batch_size)
-                output = network({'In': torch.FloatTensor(data)})
-                pred = output["Out"].data.max(1)[1]
+                output = network({'in': torch.FloatTensor(data)})
+                pred = output["out"].data.max(1)[1]
                 correct += pred.eq(torch.LongTensor(target).data).sum().item()
         val_acc = float(correct) / self.val_dataset.get_num_examples()
         print("validation accuracy: %0.4f" % val_acc)
@@ -167,8 +167,9 @@ def main():
     show_graph = False
 
     # load and normalize data
-    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(
-        'data/mnist', flatten=True, one_hot=False)
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist('data/mnist',
+                                                                  flatten=True,
+                                                                  one_hot=False)
     train_dataset = InMemoryDataset(X_train, y_train, True)
     val_dataset = InMemoryDataset(X_val, y_val, False)
     test_dataset = InMemoryDataset(X_test, y_test, False)
@@ -189,10 +190,9 @@ def main():
         if show_graph:
             # try setting draw_module_hyperparameter_info=False and
             # draw_hyperparameters=True for a different visualization.
-            vi.draw_graph(
-                outputs,
-                draw_module_hyperparameter_info=False,
-                draw_hyperparameters=True)
+            vi.draw_graph(outputs,
+                          draw_module_hyperparameter_info=False,
+                          draw_hyperparameters=True)
 
         results = evaluator.evaluate(inputs, outputs)
         searcher.update(results['validation_accuracy'], searcher_eval_token)

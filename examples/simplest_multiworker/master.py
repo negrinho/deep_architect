@@ -25,8 +25,8 @@ def main():
         logger = sl.EvaluationLogger(cfg["folderpath"], cfg["search_name"],
                                      evaluation_id)
         if not logger.config_exists():
-            inputs, outputs, hyperp_value_lst, searcher_eval_token = searcher.sample(
-            )
+            (inputs, outputs, hyperp_value_lst,
+             searcher_eval_token) = searcher.sample()
             # Logging results (including graph).
             logger.log_config(hyperp_value_lst, searcher_eval_token)
             vi.draw_graph(

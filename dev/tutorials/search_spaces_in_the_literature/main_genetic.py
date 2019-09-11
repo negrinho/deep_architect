@@ -42,7 +42,7 @@ def conv2d_cell(filters, kernel_size):
 def combine_with_sum(num_inputs):
 
     m = co.Module(name="SumCombiner")
-    m._register(["In%d" % i for i in range(num_inputs)], ['Out'], {})
+    m._register(["in%d" % i for i in range(num_inputs)], ['out'], {})
     return m.get_io()
 
 
@@ -91,18 +91,18 @@ def conv_stage(filters, kernel_size, num_nodes):
                             (s_inputs, s_outputs) = combine_with_sum(num_inputs)
                             for idx, j in enumerate(in_ids):
                                 j_outputs = node_id_to_outputs[j]
-                                s_inputs["In%d" % idx].connect(j_outputs["Out"])
+                                s_inputs["in%d" % idx].connect(j_outputs["out"])
                         else:
                             j = in_ids[0]
                             s_outputs = node_id_to_outputs[j]
 
                         (n_inputs,
                          n_outputs) = conv2d_cell(filters, kernel_size)
-                        n_inputs["In"].connect(s_outputs["Out"])
+                        n_inputs["in"].connect(s_outputs["out"])
                     else:
                         (n_inputs,
                          n_outputs) = conv2d_cell(filters, kernel_size)
-                        n_inputs["In"].connect(in_outputs['Out'])
+                        n_inputs["in"].connect(in_outputs['out'])
                     node_id_to_outputs[i] = n_outputs
 
             # final connection to the output node
@@ -115,13 +115,13 @@ def conv_stage(filters, kernel_size, num_nodes):
                 (s_inputs, s_outputs) = combine_with_sum(num_inputs)
                 for idx, j in enumerate(in_ids):
                     j_outputs = node_id_to_outputs[j]
-                    s_inputs["In%d" % idx].connect(j_outputs["Out"])
+                    s_inputs["in%d" % idx].connect(j_outputs["out"])
             else:
                 j = in_ids[0]
                 s_outputs = node_id_to_outputs[j]
 
             (out_inputs, out_outputs) = conv2d_cell(filters, kernel_size)
-            out_inputs["In"].connect(s_outputs["Out"])
+            out_inputs["in"].connect(s_outputs["out"])
             return (in_inputs, out_outputs)
 
         else:
@@ -136,7 +136,7 @@ def conv_stage(filters, kernel_size, num_nodes):
     }
     return mo.substitution_module("ConvStage",
                                   substitution_fn,
-                                  name_to_hyperp, ["In"], ["Out"],
+                                  name_to_hyperp, ["in"], ["out"],
                                   scope=None)
 
 
@@ -149,8 +149,8 @@ random_specify(outputs)
 vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
 
 # inputs_val = Input((32, 32, 3))
-# co.forward({inputs["In"]: inputs_val})
-# outputs_val = outputs["Out"].val
+# co.forward({inputs["in"]: inputs_val})
+# outputs_val = outputs["out"].val
 
 # model = Model(inputs=inputs_val, outputs=outputs_val)
 # model.summary()

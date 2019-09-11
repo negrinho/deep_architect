@@ -13,8 +13,8 @@ def avg_pool(h_kernel_size, h_stride):
         def fn(di, is_training=True):
             with tf.device('/gpu:0'):
                 return {
-                    'Out':
-                    tf.nn.avg_pool(di['In'],
+                    'out':
+                    tf.nn.avg_pool(di['in'],
                                    [1, dh['kernel_size'], dh['kernel_size'], 1],
                                    [1, dh['stride'], dh['stride'], 1], 'SAME')
                 }
@@ -34,8 +34,8 @@ def max_pool(h_kernel_size, h_stride):
         def fn(di, is_training=True):
             with tf.device('/gpu:0'):
                 return {
-                    'Out':
-                    tf.nn.max_pool(di['In'],
+                    'out':
+                    tf.nn.max_pool(di['in'],
                                    [1, dh['kernel_size'], dh['kernel_size'], 1],
                                    [1, dh['stride'], dh['stride'], 1], 'SAME')
                 }
@@ -56,14 +56,14 @@ def keras_batch_normalization(name='default', weight_sharer=None):
                                layer: layer.get_weights())
         if not bn.built:
             with tf.device('/gpu:0'):
-                bn.build(di['In'].get_shape())
+                bn.build(di['in'].get_shape())
                 weights = weight_sharer.load_weights(name)
                 if weights is not None:
                     bn.set_weights(weights)
 
         def fn(di, is_training):
             with tf.device('/gpu:0'):
-                return {'Out': bn(di['In'], training=is_training)}
+                return {'out': bn(di['in'], training=is_training)}
 
         return fn
 
@@ -77,7 +77,7 @@ def relu():
 
         def fn(di, is_training=True):
             with tf.device('/gpu:0'):
-                return {'Out': tf.nn.relu(di['In'])}
+                return {'out': tf.nn.relu(di['in'])}
 
         return fn
 
@@ -87,7 +87,7 @@ def relu():
 def conv2D(filter_size, name, weight_sharer, out_filters=None):
 
     def compile_fn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
+        (_, _, _, channels) = di['in'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
 
         conv_fn = lambda: tf.keras.layers.Conv2D(
@@ -96,14 +96,14 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
                                  conv_fn, lambda layer: layer.get_weights())
         if not conv.built:
             with tf.device('/gpu:0'):
-                conv.build(di['In'].get_shape())
+                conv.build(di['in'].get_shape())
                 weights = weight_sharer.load_weights(name)
                 if weights is not None:
                     conv.set_weights(weights)
 
         def fn(di, is_training=True):
             with tf.device('/gpu:0'):
-                return {'Out': conv(di['In'])}
+                return {'out': conv(di['in'])}
 
         return fn
 
@@ -113,7 +113,7 @@ def conv2D(filter_size, name, weight_sharer, out_filters=None):
 def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
 
     def compile_fn(di, dh):
-        (_, _, _, channels) = di['In'].get_shape().as_list()
+        (_, _, _, channels) = di['in'].get_shape().as_list()
         channels = channels if out_filters is None else out_filters
         conv_fn = lambda: tf.keras.layers.SeparableConv2D(
             channels, filter_size, padding='same')
@@ -121,14 +121,14 @@ def conv2D_depth_separable(filter_size, name, weight_sharer, out_filters=None):
                                  conv_fn, lambda layer: layer.get_weights())
         if not conv.built:
             with tf.device('/gpu:0'):
-                conv.build(di['In'].get_shape())
+                conv.build(di['in'].get_shape())
                 weights = weight_sharer.load_weights(name)
                 if weights is not None:
                     conv.set_weights(weights)
 
         def fn(di, is_training=True):
             with tf.device('/gpu:0'):
-                return {'Out': conv(di['In'])}
+                return {'out': conv(di['in'])}
 
         return fn
 
@@ -141,7 +141,7 @@ def global_pool():
 
         def fn(di, is_training):
             with tf.device('/gpu:0'):
-                return {'Out': tf.reduce_mean(di['In'], [1, 2])}
+                return {'out': tf.reduce_mean(di['in'], [1, 2])}
 
         return fn
 
@@ -155,10 +155,10 @@ def dropout(keep_prob):
         def fn(di, is_training=True):
             if is_training:
                 with tf.device('/gpu:0'):
-                    out = tf.nn.dropout(di['In'], keep_prob)
+                    out = tf.nn.dropout(di['in'], keep_prob)
             else:
-                out = di['In']
-            return {'Out': out}
+                out = di['in']
+            return {'out': out}
 
         return fn
 
@@ -173,14 +173,14 @@ def fc_layer(num_classes, name, weight_sharer):
                                lambda layer: layer.get_weights())
         if not fc.built:
             with tf.device('/gpu:0'):
-                fc.build(di['In'].get_shape())
+                fc.build(di['in'].get_shape())
                 weights = weight_sharer.load_weights(name)
                 if weights is not None:
                     fc.set_weights(weights)
 
         def fn(di, is_training=True):
             with tf.device('/gpu:0'):
-                return {'Out': fc(di['In'])}
+                return {'out': fc(di['in'])}
 
         return fn
 
