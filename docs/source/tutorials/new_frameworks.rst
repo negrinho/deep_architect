@@ -314,6 +314,6 @@ We can see that the implementation for PyTorch is essentially the same as the on
 Concluding remarks
 ^^^^^^^^^^^^^^^^^^
 
-DeepArchitect is not limited to deep learning frameworks---any domain that for which we can define notions of compile and forward (or potentially, other operations) as they were discussed above can be supported. Another aspect to keep in mind is that there is not a need for all the modules of the computational graph to be in the same domains (e.g., a preprocessing component followed by the actual graph propagation).
+DeepArchitect is not limited to deep learning frameworks---any domain that for which we can define notions of compile and forward (or potentially, other operations) as they were discussed above can be supported. Another aspect to keep in mind is that there is not a need for all the modules of the computational graph to be in the same domain (e.g., a preprocessing component followed by the actual graph propagation).
 
 We showcased support for both static (Keras) and dynamic deep learning (PyTorch) frameworks. The notions of basic modules, substitution modules, independent hyperparameters, and dependent hyperparameters are general and can be used across a large range of settings (e.g., scikit-learn or data augmentation pipelines). We leave the consideration of other frameworks (deep learning or otherwise) to the reader.

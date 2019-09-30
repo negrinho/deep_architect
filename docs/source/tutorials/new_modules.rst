@@ -177,10 +177,10 @@ Using this function, the above example would be similar except that we would not
             'strides': h_strides
         })
 
-Easily creating modules directly from framework functions
+Easily creating modules from framework functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Another useful auxiliary function creates a module directly from a function (e.g., most functions in keras.layers).
+Another useful auxiliary function creates a module from a function (e.g., most functions in keras.layers).
 
 .. code:: python
 
@@ -202,7 +202,7 @@ Another useful auxiliary function creates a module directly from a function (e.g
 
         return siso_keras_module(name, compile_fn, name_to_hyperp, scope)
 
-This function is convenient for functions that return directly a single-input single-output Keras module. For example, to get a convolutional module, we do
+This function is convenient for functions that return a single-input single-output Keras module. For example, to get a convolutional module, we do
 
 .. code:: python
 
@@ -349,7 +349,7 @@ A substitution module has hyperparameters and a substitution function that retur
 
 Substitution modules disappear from the graph when the substitution is performed. The substitution function may itself return a graph fragment containing substitution modules. When there are only basic modules left and all the hyperparameters have been assigned values, the search space is fully specified and we can call the compile and forward functions for each of the basic modules in in it.
 
-Substitution modules delay the choice of a structural property of the search space until some hyperparameters are assigned values. These are very helpful to encode complex and expressive search spaces. We have defined a few useful substitution modules in `deep_architect/modules.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/modules.py>`_. Similar to the basic module definition that we looked above, it is more convenient to deal with the dictionaries of inputs and the dictionaries of outputs than directly with the modules, so we define this function
+Substitution modules delay the choice of a structural property of the search space until some hyperparameters are assigned values. These are very helpful to encode complex and expressive search spaces. We have defined a few useful substitution modules in `deep_architect/modules.py <https://github.com/negrinho/deep_architect/blob/master/deep_architect/modules.py>`_. Similar to the basic module definition that we looked above, it is more convenient to deal with the dictionaries of inputs and the dictionaries of outputs than with the modules, so we define this function
 
 .. code:: python
 

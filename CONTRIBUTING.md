@@ -2,10 +2,14 @@
 
 ## Introduction
 <!--  Contributions welcome.-->
-We encourage contributions to DeepArchitect. If DeepArchitect has been useful for your work, please cite it and/or contribute to the codebase. We encourage everyone doing research in architecture search to implement their algorithms in DeepArchitect to make them widely available to other researchers and the machine learning community at large. This will significantly improve reproducibility and reusability of architecture search research.
+We encourage contributions to DeepArchitect.
+If DeepArchitect has been useful for your work, please cite it and/or contribute to the codebase.
+We encourage everyone doing research in architecture search to implement their algorithms in DeepArchitect to make them widely available to other researchers and the machine learning community at large.
+This will significantly improve reproducibility and reusability of architecture search research.
 
 <!-- Information that you will find in this document. -->
-Contributions can be a result of your own research or from implementations of existing algorithms. If you have developed a searcher, search space, evaluator, or any other component or functionality that would be useful to include in DeepArchitect, please make a pull request that follows the guidelines described in this document.
+Contributions can be a result of your own research or from implementations of existing algorithms.
+If you have developed a searcher, search space, evaluator, or any other component or functionality that would be useful to include in DeepArchitect, please make a pull request that follows the guidelines described in this document.
 
 After reading this document, you will understand:
 
@@ -15,21 +19,46 @@ After reading this document, you will understand:
 * what are the different levels of conformity that we require for different types of contributions.
 
 <!-- How to decide exactly what to contribute. -->
-If you have a feature that you would like to add to DeepArchitect but you are unsure about its suitability, open a [GitHub issue](https://github.com/negrinho/deep_architect/issues) for discussion. This guarantees that your efforts are well-aligned with the project direction and needs. Consider including a code snippet or pseudo-code illustrating a useful use case for the feature.
+If you have a feature that you would like to add to DeepArchitect but you are unsure about its suitability, open a [GitHub issue](https://github.com/negrinho/deep_architect/issues) for discussion.
+This guarantees that your efforts are well-aligned with the project direction and needs.
+Consider including a code snippet or pseudo-code illustrating a useful use case for the feature.
 
 ## Types of contributions
 <!-- The contrib and dev folders and their semantics. -->
-Most contributions will live in the contrib folder. The contrib folder is used for functionality that is likely useful, but that won't necessarily be maintained over time. While code lies in the contrib folder, the code owners are responsible for its maintenance. If code in the contrib folder breaks and the code owner does not fix it in a timely manner, we reserve the right to move the code to the dev folder. The dev folder contains code sketching interesting functionality that may not be fully functional or it has not been refactored well enough to be integrated in contrib. Unmaintained code will be moved to dev upon breakage. Code in dev should not be used directly, but it can inspire further development.
+Most contributions will live in the contrib folder.
+The contrib folder is used for functionality that is likely useful, but that won't necessarily be maintained over time.
+While code lies in the contrib folder, the code owners are responsible for its maintenance.
+If code in the contrib folder breaks and the code owner does not fix it in a timely manner, we reserve the right to move the code to the dev folder.
+The dev folder contains code sketching interesting functionality that may not be fully functional or it has not been refactored well enough to be integrated in contrib.
+Unmaintained code will be moved to dev upon breakage. Code in dev should not be used directly, but it can inspire further development.
 
 <!-- How code evolves between the different folders. -->
-Code that is part of the contrib folder may eventually be refactored into code that is part of the deep_architect folder. Similarly, code in the dev folder may be refactored in code that goes in the contrib folder. If code becomes part of the deep_architect folder, it becomes the responsibility of the developers of DeepArchitect to maintain it. To create a new contrib folder, it is best to first discuss its scope. We do not impose these restrictions for the dev folder. The dev folder should be used lightly though. We will only accept contributions to the dev folder if it they showcase important functionality and there is sufficient reason to justify their incompleteness. If the functionality is complete, we advise the contributor to refactor it into the contrib folder. Including the contribution in the contrib folder can be done either by adding it to an existing contrib subfolder, or by creating a new well-scoped contrib subfolder.
+Code that is part of the contrib folder may eventually be refactored into code that is part of the deep_architect folder. Similarly, code in the dev folder may be refactored in code that goes in the contrib folder.
+If code becomes part of the deep_architect folder, it becomes the responsibility of the developers of DeepArchitect to maintain it.
+To create a new contrib folder, it is best to first discuss its scope.
+We do not impose these restrictions for the dev folder.
+The dev folder should be used lightly though.
+We will only accept contributions to the dev folder if it they showcase important functionality and there is sufficient reason to justify their incompleteness.
+If the functionality is complete, we advise the contributor to refactor it into the contrib folder.
+Including the contribution in the contrib folder can be done either by adding it to an existing contrib subfolder, or by creating a new well-scoped contrib subfolder.
 
 <!-- Contributions that are generated by extensively adapting existing code. -->
-Cross-pollination between contrib and dev folders is expected and encouraged. For example, a few subcontrib folders already contain useful functionality, but a contributor may want to extend it and encapsulate it in a more coherent contrib subfolder. This scheme allows DeepArchitect to evolve without committing to major refactoring decisions upfront. If the foreseen contribution is better seen as an extension or a fix to an existing contrib folder, please open an issue or a pull request to discuss with the most active contributors on how to best incorporate the contribution in the existing files and folders. We may ask for refactoring changes or additional tests.
+Cross-pollination between contrib and dev folders is expected and encouraged.
+For example, a few subcontrib folders already contain useful functionality, but a contributor may want to extend it and encapsulate it in a more coherent contrib subfolder.
+This scheme allows DeepArchitect to evolve without committing to major refactoring decisions upfront.
+If the foreseen contribution is better seen as an extension or a fix to an existing contrib folder, please open an issue or a pull request to discuss with the most active contributors on how to best incorporate the contribution in the existing files and folders.
+We may ask for refactoring changes or additional tests.
 
 ## Required documentation and tests
 <!-- Folder structure for contrib contributions. -->
-Your new library in contrib should be placed in `deep_architect/contrib/$YOUR_LIBRARY_NAME`. New folders in contrib should include a `README.md` file providing information about the functionality that the library seeks to implement, the features that are implemented in the folder contributed, and an explanation about how the implementation is split between the different files and folders. Also include an explanation about when would it be natural to use the code in this library. This guarantees that a new user will quickly get a reasonable grasp of how to use the library and what files to look at for specific desired functionality. Comments for each major class and function are also recommended but not mandatory. Check the comments in `deep_architect/core.py` to get a sense of the style and format used for comments. It is also convenient to include in `README.md`, a roadmap for missing functionality that would be nice to include in the future. This informs future contributors about where the contributed project is going and compels them to help, e.g., if they believe that the feature is important.
+Your new library in contrib should be placed in `deep_architect/contrib/$YOUR_LIBRARY_NAME`.
+New folders in contrib should include a `README.md` file providing information about the functionality that the library seeks to implement, the features that are implemented in the folder contributed, and an explanation about how the implementation is split between the different files and folders.
+Also include an explanation about when would it be natural to use the code in this library.
+This guarantees that a new user will quickly get a reasonable grasp of how to use the library and what files to look at for specific desired functionality.
+Comments for each major class and function are also recommended but not mandatory.
+Check the comments in `deep_architect/core.py` to get a sense of the style and format used for comments.
+It is also convenient to include in `README.md`, a roadmap for missing functionality that would be nice to include in the future.
+This informs future contributors about where the contributed project is going and compels them to help, e.g., if they believe that the feature is important.
 
 <!-- README file and its Structure. -->
 The following is a typical structure for `README.md`:
