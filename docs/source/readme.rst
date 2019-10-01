@@ -3,7 +3,8 @@ Overview
 
 **[**\ `CODE <https://github.com/negrinho/deep_architect>`__\ **]**
 **[**\ `DOCUMENTATION <https://deep-architect.readthedocs.io/en/latest/>`__\ **]**
-**[**\ `PAPER <https://arxiv.org/abs/1909.13404>`__\ **]**
+**[**\ `PAPER <https://arxiv.org/abs/1909.13404>`__\ **]** **[**\ `BLOG
+POST <https://negrinho.github.io/2019/07/26/introducing-deep-architect.html>`__\ **]**
 
 .. raw:: html
 

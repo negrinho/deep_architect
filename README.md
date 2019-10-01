@@ -3,6 +3,7 @@
 **[[CODE](https://github.com/negrinho/deep_architect)]**
 **[[DOCUMENTATION](https://deep-architect.readthedocs.io/en/latest/)]**
 **[[PAPER](https://arxiv.org/abs/1909.13404)]**
+**[[BLOG POST](https://negrinho.github.io/2019/07/26/introducing-deep-architect.html)]**
 
 <p align="center">
   <img width="400" height="400" src="docs/source/logo/logo.svg">
