@@ -1,5 +1,9 @@
 # Overview
 
+**[[CODE](https://github.com/negrinho/deep_architect)]**
+**[[DOCUMENTATION](https://deep-architect.readthedocs.io/en/latest/)]**
+**[[PAPER](https://arxiv.org/abs/1909.13404)]**
+
 <p align="center">
   <img width="400" height="400" src="docs/source/logo/logo.svg">
 </p>
@@ -259,8 +263,33 @@ Contributors agree to license their contributions under the MIT license.
 
 ## Contributors and acknowledgments
 
-
 The main researcher behind DeepArchitect is [Renato Negrinho](https://www.cs.cmu.edu/~negrinho/).
 [Daniel Ferreira](https://github.com/dcferreira) played an important initial role in designing APIs through discussions and contributions.
 This work benefited immensely from the involvement and contributions of talented CMU undergraduate students ([Darshan Patil](https://github.com/dapatil211), [Max Le](https://github.com/lethenghia18), [Kirielle Singajarah](https://github.com/ksingarajah), [Zejie Ai](https://github.com/aizjForever), [Yiming Zhao](https://github.com/startrails98), [Emilio Arroyo-Fang](https://github.com/fizzxed)).
-This work benefited greatly from discussions with both faculty (Geoff Gordon, Matt Gormley, Graham Neubig, Carolyn Rose, Ruslan Salakhutdinov, Eric Xing, and Xue Liu), and fellow PhD students (Zhiting Hu, Willie Neiswanger, Christoph Dann, and Matt Barnes).
+This work benefited greatly from discussions with faculty (Geoff Gordon, Matt Gormley, Graham Neubig, Carolyn Rose, Ruslan Salakhutdinov, Eric Xing, and Xue Liu), and fellow PhD students (Zhiting Hu, Willie Neiswanger, Christoph Dann, and Matt Barnes).
+This work was partially done while Renato Negrinho was a research scientist at [Petuum](https://petuum.com).
+This work was partially supported by NSF grant IIS 1822831.
+We thank a generous GCP grant for both CPU and TPU compute.
+
+## References
+
+If you use this work, please cite:
+
+```
+@article{negrinho2017deeparchitect,
+  title={Deeparchitect: Automatically designing and training deep architectures},
+  author={Negrinho, Renato and Gordon, Geoff},
+  journal={arXiv preprint arXiv:1704.08792},
+  year={2017}
+}
+
+@article{negrinho2019towards,
+  title={Towards modular and programmable architecture search},
+  author={Negrinho, Renato and Patil, Darshan and Le, Nghia and Ferreira, Daniel and Gormley, Matthew and Gordon, Geoffrey},
+  journal={Neural Information Processing Systems},
+  year={2019}
+}
+```
+
+The code for `negrinho2017deeparchitect` can be found [here](https://github.com/negrinho/deep_architect_legacy).
+The ideas and implementation of `negrinho2017deeparchitect` evolved into the work of `negrinho2019towards`, found in this repo. See the [paper](https://arxiv.org/abs/1909.13404), [documentation](https://deep-architect.readthedocs.io/en/latest/), and [blog post](https://negrinho.github.io/2019/07/26/introducing-deep-architect.html).
