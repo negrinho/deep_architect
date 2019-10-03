@@ -229,7 +229,7 @@ See below for a high-level tour of the repo.
 
 There are also a few folders in the deep_architect folder.
 
-* [communicators](https://github.com/negrinho/deep_architect/tree/master/deep_architect/communicators): Simple functionality to communicate between master and worker processes to relay the evaluation of an architecture and retrieve the results once finished.
+* [communicators](https://github.com/negrinho/deep_architect/tree/master/deep_architect/contrib/communicators): Simple functionality to communicate between master and worker processes to relay the evaluation of an architecture and retrieve the results once finished.
 * [contrib](https://github.com/negrinho/deep_architect/tree/master/deep_architect/contrib): Functionality that it will not necessarily be maintained over time but that users may find useful in their own examples. Contributions by the community will live in this folder. See [here](https://github.com/negrinho/deep_architect/blob/master/CONTRIBUTING.md) for an in-depth explanation for the rationale behind the project organization and the contrib folder.
 * [helpers](https://github.com/negrinho/deep_architect/tree/master/deep_architect/helpers): Helpers for the various frameworks that we support. This allows us to take the base functionality defined in [core.py](https://github.com/negrinho/deep_architect/blob/master/deep_architect/core.py) and expand it to provide compilation functionality for computational graphs across frameworks. It should be instructive to compare support for different frameworks. One file per framework.
 * [searchers](https://github.com/negrinho/deep_architect/tree/master/deep_architect/searchers): Searchers that can be used for search spaces defined in DeepArchitect. One searcher per file.
