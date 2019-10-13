@@ -302,7 +302,7 @@ By using basic modules, substitution modules, independent hyperparameters, and d
 Minor details
 ^^^^^^^^^^^^^
 
-We cover some minor details that we have not paid attention in this tutorial.
+We cover additional details not yet discussed in the tutorial.
 
 **Search space wrapper:** Throughout the instantiation of the various search spaces, we have seen this call to :code:`wrap_search_space_fn`, which internally uses :py:class:`deep_architect.modules.SearchSpaceFactory`. :py:class:`deep_architect.modules.SearchSpaceFactory` manages the global scope and buffers the search space to make sure that there are no substitution modules with unconnected inputs or outputs (i.e., at the border of the search space).
 
