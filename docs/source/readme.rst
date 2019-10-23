@@ -181,7 +181,7 @@ Check the following minimal search space:
    (inputs, outputs) = mo.SearchSpaceFactory(model_search_space).get_search_space()
    random_specify(outputs)
    inputs_val = Input((784,))
-   co.forward({inputs["In"]: inputs_val})
+   co.forward({inputs["in"]: inputs_val})
    outputs_val = outputs["out"].val
    vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
    model = Model(inputs=inputs_val, outputs=outputs_val)
