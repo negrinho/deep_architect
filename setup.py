@@ -53,7 +53,7 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     packages=['deep_architect'],
-    install_requires=['numpy', 'scipy', 'six', 'future'],
+    install_requires=['numpy', 'scipy'],
     extras_require={
         "docs": ["sphinx"
                  "sphinx_rtd_theme"],

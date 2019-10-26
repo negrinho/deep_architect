@@ -24,7 +24,7 @@ WIDTH = 32
 DEPTH = 3
 
 
-class Cifar10DataSet(object):
+class Cifar10DataSet:
     """Cifar10 data set.
   Described by http://www.cs.toronto.edu/~kriz/cifar.html.
   """

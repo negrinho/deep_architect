@@ -1,7 +1,5 @@
-from builtins import range
 import matplotlib.pyplot as plt
 import graphviz
-from six import itervalues, iteritems
 import deep_architect.core as co
 import deep_architect.utils as ut
 import deep_architect.searchers as se
@@ -77,8 +75,7 @@ def draw_graph(outputs,
             label = ''
         else:
             ox_localname = None
-            for ox_iter_localname, ox_iter in iteritems(
-                    ox.get_module().outputs):
+            for ox_iter_localname, ox_iter in ox.get_module().outputs.items():
                 if ox_iter == ox:
                     ox_localname = ox_iter_localname
                     break
@@ -107,7 +104,7 @@ def draw_graph(outputs,
         g.edge(h.get_name(), m.get_name(), label=label, fontsize=edge_fs)
 
     def _draw_dependent_hyperparameter_relations(h_dep):
-        for h_localname, h in iteritems(h_dep._hyperps):
+        for h_localname, h in h_dep._hyperps.items():
             if h.has_value_assigned():
                 label = h_localname + '=' + str(h.get_value())
             else:
@@ -124,7 +121,7 @@ def draw_graph(outputs,
             xlabel="<" + '<br align="right"/>'.join([
                 '<FONT POINT-SIZE="%s">' % h_fs + h_localname +
                 ('=' + str(h.get_value()) if h.has_value_assigned() else '') +
-                "</FONT>" for h_localname, h in iteritems(m.hyperps)
+                "</FONT>" for h_localname, h in m.hyperps.items()
             ]) + ">")
 
     def _draw_output_terminal(ox_localname, ox):
@@ -141,14 +138,14 @@ def draw_graph(outputs,
         """Adds the module information to the graph that is local to the module.
         """
         nodes.add(m.get_name())
-        for ix_localname, ix in iteritems(m.inputs):
+        for ix_localname, ix in m.inputs.items():
             if ix.is_connected():
                 _draw_connected_input(ix_localname, ix)
             else:
                 _draw_unconnected_input(ix_localname, ix)
 
         if draw_hyperparameters:
-            for h_localname, h in iteritems(m.hyperps):
+            for h_localname, h in m.hyperps.items():
                 _draw_module_hyperparameter(m, h_localname, h)
 
         if draw_module_hyperparameter_info:
@@ -172,8 +169,8 @@ def draw_graph(outputs,
                    style='filled')
 
     # add the output terminals.
-    for m in co.extract_unique_modules(outputs.values()):
-        for ox_localname, ox in iteritems(m.outputs):
+    for m in co.extract_unique_modules(list(outputs.values())):
+        for ox_localname, ox in m.outputs.items():
             _draw_output_terminal(ox_localname, ox)
 
     # minor adjustments to attributes.
@@ -209,7 +206,7 @@ def draw_graph_evolution(outputs,
     draw_fn(0)
     h_iter = co.unassigned_independent_hyperparameter_iterator(outputs)
     for i, v in enumerate(hyperp_value_lst):
-        h = h_iter.next()
+        h = next(h_iter)
         h.assign_value(v)
         draw_fn(i + 1)
 

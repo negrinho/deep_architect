@@ -51,8 +51,8 @@ path_lst = [
 ]
 print(path_lst)
 path_to_log = {p: process_logs(sl.read_search_folder(p)) for p in path_lst}
-keys = path_to_log.values()[0][0].keys()
-print keys
+keys = list(path_to_log.values()[0][0].keys())
+print(keys)
 ds = path_to_log.values()[0]
 
 
@@ -263,7 +263,7 @@ class LogSelectorDropdown(Component):
 
     def __init__(self, parent_name, local_name):
         Component.__init__(self, parent_name, local_name)
-        self.dropdown = Dropdown(parent_name, local_name, path_to_log.keys(),
+        self.dropdown = Dropdown(parent_name, local_name, list(path_to_log.keys()),
                                  'Choose search logs to visualize.', True)
         self._register(
             full_column([
@@ -281,7 +281,7 @@ class DimensionControls(Component):
     def __init__(self, parent_name, local_name,
                  dimension_selector_placeholder_text):
         Component.__init__(self, parent_name, local_name)
-        self.dropdown = Dropdown(self.full_name, 'selector', ds[0].keys(),
+        self.dropdown = Dropdown(self.full_name, 'selector', list(ds[0].keys()),
                                  dimension_selector_placeholder_text, False)
         self.radio = RadioItems(self.full_name, 'scale', ['linear', 'log'],
                                 True)
@@ -522,7 +522,7 @@ class Visualization(Component):
     def get_callback_config_lst(self):
         lst = []
         lst.extend(self._get_add_row_callback_config_lst())
-        for row in self.id_to_row.itervalues():
+        for row in self.id_to_row.values():
             lst.extend(row.get_callback_config_lst())
         return lst
 

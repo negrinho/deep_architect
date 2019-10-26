@@ -1,6 +1,3 @@
-# Search Space
-from __future__ import print_function
-from builtins import range
 import tensorflow as tf
 import numpy as np
 

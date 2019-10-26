@@ -1,4 +1,3 @@
-from builtins import range
 import deep_architect.visualization as vi
 import deep_architect.utils as ut
 import numpy as np
@@ -6,14 +5,14 @@ import itertools
 
 
 def map_dict(d, fn):
-    return {k: fn(k, v) for (k, v) in d.iteritems()}
+    return {k: fn(k, v) for (k, v) in d.items()}
 
 
 def zip_toggle(xs):
     """[[x1, ...], [x2, ...], [x3, ...]] --> [(x1, x2, .., xn) ...];
         [(x1, x2, .., xn) ...] --> [[x1, ...], [x2, ...], [x3, ...]]"""
     assert isinstance(xs, list)
-    return zip(*xs)
+    return list(zip(*xs))
 
 
 def argsort(xs, fns, increasing=True):
@@ -269,7 +268,7 @@ def calibration_table(time_sequence_lst,
     if table_filepath is not None:
         ut.write_textfile(table_filepath, table_lines)
     if show:
-        print "\n".join(table_lines)
+        print("\n".join(table_lines))
 
 
 # TODO: write the documentation.
@@ -340,14 +339,14 @@ def budget_calibration_plot(reference_value_sequence,
 
     plotter = vi.LinePlot(xlabel='Rank', ylabel=value_axis_label)
     # adding the value sequences.
-    xs = range(num_evals)
+    xs = list(range(num_evals))
     plotter.add_line(xs, sorted_ref_seq, label=reference_label)
     for idx, ys in enumerate(sorted_other_seq_lst):
         label = other_label_lst[idx] if other_label_lst is not None else None
         plotter.add_line(xs, ys, label=label)
 
     # adding the guidelines with respect to the best one.
-    for xs, ys in itertools.izip(guideline_idxs_lst, guideline_values_lst):
+    for xs, ys in zip(guideline_idxs_lst, guideline_values_lst):
         sorting_idxs = argsort_fn(ys)
         xs = apply_permutation(xs, sorting_idxs)
         ys = apply_permutation(ys, sorting_idxs)

@@ -5,7 +5,6 @@ import time
 import subprocess
 import argparse
 import pickle
-from six import iteritems, itervalues
 
 
 def json_object_to_json_string(d):
@@ -233,14 +232,14 @@ class SequenceTracker:
                 sequences, and values are the additional data point to add to
                 the sequence.
         """
-        for k, v in iteritems(d):
+        for k, v in d.items():
             assert type(k) == str and len(k) > 0
             if k not in self.d:
                 self.d[k] = []
             self.d[k].append(v)
 
         if self.abort_if_different_lengths:
-            assert len(set([len(v) for v in itervalues(self.d)])) <= 1
+            assert len(set([len(v) for v in self.d.values()])) <= 1
 
     def get_dict(self):
         """Get a dictionary representation of the tracked sequences.

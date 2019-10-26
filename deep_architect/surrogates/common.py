@@ -1,5 +1,4 @@
 import deep_architect.core as co
-from six import iteritems
 
 
 class SurrogateModel:
@@ -67,7 +66,7 @@ def extract_features(inputs, outputs):
         m_feats = m.get_name()
         module_feats.append(m_feats)
 
-        for ox_localname, ox in iteritems(m.outputs):
+        for ox_localname, ox in m.outputs.items():
             if ox.is_connected():
                 ix_lst = ox.get_connected_inputs()
                 for ix in ix_lst:
@@ -76,7 +75,7 @@ def extract_features(inputs, outputs):
                     connection_feats.append(c_feats)
 
         # module hyperparameters
-        for h_localname, h in iteritems(m.hyperps):
+        for h_localname, h in m.hyperps.items():
             mh_feats = "%s/%s : %s = %s" % (m.get_name(), h_localname,
                                             h.get_name(), h.get_value())
             module_hyperp_feats.append(mh_feats)

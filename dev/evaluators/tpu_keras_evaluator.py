@@ -1,12 +1,9 @@
-from __future__ import print_function
-
 import os
 import sys
 import gc
 import subprocess
 import random
 import logging
-from six.moves import range
 
 import tensorflow as tf
 import numpy as np
@@ -46,7 +43,7 @@ def get_optimizer(optimizer_type, learning_rate):
     return optimizer
 
 
-class KerasTPUEvaluator(object):
+class KerasTPUEvaluator:
 
     def __init__(self,
                  data_dir,

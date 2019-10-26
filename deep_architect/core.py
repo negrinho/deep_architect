@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from six import iterkeys, itervalues, iteritems
 
 
 def sorted_values_by_key(d):
@@ -24,7 +23,7 @@ class OrderedSet:
         return len(self.d)
 
     def __iter__(self):
-        for x in iterkeys(self.d):
+        for x in self.d.keys():
             yield x
 
     def __contains__(self, item):
@@ -280,7 +279,7 @@ class DependentHyperparameter(Hyperparameter):
         self._fn = fn
 
         # registering the dependencies.
-        for h in itervalues(self._hyperps):
+        for h in self._hyperps.values():
             h._register_dependent_hyperparameter(self)
 
         self._update()
@@ -290,8 +289,8 @@ class DependentHyperparameter(Hyperparameter):
         is the case.
         """
         # assert not self.has_value_assigned()
-        if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
-            dh = {name: h.get_value() for name, h in iteritems(self._hyperps)}
+        if all(h.has_value_assigned() for h in self._hyperps.values()):
+            dh = {name: h.get_value() for name, h in self._hyperps.items()}
             v = self._fn(dh)
             self.assign_value(v)
 
@@ -568,7 +567,7 @@ class Module(Addressable):
         Returns:
             dict[str, object]: Dictionary of local input names to their corresponding values.
         """
-        return {name: ix.val for name, ix in iteritems(self.inputs)}
+        return {name: ix.val for name, ix in self.inputs.items()}
 
     def _get_hyperp_values(self):
         """Get the values of the hyperparameters.
@@ -577,7 +576,7 @@ class Module(Addressable):
             dict[str, object]:
                 Dictionary of local hyperparameter names to their corresponding values.
         """
-        return {name: h.get_value() for name, h in iteritems(self.hyperps)}
+        return {name: h.get_value() for name, h in self.hyperps.items()}
 
     def _set_output_values(self, output_name_to_val):
         """Set the values of the outputs of the module.
@@ -589,7 +588,7 @@ class Module(Addressable):
             output_name_to_val (dict[str, object]): Dictionary of local output
                 names to the corresponding values to assign to those outputs.
         """
-        for name, val in iteritems(output_name_to_val):
+        for name, val in output_name_to_val.items():
             self.outputs[name].val = val
 
     def get_io(self):
@@ -697,11 +696,11 @@ def determine_module_eval_seq(input_lst):
     ms = extract_unique_modules(input_lst)
     for m in ms:
         if m not in module_memo and all(
-                ix in input_memo for ix in itervalues(m.inputs)):
+                ix in input_memo for ix in m.inputs.values()):
             module_seq.append(m)
             module_memo.add(m)
 
-            for ox in itervalues(m.outputs):
+            for ox in m.outputs.values():
                 ix_lst = ox.get_connected_inputs()
                 input_memo.update(ix_lst)
                 m_lst = [ix.get_module() for ix in ix_lst]
@@ -732,7 +731,7 @@ def traverse_backward(outputs, fn):
         if is_over:
             break
         else:
-            for ix in itervalues(m.inputs):
+            for ix in m.inputs.values():
                 if ix.is_connected():
                     m_prev = ix.get_connected_output().get_module()
                     if m_prev not in memo:
@@ -763,7 +762,7 @@ def traverse_forward(inputs, fn):
         if is_over:
             break
         else:
-            for ox in itervalues(m.outputs):
+            for ox in m.outputs.values():
                 if ox.is_connected():
                     for ix in ox.get_connected_inputs():
                         m_next = ix.get_module()
@@ -797,7 +796,7 @@ def is_specified(outputs):
     is_spec = [True]
 
     def fn(module):
-        for h in itervalues(module.hyperps):
+        for h in module.hyperps.values():
             if not h.has_value_assigned():
                 is_spec[0] = False
                 return True
@@ -828,14 +827,14 @@ def forward(input_to_val, _module_seq=None):
             not provided, the module sequence is computed.
     """
     if _module_seq is None:
-        _module_seq = determine_module_eval_seq(input_to_val.keys())
+        _module_seq = determine_module_eval_seq(list(input_to_val.keys()))
 
-    for ix, val in iteritems(input_to_val):
+    for ix, val in input_to_val.items():
         ix.val = val
 
     for m in _module_seq:
         m.forward()
-        for ox in itervalues(m.outputs):
+        for ox in m.outputs.values():
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
 
@@ -859,7 +858,7 @@ def get_unconnected_inputs(outputs):
     ix_lst = []
 
     def fn(x):
-        for ix in itervalues(x.inputs):
+        for ix in x.inputs.values():
             if not ix.is_connected():
                 ix_lst.append(ix)
         return False
@@ -887,7 +886,7 @@ def get_unconnected_outputs(inputs):
     ox_lst = []
 
     def fn(x):
-        for ox in itervalues(x.outputs):
+        for ox in x.outputs.values():
             if not ox.is_connected():
                 ox_lst.append(ox)
         return False
@@ -924,7 +923,7 @@ def get_all_hyperparameters(outputs):
         h_dep_lst = [h_dep]
         idx = 0
         while idx < len(h_dep_lst):
-            for h in itervalues(h_dep_lst[idx]._hyperps):
+            for h in h_dep_lst[idx]._hyperps.values():
                 # cycle detection.
                 # assert h not in local_memo
 
@@ -937,7 +936,7 @@ def get_all_hyperparameters(outputs):
 
     # this function is applied on each of the modules in the graph.
     def fn(module):
-        for h in itervalues(module.hyperps):
+        for h in module.hyperps.values():
             if h not in visited_hs:
                 visited_hs.add(h)
                 if isinstance(h, DependentHyperparameter):

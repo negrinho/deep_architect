@@ -1,9 +1,6 @@
 """
 Implementation of Regularized Evolution searcher from Zoph et al '18
 """
-from __future__ import print_function
-
-from builtins import range
 import random
 from collections import deque
 

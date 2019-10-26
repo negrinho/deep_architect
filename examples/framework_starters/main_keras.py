@@ -1,4 +1,3 @@
-from builtins import range
 import keras
 import numpy as np
 

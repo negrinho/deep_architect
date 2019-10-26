@@ -1,7 +1,4 @@
 from __future__ import absolute_import
-from builtins import str
-from builtins import range
-
 import tensorflow as tf
 from tensorflow.python.keras.utils import tf_utils
 

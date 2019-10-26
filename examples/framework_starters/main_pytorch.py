@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import range
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

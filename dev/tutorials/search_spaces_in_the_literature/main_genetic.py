@@ -10,7 +10,6 @@ D = hp.Discrete
 
 from keras.layers import Conv2D, BatchNormalization, Input, Add
 from keras.models import Model
-from six import iteritems, itervalues
 
 # NOTE: add the sum operation. combine these two.
 
@@ -50,11 +49,11 @@ def conv_stage(filters, kernel_size, num_nodes):
 
     def substitution_fn(dh):
         print dh
-        any_in_stage = any(v for v in itervalues(dh))
+        any_in_stage = any(v for v in dh.values())
 
         if any_in_stage:
             node_id_to_lst = {}
-            for name, v in iteritems(dh):
+            for name, v in dh.items():
                 d = ut.json_string_to_json_object(name)
                 d['use'] = v
                 i = d["node_id"]
@@ -64,7 +63,7 @@ def conv_stage(filters, kernel_size, num_nodes):
 
             node_ids_using_any = set()
             node_ids_used = set()
-            for i, lst in iteritems(node_id_to_lst):
+            for i, lst in node_id_to_lst.items():
                 for d in lst:
                     if d['use']:
                         node_ids_using_any.add(d["node_id"])

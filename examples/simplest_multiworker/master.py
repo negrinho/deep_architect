@@ -1,4 +1,3 @@
-from builtins import range
 import deep_architect.search_logging as sl
 import deep_architect.visualization as vi
 import deep_architect.utils as ut

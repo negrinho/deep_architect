@@ -1,6 +1,5 @@
 import subprocess
 import os
-from six import iteritems
 
 
 ### Auxiliary functions.
@@ -225,7 +224,7 @@ def create_makefile(out_folderpath, container_config_lst):
         add_to_lists(cfg)
 
     # create scripts for all commands.
-    for k, d in iteritems(rule_name_to_config):
+    for k, d in rule_name_to_config.items():
         create_bash_script(d['command_lst'],
                            join_paths([out_folderpath,
                                        'build_%s.sh' % k]))

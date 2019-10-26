@@ -1,4 +1,3 @@
-from six import iteritems
 import torch.nn as nn
 import deep_architect.core as co
 from deep_architect.hyperparameters import D
@@ -150,8 +149,8 @@ def eval(outputs):
 
 # TODO: this needs to be changed.
 def cuda(outputs, *args, **kwargs):
-    _call_fn_on_pytorch_module(
-        outputs, lambda pyth_m: pyth_m.cuda(*args, **kwargs))
+    _call_fn_on_pytorch_module(outputs,
+                               lambda pyth_m: pyth_m.cuda(*args, **kwargs))
 
 
 def cpu(outputs):
@@ -183,7 +182,7 @@ class PyTorchModel(nn.Module):
         outputs (dict[str,deep_architect.core.Output]): Dictionary of names to outputs.
     """
 
-    def __init__(self, inputs, outputs):
+    def __init__(self, inputs, outputs, init_input_name_to_val):
         nn.Module.__init__(self)
 
         self.outputs = outputs
@@ -202,14 +201,14 @@ class PyTorchModel(nn.Module):
         """
         if self._module_seq is None:
             self._module_seq = co.determine_module_eval_seq(
-                self.inputs.values())
+                list(self.inputs.values()))
 
         input_to_val = {
-            ix: input_name_to_val[name] for name, ix in iteritems(self.inputs)
+            ix: input_name_to_val[name] for (name, ix) in self.inputs.items()
         }
         co.forward(input_to_val, self._module_seq)
         output_name_to_val = {
-            name: ox.val for name, ox in iteritems(self.outputs)
+            name: ox.val for (name, ox) in self.outputs.items()
         }
 
         if not self._is_compiled:

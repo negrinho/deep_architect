@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import range
 # Run configs to make it easier to run the code.
 import deep_architect.search_logging as sl
 import deep_architect.utils as ut

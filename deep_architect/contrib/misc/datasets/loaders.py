@@ -1,11 +1,8 @@
 import numpy as np
 import os
 import sys
+import pickle
 import deep_architect.contrib.misc.datasets.augmentation as au
-if sys.version_info[0] == 2:
-    import cPickle as pickle  # pylint: disable=E0401
-else:
-    import pickle
 
 
 def load_mnist(data_dir, flatten=False, one_hot=True, normalize_range=False):
