@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from six import iterkeys, itervalues, iteritems
 
 
 def sorted_values_by_key(d):
@@ -24,7 +23,7 @@ class OrderedSet:
         return len(self.d)
 
     def __iter__(self):
-        for x in iterkeys(self.d):
+        for x in self.d.keys():
             yield x
 
     def __contains__(self, item):
@@ -280,7 +279,7 @@ class DependentHyperparameter(Hyperparameter):
         self._fn = fn
 
         # registering the dependencies.
-        for h in itervalues(self._hyperps):
+        for h in self._hyperps.values():
             h._register_dependent_hyperparameter(self)
 
         self._update()
@@ -290,8 +289,8 @@ class DependentHyperparameter(Hyperparameter):
         is the case.
         """
         # assert not self.has_value_assigned()
-        if all(h.has_value_assigned() for h in itervalues(self._hyperps)):
-            dh = {name: h.get_value() for name, h in iteritems(self._hyperps)}
+        if all(h.has_value_assigned() for h in self._hyperps.values()):
+            dh = {name: h.get_value() for name, h in self._hyperps.items()}
             v = self._fn(dh)
             self.assign_value(v)
 
@@ -568,7 +567,7 @@ class Module(Addressable):
         Returns:
             dict[str, object]: Dictionary of local input names to their corresponding values.
         """
-        return {name: ix.val for name, ix in iteritems(self.inputs)}
+        return {name: ix.val for name, ix in self.inputs.items()}
 
     def _get_hyperp_values(self):
         """Get the values of the hyperparameters.
@@ -577,7 +576,7 @@ class Module(Addressable):
             dict[str, object]:
                 Dictionary of local hyperparameter names to their corresponding values.
         """
-        return {name: h.get_value() for name, h in iteritems(self.hyperps)}
+        return {name: h.get_value() for name, h in self.hyperps.items()}
 
     def _set_output_values(self, output_name_to_val):
         """Set the values of the outputs of the module.
@@ -589,7 +588,7 @@ class Module(Addressable):
             output_name_to_val (dict[str, object]): Dictionary of local output
                 names to the corresponding values to assign to those outputs.
         """
-        for name, val in iteritems(output_name_to_val):
+        for name, val in output_name_to_val.items():
             self.outputs[name].val = val
 
     def get_io(self):
@@ -673,17 +672,17 @@ def extract_unique_modules(input_or_output_lst):
 # assumes that the inputs provided are sufficient to evaluate all the network.
 # TODO: add the more general functionality that allows us to compute the sequence
 # of forward operations for a subgraph of the full computational graph.
-def determine_module_eval_seq(input_lst):
+def determine_module_eval_seq(inputs):
     """Computes the module forward evaluation sequence necessary to evaluate
     the computational graph starting from the provided inputs.
 
     The computational graph is a directed acyclic graph. This function sorts
     the modules topologically based on their dependencies. It is assumed that
-    the inputs in the list provided are sufficient to compute forward for all
+    the inputs in the dictionary provided are sufficient to compute forward for all
     modules in the graph. See also: :func:`forward`.
 
     Args:
-        input_lst (list[deep_architect.core.Input]): List of inputs sufficient
+        inputs (dict[str, deep_architect.core.Input]): dictionary of inputs sufficient
             to compute the forward computation of the whole graph through propagation.
 
     Returns:
@@ -693,15 +692,15 @@ def determine_module_eval_seq(input_lst):
     """
     module_seq = []
     module_memo = set()
-    input_memo = set(input_lst)
-    ms = extract_unique_modules(input_lst)
+    input_memo = set(inputs.values())
+    ms = extract_unique_modules(list(inputs.values()))
     for m in ms:
         if m not in module_memo and all(
-                ix in input_memo for ix in itervalues(m.inputs)):
+                ix in input_memo for ix in m.inputs.values()):
             module_seq.append(m)
             module_memo.add(m)
 
-            for ox in itervalues(m.outputs):
+            for ox in m.outputs.values():
                 ix_lst = ox.get_connected_inputs()
                 input_memo.update(ix_lst)
                 m_lst = [ix.get_module() for ix in ix_lst]
@@ -732,7 +731,7 @@ def traverse_backward(outputs, fn):
         if is_over:
             break
         else:
-            for ix in itervalues(m.inputs):
+            for ix in m.inputs.values():
                 if ix.is_connected():
                     m_prev = ix.get_connected_output().get_module()
                     if m_prev not in memo:
@@ -763,7 +762,7 @@ def traverse_forward(inputs, fn):
         if is_over:
             break
         else:
-            for ox in itervalues(m.outputs):
+            for ox in m.outputs.values():
                 if ox.is_connected():
                     for ix in ox.get_connected_inputs():
                         m_next = ix.get_module()
@@ -773,11 +772,11 @@ def traverse_forward(inputs, fn):
 
 
 def get_modules_with_cond(outputs, cond_fn):
-    ms = OrderedSet()
+    ms = []
 
     def fn(m):
         if cond_fn(m):
-            ms.add(m)
+            ms.append(m)
 
     traverse_backward(outputs, fn)
     return ms
@@ -797,7 +796,7 @@ def is_specified(outputs):
     is_spec = [True]
 
     def fn(module):
-        for h in itervalues(module.hyperps):
+        for h in module.hyperps.values():
             if not h.has_value_assigned():
                 is_spec[0] = False
                 return True
@@ -828,14 +827,15 @@ def forward(input_to_val, _module_seq=None):
             not provided, the module sequence is computed.
     """
     if _module_seq is None:
-        _module_seq = determine_module_eval_seq(input_to_val.keys())
+        inputs = {"in%d" % i: ix for (i, ix) in enumerate(input_to_val.keys())}
+        _module_seq = determine_module_eval_seq(inputs)
 
-    for ix, val in iteritems(input_to_val):
+    for ix, val in input_to_val.items():
         ix.val = val
 
     for m in _module_seq:
         m.forward()
-        for ox in itervalues(m.outputs):
+        for ox in m.outputs.values():
             for ix in ox.get_connected_inputs():
                 ix.val = ox.val
 
@@ -859,7 +859,7 @@ def get_unconnected_inputs(outputs):
     ix_lst = []
 
     def fn(x):
-        for ix in itervalues(x.inputs):
+        for ix in x.inputs.values():
             if not ix.is_connected():
                 ix_lst.append(ix)
         return False
@@ -887,7 +887,7 @@ def get_unconnected_outputs(inputs):
     ox_lst = []
 
     def fn(x):
-        for ox in itervalues(x.outputs):
+        for ox in x.outputs.values():
             if not ox.is_connected():
                 ox_lst.append(ox)
         return False
@@ -924,7 +924,7 @@ def get_all_hyperparameters(outputs):
         h_dep_lst = [h_dep]
         idx = 0
         while idx < len(h_dep_lst):
-            for h in itervalues(h_dep_lst[idx]._hyperps):
+            for h in h_dep_lst[idx]._hyperps.values():
                 # cycle detection.
                 # assert h not in local_memo
 
@@ -937,7 +937,7 @@ def get_all_hyperparameters(outputs):
 
     # this function is applied on each of the modules in the graph.
     def fn(module):
-        for h in itervalues(module.hyperps):
+        for h in module.hyperps.values():
             if h not in visited_hs:
                 visited_hs.add(h)
                 if isinstance(h, DependentHyperparameter):
@@ -1007,3 +1007,137 @@ def unassigned_independent_hyperparameter_iterator(outputs):
         for h in hs:
             if not h.has_value_assigned():
                 yield h
+
+
+def determine_input_output_cleanup_seq(inputs):
+    """Determines the order in which the outputs can be cleaned.
+
+    This sequence is aligned with the module evaluation sequence. Positionally,
+    after each module evaluation, the values stored in val for both inputs and
+    outputs can be deleted. This is useful to remove intermediate results to
+    save memory.
+
+    .. note::
+        This function should be used only for fully-specified search spaces.
+
+    Args:
+        inputs (dict[str, deep_architect.core.Input]): Dictionary of named
+            inputs which by being traversed forward will reach all the
+            modules in the search space.
+
+    Returns:
+        (list[list[deep_architect.core.Input]], list[list[deep_architect.core.Output]]):
+            List of lists with the inputs and outputs in the order they should be
+            cleaned up after they are no longer needed.
+    """
+    module_eval_seq = determine_module_eval_seq(inputs)
+
+    input_cleanup_seq = []
+    for m in module_eval_seq:
+        lst = list(m.inputs.values())
+        input_cleanup_seq.append(lst)
+
+    # number of inputs dependent on each input.
+    output_counters = {}
+    for m in module_eval_seq:
+        for ox in m.outputs.values():
+            output_counters[ox] = len(ox.get_connected_inputs())
+
+    output_cleanup_seq = []
+    for m in module_eval_seq:
+        lst = []
+        for ix in m.inputs.values():
+            if ix.is_connected():
+                ox = ix.get_connected_output()
+                output_counters[ox] -= 1
+                if output_counters[ox] == 0:
+                    lst.append(ox)
+        output_cleanup_seq.append(lst)
+
+    return input_cleanup_seq, output_cleanup_seq
+
+
+def jsonify(inputs, outputs):
+    """Returns a JSON representation of the fully-specified search space.
+
+    This function is useful to create a representation of model that does not
+    rely on the graph representation involving :class:`deep_architect.core.Module`,
+    :class:`deep_architect.core.Input`, and :class:`deep_architect.core.Output`.
+
+    Args:
+        inputs (dict[str, deep_architect.core.Input]): Dictionary of named
+            inputs which by being traversed forward will reach all the
+            modules in the search space.
+        outputs (dict[str, deep_architect.core.Output]): Dictionary of named
+            outputs which by being traversed back will reach all the
+            modules in the search space.
+
+    Returns:
+        (dict): JSON representation of the fully specified model.
+    """
+    modules = {}
+
+    def add_module(m):
+        module_name = m.get_name()
+        input_names = {name: ix.get_name() for name, ix in m.inputs.items()}
+        output_names = {name: ox.get_name() for name, ox in m.outputs.items()}
+        hyperp_name_to_val = m._get_hyperp_values()
+        in_connections = {}
+        out_connections = {}
+        in_modules = set()
+        out_modules = set()
+        for ix in m.inputs.values():
+            if ix.is_connected():
+                ox = ix.get_connected_output()
+                ix_name = ix.get_name()
+                in_connections[ix_name] = ox.get_name()
+                in_module_name = ox.get_module().get_name()
+                in_modules.add(in_module_name)
+
+        for ox in m.outputs.values():
+            if ox.is_connected():
+                ox_name = ox.get_name()
+                lst = []
+                for ix in ox.get_connected_inputs():
+                    lst.append(ix.get_name())
+                    out_module_name = ix.get_module().get_name()
+                    out_modules.add(out_module_name)
+                out_connections[ox_name] = lst
+
+        module_name = m.get_name()
+        start_idx = module_name.index('.') + 1
+        end_idx = len(module_name) - module_name[::-1].index('-') - 1
+        module_type = module_name[start_idx:end_idx]
+        modules[m.get_name()] = {
+            "module_name": module_name,
+            "module_type": module_type,
+            "hyperp_name_to_val": hyperp_name_to_val,
+            "input_names": input_names,
+            "output_names": output_names,
+            "in_connections": in_connections,
+            "out_connections": out_connections,
+            "in_modules": list(in_modules),
+            "out_modules": list(out_modules),
+        }
+
+    traverse_backward(outputs, add_module)
+
+    ms = determine_module_eval_seq(inputs)
+    module_eval_seq = [m.get_name() for m in ms]
+
+    ixs_lst, oxs_lst = determine_input_output_cleanup_seq(inputs)
+    input_cleanup_seq = [[ix.get_name() for ix in ixs] for ixs in ixs_lst]
+    output_cleanup_seq = [[ox.get_name() for ox in oxs] for oxs in oxs_lst]
+
+    unconnected_inputs = {name: ix.get_name() for name, ix in inputs.items()}
+    unconnected_outputs = {name: ox.get_name() for name, ox in outputs.items()}
+
+    graph = {
+        "modules": modules,
+        "unconnected_inputs": unconnected_inputs,
+        "unconnected_outputs": unconnected_outputs,
+        "module_eval_seq": module_eval_seq,
+        "input_cleanup_seq": input_cleanup_seq,
+        "output_cleanup_seq": output_cleanup_seq,
+    }
+    return graph

@@ -1,5 +1,4 @@
 import deep_architect.searchers.common as se
-from six.moves import range
 import numpy as np
 
 

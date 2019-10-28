@@ -1,5 +1,6 @@
-from __future__ import absolute_import
 import deep_architect.core as co
+import deep_architect.modules as mo
+import deep_architect.searchers.common as seco
 from deep_architect.hyperparameters import D
 
 
@@ -120,3 +121,33 @@ def siso_keras_module_from_keras_layer_fn(layer_fn,
         name = layer_fn.__name__
 
     return siso_keras_module(name, compile_fn, name_to_hyperp, scope)
+
+
+class KerasRandomModel:
+
+    def __init__(self, search_space_fn, hyperp_value_lst=None):
+
+        inputs, outputs = mo.buffer_io(*search_space_fn())
+        if hyperp_value_lst is not None:
+            seco.specify(outputs, hyperp_value_lst)
+            self.hyperp_value_lst = hyperp_value_lst
+        else:
+            self.hyperp_value_lst = seco.random_specify(outputs)
+
+        self.inputs = inputs
+        self.outputs = outputs
+        # precomputed for efficiency reasons. not necessary for static graphs.
+        self._module_seq = co.determine_module_eval_seq(inputs)
+
+    def forward(self, input_name_to_val):
+        input_to_val = {
+            self.inputs[name]: val for (name, val) in input_name_to_val.items()
+        }
+        co.forward(input_to_val, self._module_seq)
+        output_name_to_val = {
+            name: ox.val for (name, ox) in self.outputs.items()
+        }
+        return output_name_to_val
+
+    def get_hyperp_values(self):
+        return self.hyperp_value_lst

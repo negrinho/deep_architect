@@ -1,4 +1,3 @@
-from six import itervalues, iteritems
 import numpy as np
 from collections import OrderedDict
 import deep_architect.core as co
@@ -94,14 +93,14 @@ class Bool(Discrete):
 class OneOfK(Discrete):
 
     def __init__(self, k, scope=None, name=None):
-        Discrete.__init__(self, range(k), scope, name)
+        Discrete.__init__(self, list(range(k)), scope, name)
 
 
 class OneOfKFactorial(Discrete):
 
     def __init__(self, k, scope=None, name=None):
-        Discrete.__init__(self, range(np.product(np.arange(1, k + 1))), scope,
-                          name)
+        Discrete.__init__(self, list(range(np.product(np.arange(1, k + 1)))),
+                          scope, name)
 
 
 # abbreviations

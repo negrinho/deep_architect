@@ -1,7 +1,6 @@
 import sklearn.linear_model as lm
 import scipy.sparse as sp
 import numpy as np
-from six import iteritems, itervalues
 from deep_architect.surrogates.common import SurrogateModel
 import deep_architect.utils as ut
 import os
@@ -29,7 +28,7 @@ class HashingSurrogate(SurrogateModel):
             'module_hyperp_feats': use_module_hyperp_feats,
             'module_feats': use_module_feats,
         }
-        assert any(itervalues(self.feats_name_to_use_flag))
+        assert any(self.feats_name_to_use_flag.values())
         self.vecs_lst = []
         self.vals_lst = []
         # NOTE: using scikit learn for now.
@@ -51,7 +50,7 @@ class HashingSurrogate(SurrogateModel):
 
     def _feats2vec(self, feats):
         vec = sp.dok_matrix((1, self.hash_size), dtype='float')
-        for name, fs in iteritems(feats):
+        for name, fs in feats.items():
             if self.feats_name_to_use_flag[name]:
                 for f in fs:
                     idx = hash(f) % self.hash_size

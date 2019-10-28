@@ -2,9 +2,6 @@
 Search space from Efficient Neural Architecture Search (Pham'17)
 """
 from __future__ import print_function
-from builtins import str
-from builtins import range
-from builtins import object
 from collections import OrderedDict
 
 import tensorflow as tf
@@ -22,7 +19,7 @@ import deep_architect.modules as mo
 TFEM = htfe.TensorflowEagerModule
 
 
-class WeightSharer(object):
+class WeightSharer:
 
     def __init__(self, isSharing):
         self.name_to_weight = {}

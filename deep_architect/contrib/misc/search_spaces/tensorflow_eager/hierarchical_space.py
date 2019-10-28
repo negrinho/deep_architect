@@ -1,4 +1,3 @@
-from six import iteritems, itervalues
 from tensorflow.keras.layers import (GlobalAveragePooling2D, Dense, Conv2D,
                                      DepthwiseConv2D, SeparableConv2D,
                                      MaxPooling2D, AveragePooling2D,
@@ -111,7 +110,7 @@ def concat(num_inputs):
         def forward_fn(di, is_training=False):
             return {
                 "out":
-                concat([v for name, v in iteritems(di)])
+                concat([v for name, v in di.items()])
                 if num_inputs > 1 else di['in0']
             }
 

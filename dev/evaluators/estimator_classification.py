@@ -13,7 +13,6 @@ import deep_architect.utils as ut
 import deep_architect.contrib.misc.gpu_utils as gpu_utils
 import deep_architect.contrib.misc.datasets.augmentation as aug
 import deep_architect.helpers.tensorflow_eager_support as htfe
-from six.moves import range
 # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 IMAGE_HEIGHT = 32
 IMAGE_WIDTH = 32

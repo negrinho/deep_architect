@@ -37,23 +37,37 @@ setup(
     "DeepArchitect: Architecture search so easy that you'll think it's magic!",
     long_description=long_description,
     url='https://github.com/negrinho/deep_architect',
+    long_description_content_type='text/markdown',
+    keywords=[
+        'architecture search',
+        'framework',
+        'deep learning',
+        'pytorch',
+        'tensorflow',
+    ],
     license='MIT',
     author='Renato Negrinho',
     author_email='negrinho@cs.cmu.edu',
-
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7'
     ],
     packages=['deep_architect'],
-    install_requires=['numpy', 'scipy', 'six', 'future'],
+    python_requires=">=3.6",
+    install_requires=[
+        'numpy',
+        'scipy',
+        "scikit-learn",
+        "tensorflow==1.15",
+        "torch>=1.2",
+        "keras>=2.3",
+        "matplotlib",
+        "graphviz"
+    ],
     extras_require={
         "docs": ["sphinx"
                  "sphinx_rtd_theme"],

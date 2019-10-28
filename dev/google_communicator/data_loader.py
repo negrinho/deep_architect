@@ -27,8 +27,7 @@ import os
 import sys
 
 import tarfile
-from six.moves import cPickle as pickle
-from six.moves import xrange  # pylint: disable=redefined-builtin
+import pickle
 import tensorflow as tf
 
 CIFAR_FILENAME = 'cifar-10-python.tar.gz'
@@ -55,7 +54,7 @@ def _bytes_feature(value):
 def _get_file_names():
     """Returns the file names expected to exist in the input_dir."""
     file_names = {}
-    file_names['train'] = ['data_batch_%d' % i for i in xrange(1, 5)]
+    file_names['train'] = ['data_batch_%d' % i for i in range(1, 5)]
     file_names['validation'] = ['data_batch_5']
     file_names['eval'] = ['test_batch']
     return file_names

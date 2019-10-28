@@ -1,32 +1,25 @@
 import numpy as np
 import os
 import sys
+import pickle
 import deep_architect.contrib.misc.datasets.augmentation as au
-if sys.version_info[0] == 2:
-    import cPickle as pickle  # pylint: disable=E0401
-else:
-    import pickle
 
 
-def load_mnist(data_dir, flatten=False, one_hot=True, normalize_range=False):
-    from tensorflow.examples.tutorials.mnist import input_data
-    # print data_dir
-    mnist = input_data.read_data_sets(
-        data_dir, one_hot=one_hot, reshape=flatten)
-
-    def _extract_fn(x):
-        X = x.images
-        y = x.labels
-
-        if not normalize_range:
-            X *= 255.0
-        return (X, y)
-
-    Xtrain, ytrain = _extract_fn(mnist.train)
-    Xval, yval = _extract_fn(mnist.validation)
-    Xtest, ytest = _extract_fn(mnist.test)
-
-    return (Xtrain, ytrain, Xval, yval, Xtest, ytest)
+def load_mnist(flatten=False, one_hot=True, validation_frac=0.1):
+    from keras.datasets import mnist
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    X_train = X_train / 255.0
+    X_test = X_test / 255.0
+    if flatten:
+        X_train = X_train.reshape((X_train.shape[0], -1))
+        X_test = X_test.reshape((X_test.shape[0], -1))
+    if one_hot:
+        y_train = au.idx_to_onehot(y_train, 10)
+        y_test = au.idx_to_onehot(y_test, 10)
+    num_train = int((1.0 - validation_frac) * X_train.shape[0])
+    X_train, X_val = X_train[:num_train], X_train[num_train:]
+    y_train, y_val = y_train[:num_train], y_train[num_train:]
+    return (X_train, y_train, X_val, y_val, X_test, y_test)
 
 
 def load_cifar10(data_dir,
@@ -69,8 +62,6 @@ def load_cifar10(data_dir,
             if data_format == 'NHWC':
                 X = X.transpose((0, 2, 3, 1))
             X = X.astype('float32')
-            # sub = 1000
-            # X = X[:sub, :, :, :]
 
             # transformations based on the argument options.
             if normalize_range:
@@ -81,8 +72,6 @@ def load_cifar10(data_dir,
 
             # for the labels
             y = np.array(d['labels'])
-            # y = y[:sub]
-            # num_images = sub
             if one_hot:
                 y_one_hot = np.zeros((num_images, num_classes), dtype='float32')
                 y_one_hot[np.arange(num_images), y] = 1.0

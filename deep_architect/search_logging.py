@@ -1,5 +1,4 @@
 import deep_architect.utils as ut
-from six import iteritems, itervalues
 
 
 def get_search_folderpath(folderpath, search_name):

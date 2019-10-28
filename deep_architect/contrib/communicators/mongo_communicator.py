@@ -15,7 +15,7 @@ TIME_WORKED_KEY = 'totalTime'
 DATA_KEY = 'data'
 
 
-class MongoCommunicator(object):
+class MongoCommunicator:
     """A communicator for distributed running of DeepArchitect that is based on
     a MongoDB database. The communicator is used to implement a master/worker
     paradigm where the master pushes jobs to a work queue which are consumed by

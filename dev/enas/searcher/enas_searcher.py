@@ -4,7 +4,6 @@ from __future__ import division
 import os
 from builtins import zip
 from builtins import str
-from builtins import range
 from past.utils import old_div
 
 import tensorflow as tf

@@ -18,7 +18,7 @@ from deep_architect.helpers.tensorflow_eager_support import siso_tensorflow_eage
 
 # The WeightSharer object is a simple wrapper around a dictionary that stores a
 # mapping from a layer name to the shared layer used by the DeepArchitect modules.
-class WeightSharer(object):
+class WeightSharer:
 
     def __init__(self):
         self.name_to_weight = {}

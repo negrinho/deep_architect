@@ -14,7 +14,7 @@ from deep_architect.helpers.tensorflow_eager_support import set_is_training
 tfe = tf.contrib.eager
 
 
-class ENASEvaluator(object):
+class ENASEvaluator:
     """Trains and evaluates a classifier on some datasets passed as argument.
     Uses a number of training tricks, namely, early stopping, keeps the model
     that achieves the best validation performance, reduces the step size

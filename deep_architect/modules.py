@@ -1,6 +1,5 @@
 import deep_architect.core as co
-from six import itervalues, iteritems, itertools
-from six.moves import range
+import itertools
 
 
 class Identity(co.Module):
@@ -103,8 +102,8 @@ class SubstitutionModule(co.Module):
         is done.
         """
         if (not self._is_done) and all(
-                h.has_value_assigned() for h in itervalues(self.hyperps)):
-            dh = {name: h.get_value() for name, h in iteritems(self.hyperps)}
+                h.has_value_assigned() for h in self.hyperps.values()):
+            dh = {name: h.get_value() for name, h in self.hyperps.items()}
             new_inputs, new_outputs = self._substitution_fn(dh)
 
             # test for checking that the inputs and outputs returned by the
@@ -124,7 +123,7 @@ class SubstitutionModule(co.Module):
                     name in self.outputs for name in new_outputs)
 
             # performing the substitution.
-            for name, old_ix in iteritems(self.inputs):
+            for name, old_ix in self.inputs.items():
                 old_ix = self.inputs[name]
                 if name in new_inputs:
                     new_ix = new_inputs[name]
@@ -135,7 +134,7 @@ class SubstitutionModule(co.Module):
                     if old_ix.is_connected():
                         old_ix.disconnect()
 
-            for name, old_ox in iteritems(self.outputs):
+            for name, old_ox in self.outputs.items():
                 old_ox = self.outputs[name]
                 if name in new_outputs:
                     new_ox = new_outputs[name]
@@ -167,8 +166,8 @@ def hyperparameter_aggregator(name_to_hyperp, scope=None, name=None):
 
 
 def get_hyperparameter_aggregators(outputs):
-    co.get_modules_with_cond(
-        outputs, lambda m: isinstance(m, HyperparameterAggregator))
+    co.get_modules_with_cond(outputs,
+                             lambda m: isinstance(m, HyperparameterAggregator))
 
 
 def substitution_module(name,
@@ -575,7 +574,8 @@ def siso_split_combine(fn, combine_fn, h_num_splits, scope=None, name=None):
     """
 
     def substitution_fn(dh):
-        inputs_lst, outputs_lst = zip(*[fn() for _ in range(dh["num_splits"])])
+        inputs_lst, outputs_lst = list(
+            zip(*[fn() for _ in range(dh["num_splits"])]))
         c_inputs, c_outputs = combine_fn(dh["num_splits"])
 
         i_inputs, i_outputs = identity()
@@ -697,7 +697,7 @@ def siso_sequential(io_lst):
 
 def buffer_io(inputs, outputs):
     buffered_inputs = {}
-    for name, ix in iteritems(inputs):
+    for name, ix in inputs.items():
         if isinstance(ix.get_module(), SubstitutionModule):
             b_inputs, b_outputs = identity()
             b_outputs['out'].connect(ix)
@@ -707,7 +707,7 @@ def buffer_io(inputs, outputs):
         buffered_inputs[name] = buffered_ix
 
     buffered_outputs = {}
-    for name, ox in iteritems(outputs):
+    for name, ox in outputs.items():
         if isinstance(ox.get_module(), SubstitutionModule):
             b_inputs, b_outputs = identity()
             ox.connect(b_inputs['in'])

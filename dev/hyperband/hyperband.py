@@ -1,7 +1,7 @@
 from common import History
 
 
-class HyperBandExtended(object):
+class HyperBandExtended:
     """An Extended Version of HyperBand Algorithm (Li et. al 2017)
     The main difference is that the user is not restricted to using the validation
     loss as the metric. The user will need to define the following functions:

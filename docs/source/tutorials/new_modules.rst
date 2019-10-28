@@ -300,8 +300,8 @@ First, consider the definition of a substitution module.
             is done.
             """
             if (not self._is_done) and all(
-                    h.has_value_assigned() for h in itervalues(self.hyperps)):
-                dh = {name: h.get_value() for name, h in iteritems(self.hyperps)}
+                    h.has_value_assigned() for h in self.hyperps.values()):
+                dh = {name: h.get_value() for name, h in self.hyperps.items()}
                 new_inputs, new_outputs = self._substitution_fn(dh)
 
                 # test for checking that the inputs and outputs returned by the
@@ -321,7 +321,7 @@ First, consider the definition of a substitution module.
                         name in self.outputs for name in new_outputs)
 
                 # performing the substitution.
-                for name, old_ix in iteritems(self.inputs):
+                for name, old_ix in self.inputs.items():
                     old_ix = self.inputs[name]
                     if name in new_inputs:
                         new_ix = new_inputs[name]
@@ -332,7 +332,7 @@ First, consider the definition of a substitution module.
                         if old_ix.is_connected():
                             old_ix.disconnect()
 
-                for name, old_ox in iteritems(self.outputs):
+                for name, old_ox in self.outputs.items():
                     old_ox = self.outputs[name]
                     if name in new_outputs:
                         new_ox = new_outputs[name]
@@ -515,7 +515,7 @@ Let us now look at a more complex use of a custom substitution module.
         def substitution_fn(dh):
             print dh
             node_id_to_node_ids_used = {i: [i - 1] for i in range(1, num_nodes)}
-            for name, v in iteritems(dh):
+            for name, v in dh.items():
                 if v:
                     d = ut.json_string_to_json_object(name)
                     i = d["node_id"]

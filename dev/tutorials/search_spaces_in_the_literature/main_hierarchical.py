@@ -10,7 +10,6 @@ D = hp.Discrete
 
 from keras.layers import Conv2D, BatchNormalization, Input, Add
 from keras.models import Model
-from six import iteritems, itervalues
 
 # NOTE: add the sum operation. combine these two.
 # https://openreview.net/forum?id=BJQRKzbA- ; note this is a useful reference.
@@ -83,7 +82,7 @@ def motif(submotif_fn, num_nodes):
     def substitution_fn(dh):
         print dh
         node_id_to_node_ids_used = {i: [i - 1] for i in range(1, num_nodes)}
-        for name, v in iteritems(dh):
+        for name, v in dh.items():
             if v:
                 d = ut.json_string_to_json_object(name)
                 i = d["node_id"]

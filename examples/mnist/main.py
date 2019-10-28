@@ -1,4 +1,3 @@
-from builtins import range
 from deep_architect.contrib.misc.datasets.loaders import load_mnist
 from deep_architect.contrib.misc.evaluators.tensorflow.classification import SimpleClassifierEvaluator
 from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset

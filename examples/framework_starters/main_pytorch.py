@@ -1,5 +1,3 @@
-from __future__ import print_function
-from builtins import range
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -123,11 +121,10 @@ class SimpleClassifierEvaluator:
         self.display_step = display_step
 
     def evaluate(self, inputs, outputs):
-        network = hpt.PyTorchModel(inputs, outputs)
-        network.eval()
-        # NOTE: instantiation of parameters requires passing data through the
-        # model once.
-        network.forward({'in': torch.zeros(self.batch_size, self.in_features)})
+        network = hpt.PyTorchModel(
+            inputs, outputs,
+            {'in': torch.zeros(self.batch_size, self.in_features)})
+
         optimizer = optim.Adam(network.parameters(), lr=self.learning_rate)
         network.train()
         for epoch in range(self.num_training_epochs):
@@ -167,8 +164,7 @@ def main():
     show_graph = False
 
     # load and normalize data
-    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist('data/mnist',
-                                                                  flatten=True,
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(flatten=True,
                                                                   one_hot=False)
     train_dataset = InMemoryDataset(X_train, y_train, True)
     val_dataset = InMemoryDataset(X_val, y_val, False)
