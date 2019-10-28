@@ -137,7 +137,7 @@ class KerasRandomModel:
         self.inputs = inputs
         self.outputs = outputs
         # precomputed for efficiency reasons. not necessary for static graphs.
-        self._module_seq = co.determine_module_eval_seq(list(inputs.values()))
+        self._module_seq = co.determine_module_eval_seq(inputs)
 
     def forward(self, input_name_to_val):
         input_to_val = {
