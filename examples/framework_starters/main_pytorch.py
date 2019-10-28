@@ -164,8 +164,7 @@ def main():
     show_graph = False
 
     # load and normalize data
-    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist('data/mnist',
-                                                                  flatten=True,
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(flatten=True,
                                                                   one_hot=False)
     train_dataset = InMemoryDataset(X_train, y_train, True)
     val_dataset = InMemoryDataset(X_val, y_val, False)

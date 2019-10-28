@@ -28,13 +28,6 @@ deep learning frameworks such as scikit-learn and preprocessing pipelines);
 For researchers, DeepArchitect aims to make architecture search research more reusable and reproducible by providing them with a modular framework that they can use to implement new search algorithms and new search spaces while reusing code.
 For practitioners, DeepArchitect aims to augment their workflow by providing them with a tool to easily write search spaces encoding a large number of design choices and use search algorithms to automatically find good architectures.
 
-
-<!-- main differences between different tools.
-DeepArchitect has better integration than current hyperparameter optimization tools, e.g., hyperparameters are directly related to computational elements.
-This saves the expert the effort of writing from scratch an ad-hoc mapping from hyperparameter values to the corresponding computational graph.
-DeepArchitect is explicitly concerned with extensibility, ease of use, and programmability, e.g., we designed a language to write composable and expressive search spaces.
-Existing work on architecture search relies on ad-hoc encodings of search spaces, therefore being hard to adapt and reuse for new settings. -->
-
 ## Installation
 
 Run the following code snippet for a local installation:
@@ -42,13 +35,15 @@ Run the following code snippet for a local installation:
 ```
 git clone git@github.com:negrinho/deep_architect.git deep_architect
 cd deep_architect
+conda create --name deep_architect python=3.6
+conda activate deep_architect
 pip install -e .
 ```
 
 After installing DeepArchitect, run one of the examples to check that no dependencies are missing, e.g., `python examples/framework_starters/main_keras.py` or `python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json`.
 We omitted some dependencies (e.g., deep learning frameworks) to avoid installing software that may not be used by a particular user.
 
-We have included [utils.sh](https://github.com/negrinho/deep_architect/blob/master/utils.sh) with useful functionality to develop for DeepArchitect, e.g., to build documentation, extract code from documentation files, and build Singularity containers.
+We have included [utils.sh](https://github.com/negrinho/deep_architect/blob/master/utils.sh) with useful development functionality, e.g., to build documentation, extract code snippets from documentation, and build Singularity containers.
 
 ## A minimal DeepArchitect example with Keras
 
@@ -58,9 +53,6 @@ We construct a search space by relaxing the number of layers that the network ca
 Check this search space below:
 
 ```python
-
-from __future__ import print_function
-
 import keras
 from keras.datasets import mnist
 from keras.models import Model
@@ -156,7 +148,6 @@ history = model.fit(
     validation_data=(x_test, y_test))
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])
-
 ```
 
 <!-- comments on the example. -->
@@ -281,4 +272,4 @@ If you use this work, please cite:
 ```
 
 The code for `negrinho2017deeparchitect` can be found [here](https://github.com/negrinho/deep_architect_legacy).
-The ideas and implementation of `negrinho2017deeparchitect` evolved into the work of `negrinho2019towards`, found in this repo. See the [paper](https://arxiv.org/abs/1909.13404), [documentation](https://deep-architect.readthedocs.io/en/latest/), and [blog post](https://negrinho.github.io/2019/07/26/introducing-deep-architect.html).
+The ideas and implementation of `negrinho2017deeparchitect` evolved into the work of `negrinho2019towards`, found in this repo. See the [paper](https://arxiv.org/abs/1909.13404), [documentation](https://deep-architect.readthedocs.io/en/latest/), and [blog post](https://negrinho.github.io/2019/07/26/introducing-deep-architect.html). The code for the experiments reported in `negrinho2019towards` can be found [here](https://github.com/negrinho/negrinho2019towards), but it will not be actively maintained. For your work, please build on top of the `deep_architect` repo instead.

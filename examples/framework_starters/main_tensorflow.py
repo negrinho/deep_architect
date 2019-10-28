@@ -201,8 +201,7 @@ def main():
     show_graph = False
 
     # load data
-    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist('data/mnist',
-                                                                  flatten=True)
+    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(flatten=True)
     train_dataset = InMemoryDataset(X_train, y_train, True)
     val_dataset = InMemoryDataset(X_val, y_val, False)
     test_dataset = InMemoryDataset(X_test, y_test, False)

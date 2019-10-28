@@ -118,8 +118,7 @@ class SimpleClassifierEvaluator:
                             batch_size=self.batch_size,
                             epochs=self.num_training_epochs,
                             validation_data=(self.X_val, self.y_val))
-
-        results = {'validation_accuracy': history.history['val_acc'][-1]}
+        results = {'validation_accuracy': history.history['val_accuracy'][-1]}
         return results
 
 
