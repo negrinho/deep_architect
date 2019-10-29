@@ -1,5 +1,5 @@
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import setup, find_packages
+print(find_packages())
 
 long_description = """
 DeepArchitect is an architecture search framework with a focus on modularity,
@@ -56,7 +56,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7'
     ],
-    packages=['deep_architect'],
+    packages=find_packages(include=["deep_architect*"]),
     python_requires=">=3.6",
     install_requires=[
         'numpy',
