@@ -42,7 +42,6 @@ def main():
         test_dataset=test_dataset)
     # Creating the search space.
     search_space_fn = lambda: css_dnn.dnn_net(num_classes)
-    search_space_factory = mo.SearchSpaceFactory(search_space_fn)
 
     sl.create_search_folderpath(
         cfg["folderpath"],
@@ -52,7 +51,7 @@ def main():
         create_parent_folders=True)
 
     # Creating the searcher.
-    searcher = RandomSearcher(search_space_factory.get_search_space)
+    searcher = RandomSearcher(search_space_fn)
     # Search loop.
     for evaluation_id in range(num_samples):
         eval_logger = sl.EvaluationLogger(cfg["folderpath"], cfg["search_name"],

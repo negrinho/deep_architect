@@ -5,9 +5,13 @@ from deep_architect.surrogates.common import extract_features
 
 class SMBOSearcher(Searcher):
 
-    def __init__(self, search_space_fn, surrogate_model, num_samples,
-                 exploration_prob):
-        Searcher.__init__(self, search_space_fn)
+    def __init__(self,
+                 search_space_fn,
+                 surrogate_model,
+                 num_samples,
+                 exploration_prob,
+                 reset_default_scope_upon_sample=True):
+        Searcher.__init__(self, search_space_fn, reset_default_scope_upon_sample)
         self.surr_model = surrogate_model
         self.num_samples = num_samples
         self.exploration_prob = exploration_prob

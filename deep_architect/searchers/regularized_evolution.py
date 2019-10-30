@@ -71,8 +71,15 @@ def specify_evolution(outputs, mutatable_fn, user_vs):
 
 class EvolutionSearcher(Searcher):
 
-    def __init__(self, search_space_fn, mutatable_fn, P, S, regularized=False):
-        Searcher.__init__(self, search_space_fn)
+    def __init__(self,
+                 search_space_fn,
+                 mutatable_fn,
+                 P,
+                 S,
+                 regularized=False,
+                 reset_default_scope_upon_sample=True):
+        Searcher.__init__(self, search_space_fn,
+                          reset_default_scope_upon_sample)
 
         # Population size
         self.P = P

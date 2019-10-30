@@ -13,6 +13,8 @@
 
 *DeepArchitect: Architecture search so easy you'll think it's magic!*
 
+Check [colab](https://colab.research.google.com/drive/14xZdGB-BbIivdgNje3Gu7ZmK0m4F02kE) to play around with it and run examples.
+
 ## Introduction
 
 DeepArchitect is a framework for automatically searching over computational graphs in arbitrary domains, designed with a focus on **modularity**, **ease of use**, **reusability**, and **extensibility**.
@@ -43,8 +45,7 @@ conda activate deep_architect
 pip install -e .
 ```
 
-After installing DeepArchitect, run one of the examples to check that no dependencies are missing, e.g., `python examples/framework_starters/main_keras.py` or `python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json`.
-We omitted some dependencies (e.g., deep learning frameworks) to avoid installing software that may not be used by a particular user.
+Run one of the examples to check for correctness, e.g., `python examples/framework_starters/main_keras.py` or `python examples/mnist_with_logging/main.py --config_filepath examples/mnist_with_logging/configs/debug.json`.
 
 We have included [utils.sh](https://github.com/negrinho/deep_architect/blob/master/utils.sh) with useful development functionality, e.g., to build documentation, extract code snippets from documentation, and build Singularity containers.
 

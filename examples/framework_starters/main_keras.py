@@ -147,8 +147,8 @@ def main():
         y_val,
         num_classes,
         num_training_epochs=num_training_epochs)
-    ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
-    searcher = se.RandomSearcher(ssf.get_search_space)
+    search_space_fn = lambda: dnn_net(num_classes)
+    searcher = se.RandomSearcher(search_space_fn)
 
     for i in range(num_samples):
         (inputs, outputs, hyperp_value_lst,

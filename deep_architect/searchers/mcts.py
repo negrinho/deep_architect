@@ -89,8 +89,12 @@ class MCTSTreeNode:
 
 class MCTSSearcher(Searcher):
 
-    def __init__(self, search_space_fn, exploration_bonus=1.0):
-        Searcher.__init__(self, search_space_fn)
+    def __init__(self,
+                 search_space_fn,
+                 exploration_bonus=1.0,
+                 reset_default_scope_upon_sample=True):
+        Searcher.__init__(self, search_space_fn,
+                          reset_default_scope_upon_sample)
         self.exploration_bonus = exploration_bonus
         self.mcts_root_node = MCTSTreeNode(None)
 

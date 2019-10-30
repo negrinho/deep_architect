@@ -6,8 +6,10 @@ import numpy as np
 # combined with an evaluator that does.
 class SuccessiveNarrowing(se.Searcher):
 
-    def __init__(self, search_space_fn, num_initial_samples, reduction_factor):
-        se.Searcher.__init__(self, search_space_fn)
+    def __init__(self, search_space_fn, num_initial_samples, reduction_factor,
+                 reset_default_scope_upon_sample):
+        se.Searcher.__init__(self, search_space_fn,
+                             reset_default_scope_upon_sample)
         self.num_initial_samples = num_initial_samples
         self.reduction_factor = reduction_factor
         self.vals = [None for _ in range(num_initial_samples)]

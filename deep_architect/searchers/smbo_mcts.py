@@ -11,8 +11,9 @@ import numpy as np
 class SMBOSearcherWithMCTSOptimizer(Searcher):
 
     def __init__(self, search_space_fn, surrogate_model, num_samples,
-                 exploration_prob, tree_refit_interval):
-        Searcher.__init__(self, search_space_fn)
+                 exploration_prob, tree_refit_interval,
+                 reset_default_scope_upon_sample=True):
+        Searcher.__init__(self, search_space_fn, reset_default_scope_upon_sample)
         self.surr_model = surrogate_model
         self.mcts = MCTSSearcher(self.search_space_fn)
         self.num_samples = num_samples

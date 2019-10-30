@@ -22,9 +22,7 @@ def main():
         log_output_to_terminal=True)
 
     search_space_fn = lambda: css_dnn.dnn_net(num_classes)
-    search_space_factory = mo.SearchSpaceFactory(search_space_fn)
-
-    searcher = RandomSearcher(search_space_factory.get_search_space)
+    searcher = RandomSearcher(search_space_fn)
     for _ in range(num_samples):
         inputs, outputs, searcher_eval_token, _ = searcher.sample()
         val_acc = evaluator.eval(inputs, outputs)['validation_accuracy']

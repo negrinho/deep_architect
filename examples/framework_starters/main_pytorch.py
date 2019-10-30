@@ -178,8 +178,8 @@ def main():
         num_training_epochs=num_training_epochs,
         batch_size=batch_size,
         log_output_to_terminal=True)
-    ssf = mo.SearchSpaceFactory(lambda: dnn_net(num_classes))
-    searcher = se.RandomSearcher(ssf.get_search_space)
+    search_space_fn = lambda: dnn_net(num_classes)
+    searcher = se.RandomSearcher(search_space_fn)
 
     for i in range(num_samples):
         inputs, outputs, _, searcher_eval_token = searcher.sample()

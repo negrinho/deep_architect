@@ -1,5 +1,6 @@
 import numpy as np
 import deep_architect.core as co
+import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 
 
@@ -21,10 +22,15 @@ class Searcher:
             encoding the search space from which models can be sampled by
             specifying all hyperparameters (i.e., both those arising in the
             graph part and those in the dictionary of hyperparameters).
+        reset_default_scope_upon_get (bool): Whether to clean the scope upon getting
+            a new search space. Should be ``True`` unless you want to persist models
+            across samples.
     """
 
-    def __init__(self, search_space_fn):
-        self.search_space_fn = search_space_fn
+    def __init__(self, search_space_fn, reset_default_scope_upon_sample=True):
+        x = mo.SearchSpaceFactory(search_space_fn,
+                                  reset_default_scope_upon_sample)
+        self.search_space_fn = x.get_search_space
 
     def sample(self):
         """Returns a model from the search space.
