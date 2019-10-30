@@ -272,3 +272,28 @@ class LinePlot:
         if show:
             plt.show()
         return f
+
+
+def visualize_model_as_text(inputs, outputs):
+
+    def show(d, indent, sep):
+        for k in sorted(d):
+            print("%s%s%s%s" % (" " * indent, k, sep, d[k]))
+
+    d = co.jsonify(inputs, outputs)
+
+    print("=" * 32)
+    print("I)")
+    show(d["unconnected_inputs"], 2, " : ")
+    print("O)")
+    show(d["unconnected_outputs"], 2, " : ")
+    name_to_module = d["modules"]
+    print("=" * 32)
+    for module_name in d["module_eval_seq"]:
+        m = name_to_module[module_name]
+        print(m["module_name"])
+        print("  H)")
+        show(m["hyperp_name_to_val"], 4, " = ")
+        print("  C)")
+        show(m["in_connections"], 4, " <= ")
+    print("=" * 32)

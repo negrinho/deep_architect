@@ -5,6 +5,7 @@
 **[[PAPER](https://arxiv.org/abs/1909.13404)]**
 **[[BLOG POST](https://negrinho.github.io/2019/07/26/introducing-deep-architect.html)]**
 **[[GOOGLE GROUP](https://groups.google.com/forum/#!forum/deep_architect)]**
+**[[COLAB](https://colab.research.google.com/drive/14xZdGB-BbIivdgNje3Gu7ZmK0m4F02kE)]**
 
 <p align="center">
   <img width="400" height="400" src="docs/source/logo/logo.svg">
@@ -30,7 +31,9 @@ For practitioners, DeepArchitect aims to augment their workflow by providing the
 
 ## Installation
 
-Run the following code snippet for a local installation:
+We recommend playing with the code on [Colab](https://colab.research.google.com/drive/14xZdGB-BbIivdgNje3Gu7ZmK0m4F02kE) first.
+
+For a local installation, run the following code snippet:
 
 ```
 git clone git@github.com:negrinho/deep_architect.git deep_architect

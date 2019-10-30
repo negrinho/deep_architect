@@ -13,11 +13,12 @@
         "--rcfile=.pylintrc"
     ],
     "files.trimTrailingWhitespace": true,
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     "python.formatting.provider": "yapf",
     "python.formatting.yapfArgs": [
         "--style",
         "{based_on_style: google, ALLOW_MULTILINE_LAMBDAS: true}"
     ],
     "editor.formatOnSaveTimeout": 60000,
+    "python.pythonPath": "/anaconda2/envs/deep_architect_py3/bin/python",
 }

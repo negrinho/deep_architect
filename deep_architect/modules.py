@@ -730,17 +730,17 @@ class SearchSpaceFactory:
         search_space_fn (() -> (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output])):
             Returns the inputs and outputs of the search space, ready to be
             specified.
-        reset_scope_upon_get (bool): Whether to clean the scope upon getting
+        reset_default_scope_upon_get (bool): Whether to clean the scope upon getting
             a new search space. Should be ``True`` in most cases.
     """
 
-    def __init__(self, search_space_fn, reset_scope_upon_get=True):
-        self.reset_scope_upon_get = reset_scope_upon_get
+    def __init__(self, search_space_fn, reset_default_scope_upon_get=True):
+        self.reset_default_scope_upon_get = reset_default_scope_upon_get
         self.search_space_fn = search_space_fn
 
     def get_search_space(self):
         """Returns the buffered search space."""
-        if self.reset_scope_upon_get:
+        if self.reset_default_scope_upon_get:
             co.Scope.reset_default_scope()
 
         (inputs, outputs) = buffer_io(*self.search_space_fn())
