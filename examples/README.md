@@ -4,6 +4,7 @@
 Simple architecture search examples in DeepArchitect across multiple deep learning
 frameworks. Good starting point for learning about DeepArchitect.
 
+<!-- not fixed for now.
 [mnist](https://github.com/negrinho/deep_architect/tree/master/examples/mnist):
 Simplest architecture search example in DeepArchitect for the MNIST classification
 task showcasing simple search spaces, searchers, and evaluators.
@@ -19,4 +20,4 @@ and then distributes them them across the evaluators.
 
 [benchmarks](https://github.com/negrinho/deep_architect/tree/master/examples/benchmarks):
 Compares the search performance of different search algorithms on different
-search spaces.
+search spaces. -->

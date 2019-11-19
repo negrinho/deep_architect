@@ -104,8 +104,7 @@ class Scope:
         Scope.default_scope = Scope()
 
 
-# NOTE: is this called once for each time core is imported?
-# TODO: check.
+# TODO: is this called once for each time core is imported? check.
 Scope.default_scope = Scope()
 
 
@@ -170,7 +169,7 @@ class Hyperparameter(Addressable):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
             ['H', (name if name is not None else self._get_base_name()) + '-']))
-        Addressable.__init__(self, scope, name)
+        super().__init__(scope, name)
 
         self.assign_done = False
         self.modules = OrderedSet()
@@ -247,7 +246,8 @@ class Hyperparameter(Addressable):
         When ``set_val`` is called, this function is called to verify the
         validity of ``val``. This function is useful for error checking.
         """
-        raise NotImplementedError
+        # raise NotImplementedError
+        pass
 
 
 class DependentHyperparameter(Hyperparameter):
@@ -272,7 +272,7 @@ class DependentHyperparameter(Hyperparameter):
     """
 
     def __init__(self, fn, hyperps, scope=None, name=None):
-        Hyperparameter.__init__(self, scope, name)
+        super().__init__(scope, name)
         # NOTE: this assert may or may not be necessary.
         # assert isinstance(hyperps, OrderedDict)
         self._hyperps = OrderedDict([(k, hyperps[k]) for k in sorted(hyperps)])
@@ -316,7 +316,7 @@ class Input(Addressable):
 
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'I', name])
-        Addressable.__init__(self, scope, name)
+        super().__init__(scope, name)
 
         self.module = module
         self.from_output = None
@@ -409,7 +409,7 @@ class Output(Addressable):
 
     def __init__(self, module, scope, name):
         name = '.'.join([module.get_name(), 'O', name])
-        Addressable.__init__(self, scope, name)
+        super().__init__(scope, name)
 
         self.module = module
         self.to_inputs = []
@@ -492,22 +492,30 @@ class Module(Addressable):
     operations to understand are compile and forward.
 
     Args:
-
+        input_names (list[str]): List of inputs names of the module.
+        output_names (list[str]): List of the output names of the module.
+        name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]):
+            Dictionary of names of hyperparameters to hyperparameters.
         scope (deep_architect.core.Scope, optional): Scope object where the
             module is going to be registered in.
         name (str, optional): Unique name with which to register the module.
     """
 
-    def __init__(self, scope=None, name=None):
+    def __init__(self,
+                 input_names,
+                 output_names,
+                 name_to_hyperp,
+                 scope=None,
+                 name=None):
         scope = scope if scope is not None else Scope.default_scope
         name = scope.get_unused_name('.'.join(
             ['M', (name if name is not None else self._get_base_name()) + '-']))
-        Addressable.__init__(self, scope, name)
+        super().__init__(scope, name)
 
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
         self.hyperps = OrderedDict()
-        self._is_compiled = False
+        self._register(input_names, output_names, name_to_hyperp)
 
     def _register_input(self, name):
         """Creates a new input with the chosen local name.
@@ -515,8 +523,11 @@ class Module(Addressable):
         Args:
             name (str): Local name given to the input.
         """
-        assert name not in self.inputs
-        self.inputs[name] = Input(self, self.scope, name)
+        if name in self.inputs:
+            raise ValueError("Input %s already exists in module %s" %
+                             (name, self.get_name()))
+        else:
+            self.inputs[name] = Input(self, self.scope, name)
 
     def _register_output(self, name):
         """Creates a new output with the chosen local name.
@@ -524,8 +535,11 @@ class Module(Addressable):
         Args:
             name (str): Local name given to the output.
         """
-        assert name not in self.outputs
-        self.outputs[name] = Output(self, self.scope, name)
+        if name in self.outputs:
+            raise ValueError("Output %s already exists in module %s" %
+                             (name, self.get_name()))
+        else:
+            self.outputs[name] = Output(self, self.scope, name)
 
     def _register_hyperparameter(self, name, h):
         """Registers an hyperparameter that the module depends on.
@@ -535,8 +549,15 @@ class Module(Addressable):
             h (deep_architect.core.Hyperparameter): Hyperparameter that the
                 module depends on.
         """
-        assert isinstance(h, Hyperparameter) and name not in self.hyperps
-        self.hyperps[name] = h
+        if name in self.outputs:
+            raise ValueError("Hyperparameter %s already exists in module %s" %
+                             (name, self.get_name()))
+        else:
+            if not isinstance(h, Hyperparameter):
+                wrapped_h = Hyperparameter(self.scope, "Singleton")
+                wrapped_h.assign_value(h)
+                h = wrapped_h
+            self.hyperps[name] = h
         h._register_module(self)
 
     def _register(self, input_names, output_names, name_to_hyperp):
@@ -612,41 +633,114 @@ class Module(Addressable):
 
     def _update(self):
         """Called when an hyperparameter that the module depends on is set."""
-        # raise NotImplementedError
         pass
 
-    def _compile(self):
-        """Compile operation for the module.
 
-        Called once when all the hyperparameters that the module depends on,
-        and the other hyperparameters of the search space are specified.
-        See also: :meth:`_forward`.
+class SubstitutionModule(Module):
+    """Substitution modules are replaced by other modules when the all the
+    hyperparameters that the module depends on are specified.
+
+    Substitution modules implement a form of delayed evaluation.
+    The main component of a substitution module is the substitution function.
+    When called, this function returns a dictionary of inputs and a dictionary
+    of outputs. These outputs and inputs are used in the place the substitution
+    module is in. The substitution module effectively disappears from the
+    network after the substitution operation is done.
+    Substitution modules are used to implement many other modules,
+    e.g., :func:`mimo_or`, :func:`siso_optional`, and :func:`siso_repeat`.
+
+    Args:
+        name (str): Name used to derive an unique name for the module.
+        input_names (list[str]): List of the input names of the substitution module.
+        output_name (list[str]): List of the output names of the substitution module.
+        name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]): Dictionary of
+            name to hyperparameters that are needed for the substitution function.
+            The names of the hyperparameters should be in correspondence to the
+            name of the arguments of the substitution function.
+        scope ((deep_architect.core.Scope, optional)) Scope in which the module will be
+            registered. If none is given, uses the default scope.
+        allow_input_subset (bool): If true, allows the substitution function to
+            return a strict subset of the names of the inputs existing before the
+            substitution. Otherwise, the dictionary of inputs returned by the
+            substitution function must contain exactly the same input names.
+        allow_output_subset (bool): If true, allows the substitution function to
+            return a strict subset of the names of the outputs existing before the
+            substitution. Otherwise, the dictionary of outputs returned by the
+            substitution function must contain exactly the same output names.
+    """
+
+    def __init__(self,
+                 input_names,
+                 output_names,
+                 name_to_hyperp,
+                 allow_input_subset=False,
+                 allow_output_subset=False,
+                 scope=None,
+                 name=None):
+        super().__init__(input_names, output_names, name_to_hyperp, scope, name)
+
+        self.allow_input_subset = allow_input_subset
+        self.allow_output_subset = allow_output_subset
+        self.substitution_done = False
+        self._update()
+
+    def _update(self):
+        """Implements the substitution operation.
+
+        When all the hyperparameters that the module depends on are specified,
+        the substitution operation is triggered, and the substitution operation
+        is done.
+        """
+        if (not self.substitution_done) and all(
+                h.has_value_assigned() for h in self.hyperps.values()):
+            new_inputs, new_outputs = self.substitute()
+
+            # test for checking that the inputs and outputs returned by the
+            # substitution function are valid.
+            if self.allow_input_subset:
+                assert len(new_inputs) <= len(self.inputs) and all(
+                    name in self.inputs for name in new_inputs)
+            else:
+                assert len(self.inputs) == len(new_inputs) and all(
+                    name in self.inputs for name in new_inputs)
+
+            if self.allow_output_subset:
+                assert len(new_outputs) <= len(self.outputs) and all(
+                    name in self.outputs for name in new_outputs)
+            else:
+                assert len(self.outputs) == len(new_outputs) and all(
+                    name in self.outputs for name in new_outputs)
+
+            # performing the substitution.
+            for name, old_ix in self.inputs.items():
+                old_ix = self.inputs[name]
+                if name in new_inputs:
+                    new_ix = new_inputs[name]
+                    if old_ix.is_connected():
+                        old_ix.reroute_connected_output(new_ix)
+                    self.inputs[name] = new_ix
+                else:
+                    if old_ix.is_connected():
+                        old_ix.disconnect()
+
+            for name, old_ox in self.outputs.items():
+                old_ox = self.outputs[name]
+                if name in new_outputs:
+                    new_ox = new_outputs[name]
+                    if old_ox.is_connected():
+                        old_ox.reroute_all_connected_inputs(new_ox)
+                    self.outputs[name] = new_ox
+                else:
+                    if old_ox.is_connected():
+                        old_ox.disconnect_all()
+
+            self.substitution_done = True
+
+    def substitute(self):
+        """This function needs to be implemented when concrete instances are
+        created through subclassing.
         """
         raise NotImplementedError
-
-    def _forward(self):
-        """Forward operation for the module.
-
-        Called once the compile operation has been called. See also: :meth:`_compile`.
-        """
-        raise NotImplementedError
-
-    def forward(self):
-        """The forward computation done by the module is decomposed into
-        :meth:`_compile` and :meth:`_forward`.
-
-        Compile can be thought as creating the parameters of the module (done
-        once). Forward can be thought as using the parameters of the module to
-        do the specific computation implemented by the module on some specific
-        data (done multiple times).
-
-        This function can only called after the module and the other modules in
-        the search space are fully specified. See also: :func:`forward`.
-        """
-        if not self._is_compiled:
-            self._compile()
-            self._is_compiled = True
-        self._forward()
 
 
 def extract_unique_modules(input_or_output_lst):
@@ -706,6 +800,54 @@ def determine_module_eval_seq(inputs):
                 m_lst = [ix.get_module() for ix in ix_lst]
                 ms.extend(m_lst)
     return module_seq
+
+
+def determine_input_output_cleanup_seq(inputs):
+    """Determines the order in which the outputs can be cleaned.
+
+    This sequence is aligned with the module evaluation sequence. Positionally,
+    after each module evaluation, the values stored in val for both inputs and
+    outputs can be deleted. This is useful to remove intermediate results to
+    save memory.
+
+    .. note::
+        This function should be used only for fully-specified search spaces.
+
+    Args:
+        inputs (dict[str, deep_architect.core.Input]): Dictionary of named
+            inputs which by being traversed forward will reach all the
+            modules in the search space.
+
+    Returns:
+        (list[list[deep_architect.core.Input]], list[list[deep_architect.core.Output]]):
+            List of lists with the inputs and outputs in the order they should be
+            cleaned up after they are no longer needed.
+    """
+    module_eval_seq = determine_module_eval_seq(inputs)
+
+    input_cleanup_seq = []
+    for m in module_eval_seq:
+        lst = list(m.inputs.values())
+        input_cleanup_seq.append(lst)
+
+    # number of inputs dependent on each input.
+    output_counters = {}
+    for m in module_eval_seq:
+        for ox in m.outputs.values():
+            output_counters[ox] = len(ox.get_connected_inputs())
+
+    output_cleanup_seq = []
+    for m in module_eval_seq:
+        lst = []
+        for ix in m.inputs.values():
+            if ix.is_connected():
+                ox = ix.get_connected_output()
+                output_counters[ox] -= 1
+                if output_counters[ox] == 0:
+                    lst.append(ox)
+        output_cleanup_seq.append(lst)
+
+    return input_cleanup_seq, output_cleanup_seq
 
 
 def traverse_backward(outputs, fn):
@@ -804,40 +946,6 @@ def is_specified(outputs):
 
     traverse_backward(outputs, fn)
     return is_spec[0]
-
-
-def forward(input_to_val, _module_seq=None):
-    """Forward pass through the graph starting with the provided inputs.
-
-    The starting inputs are given the values in the dictionary. The values for
-    the other inputs are obtained through propagation, i.e., through successive
-    calls to :meth:`deep_architect.core.Module.forward` of the appropriate modules.
-
-    .. note::
-        For efficiency, in dynamic frameworks, the module evaluation sequence
-        is best computed once and reused in each forward call. The module
-        evaluation sequence is computed with :func:`determine_module_eval_seq`.
-
-    Args:
-        input_to_val (dict[deep_architect.core.Input, object]): Dictionary of initial
-            inputs to their corresponding values.
-        _module_seq (list[deep_architect.core.Module], optional): List of modules ordered
-            in a way that calling :meth:`deep_architect.core.Module.forward` on them
-            starting from the values given for the inputs is valid. If it is
-            not provided, the module sequence is computed.
-    """
-    if _module_seq is None:
-        inputs = {"in%d" % i: ix for (i, ix) in enumerate(input_to_val.keys())}
-        _module_seq = determine_module_eval_seq(inputs)
-
-    for ix, val in input_to_val.items():
-        ix.val = val
-
-    for m in _module_seq:
-        m.forward()
-        for ox in m.outputs.values():
-            for ix in ox.get_connected_inputs():
-                ix.val = ox.val
 
 
 def get_unconnected_inputs(outputs):
@@ -1007,54 +1115,6 @@ def unassigned_independent_hyperparameter_iterator(outputs):
         for h in hs:
             if not h.has_value_assigned():
                 yield h
-
-
-def determine_input_output_cleanup_seq(inputs):
-    """Determines the order in which the outputs can be cleaned.
-
-    This sequence is aligned with the module evaluation sequence. Positionally,
-    after each module evaluation, the values stored in val for both inputs and
-    outputs can be deleted. This is useful to remove intermediate results to
-    save memory.
-
-    .. note::
-        This function should be used only for fully-specified search spaces.
-
-    Args:
-        inputs (dict[str, deep_architect.core.Input]): Dictionary of named
-            inputs which by being traversed forward will reach all the
-            modules in the search space.
-
-    Returns:
-        (list[list[deep_architect.core.Input]], list[list[deep_architect.core.Output]]):
-            List of lists with the inputs and outputs in the order they should be
-            cleaned up after they are no longer needed.
-    """
-    module_eval_seq = determine_module_eval_seq(inputs)
-
-    input_cleanup_seq = []
-    for m in module_eval_seq:
-        lst = list(m.inputs.values())
-        input_cleanup_seq.append(lst)
-
-    # number of inputs dependent on each input.
-    output_counters = {}
-    for m in module_eval_seq:
-        for ox in m.outputs.values():
-            output_counters[ox] = len(ox.get_connected_inputs())
-
-    output_cleanup_seq = []
-    for m in module_eval_seq:
-        lst = []
-        for ix in m.inputs.values():
-            if ix.is_connected():
-                ox = ix.get_connected_output()
-                output_counters[ox] -= 1
-                if output_counters[ox] == 0:
-                    lst.append(ox)
-        output_cleanup_seq.append(lst)
-
-    return input_cleanup_seq, output_cleanup_seq
 
 
 def jsonify(inputs, outputs):

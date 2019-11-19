@@ -1,195 +1,143 @@
-import tensorflow as tf
-import numpy as np
-
+import deep_architect.core as co
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
-import deep_architect.helpers.tensorflow_support as htf
-import deep_architect.visualization as vi
-
-from deep_architect.contrib.misc.datasets.loaders import load_mnist
-from deep_architect.contrib.misc.datasets.dataset import InMemoryDataset
 import deep_architect.searchers.random as se
-import deep_architect.core as co
+import deep_architect.helpers.common as hco
+import deep_architect.visualization as vi
+import deep_architect.helpers.common as hco
 
-tf.logging.set_verbosity(tf.logging.ERROR)
-
-D = hp.Discrete
-
-
-def dense(h_units):
-    return htf.siso_tensorflow_module_from_tensorflow_op_fn(
-        tf.layers.Dense, {'units': h_units})
+import tensorflow as tf
+import tensorflow.keras.layers as kl
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.datasets import mnist
 
 
-def dropout(h_drop_rate):
+class Dense(co.Module):
 
-    def compile_fn(di, dh):
-        p = tf.placeholder(tf.float32)
+    def __init__(self, h_units):
+        super().__init__(["in"], ["out"], {"units": h_units})
 
-        def fn(di):
-            return {'out': tf.nn.dropout(di['in'], p)}
+    def compile(self):
+        self.m = kl.Dense(self.hyperps["units"].val)
 
-        return fn, {p: 1.0 - dh['drop_rate']}, {p: 1.0}
-
-    return htf.siso_tensorflow_module('Dropout', compile_fn,
-                                      {'drop_rate': h_drop_rate})
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
-# TODO: this needs to be fixed because it is not possible to do different
-# forwards.
-def batch_normalization():
+class Dropout(co.Module):
 
-    def compile_fn(di, dh):
-        p_var = tf.placeholder(tf.bool)
-        bn = tf.layers.BatchNormalization()
+    def __init__(self, h_drop_rate):
+        super().__init__(["in"], ["out"], {"drop_rate": h_drop_rate})
 
-        def fn(di):
-            return {'out': bn(di['in'], training=p_var)}
+    def compile(self):
+        self.m = kl.Dropout(self.hyperps["drop_rate"].val)
 
-        return fn, {p_var: 1}, {p_var: 0}
-
-    return htf.siso_tensorflow_module('BatchNormalization', compile_fn, {})
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
-def nonlinearity(h_nonlin_name):
+class BatchNormalization(co.Module):
 
-    def compile_fn(di, dh):
+    def __init__(self):
+        super().__init__(["in"], ["out"], {})
 
-        def fn(di):
-            nonlin_name = dh['nonlin_name']
-            if nonlin_name == 'relu':
-                Out = tf.nn.relu(di['in'])
-            elif nonlin_name == 'tanh':
-                Out = tf.nn.tanh(di['in'])
-            elif nonlin_name == 'elu':
-                Out = tf.nn.elu(di['in'])
-            else:
-                raise ValueError
-            return {"out": Out}
+    def compile(self):
+        self.m = kl.BatchNormalization()
 
-        return fn
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
-    return htf.siso_tensorflow_module('Nonlinearity', compile_fn,
-                                      {'nonlin_name': h_nonlin_name})
+
+class Nonlinearity(co.Module):
+
+    def __init__(self, h_nonlin_name):
+        super().__init__(["in"], ["out"], {'nonlin_name': h_nonlin_name})
+
+    def compile(self):
+        nonlin_name = self.hyperps["nonlin_name"].val
+        self.m = kl.Activation(nonlin_name)
+
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
              h_drop_rate):
     return mo.siso_sequential([
-        dense(h_num_hidden),
-        nonlinearity(h_nonlin_name),
-        mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_rate), h_opt_drop),
-            lambda: mo.siso_optional(batch_normalization, h_opt_bn),
+        Dense(h_num_hidden),
+        Nonlinearity(h_nonlin_name),
+        mo.SISOPermutation([
+            lambda: mo.SISOOptional(lambda: Dropout(h_drop_rate), h_opt_drop),
+            lambda: mo.SISOOptional(lambda: BatchNormalization(), h_opt_bn),
         ], h_swap)
     ])
 
 
 def dnn_net(num_classes):
-    h_nonlin_name = D(['relu', 'tanh', 'elu'])
-    h_swap = D([0, 1])
-    h_opt_drop = D([0, 1])
-    h_opt_bn = D([0, 1])
+    h_nonlin_name = hp.Discrete(['relu', 'tanh', 'elu'])
+    h_swap = hp.Discrete([0, 1])
+    h_opt_drop = hp.Discrete([0, 1])
+    h_opt_bn = hp.Discrete([0, 1])
     return mo.siso_sequential([
-        mo.siso_repeat(
-            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+        mo.SISORepeat(
+            lambda: dnn_cell(hp.Discrete([64, 128, 256, 512, 1024]),
                              h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-                             D([0.25, 0.5, 0.75])), D([1, 2, 4])),
-        dense(D([num_classes]))
+                             hp.Discrete([0.25, 0.5, 0.75])),
+            hp.Discrete([1, 2, 4])),
+        Dense(hp.Discrete([num_classes]))
     ])
 
 
 class SimpleClassifierEvaluator:
 
     def __init__(self,
-                 train_dataset,
-                 val_dataset,
+                 X_train,
+                 y_train,
+                 X_val,
+                 y_val,
                  num_classes,
                  num_training_epochs,
                  batch_size=256,
-                 learning_rate=1e-3,
-                 display_step=1,
-                 log_output_to_terminal=True):
+                 learning_rate=1e-3):
 
-        self.train_dataset = train_dataset
-        self.val_dataset = val_dataset
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_val = X_val
+        self.y_val = y_val
         self.num_classes = num_classes
-        self.in_dim = list(train_dataset.next_batch(1)[0].shape[1:])
-
         self.num_training_epochs = num_training_epochs
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.log_output_to_terminal = log_output_to_terminal
-        self.display_step = display_step
-
-    def compute_accuracy(self, sess, X_pl, y_pl, num_correct, dataset,
-                         eval_feed):
-        nc = 0
-        num_left = dataset.get_num_examples()
-        while num_left > 0:
-            X_batch, y_batch = dataset.next_batch(self.batch_size)
-            eval_feed.update({X_pl: X_batch, y_pl: y_batch})
-            nc += sess.run(num_correct, feed_dict=eval_feed)
-            # update the number of examples left.
-            eff_batch_size = y_batch.shape[0]
-            num_left -= eff_batch_size
-        acc = float(nc) / dataset.get_num_examples()
-        return acc
 
     def evaluate(self, inputs, outputs):
-        tf.reset_default_graph()
+        tf.keras.backend.clear_session()
 
-        X_pl = tf.placeholder("float", [None] + self.in_dim)
-        y_pl = tf.placeholder("float", [None, self.num_classes])
-        lr_pl = tf.placeholder("float")
-        co.forward({inputs['in']: X_pl})
-        logits = outputs['out'].val
-        train_feed, eval_feed = htf.get_feed_dicts(outputs)
+        X = kl.Input(self.X_train[0].shape)
+        input_name_to_val = {"in": X}
 
-        # define loss and optimizer
-        loss = tf.reduce_mean(
-            tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y_pl))
-        optimizer = tf.train.AdamOptimizer(learning_rate=lr_pl)
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(update_ops):
-            optimizer = optimizer.minimize(loss)
+        module_eval_seq = co.determine_module_eval_seq(inputs)
+        x = co.determine_input_output_cleanup_seq(inputs)
+        input_cleanup_seq, output_cleanup_seq = x
+        output_name_to_val = hco.compile_forward(inputs, outputs,
+                                                 input_name_to_val,
+                                                 module_eval_seq,
+                                                 input_cleanup_seq,
+                                                 output_cleanup_seq)
 
-        # for computing the accuracy of the model
-        correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(y_pl, 1))
-        num_correct = tf.reduce_sum(tf.cast(correct_prediction, "float"))
+        logits = output_name_to_val["out"]
+        probs = kl.Activation('softmax')(logits)
 
-        init = tf.global_variables_initializer()
-        with tf.Session() as sess:
-            sess.run(init)
-
-            num_batches = int(self.train_dataset.get_num_examples() /
-                              self.batch_size)
-            for epoch in range(self.num_training_epochs):
-                avg_loss = 0.
-                for _ in range(num_batches):
-                    X_batch, y_batch = self.train_dataset.next_batch(
-                        self.batch_size)
-                    train_feed.update({
-                        X_pl: X_batch,
-                        y_pl: y_batch,
-                        lr_pl: self.learning_rate
-                    })
-
-                    _, c = sess.run([optimizer, loss], feed_dict=train_feed)
-                    avg_loss += c / num_batches
-
-                if self.log_output_to_terminal and epoch % self.display_step == 0:
-                    print("epoch:", '%d' % (epoch + 1), "loss:",
-                          "{:.9f}".format(avg_loss))
-
-            val_acc = self.compute_accuracy(sess, X_pl, y_pl, num_correct,
-                                            self.val_dataset, eval_feed)
-            print("validation accuracy: %0.4f" % val_acc)
-            results = {
-                'validation_accuracy': val_acc,
-                'num_parameters': htf.get_num_trainable_parameters()
-            }
-
+        model = tf.keras.Model(inputs=[X], outputs=[probs])
+        model.compile(optimizer=Adam(lr=self.learning_rate),
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
+        model.summary()
+        history = model.fit(self.X_train,
+                            self.y_train,
+                            batch_size=self.batch_size,
+                            epochs=self.num_training_epochs,
+                            validation_data=(self.X_val, self.y_val))
+        results = {'validation_accuracy': history.history['val_acc'][-1]}
         return results
 
 
@@ -197,27 +145,33 @@ def main():
     num_classes = 10
     num_samples = 4
     num_training_epochs = 2
+    validation_frac = 0.2
     # NOTE: change to True for graph visualization
     show_graph = False
 
-    # load data
-    (X_train, y_train, X_val, y_val, X_test, y_test) = load_mnist(flatten=True)
-    train_dataset = InMemoryDataset(X_train, y_train, True)
-    val_dataset = InMemoryDataset(X_val, y_val, False)
-    test_dataset = InMemoryDataset(X_test, y_test, False)
+    # load the data.
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    fn = lambda X: X.reshape((X.shape[0], -1))
+    X_train = fn(X_train) / 255.0
+    X_test = fn(X_test) / 255.0
+    num_train = int((1.0 - validation_frac) * X_train.shape[0])
+    X_train, X_val = X_train[:num_train], X_train[num_train:]
+    y_train, y_val = y_train[:num_train], y_train[num_train:]
 
-    # defining evaluator and searcher
+    # define the search and the evalutor
     evaluator = SimpleClassifierEvaluator(
-        train_dataset,
-        val_dataset,
+        X_train,
+        y_train,
+        X_val,
+        y_val,
         num_classes,
-        num_training_epochs=num_training_epochs,
-        log_output_to_terminal=True)
+        num_training_epochs=num_training_epochs)
     search_space_fn = lambda: dnn_net(num_classes)
     searcher = se.RandomSearcher(search_space_fn)
 
     for i in range(num_samples):
-        inputs, outputs, _, searcher_eval_token = searcher.sample()
+        (inputs, outputs, hyperp_value_lst,
+         searcher_eval_token) = searcher.sample()
         if show_graph:
             # try setting draw_module_hyperparameter_info=False and
             # draw_hyperparameters=True for a different visualization.

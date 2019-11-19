@@ -1,81 +1,90 @@
-import keras
-import numpy as np
-
 import deep_architect.core as co
 import deep_architect.modules as mo
 import deep_architect.hyperparameters as hp
 import deep_architect.searchers.random as se
-import deep_architect.helpers.keras_support as hke
-import deep_architect.search_logging as sl
+import deep_architect.helpers.common as hco
 import deep_architect.visualization as vi
 
-from keras.layers import Dropout, Activation, BatchNormalization, Dense, Input
+import keras
+import keras.layers as kl
 from keras.models import Model
 from keras.optimizers import Adam
-
 from keras.datasets import mnist
 
-D = hp.Discrete
+
+class Dense(co.Module):
+
+    def __init__(self, h_units):
+        super().__init__(["in"], ["out"], {"units": h_units})
+
+    def compile(self):
+        self.m = kl.Dense(self.hyperps["units"].val)
+
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
-def dense(h_units):
-    return hke.siso_keras_module_from_keras_layer_fn(Dense, {'units': h_units})
+class Dropout(co.Module):
+
+    def __init__(self, h_drop_rate):
+        super().__init__(["in"], ["out"], {"drop_rate": h_drop_rate})
+
+    def compile(self):
+        self.m = kl.Dropout(self.hyperps["drop_rate"].val)
+
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
-def dropout(h_drop_rate):
-    return hke.siso_keras_module_from_keras_layer_fn(Dropout,
-                                                     {'rate': h_drop_rate})
+class BatchNormalization(co.Module):
+
+    def __init__(self):
+        super().__init__(["in"], ["out"], {})
+
+    def compile(self):
+        self.m = kl.BatchNormalization()
+
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
-def batch_normalization():
-    return hke.siso_keras_module_from_keras_layer_fn(BatchNormalization, {})
+class Nonlinearity(co.Module):
 
+    def __init__(self, h_nonlin_name):
+        super().__init__(["in"], ["out"], {'nonlin_name': h_nonlin_name})
 
-def nonlinearity(h_nonlin_name):
+    def compile(self):
+        nonlin_name = self.hyperps["nonlin_name"].val
+        self.m = kl.Activation(nonlin_name)
 
-    def compile_fn(di, dh):
-
-        def fn(di):
-            nonlin_name = dh['nonlin_name']
-            if nonlin_name == 'relu':
-                Out = Activation('relu')(di['in'])
-            elif nonlin_name == 'tanh':
-                Out = Activation('tanh')(di['in'])
-            elif nonlin_name == 'elu':
-                Out = Activation('elu')(di['in'])
-            else:
-                raise ValueError
-            return {"out": Out}
-
-        return fn
-
-    return hke.siso_keras_module('Nonlinearity', compile_fn,
-                                 {'nonlin_name': h_nonlin_name})
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
              h_drop_rate):
     return mo.siso_sequential([
-        dense(h_num_hidden),
-        nonlinearity(h_nonlin_name),
-        mo.siso_permutation([
-            lambda: mo.siso_optional(lambda: dropout(h_drop_rate), h_opt_drop),
-            lambda: mo.siso_optional(batch_normalization, h_opt_bn),
+        Dense(h_num_hidden),
+        Nonlinearity(h_nonlin_name),
+        mo.SISOPermutation([
+            lambda: mo.SISOOptional(lambda: Dropout(h_drop_rate), h_opt_drop),
+            lambda: mo.SISOOptional(lambda: BatchNormalization(), h_opt_bn),
         ], h_swap)
     ])
 
 
 def dnn_net(num_classes):
-    h_nonlin_name = D(['relu', 'tanh', 'elu'])
-    h_swap = D([0, 1])
-    h_opt_drop = D([0, 1])
-    h_opt_bn = D([0, 1])
+    h_nonlin_name = hp.Discrete(['relu', 'tanh', 'elu'])
+    h_swap = hp.Discrete([0, 1])
+    h_opt_drop = hp.Discrete([0, 1])
+    h_opt_bn = hp.Discrete([0, 1])
     return mo.siso_sequential([
-        mo.siso_repeat(
-            lambda: dnn_cell(D([64, 128, 256, 512, 1024]),
+        mo.SISORepeat(
+            lambda: dnn_cell(hp.Discrete([64, 128, 256, 512, 1024]),
                              h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
-                             D([0.25, 0.5, 0.75])), D([1, 2, 4])),
-        dense(D([num_classes]))
+                             hp.Discrete([0.25, 0.5, 0.75])),
+            hp.Discrete([1, 2, 4])),
+        Dense(num_classes)
     ])
 
 
@@ -103,12 +112,21 @@ class SimpleClassifierEvaluator:
     def evaluate(self, inputs, outputs):
         keras.backend.clear_session()
 
-        X = Input(self.X_train[0].shape)
-        co.forward({inputs['in']: X})
-        logits = outputs['out'].val
-        probs = Activation('softmax')(logits)
+        X = kl.Input(self.X_train[0].shape)
+        module_eval_seq = co.determine_module_eval_seq(inputs)
+        x = co.determine_input_output_cleanup_seq(inputs)
+        input_cleanup_seq, output_cleanup_seq = x
+        input_name_to_val = {"in": X}
+        output_name_to_val = hco.compile_forward(inputs, outputs,
+                                                 input_name_to_val,
+                                                 module_eval_seq,
+                                                 input_cleanup_seq,
+                                                 output_cleanup_seq)
 
-        model = Model(inputs=[inputs['in'].val], outputs=[probs])
+        logits = output_name_to_val["out"]
+        probs = kl.Activation('softmax')(logits)
+
+        model = Model(inputs=[X], outputs=[probs])
         model.compile(optimizer=Adam(lr=self.learning_rate),
                       loss='sparse_categorical_crossentropy',
                       metrics=['accuracy'])

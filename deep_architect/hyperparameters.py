@@ -69,7 +69,7 @@ class Discrete(co.Hyperparameter):
 
     def __init__(self, vs, scope=None, name=None):
         assert len(vs) > 0
-        co.Hyperparameter.__init__(self, scope, name)
+        super().__init__(scope, name)
         self.vs = vs
 
     def _check_value(self, val):
@@ -78,10 +78,8 @@ class Discrete(co.Hyperparameter):
         Asserts ``False`` if the value is not in the list.
         """
         if val not in self.vs:
-            print(self.get_name())
-            print(self.vs)
-            print(val)
-        assert val in self.vs
+            raise ValueError("Value for %s must be in %s. Value used: %s." %
+                             (self.get_name(), self.vs, val))
 
 
 class Bool(Discrete):
