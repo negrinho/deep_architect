@@ -1,14 +1,30 @@
 import deep_architect.core as co
 import itertools
 
+# def _get_name(name, default_name):
+#     # the default name is chosen if name is None
+#     return name if name is not None else default_name
 
-def _get_name(name, default_name):
-    # the default name is chosen if name is None
-    return name if name is not None else default_name
 
-
-def _get_io_if_module(x):
+def get_io_if_module(x):
     return x.get_io() if isinstance(x, co.Module) else x
+
+
+# def map_to_io_name(s):
+#     out_s = []
+#     # if (s.startswith('SISO') or s.startswith('MIMO') or s.startswith('SIMO') or
+#     #         s.startswith('MISO')):
+#     #     prefix = s[:4].lower()
+#     #     out_s.append(prefix + "_")
+#     #     s = s[4:]
+
+#     prev_upper = False
+#     for i, c in enumerate(s):
+#         if i > 0 and c.isupper() and not prev_upper:
+#             out_s.append('_')
+#         out_s.append(c.lower())
+#         prev_upper = c.isupper()
+#     return ''.join(out_s)
 
 
 class Identity(co.Module):
@@ -61,13 +77,13 @@ class MIMOOr(co.SubstitutionModule):
 
     .. note::
         The current implementation also works if ``fn_lst`` is an indexable
-        object (e.g., a dictionary), and the ``h_or`` takes values that
+        object (e.g., a dictionary), and the ``h_choice`` takes values that
         are valid indices for the indexable (e.g., valid keys for the dictionary).
 
     Args:
         fn_lst (list[() -> (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output])]):
             List of possible substitution functions.
-        h_or (deep_architect.core.Hyperparameter): Hyperparameter that chooses which
+        h_choice (deep_architect.core.Hyperparameter): Hyperparameter that chooses which
             function in the list is called to do the substitution.
         input_names (list[str]): List of inputs names of the module.
         output_names (list[str]): List of the output names of the module.
@@ -99,7 +115,7 @@ class MIMOOr(co.SubstitutionModule):
     def substitute(self):
         choice = self.hyperps["choice"].val
         x = self.fn_lst[choice]()
-        return _get_io_if_module(x)
+        return get_io_if_module(x)
 
 
 class MIMONestedRepeat(co.SubstitutionModule):
@@ -161,10 +177,10 @@ class MIMONestedRepeat(co.SubstitutionModule):
                 % num_repeats)
 
         x = self.fn_first()
-        inputs, outputs = _get_io_if_module(x)
+        inputs, outputs = get_io_if_module(x)
         for _ in range(1, num_repeats):
             x = self.fn_iter(inputs, outputs)
-            inputs, outputs = _get_io_if_module(x)
+            inputs, outputs = get_io_if_module(x)
         return inputs, outputs
 
 
@@ -230,16 +246,14 @@ class SISOOr(MIMOOr):
 
     .. note::
         The current implementation also works if ``fn_lst`` is an indexable
-        object (e.g., a dictionary), and the ``h_or`` takes values that
+        object (e.g., a dictionary), and the ``h_choice`` takes values that
         are valid indices for the dictionary.
 
     Args:
         fn_lst (list[() -> (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output])]):
             List of possible substitution functions.
-        h_or (deep_architect.core.Hyperparameter): Hyperparameter that chooses which
+        h_choice (deep_architect.core.Hyperparameter): Hyperparameter that chooses which
             function in the list is called to do the substitution.
-        input_names (list[str]): List of inputs names of the module.
-        output_names (list[str]): List of the output names of the module.
         scope (deep_architect.core.Scope, optional): Scope in which the module will be
             registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
@@ -251,16 +265,10 @@ class SISOOr(MIMOOr):
             substitution module.
     """
 
-    def __init__(self,
-                 fn_first,
-                 fn_iter,
-                 h_num_repeats,
-                 input_names,
-                 output_names,
-                 scope=None,
-                 name=None):
-        super().__init__(fns, h_choice, ["in"], ["out"], scope=scope, name=name)
-
+    def __init__(self, fn_lst, h_choice, scope=None, name=None):
+        super().__init__(["in"], ["out"], {"choice": h_choice},
+                         scope=scope,
+                         name=name)
 
 
 class SISORepeat(co.SubstitutionModule):
@@ -334,7 +342,7 @@ class SISOOptional(co.SubstitutionModule):
     def substitute(self):
         opt = self.hyperps["opt"].val
         x = self.fn() if opt else Identity()
-        return _get_io_if_module(x)
+        return get_io_if_module(x)
 
 
 class SISOPermutation(co.SubstitutionModule):
@@ -421,11 +429,11 @@ class SISOSplitCombine(co.SubstitutionModule):
     def substitute(self):
         num_splits = self.hyperps['num_splits'].val
         inputs_lst, outputs_lst = list(
-            zip(*[_get_io_if_module(self.fn()) for _ in range(num_splits)]))
+            zip(*[get_io_if_module(self.fn()) for _ in range(num_splits)]))
         x = self.combine_fn(num_splits)
-        c_inputs, c_outputs = _get_io_if_module(x)
+        c_inputs, c_outputs = get_io_if_module(x)
 
-        i_inputs, i_outputs = identity()
+        i_inputs, i_outputs = Identity().get_io()
         for i in range(num_splits):
             i_outputs['out'].connect(inputs_lst[i]['in'])
             c_inputs['in' + str(i)].connect(outputs_lst[i]['out'])
@@ -436,7 +444,7 @@ def preproc_apply_postproc(preproc_fn, apply_fn, postproc_fn):
     return siso_sequential([preproc_fn(), apply_fn(), postproc_fn()])
 
 
-class DenseBlock():
+class DenseBlock(co.Module):
 
     def __init__(self,
                  h_num_applies,
@@ -460,13 +468,13 @@ class DenseBlock():
         prev_c_outputs = [i_outputs]
         for idx in range(dh["num_applies"]):
             x = self.apply_fn()
-            (a_inputs, a_outputs) = _get_io_if_module(x)
+            (a_inputs, a_outputs) = get_io_if_module(x)
             a_inputs['in'].connect(prev_c_outputs[-1]["out"])
             prev_a_outputs.append(a_outputs)
 
             if idx < dh["num_applies"] - 1 or dh["end_in_combine"]:
                 x = self.combine_fn(idx + 2)
-                (c_inputs, c_outputs) = _get_io_if_module(x)
+                (c_inputs, c_outputs) = get_io_if_module(x)
                 for i, iter_outputs in enumerate(prev_a_outputs):
                     c_inputs["in%d" % i].connect(iter_outputs["out"])
                 prev_c_outputs.append(c_outputs)
@@ -509,9 +517,9 @@ def siso_residual(main_fn, residual_fn, combine_fn):
             Tuple with dictionaries with the inputs and outputs of the
             resulting search space graph.
     """
-    (m_inputs, m_outputs) = _get_io_if_module(main_fn())
-    (r_inputs, r_outputs) = _get_io_if_module(residual_fn())
-    (c_inputs, c_outputs) = _get_io_if_module(combine_fn())
+    (m_inputs, m_outputs) = get_io_if_module(main_fn())
+    (r_inputs, r_outputs) = get_io_if_module(residual_fn())
+    (c_inputs, c_outputs) = get_io_if_module(combine_fn())
 
     i_inputs, i_outputs = Identity().get_io()
     i_outputs['out'].connect(m_inputs['in'])
@@ -538,7 +546,7 @@ def siso_sequential(io_lst):
     """
     assert len(io_lst) > 0
 
-    io_lst = [_get_io_if_module(x) for x in io_lst]
+    io_lst = [get_io_if_module(x) for x in io_lst]
     prev_outputs = io_lst[0][1]
     for next_inputs, next_outputs in io_lst[1:]:
         prev_outputs['out'].connect(next_inputs['in'])
@@ -597,3 +605,38 @@ class SearchSpaceFactory:
 
         (inputs, outputs) = buffer_io(*self.search_space_fn())
         return inputs, outputs
+
+
+def remove_inner_identities(inputs):
+
+    def fn(m):
+        if isinstance(m, Identity):
+            ix = m.inputs["in"]
+            ox = m.outputs["out"]
+            if ix.is_connected() and ox.is_connected():
+                ox_to_m = ix.get_connected_output()
+                ix.disconnect()
+                ixs_from_m = ox.get_connected_inputs()
+                for ix_iter in ixs_from_m:
+                    ix_iter.disconnect()
+                    ix_iter.connect(ox_to_m)
+
+    co.traverse_forward(inputs, fn)
+
+
+def get_wrapped_fn_io(fn):
+
+    def wrapped_fn(*args, **kwargs):
+        return fn(*args, **kwargs).get_io()
+
+    return wrapped_fn
+
+
+fns = [
+    Identity, HyperparameterAggregator, MIMOOr, MIMONestedRepeat,
+    SISONestedRepeat, SISOOr, SISORepeat, SISOOptional, SISOPermutation,
+    SISOSplitCombine, DenseBlock
+]
+
+m_fns = {f.__name__: f for f in fns}
+io_fns = {f.__name__.lower(): get_wrapped_fn_io(f) for f in fns}

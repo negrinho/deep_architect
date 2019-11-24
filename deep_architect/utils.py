@@ -161,14 +161,13 @@ def list_files(folderpath,
                recursive=False,
                use_relative_paths=False):
 
-    return list_paths(
-        folderpath,
-        ignore_dirs=True,
-        ignore_hidden_folders=ignore_hidden_folders,
-        ignore_hidden_files=ignore_hidden_files,
-        ignore_file_exts=ignore_file_exts,
-        recursive=recursive,
-        use_relative_paths=use_relative_paths)
+    return list_paths(folderpath,
+                      ignore_dirs=True,
+                      ignore_hidden_folders=ignore_hidden_folders,
+                      ignore_hidden_files=ignore_hidden_files,
+                      ignore_file_exts=ignore_file_exts,
+                      recursive=recursive,
+                      use_relative_paths=use_relative_paths)
 
 
 def list_folders(folderpath,
@@ -176,12 +175,11 @@ def list_folders(folderpath,
                  recursive=False,
                  use_relative_paths=False):
 
-    return list_paths(
-        folderpath,
-        ignore_files=True,
-        ignore_hidden_folders=ignore_hidden_folders,
-        recursive=recursive,
-        use_relative_paths=use_relative_paths)
+    return list_paths(folderpath,
+                      ignore_files=True,
+                      ignore_hidden_folders=ignore_hidden_folders,
+                      recursive=recursive,
+                      use_relative_paths=use_relative_paths)
 
 
 def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
@@ -200,8 +198,8 @@ def convert_between_time_units(x, src_units='seconds', dst_units='hours'):
 def convert_between_byte_units(x, src_units='bytes', dst_units='megabytes'):
     units = ['bytes', 'kilobytes', 'megabytes', 'gigabytes', 'terabytes']
     assert (src_units in units) and (dst_units in units)
-    return x / float(2**
-                     (10 * (units.index(dst_units) - units.index(src_units))))
+    return x / float(2**(10 *
+                         (units.index(dst_units) - units.index(src_units))))
 
 
 class SequenceTracker:
@@ -233,7 +231,7 @@ class SequenceTracker:
                 the sequence.
         """
         for k, v in d.items():
-            assert type(k) == str and len(k) > 0
+            assert isinstance(k, str) and len(k) > 0
             if k not in self.d:
                 self.d[k] = []
             self.d[k].append(v)
@@ -393,14 +391,13 @@ class CommandLineArgs:
         nargs = None if not list_valued else '*'
         argtype = valid_types[argtype]
 
-        self.parser.add_argument(
-            '--' + self.argname_prefix + argname,
-            required=not optional,
-            default=default_value,
-            nargs=nargs,
-            type=argtype,
-            choices=valid_value_lst,
-            help=help)
+        self.parser.add_argument('--' + self.argname_prefix + argname,
+                                 required=not optional,
+                                 default=default_value,
+                                 nargs=nargs,
+                                 type=argtype,
+                                 choices=valid_value_lst,
+                                 help=help)
 
     def parse(self):
         return vars(self.parser.parse_args())

@@ -59,14 +59,8 @@ setup(
     packages=find_packages(include=["deep_architect*"]),
     python_requires=">=3.6",
     install_requires=[
-        'numpy',
-        'scipy',
-        "scikit-learn",
-        "tensorflow==1.15",
-        "torch>=1.2",
-        "keras>=2.3",
-        "matplotlib",
-        "graphviz"
+        'numpy', 'scipy', "scikit-learn", "tensorflow>=2.0", "torch>=1.2",
+        "keras>=2.3", "matplotlib", "graphviz"
     ],
     extras_require={
         "docs": ["sphinx"

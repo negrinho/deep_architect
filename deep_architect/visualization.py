@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import graphviz
 import deep_architect.core as co
 import deep_architect.utils as ut
-import deep_architect.searchers as se
 import numpy as np
 
 
@@ -274,7 +273,7 @@ class LinePlot:
         return f
 
 
-def visualize_model_as_text(inputs, outputs):
+def visualize_graph_as_text(inputs, outputs):
 
     def show(d, indent, sep):
         for k in sorted(d):

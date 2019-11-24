@@ -1,4 +1,31 @@
 import deep_architect.core as co
+import inspect
+
+
+def get_positional_argnames(fn):
+    sig = inspect.signature(fn)
+
+    names = []
+    for k, v in sig.parameters.items():
+        if v.kind == v.POSITIONAL_OR_KEYWORD:
+            names.append(k)
+    return names
+
+
+def get_name_to_hyperp(fn, args, kwargs):
+    name_to_hyperp = {k: v for k, v in kwargs.items()}
+    argnames = get_positional_argnames(fn)
+    if len(argnames) < len(args):
+        raise ValueError(
+            "The number of positional arguments for %s cannot exceed those declared explicitly, i.e., *args cannot be used."
+            % fn.__name__)
+    for k, v in zip(argnames, args):
+        if k in name_to_hyperp:
+            raise ValueError(
+                "Arguments should be passed positionally or as keywords, but not both. Arg name %s in %s."
+                % (k, fn.__name__))
+        name_to_hyperp[k] = v
+    return name_to_hyperp
 
 
 def compile_forward(inputs, outputs, name_to_input_val, module_eval_seq,
@@ -84,3 +111,86 @@ class Model:
                                          self._input_cleanup_seq,
                                          self._output_cleanup_seq)
         return output_name_to_val
+
+
+class SISOWrappedModule(co.Module):
+
+    def __init__(self, fn, scope=None, name=None, *args, **kwargs):
+        name = name if name is not None else fn.__name__
+        name_to_hyperp = get_name_to_hyperp(fn, args, kwargs)
+        super().__init__(["in"], ["out"], name_to_hyperp, scope, name)
+        self.fn = fn
+
+    def compile(self):
+        dh = self._get_hyperp_values()
+        self.m = self.fn(**dh)
+
+    def forward(self):
+        self.outputs["out"].val = self.m(self.inputs["in"].val)
+
+
+class MIMOWrappedModule(co.Module):
+
+    def __init__(self,
+                 fn,
+                 num_inputs,
+                 num_outputs,
+                 scope=None,
+                 name=None,
+                 *args,
+                 **kwargs):
+        name = name if name is not None else fn.__name__
+        name_to_hyperp = get_name_to_hyperp(fn, args, kwargs)
+        super().__init__(["in%d" % i for i in range(num_inputs)],
+                         ["out%d" % i for i in range(num_outputs)],
+                         name_to_hyperp, scope, name)
+        self.fn = fn
+
+    def compile(self):
+        dh = self._get_hyperp_values()
+        self.m = self.fn(**dh)
+
+    def forward(self):
+        args = [self.inputs["in%d" % i].val for i in range(len(self.inputs))]
+        outs = self.m(*args)
+        for i in range(len(self.outputs)):
+            self.outputs['out%d' % i].val = outs[i]
+
+
+class ListWrappedModule(co.Module):
+    """Useful to wrap functions that take a list of arguments and return
+    a single argument (e.g., often the case for combination functions such as
+    concat and add).
+    """
+
+    def __init__(self, fn, num_inputs, scope=None, name=None, *args, **kwargs):
+        name = name if name is not None else fn.__name__
+        name_to_hyperp = get_name_to_hyperp(fn, args, kwargs)
+        super().__init__(["in%d" for i in range(num_inputs)], ["out"],
+                         name_to_hyperp, scope, name)
+        self.fn = fn
+
+    def compile(self):
+        dh = self._get_hyperp_values()
+        self.m = self.fn(**dh)
+
+    def forward(self):
+        lst = [self.inputs["in%i" % i].val for i in range(len(self.inputs))]
+        self.outputs["out"].val = self.m(lst)
+
+
+# TODO: change this is accordance after other types are introduced.
+def get_siso_wrapped_module(fn, scope=None, name=None, **kwargs):
+
+    def wrapped_fn(*args, **kwargs):
+        return SISOWrappedModule(fn, scope, name, *args, **kwargs)
+
+    return wrapped_fn
+
+
+def get_siso_wrapped_module_io(fn, scope=None, name=None, **kwargs):
+
+    def wrapped_fn(*args, **kwargs):
+        return SISOWrappedModule(fn, scope, name, *args, **kwargs).get_io()
+
+    return wrapped_fn

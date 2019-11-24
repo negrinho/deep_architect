@@ -256,3 +256,6 @@ ut_install_packages() {
         mailutils \
         tree;
 }
+
+# TODO: add a proper command to lint the project.
+# pylint deep_architect/*.py --rcfile .pylintrc --disable=C0103,C0301,C0116,C0114 > linting.txt
