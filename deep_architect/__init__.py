@@ -7,7 +7,7 @@ from .core import (DependentHyperparameter, Hyperparameter, Module,
                    determine_input_output_cleanup_seq)
 
 from .modules import *
-del m_fns, io_fns, fns, co, hp, itertools, name, fn
+del m_fns, io_fns, fns, co, hp, itertools, name, fn, g
 from .hyperparameters import (HyperparameterSharer, Discrete, Bool, OneOfK,
                               OneOfKFactorial)
 from .helpers.common import (compile_forward, forward,

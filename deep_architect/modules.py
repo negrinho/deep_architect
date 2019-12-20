@@ -513,4 +513,3 @@ io_fns = {f.__name__.lower(): get_wrapped_fn_io(f) for f in fns}
 g = globals()
 for name, fn in io_fns.items():
     g[name] = fn
-del g
