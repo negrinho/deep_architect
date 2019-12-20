@@ -15,60 +15,60 @@ from tensorflow.keras.datasets import mnist
 class Dense(co.Module):
 
     def __init__(self, h_units):
-        super().__init__(["in"], ["out"], {"units": h_units})
+        super().__init__(["in0"], ["out0"], {"units": h_units})
 
     def compile(self):
         self.m = kl.Dense(self.hyperps["units"].val)
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class Dropout(co.Module):
 
     def __init__(self, h_drop_rate):
-        super().__init__(["in"], ["out"], {"drop_rate": h_drop_rate})
+        super().__init__(["in0"], ["out0"], {"drop_rate": h_drop_rate})
 
     def compile(self):
         self.m = kl.Dropout(self.hyperps["drop_rate"].val)
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class BatchNormalization(co.Module):
 
     def __init__(self):
-        super().__init__(["in"], ["out"], {})
+        super().__init__(["in0"], ["out0"], {})
 
     def compile(self):
         self.m = kl.BatchNormalization()
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class Nonlinearity(co.Module):
 
     def __init__(self, h_nonlin_name):
-        super().__init__(["in"], ["out"], {'nonlin_name': h_nonlin_name})
+        super().__init__(["in0"], ["out0"], {'nonlin_name': h_nonlin_name})
 
     def compile(self):
         nonlin_name = self.hyperps["nonlin_name"].val
         self.m = kl.Activation(nonlin_name)
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
              h_drop_rate):
-    return mo.siso_sequential([
+    return mo.sequential([
         Dense(h_num_hidden),
         Nonlinearity(h_nonlin_name),
-        mo.SISOPermutation([
-            lambda: mo.SISOOptional(lambda: Dropout(h_drop_rate), h_opt_drop),
-            lambda: mo.SISOOptional(lambda: BatchNormalization(), h_opt_bn),
+        mo.permutation([
+            lambda: mo.optional(lambda: Dropout(h_drop_rate), h_opt_drop),
+            lambda: mo.optional(lambda: BatchNormalization(), h_opt_bn),
         ], h_swap)
     ])
 
@@ -78,8 +78,8 @@ def dnn_net(num_classes):
     h_swap = hp.Discrete([0, 1])
     h_opt_drop = hp.Discrete([0, 1])
     h_opt_bn = hp.Discrete([0, 1])
-    return mo.siso_sequential([
-        mo.SISORepeat(
+    return mo.sequential([
+        mo.repeat(
             lambda: dnn_cell(hp.Discrete([64, 128, 256, 512, 1024]),
                              h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
                              hp.Discrete([0.25, 0.5, 0.75])),
@@ -113,7 +113,7 @@ class SimpleClassifierEvaluator:
         tf.keras.backend.clear_session()
 
         X = kl.Input(self.X_train[0].shape)
-        input_name_to_val = {"in": X}
+        input_name_to_val = {"in0": X}
 
         module_eval_seq = co.determine_module_eval_seq(inputs)
         x = co.determine_input_output_cleanup_seq(inputs)
@@ -124,7 +124,7 @@ class SimpleClassifierEvaluator:
                                                  input_cleanup_seq,
                                                  output_cleanup_seq)
 
-        logits = output_name_to_val["out"]
+        logits = output_name_to_val["out0"]
         probs = kl.Activation('softmax')(logits)
 
         model = tf.keras.Model(inputs=[X], outputs=[probs])

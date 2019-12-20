@@ -40,7 +40,8 @@ class Scope:
         self.name_to_elem = OrderedDict()
         self.elem_to_name = OrderedDict()
 
-    def register(self, name, elem):
+    @staticmethod
+    def register(name, elem):
         """Registers an addressable object with the desired name.
 
         The name cannot exist in the scope, otherwise asserts ``False``.
@@ -49,12 +50,14 @@ class Scope:
             name (str): Unique name.
             elem (deep_architect.core.Addressable): Addressable object to register.
         """
-        assert name not in self.name_to_elem
+        scope = Scope.default_scope
+        assert name not in scope.name_to_elem
         assert isinstance(elem, Addressable)
-        self.name_to_elem[name] = elem
-        self.elem_to_name[elem] = name
+        scope.name_to_elem[name] = elem
+        scope.elem_to_name[elem] = name
 
-    def get_unused_name(self, prefix):
+    @staticmethod
+    def get_unused_name(prefix):
         """Creates a unique name by adding a numbered suffix to the prefix.
 
         Args:
@@ -66,12 +69,13 @@ class Scope:
         i = 0
         while True:
             name = prefix + str(i)
-            if name not in self.name_to_elem:
+            if name not in Scope.default_scope.name_to_elem:
                 break
             i += 1
         return name
 
-    def get_name(self, elem):
+    @staticmethod
+    def get_name(elem):
         """Get the name of the addressable object registered in the scope.
 
         The object must exist in the scope.
@@ -83,9 +87,10 @@ class Scope:
         Returns:
             str: Name with which the object was registered in the scope.
         """
-        return self.elem_to_name[elem]
+        return Scope.default_scope.elem_to_name[elem]
 
-    def get_elem(self, name):
+    @staticmethod
+    def get_elem(name):
         """Get the object that is registered in the scope with the desired name.
 
         The name must exist in the scope.
@@ -96,7 +101,7 @@ class Scope:
         Returns:
             str: Addressable object with the corresponding name.
         """
-        return self.name_to_elem[name]
+        return Scope.default_scope.name_to_elem[name]
 
     @staticmethod
     def reset_default_scope():
@@ -119,9 +124,8 @@ class Addressable:
         name (str): Unique name used to register the addressable object.
     """
 
-    def __init__(self, scope, name):
-        scope.register(name, self)
-        self.scope = scope
+    def __init__(self, name):
+        Scope.register(name, self)
 
     def __repr__(self):
         return self.get_name()
@@ -132,7 +136,7 @@ class Addressable:
         Returns:
             str: Unique name used to register the object.
         """
-        return self.scope.get_name(self)
+        return Scope.get_name(self)
 
     def _get_base_name(self):
         """Get the class name.
@@ -158,18 +162,15 @@ class Hyperparameter(Addressable):
         and dictionaries of serializable types are also valid.
 
     Args:
-        scope (deep_architect.core.Scope, optional): Scope in which the hyperparameter
-            will be registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             hyperparameter. If none is given, uses the class name to derive
             the name.
     """
 
-    def __init__(self, scope=None, name=None):
-        scope = scope if scope is not None else Scope.default_scope
-        name = scope.get_unused_name('.'.join(
+    def __init__(self, name=None):
+        name = Scope.get_unused_name('.'.join(
             ['H', (name if name is not None else self._get_base_name()) + '-']))
-        super().__init__(scope, name)
+        super().__init__(name)
 
         self.assign_done = False
         self.modules = OrderedSet()
@@ -265,14 +266,12 @@ class DependentHyperparameter(Hyperparameter):
         hyperps (dict[str, deep_architect.core.Hyperparameter]): Dictionary mapping
             names to hyperparameters. The names used in the dictionary should
             correspond to the names of the arguments of ``fn``.
-        scope (deep_architect.core.Scope, optional): The scope in which to register the
-            hyperparameter in.
         name (str, optional): Name from which the name of the hyperparameter
             in the scope is derived.
     """
 
-    def __init__(self, fn, hyperps, scope=None, name=None):
-        super().__init__(scope, name)
+    def __init__(self, fn, hyperps, name=None):
+        super().__init__(name)
         # NOTE: this assert may or may not be necessary.
         # assert isinstance(hyperps, OrderedDict)
         self._hyperps = OrderedDict([(k, hyperps[k]) for k in sorted(hyperps)])
@@ -309,14 +308,12 @@ class Input(Addressable):
     Args:
         module (deep_architect.core.Module): Module with which the input object
             is associated to.
-        scope (deep_architect.core.Scope): Scope object where the input is
-            going to be registered in.
         name (str): Unique name with which to register the input object.
     """
 
-    def __init__(self, module, scope, name):
+    def __init__(self, module, name):
         name = '.'.join([module.get_name(), 'I', name])
-        super().__init__(scope, name)
+        super().__init__(name)
 
         self.module = module
         self.from_output = None
@@ -402,14 +399,12 @@ class Output(Addressable):
     Args:
         module (deep_architect.core.Module): Module with which the output object
             is associated to.
-        scope (deep_architect.core.Scope): Scope object where the output is
-            going to be registered in.
         name (str): Unique name with which to register the output object.
     """
 
-    def __init__(self, module, scope, name):
+    def __init__(self, module, name):
         name = '.'.join([module.get_name(), 'O', name])
-        super().__init__(scope, name)
+        super().__init__(name)
 
         self.module = module
         self.to_inputs = []
@@ -496,21 +491,13 @@ class Module(Addressable):
         output_names (list[str]): List of the output names of the module.
         name_to_hyperp (dict[str, deep_architect.core.Hyperparameter]):
             Dictionary of names of hyperparameters to hyperparameters.
-        scope (deep_architect.core.Scope, optional): Scope object where the
-            module is going to be registered in.
         name (str, optional): Unique name with which to register the module.
     """
 
-    def __init__(self,
-                 input_names,
-                 output_names,
-                 name_to_hyperp,
-                 scope=None,
-                 name=None):
-        scope = scope if scope is not None else Scope.default_scope
-        name = scope.get_unused_name('.'.join(
+    def __init__(self, input_names, output_names, name_to_hyperp, name=None):
+        name = Scope.get_unused_name('.'.join(
             ['M', (name if name is not None else self._get_base_name()) + '-']))
-        super().__init__(scope, name)
+        super().__init__(name)
 
         self.inputs = OrderedDict()
         self.outputs = OrderedDict()
@@ -527,7 +514,7 @@ class Module(Addressable):
             raise ValueError("Input %s already exists in module %s" %
                              (name, self.get_name()))
         else:
-            self.inputs[name] = Input(self, self.scope, name)
+            self.inputs[name] = Input(self, name)
 
     def _register_output(self, name):
         """Creates a new output with the chosen local name.
@@ -539,7 +526,7 @@ class Module(Addressable):
             raise ValueError("Output %s already exists in module %s" %
                              (name, self.get_name()))
         else:
-            self.outputs[name] = Output(self, self.scope, name)
+            self.outputs[name] = Output(self, name)
 
     def _register_hyperparameter(self, name, h):
         """Registers an hyperparameter that the module depends on.
@@ -554,7 +541,7 @@ class Module(Addressable):
                              (name, self.get_name()))
         else:
             if not isinstance(h, Hyperparameter):
-                wrapped_h = Hyperparameter(self.scope, "Singleton")
+                wrapped_h = Hyperparameter("Singleton")
                 wrapped_h.assign_value(h)
                 h = wrapped_h
             self.hyperps[name] = h
@@ -657,8 +644,6 @@ class SubstitutionModule(Module):
             name to hyperparameters that are needed for the substitution function.
             The names of the hyperparameters should be in correspondence to the
             name of the arguments of the substitution function.
-        scope ((deep_architect.core.Scope, optional)) Scope in which the module will be
-            registered. If none is given, uses the default scope.
         allow_input_subset (bool): If true, allows the substitution function to
             return a strict subset of the names of the inputs existing before the
             substitution. Otherwise, the dictionary of inputs returned by the
@@ -675,9 +660,8 @@ class SubstitutionModule(Module):
                  name_to_hyperp,
                  allow_input_subset=False,
                  allow_output_subset=False,
-                 scope=None,
                  name=None):
-        super().__init__(input_names, output_names, name_to_hyperp, scope, name)
+        super().__init__(input_names, output_names, name_to_hyperp, name)
 
         self.allow_input_subset = allow_input_subset
         self.allow_output_subset = allow_output_subset

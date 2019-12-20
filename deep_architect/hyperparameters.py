@@ -61,15 +61,13 @@ class Discrete(co.Hyperparameter):
     Args:
         vs (list[object]): List of possible parameter values that the
             hyperparameter can take.
-        scope (deep_architect.core.Scope, optional): The scope in which to register the
-            hyperparameter in.
         name (str, optional): Name from which the name of the hyperparameter
             in the scope is derived.
     """
 
-    def __init__(self, vs, scope=None, name=None):
+    def __init__(self, vs, name=None):
         assert len(vs) > 0
-        super().__init__(scope, name)
+        super().__init__(name)
         self.vs = vs
 
     def _check_value(self, val):
@@ -84,19 +82,19 @@ class Discrete(co.Hyperparameter):
 
 class Bool(Discrete):
 
-    def __init__(self, scope=None, name=None):
+    def __init__(self, name=None):
         Discrete.__init__(self, [0, 1], scope, name)
 
 
 class OneOfK(Discrete):
 
-    def __init__(self, k, scope=None, name=None):
+    def __init__(self, k, name=None):
         Discrete.__init__(self, list(range(k)), scope, name)
 
 
 class OneOfKFactorial(Discrete):
 
-    def __init__(self, k, scope=None, name=None):
+    def __init__(self, k, name=None):
         Discrete.__init__(self, list(range(np.product(np.arange(1, k + 1)))),
                           scope, name)
 

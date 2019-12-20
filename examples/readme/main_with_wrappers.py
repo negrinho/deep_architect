@@ -4,16 +4,10 @@ from keras.models import Model
 from keras.optimizers import RMSprop
 import keras.layers as kl
 
-# import deep_architect.helpers.keras_support as hke
-import deep_architect.modules as mo
-import deep_architect.hyperparameters as hp
-import deep_architect.helpers.common as hco
+import deep_architect as da
 import deep_architect.helpers.keras_support as hke
-import deep_architect.core as co
-import deep_architect.visualization as vi
-from deep_architect.searchers.common import random_specify
 
-D = hp.Discrete
+D = da.Discrete
 
 batch_size = 128
 num_classes = 10
@@ -37,9 +31,9 @@ y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
 def cell(h_units, h_activation, h_rate, h_opt_drop):
-    return mo.siso_sequential([
-        hke.m_fns["Dense"](h_units, h_activation),
-        mo.SISOOptional(lambda: hke.m_fns["Dropout"](h_rate), h_opt_drop)
+    return da.sequential([
+        hke.Dense(h_units, h_activation),
+        da.Optional(lambda: hke.Dropout(h_rate), h_opt_drop)
     ])
 
 
@@ -47,22 +41,23 @@ def model_search_space():
     h_activation = D(['relu', 'sigmoid'])
     h_rate = D([0.0, 0.25, 0.5])
     h_num_repeats = D([1, 2, 4])
-    return mo.siso_sequential([
-        mo.SISORepeat(
+    return da.sequential([
+        da.Repeat(
             lambda: cell(D([256, 512, 1024]), h_activation, D([0.2, 0.5, 0.7]),
                          D([0, 1])), h_num_repeats),
-        hke.m_fns["Dense"](num_classes, 'softmax')
+        hke.Dense(num_classes, 'softmax')
     ])
 
 
-(inputs, outputs) = mo.SearchSpaceFactory(model_search_space).get_search_space()
-random_specify(outputs)
+# NOTE: this can be more polished, honestly.
+searcher = da.RandomSearcher(model_search_space)
+inputs, outputs, _, _ = searcher.sample()
 inputs_val = kl.Input((784,))
-output_name_to_val = hco.simplified_compile_forward(inputs, outputs,
-                                                    {"in": inputs_val})
-outputs_val = output_name_to_val["out"]
+output_name_to_val = da.simplified_compile_forward(inputs, outputs,
+                                                   {"in0": inputs_val})
+outputs_val = output_name_to_val["out0"]
 
-vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
+da.draw_graph(outputs, draw_module_hyperparameter_info=False)
 model = Model(inputs=inputs_val, outputs=outputs_val)
 model.summary()
 

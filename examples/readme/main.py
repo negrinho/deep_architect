@@ -4,13 +4,7 @@ from keras.models import Model
 from keras.optimizers import RMSprop
 import keras.layers as kl
 
-# import deep_architect.helpers.keras_support as hke
-import deep_architect.modules as mo
-import deep_architect.hyperparameters as hp
-import deep_architect.helpers.common as hco
-import deep_architect.core as co
-import deep_architect.visualization as vi
-from deep_architect.searchers.common import random_specify
+import deep_architect as da
 
 batch_size = 128
 num_classes = 10
@@ -32,20 +26,11 @@ print(x_test.shape[0], 'test samples')
 y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
-# model = Sequential()
-# model.add(Dense(512, activation='relu', input_shape=(784,)))
-# model.add(Dropout(0.2))
-# model.add(Dense(512, activation='relu'))
-# model.add(Dropout(0.2))
-# model.add(Dense(num_classes, activation='softmax'))
 
-D = hp.Discrete
-
-
-class Dense(co.Module):
+class Dense(da.Module):
 
     def __init__(self, h_units, h_activation):
-        super().__init__(["in"], ["out"], {
+        super().__init__(["in0"], ["out0"], {
             "units": h_units,
             "activation": h_activation
         })
@@ -55,49 +40,49 @@ class Dense(co.Module):
         self.m = kl.Dense(dh["units"], activation=dh["activation"])
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
-class Dropout(co.Module):
+class Dropout(da.Module):
 
     def __init__(self, h_rate):
-        super().__init__(["in"], ["out"], {"rate": h_rate})
+        super().__init__(["in0"], ["out0"], {"rate": h_rate})
 
     def compile(self):
         self.m = kl.Dropout(self.hyperps["rate"].val)
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 def cell(h_units, h_activation, h_rate, h_opt_drop):
-    return mo.siso_sequential([
+    return da.sequential([
         Dense(h_units, h_activation),
-        mo.SISOOptional(lambda: Dropout(h_rate), h_opt_drop)
+        da.Optional(lambda: Dropout(h_rate), h_opt_drop)
     ])
 
 
 def model_search_space():
-    h_activation = hp.Discrete(['relu', 'sigmoid'])
-    h_rate = hp.Discrete([0.0, 0.25, 0.5])
-    h_num_repeats = hp.Discrete([1, 2, 4])
-    return mo.siso_sequential([
-        mo.SISORepeat(
-            lambda: cell(hp.Discrete([256, 512, 1024]), h_activation,
-                         hp.Discrete([0.2, 0.5, 0.7]), hp.Discrete([0, 1])),
+    h_activation = da.Discrete(['relu', 'sigmoid'])
+    h_rate = da.Discrete([0.0, 0.25, 0.5])
+    h_num_repeats = da.Discrete([1, 2, 4])
+    return da.sequential([
+        da.Repeat(
+            lambda: cell(da.Discrete([256, 512, 1024]), h_activation,
+                         da.Discrete([0.2, 0.5, 0.7]), da.Discrete([0, 1])),
             h_num_repeats),
         Dense(num_classes, 'softmax')
     ])
 
 
-(inputs, outputs) = mo.SearchSpaceFactory(model_search_space).get_search_space()
-random_specify(outputs)
+searcher = da.RandomSearcher(model_search_space)
+(inputs, outputs, _, _) = searcher.sample()
 inputs_val = kl.Input((784,))
-output_name_to_val = hco.simplified_compile_forward(inputs, outputs,
-                                                    {"in": inputs_val})
-outputs_val = output_name_to_val["out"]
+output_name_to_val = da.simplified_compile_forward(inputs, outputs,
+                                                   {"in0": inputs_val})
+outputs_val = output_name_to_val["out0"]
 
-vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
+da.draw_graph(outputs, draw_module_hyperparameter_info=False)
 model = Model(inputs=inputs_val, outputs=outputs_val)
 model.summary()
 

@@ -82,10 +82,10 @@ def simplified_compile_forward(inputs, outputs, name_to_input_val):
     module_eval_seq = co.determine_module_eval_seq(inputs)
     x = co.determine_input_output_cleanup_seq(inputs)
     input_cleanup_seq, output_cleanup_seq = x
-    output_name_to_val = compile_forward(inputs, outputs, name_to_input_val,
+    name_to_output_val = compile_forward(inputs, outputs, name_to_input_val,
                                          module_eval_seq, input_cleanup_seq,
                                          output_cleanup_seq)
-    return output_name_to_val
+    return name_to_output_val
 
 
 class Model:
@@ -115,40 +115,39 @@ class Model:
 
 class SISOWrappedModule(co.Module):
 
-    def __init__(self, fn, scope=None, name=None, *args, **kwargs):
+    def __init__(self, fn, name=None, *args, **kwargs):
         name = name if name is not None else fn.__name__
         name_to_hyperp = get_name_to_hyperp(fn, args, kwargs)
-        super().__init__(["in"], ["out"], name_to_hyperp, scope, name)
+        super().__init__(["in0"], ["out0"], name_to_hyperp, name)
         self.fn = fn
+        self.is_compiled = False
 
     def compile(self):
-        dh = self._get_hyperp_values()
-        self.m = self.fn(**dh)
+        if not self.is_compiled:
+            dh = self._get_hyperp_values()
+            self.m = self.fn(**dh)
+            self.is_compiled = True
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class MIMOWrappedModule(co.Module):
 
-    def __init__(self,
-                 fn,
-                 num_inputs,
-                 num_outputs,
-                 scope=None,
-                 name=None,
-                 *args,
-                 **kwargs):
+    def __init__(self, fn, num_inputs, num_outputs, name=None, *args, **kwargs):
         name = name if name is not None else fn.__name__
         name_to_hyperp = get_name_to_hyperp(fn, args, kwargs)
         super().__init__(["in%d" % i for i in range(num_inputs)],
                          ["out%d" % i for i in range(num_outputs)],
-                         name_to_hyperp, scope, name)
+                         name_to_hyperp, name)
         self.fn = fn
+        self.is_compiled = False
 
     def compile(self):
-        dh = self._get_hyperp_values()
-        self.m = self.fn(**dh)
+        if not self.is_compiled:
+            dh = self._get_hyperp_values()
+            self.m = self.fn(**dh)
+            self.is_compiled = True
 
     def forward(self):
         args = [self.inputs["in%d" % i].val for i in range(len(self.inputs))]
@@ -163,34 +162,37 @@ class ListWrappedModule(co.Module):
     concat and add).
     """
 
-    def __init__(self, fn, num_inputs, scope=None, name=None, *args, **kwargs):
+    def __init__(self, fn, num_inputs, name=None, *args, **kwargs):
         name = name if name is not None else fn.__name__
         name_to_hyperp = get_name_to_hyperp(fn, args, kwargs)
-        super().__init__(["in%d" for i in range(num_inputs)], ["out"],
-                         name_to_hyperp, scope, name)
+        super().__init__(["in%d" for i in range(num_inputs)], ["out0"],
+                         name_to_hyperp, name)
         self.fn = fn
+        self.is_compiled = False
 
     def compile(self):
-        dh = self._get_hyperp_values()
-        self.m = self.fn(**dh)
+        if not self.is_compiled:
+            dh = self._get_hyperp_values()
+            self.m = self.fn(**dh)
+            self.is_compiled = True
 
     def forward(self):
         lst = [self.inputs["in%i" % i].val for i in range(len(self.inputs))]
-        self.outputs["out"].val = self.m(lst)
+        self.outputs["out0"].val = self.m(lst)
 
 
 # TODO: change this is accordance after other types are introduced.
-def get_siso_wrapped_module(fn, scope=None, name=None, **kwargs):
+def get_siso_wrapped_module(fn, name=None, **kwargs):
 
     def wrapped_fn(*args, **kwargs):
-        return SISOWrappedModule(fn, scope, name, *args, **kwargs)
+        return SISOWrappedModule(fn, name, *args, **kwargs)
 
     return wrapped_fn
 
 
-def get_siso_wrapped_module_io(fn, scope=None, name=None, **kwargs):
+def get_siso_wrapped_module_io(fn, name=None, **kwargs):
 
     def wrapped_fn(*args, **kwargs):
-        return SISOWrappedModule(fn, scope, name, *args, **kwargs).get_io()
+        return SISOWrappedModule(fn, name, *args, **kwargs).get_io()
 
     return wrapped_fn

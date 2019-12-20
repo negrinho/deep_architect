@@ -105,3 +105,10 @@ fns = [
 raw_fns = {f.__name__: f for f in fns}
 m_fns = {f.__name__: hco.get_siso_wrapped_module(f) for f in fns}
 io_fns = {f.__name__.lower(): hco.get_siso_wrapped_module_io(f) for f in fns}
+
+g = globals()
+for name, fn in m_fns.items():
+    g[name] = fn
+
+for name, fn in io_fns.items():
+    g[name] = fn

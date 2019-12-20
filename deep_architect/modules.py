@@ -1,63 +1,43 @@
 import deep_architect.core as co
+import deep_architect.hyperparameters as hp
 import itertools
 
-# def _get_name(name, default_name):
-#     # the default name is chosen if name is None
-#     return name if name is not None else default_name
+# TODO: move to non-named inputs and outputs. this is closer to pytorch.
 
 
 def get_io_if_module(x):
     return x.get_io() if isinstance(x, co.Module) else x
 
 
-# def map_to_io_name(s):
-#     out_s = []
-#     # if (s.startswith('SISO') or s.startswith('MIMO') or s.startswith('SIMO') or
-#     #         s.startswith('MISO')):
-#     #     prefix = s[:4].lower()
-#     #     out_s.append(prefix + "_")
-#     #     s = s[4:]
-
-#     prev_upper = False
-#     for i, c in enumerate(s):
-#         if i > 0 and c.isupper() and not prev_upper:
-#             out_s.append('_')
-#         out_s.append(c.lower())
-#         prev_upper = c.isupper()
-#     return ''.join(out_s)
-
-
 class Identity(co.Module):
     """Module passes the input to the output without changes.
 
     Args:
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive
             the name.
     """
 
-    def __init__(self, scope=None, name=None):
-        super().__init__(["in"], ["out"], {}, scope, name)
+    def __init__(self, name=None):
+        super().__init__(["in0"], ["out0"], {}, name)
 
     def compile(self):
         pass
 
     def forward(self):
-        self.outputs['out'].val = self.inputs['in'].val
+        self.outputs['out0'].val = self.inputs['in0'].val
 
 
 class HyperparameterAggregator(co.Module):
 
-    def __init__(self, name_to_hyperp, scope=None, name=None):
-        super().__init__(["in"], ["out"], name_to_hyperp, scope, name)
+    def __init__(self, name_to_hyperp, name=None):
+        super().__init__(["in0"], ["out0"], name_to_hyperp, name)
 
     def compile(self):
         pass
 
     def forward(self):
-        self.outputs['out'].val = self.inputs['in'].val
+        self.outputs['out0'].val = self.inputs['in0'].val
 
 
 def get_hyperparameter_aggregators(outputs):
@@ -65,7 +45,7 @@ def get_hyperparameter_aggregators(outputs):
                              lambda m: isinstance(m, HyperparameterAggregator))
 
 
-class MIMOOr(co.SubstitutionModule):
+class Choose(co.SubstitutionModule):
     """Implements an or substitution operation.
 
     The hyperparameter takes values that are valid indices for the list of
@@ -85,10 +65,8 @@ class MIMOOr(co.SubstitutionModule):
             List of possible substitution functions.
         h_choice (deep_architect.core.Hyperparameter): Hyperparameter that chooses which
             function in the list is called to do the substitution.
-        input_names (list[str]): List of inputs names of the module.
-        output_names (list[str]): List of the output names of the module.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
+        input_names (list[str]): List of inputs names of the module. ::: outdated
+        output_names (list[str]): List of the output names of the module. ::: outdated
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive
             the name.
@@ -99,16 +77,11 @@ class MIMOOr(co.SubstitutionModule):
             substitution module.
     """
 
-    def __init__(self,
-                 fn_lst,
-                 h_choice,
-                 input_names,
-                 output_names,
-                 scope=None,
+    def __init__(self, fn_lst, h_choice, num_inputs=1, num_outputs=1,
                  name=None):
-        super().__init__(input_names,
-                         output_names, {"choice": h_choice},
-                         scope=scope,
+        super().__init__(["in%d" for i in range(num_inputs)],
+                         ["out%d" for i in range(num_outputs)],
+                         {"choice": h_choice},
                          name=name)
         self.fn_lst = fn_lst
 
@@ -118,7 +91,7 @@ class MIMOOr(co.SubstitutionModule):
         return get_io_if_module(x)
 
 
-class MIMONestedRepeat(co.SubstitutionModule):
+class NestedRepeat(co.SubstitutionModule):
     """Nested repetition substitution module.
 
     The first function function returns a dictionary of inputs and a dictionary
@@ -140,10 +113,8 @@ class MIMONestedRepeat(co.SubstitutionModule):
             value of the hyperparameter for the number of repeats.
         h_num_repeats (deep_architect.core.Hyperparameter): Hyperparameter for how
             many times should the iterative construct be repeated.
-        input_names (list[str]): List of the input names of the substitution module.
-        output_name (list[str]): List of the output names of the substitution module.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is give`n, uses the default scope.
+        input_names (list[str]): List of the input names of the substitution module. :::outdated
+        output_names (list[str]): List of the output names of the substitution module. :::outdated
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive
             the name.
@@ -158,13 +129,12 @@ class MIMONestedRepeat(co.SubstitutionModule):
                  fn_first,
                  fn_iter,
                  h_num_repeats,
-                 input_names,
-                 output_names,
-                 scope=None,
+                 num_inputs=1,
+                 num_outputs=1,
                  name=None):
-        super().__init__(input_names,
-                         output_names, {"num_repeats": h_num_repeats},
-                         scope=scope,
+        super().__init__(["in%d" for i in range(num_inputs)],
+                         ["out%d" for i in range(num_outputs)],
+                         {"num_repeats": h_num_repeats},
                          name=name)
         self.fn_first = fn_first
         self.fn_iter = fn_iter
@@ -184,94 +154,7 @@ class MIMONestedRepeat(co.SubstitutionModule):
         return inputs, outputs
 
 
-class SISONestedRepeat(MIMONestedRepeat):
-    """Nested repetition substitution module.
-
-    Similar to :func:`mimo_nested_repeat`, the only difference being that in this
-    case the function returns an or substitution module that has a single input
-    and a single output.
-
-    The first function function returns a dictionary of inputs and a dictionary
-    of outputs, and it is always called. The second function takes the previous
-    dictionaries of inputs and outputs and returns new dictionaries of inputs
-    and outputs. The resulting network fragment is used in the place of the
-    current substitution module.
-
-    Args:
-        fn_first (() -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output])):
-            Function that returns the first network fragment, represented as
-            dictionary of inputs and outputs.
-        fn_iter ((dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output]) -> (dict[str, deep_architect.core.Input], dict[str, deep_architect.core.Output])):
-            Function that takes the previous dictionaries of inputs and outputs
-            and it is applied to generate the new dictionaries of inputs
-            and outputs. This function is applied one time less that the
-            value of the number of repeats hyperparameter.
-        h_num_repeats (deep_architect.core.Hyperparameter): Hyperparameter for how
-            many times to repeat the iterative construct.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
-        name (str, optional): Name used to derive an unique name for the
-            module. If none is given, uses the class name to derive
-            the name.
-
-    Returns:
-        (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
-            Tuple with dictionaries with the inputs and outputs of the
-            substitution module.
-    """
-
-    def __init__(self,
-                 fn_first,
-                 fn_iter,
-                 h_num_repeats,
-                 input_names,
-                 output_names,
-                 scope=None,
-                 name=None):
-        super().__init__(fn_first,
-                         fn_iter,
-                         h_num_repeats, ["in"], ["out"],
-                         scope=scope,
-                         name=name)
-
-
-class SISOOr(MIMOOr):
-    """Implements an or substitution operation.
-
-    The hyperparameter takes values that are valid indices for the list of
-    possible substitution functions. The substitution function chosen is used to
-    replace the current substitution module, with connections changed appropriately.
-
-    See also :func:`mimo_or`.
-
-    .. note::
-        The current implementation also works if ``fn_lst`` is an indexable
-        object (e.g., a dictionary), and the ``h_choice`` takes values that
-        are valid indices for the dictionary.
-
-    Args:
-        fn_lst (list[() -> (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output])]):
-            List of possible substitution functions.
-        h_choice (deep_architect.core.Hyperparameter): Hyperparameter that chooses which
-            function in the list is called to do the substitution.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
-        name (str, optional): Name used to derive an unique name for the
-            module. If none is given, uses the class name to derive the name.
-
-    Returns:
-        (dict[str,deep_architect.core.Input], dict[str,deep_architect.core.Output]):
-            Tuple with dictionaries with the inputs and outputs of the
-            substitution module.
-    """
-
-    def __init__(self, fn_lst, h_choice, scope=None, name=None):
-        super().__init__(["in"], ["out"], {"choice": h_choice},
-                         scope=scope,
-                         name=name)
-
-
-class SISORepeat(co.SubstitutionModule):
+class Repeat(co.SubstitutionModule):
     """Calls the function multiple times and connects the resulting graph
     fragments sequentially.
 
@@ -280,8 +163,6 @@ class SISORepeat(co.SubstitutionModule):
             Function returning a graph fragment corresponding to a sub-search space.
         h_num_repeats (deep_architect.core.Hyperparameter): Hyperparameter for the number
             of times to repeat the search space returned by the function.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive the name.
 
@@ -291,9 +172,8 @@ class SISORepeat(co.SubstitutionModule):
             substitution module.
     """
 
-    def __init__(self, fn, h_num_repeats, scope=None, name=None):
-        super().__init__(["in"], ["out"], {"num_repeats": h_num_repeats},
-                         scope=scope,
+    def __init__(self, fn, h_num_repeats, name=None):
+        super().__init__(["in0"], ["out0"], {"num_repeats": h_num_repeats},
                          name=name)
         self.fn = fn
 
@@ -304,10 +184,10 @@ class SISORepeat(co.SubstitutionModule):
                 "Number of repeats must be greater than zero. Assigned value: %d"
                 % num_repeats)
 
-        return siso_sequential([self.fn() for _ in range(num_repeats)])
+        return sequential([self.fn() for _ in range(num_repeats)])
 
 
-class SISOOptional(co.SubstitutionModule):
+class Optional(co.SubstitutionModule):
     """Substitution module that determines to include or not the search
     space returned by `fn`.
 
@@ -322,8 +202,6 @@ class SISOOptional(co.SubstitutionModule):
             Function returning a graph fragment corresponding to a sub-search space.
         h_opt (deep_architect.core.Hyperparameter): Hyperparameter for whether to
             include the sub-search space or not.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive the name.
 
@@ -333,10 +211,9 @@ class SISOOptional(co.SubstitutionModule):
             substitution module.
     """
 
-    def __init__(self, fn, h_opt, scope=None, name=None):
-        super().__init__(["in"], ["out"], {"opt": h_opt},
-                         scope=scope,
-                         name=name)
+    def __init__(self, fn, h_opt=None, name=None):
+        h_opt = hp.Bool() if h_opt is None else h_opt
+        super().__init__(["in0"], ["out0"], {"opt": h_opt}, name=name)
         self.fn = fn
 
     def substitute(self):
@@ -345,7 +222,7 @@ class SISOOptional(co.SubstitutionModule):
         return get_io_if_module(x)
 
 
-class SISOPermutation(co.SubstitutionModule):
+class Permutation(co.SubstitutionModule):
     """Substitution module that permutes the sub-search spaces returned by the
     functions in the list and connects them sequentially.
 
@@ -360,8 +237,6 @@ class SISOPermutation(co.SubstitutionModule):
             List of substitution functions.
         h_perm (deep_architect.core.Hyperparameter): Hyperparameter that chooses the
             permutation of the list to consider.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive the name.
 
@@ -371,10 +246,9 @@ class SISOPermutation(co.SubstitutionModule):
             substitution module.
     """
 
-    def __init__(self, fn_lst, h_perm, scope=None, name=None):
-        super().__init__(["in"], ["out"], {"perm_idx": h_perm},
-                         scope=scope,
-                         name=name)
+    def __init__(self, fn_lst, h_perm=None, name=None):
+        h_perm = hp.OneOfKFactorial(len(fn_lst)) if h_perm is None else h_perm
+        super().__init__(["in0"], ["out0"], {"perm_idx": h_perm}, name=name)
         self.fn_lst = fn_lst
 
     def substitute(self):
@@ -382,10 +256,10 @@ class SISOPermutation(co.SubstitutionModule):
         g = itertools.permutations(range(len(self.fn_lst)))
         for _ in range(perm_idx + 1):
             indices = next(g)
-        return siso_sequential([self.fn_lst[i]() for i in indices])
+        return sequential([self.fn_lst[i]() for i in indices])
 
 
-class SISOSplitCombine(co.SubstitutionModule):
+class SplitCombine(co.SubstitutionModule):
     """Substitution module that create a number of parallel single-input
     single-output search spaces by calling the first function, and then combines
     all outputs with a multiple-input single-output search space returned by the
@@ -408,8 +282,6 @@ class SISOSplitCombine(co.SubstitutionModule):
             of branches and combines them into a single output.
         h_num_splits (deep_architect.core.Hyperparameter): Hyperparameter for the
             number of parallel search spaces generated with the first function.
-        scope (deep_architect.core.Scope, optional): Scope in which the module will be
-            registered. If none is given, uses the default scope.
         name (str, optional): Name used to derive an unique name for the
             module. If none is given, uses the class name to derive the name.
 
@@ -419,9 +291,8 @@ class SISOSplitCombine(co.SubstitutionModule):
             resulting search space graph.
     """
 
-    def __init__(self, fn, combine_fn, h_num_splits, scope=None, name=None):
-        super().__init__(["in"], ["out"], {'num_splits': h_num_splits},
-                         scope=scope,
+    def __init__(self, fn, combine_fn, h_num_splits, name=None):
+        super().__init__(["in0"], ["out0"], {'num_splits': h_num_splits},
                          name=name)
         self.fn = fn
         self.combine_fn = combine_fn
@@ -435,13 +306,13 @@ class SISOSplitCombine(co.SubstitutionModule):
 
         i_inputs, i_outputs = Identity().get_io()
         for i in range(num_splits):
-            i_outputs['out'].connect(inputs_lst[i]['in'])
-            c_inputs['in' + str(i)].connect(outputs_lst[i]['out'])
+            i_outputs['out0'].connect(inputs_lst[i]['in0'])
+            c_inputs['in%d' % i].connect(outputs_lst[i]['out0'])
         return i_inputs, c_outputs
 
 
 def preproc_apply_postproc(preproc_fn, apply_fn, postproc_fn):
-    return siso_sequential([preproc_fn(), apply_fn(), postproc_fn()])
+    return sequential([preproc_fn(), apply_fn(), postproc_fn()])
 
 
 class DenseBlock(co.Module):
@@ -451,9 +322,8 @@ class DenseBlock(co.Module):
                  h_end_in_combine,
                  apply_fn,
                  combine_fn,
-                 scope=None,
                  name=None):
-        super().__init__(["in"], ["out"], {
+        super().__init__(["in0"], ["out0"], {
             "num_applies": h_num_applies,
             "end_in_combine": h_end_in_combine
         })
@@ -469,14 +339,14 @@ class DenseBlock(co.Module):
         for idx in range(dh["num_applies"]):
             x = self.apply_fn()
             (a_inputs, a_outputs) = get_io_if_module(x)
-            a_inputs['in'].connect(prev_c_outputs[-1]["out"])
+            a_inputs['in0'].connect(prev_c_outputs[-1]["out"])
             prev_a_outputs.append(a_outputs)
 
             if idx < dh["num_applies"] - 1 or dh["end_in_combine"]:
                 x = self.combine_fn(idx + 2)
                 (c_inputs, c_outputs) = get_io_if_module(x)
                 for i, iter_outputs in enumerate(prev_a_outputs):
-                    c_inputs["in%d" % i].connect(iter_outputs["out"])
+                    c_inputs["in%d" % i].connect(iter_outputs["out0"])
                 prev_c_outputs.append(c_outputs)
 
         if dh["end_in_combine"]:
@@ -486,7 +356,7 @@ class DenseBlock(co.Module):
         return (i_inputs, o_outputs)
 
 
-def siso_residual(main_fn, residual_fn, combine_fn):
+def residual(main_fn, residual_fn, combine_fn):
     """Residual connection of two functions returning search spaces encoded
     as pairs of dictionaries of inputs and outputs.
 
@@ -522,16 +392,16 @@ def siso_residual(main_fn, residual_fn, combine_fn):
     (c_inputs, c_outputs) = get_io_if_module(combine_fn())
 
     i_inputs, i_outputs = Identity().get_io()
-    i_outputs['out'].connect(m_inputs['in'])
-    i_outputs['out'].connect(r_inputs['in'])
+    i_outputs['out0'].connect(m_inputs['in0'])
+    i_outputs['out0'].connect(r_inputs['in0'])
 
-    m_outputs['out'].connect(c_inputs['in0'])
-    r_outputs['out'].connect(c_inputs['in1'])
+    m_outputs['out0'].connect(c_inputs['in0'])
+    r_outputs['out0'].connect(c_inputs['in1'])
 
     return i_inputs, c_outputs
 
 
-def siso_sequential(io_lst):
+def sequential(io_lst):
     """Connects in a serial connection a list of dictionaries of the inputs and
     outputs encoding single-input single-output search spaces.
 
@@ -549,7 +419,7 @@ def siso_sequential(io_lst):
     io_lst = [get_io_if_module(x) for x in io_lst]
     prev_outputs = io_lst[0][1]
     for next_inputs, next_outputs in io_lst[1:]:
-        prev_outputs['out'].connect(next_inputs['in'])
+        prev_outputs['out0'].connect(next_inputs['in0'])
         prev_outputs = next_outputs
     return io_lst[0][0], io_lst[-1][1]
 
@@ -560,8 +430,8 @@ def buffer_io(inputs, outputs):
     for name, ix in inputs.items():
         if isinstance(ix.get_module(), co.SubstitutionModule):
             b_inputs, b_outputs = Identity().get_io()
-            b_outputs['out'].connect(ix)
-            buffered_ix = b_inputs['in']
+            b_outputs['out0'].connect(ix)
+            buffered_ix = b_inputs['in0']
         else:
             buffered_ix = ix
         buffered_inputs[name] = buffered_ix
@@ -570,8 +440,8 @@ def buffer_io(inputs, outputs):
     for name, ox in outputs.items():
         if isinstance(ox.get_module(), co.SubstitutionModule):
             b_inputs, b_outputs = Identity().get_io()
-            ox.connect(b_inputs['in'])
-            buffered_ox = b_outputs['out']
+            ox.connect(b_inputs['in0'])
+            buffered_ox = b_outputs['out0']
         else:
             buffered_ox = ox
         buffered_outputs[name] = buffered_ox
@@ -611,8 +481,8 @@ def remove_inner_identities(inputs):
 
     def fn(m):
         if isinstance(m, Identity):
-            ix = m.inputs["in"]
-            ox = m.outputs["out"]
+            ix = m.inputs["in0"]
+            ox = m.outputs["out0"]
             if ix.is_connected() and ox.is_connected():
                 ox_to_m = ix.get_connected_output()
                 ix.disconnect()
@@ -633,10 +503,14 @@ def get_wrapped_fn_io(fn):
 
 
 fns = [
-    Identity, HyperparameterAggregator, MIMOOr, MIMONestedRepeat,
-    SISONestedRepeat, SISOOr, SISORepeat, SISOOptional, SISOPermutation,
-    SISOSplitCombine, DenseBlock
+    Identity, HyperparameterAggregator, Choose, NestedRepeat, Repeat, Optional,
+    Permutation, SplitCombine, DenseBlock
 ]
 
 m_fns = {f.__name__: f for f in fns}
 io_fns = {f.__name__.lower(): get_wrapped_fn_io(f) for f in fns}
+
+g = globals()
+for name, fn in io_fns.items():
+    g[name] = fn
+del g

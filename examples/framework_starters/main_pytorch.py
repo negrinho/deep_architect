@@ -15,27 +15,27 @@ import deep_architect.helpers.pytorch_support as hpt
 import deep_architect.searchers.random as se
 from deep_architect.helpers.pytorch_support import PyTorchModel
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class Dense(co.Module):
 
     def __init__(self, h_units):
-        super().__init__(["in"], ["out"], {"units": h_units})
+        super().__init__(["in0"], ["out0"], {"units": h_units})
 
     def compile(self):
         units = self.hyperps["units"].get_value()
-        x = self.inputs["in"].val
+        x = self.inputs["in0"].val
         self.m = nn.Linear(x.size(1), units)
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class Nonlinearity(co.Module):
 
     def __init__(self, h_nonlin_name):
-        super().__init__(["in"], ["out"], {"nonlin_name": h_nonlin_name})
+        super().__init__(["in0"], ["out0"], {"nonlin_name": h_nonlin_name})
 
     def compile(self):
         nonlin_name = self.hyperps["nonlin_name"].val
@@ -49,43 +49,43 @@ class Nonlinearity(co.Module):
             raise ValueError
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class Dropout(co.Module):
 
     def __init__(self, h_drop_rate):
-        super().__init__(["in"], ["out"], {"drop_rate": h_drop_rate})
+        super().__init__(["in0"], ["out0"], {"drop_rate": h_drop_rate})
 
     def compile(self):
         self.hyperps["drop_rate"].val
         self.m = nn.Dropout()
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 class BatchNormalization(co.Module):
 
     def __init__(self):
-        super().__init__(["in"], ["out"], {})
+        super().__init__(["in0"], ["out0"], {})
 
     def compile(self):
-        in_features = self.inputs['in'].val.size(1)
+        in_features = self.inputs['in0'].val.size(1)
         self.m = nn.BatchNorm1d(in_features)
 
     def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
+        self.outputs["out0"].val = self.m(self.inputs["in0"].val)
 
 
 def dnn_cell(h_num_hidden, h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
              h_drop_rate):
-    return mo.siso_sequential([
+    return mo.sequential([
         Dense(h_num_hidden),
         Nonlinearity(h_nonlin_name),
-        mo.SISOPermutation([
-            lambda: mo.SISOOptional(lambda: Dropout(h_drop_rate), h_opt_drop),
-            lambda: mo.SISOOptional(lambda: BatchNormalization(), h_opt_bn),
+        mo.Permutation([
+            lambda: mo.Optional(lambda: Dropout(h_drop_rate), h_opt_drop),
+            lambda: mo.Optional(lambda: BatchNormalization(), h_opt_bn),
         ], h_swap)
     ])
 
@@ -95,8 +95,8 @@ def dnn_net(num_classes):
     h_swap = hp.Discrete([0, 1])
     h_opt_drop = hp.Discrete([0, 1])
     h_opt_bn = hp.Discrete([0, 1])
-    return mo.siso_sequential([
-        mo.SISORepeat(
+    return mo.sequential([
+        mo.Repeat(
             lambda: dnn_cell(hp.Discrete([64, 128, 256, 512, 1024]),
                              h_nonlin_name, h_swap, h_opt_drop, h_opt_bn,
                              hp.Discrete([0.25, 0.5, 0.75])),
@@ -130,7 +130,7 @@ class SimpleClassifierEvaluator:
 
     def evaluate(self, inputs, outputs):
         init_data, _ = next(iter(self.train_data))
-        model = hpt.PyTorchModel(inputs, outputs, {'in': init_data})
+        model = hpt.PyTorchModel(inputs, outputs, {'in0': init_data})
         model.to(device)
 
         optimizer = optim.Adam(model.parameters(), lr=self.learning_rate)
@@ -139,8 +139,8 @@ class SimpleClassifierEvaluator:
             for data, target in self.train_data:
                 data, target = data.to(device), target.to(device)
                 optimizer.zero_grad()
-                output = model({'in': data})
-                loss = F.cross_entropy(output["out"], target)
+                output = model({'in0': data})
+                loss = F.cross_entropy(output["out0"], target)
                 loss.backward()
                 optimizer.step()
 
@@ -153,8 +153,8 @@ class SimpleClassifierEvaluator:
         correct = 0
         with torch.no_grad():
             for data, target in self.val_data:
-                output = model({'in': data})
-                pred = output["out"].max(1)[1]
+                output = model({'in0': data})
+                pred = output["out0"].max(1)[1]
                 correct += pred.eq(target).sum().item()
         val_acc = float(correct) / len(self.val_dataset)
         print("validation accuracy: %0.4f" % val_acc)
