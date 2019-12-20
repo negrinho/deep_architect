@@ -49,7 +49,6 @@ def model_search_space():
     ])
 
 
-# NOTE: this can be more polished, honestly.
 searcher = da.RandomSearcher(model_search_space)
 inputs, outputs, _, _ = searcher.sample()
 inputs_val = kl.Input((784,))

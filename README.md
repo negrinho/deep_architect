@@ -63,13 +63,10 @@ from keras.models import Model
 from keras.optimizers import RMSprop
 import keras.layers as kl
 
-# import deep_architect.helpers.keras_support as hke
-import deep_architect.modules as mo
-import deep_architect.hyperparameters as hp
-import deep_architect.helpers.common as hco
-import deep_architect.core as co
-import deep_architect.visualization as vi
-from deep_architect.searchers.common import random_specify
+import deep_architect as da
+import deep_architect.helpers.keras_support as hke
+
+D = da.Discrete
 
 batch_size = 128
 num_classes = 10
@@ -91,48 +88,11 @@ print(x_test.shape[0], 'test samples')
 y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
-# model = Sequential()
-# model.add(Dense(512, activation='relu', input_shape=(784,)))
-# model.add(Dropout(0.2))
-# model.add(Dense(512, activation='relu'))
-# model.add(Dropout(0.2))
-# model.add(Dense(num_classes, activation='softmax'))
-
-D = hp.Discrete
-
-
-class Dense(co.Module):
-
-    def __init__(self, h_units, h_activation):
-        super().__init__(["in"], ["out"], {
-            "units": h_units,
-            "activation": h_activation
-        })
-
-    def compile(self):
-        dh = self._get_hyperp_values()
-        self.m = kl.Dense(dh["units"], activation=dh["activation"])
-
-    def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
-
-
-class Dropout(co.Module):
-
-    def __init__(self, h_rate):
-        super().__init__(["in"], ["out"], {"rate": h_rate})
-
-    def compile(self):
-        self.m = kl.Dropout(self.hyperps["rate"].val)
-
-    def forward(self):
-        self.outputs["out"].val = self.m(self.inputs["in"].val)
-
 
 def cell(h_units, h_activation, h_rate, h_opt_drop):
-    return mo.siso_sequential([
-        Dense(h_units, h_activation),
-        mo.SISOOptional(lambda: Dropout(h_rate), h_opt_drop)
+    return da.sequential([
+        hke.Dense(h_units, h_activation),
+        da.Optional(lambda: hke.Dropout(h_rate), h_opt_drop)
     ])
 
 
@@ -140,22 +100,22 @@ def model_search_space():
     h_activation = D(['relu', 'sigmoid'])
     h_rate = D([0.0, 0.25, 0.5])
     h_num_repeats = D([1, 2, 4])
-    return mo.siso_sequential([
-        mo.SISORepeat(
+    return da.sequential([
+        da.Repeat(
             lambda: cell(D([256, 512, 1024]), h_activation, D([0.2, 0.5, 0.7]),
                          D([0, 1])), h_num_repeats),
-        Dense(num_classes, 'softmax')
+        hke.Dense(num_classes, 'softmax')
     ])
 
 
-(inputs, outputs) = mo.SearchSpaceFactory(model_search_space).get_search_space()
-random_specify(outputs)
+searcher = da.RandomSearcher(model_search_space)
+inputs, outputs, _, _ = searcher.sample()
 inputs_val = kl.Input((784,))
-output_name_to_val = hco.simplified_compile_forward(inputs, outputs,
-                                                    {"in": inputs_val})
-outputs_val = output_name_to_val["out"]
+output_name_to_val = da.simplified_compile_forward(inputs, outputs,
+                                                   {"in0": inputs_val})
+outputs_val = output_name_to_val["out0"]
 
-vi.draw_graph(outputs, draw_module_hyperparameter_info=False)
+da.draw_graph(outputs, draw_module_hyperparameter_info=False)
 model = Model(inputs=inputs_val, outputs=outputs_val)
 model.summary()
 
@@ -179,9 +139,6 @@ Our search space encodes that our network will be composed of a sequence of *1*,
 Each cell is a sub-search space (underlining the modularity and composability of DeepArchitect).
 The choice of the type of activation for the dense layer in the cell search space is shared among all cell search spaces used.
 All other hyperparameters of the cell search space are chosen independently for each occurrence of the cell search space in the sequence.
-
-The original single Keras model is commented out in the code above to emphasize how little code is needed to support a nontrivial search space.
-We encourage the reader to think about supporting the same search space using existing hyperparameter optimization tools or in an ad-hoc manner (e.g. how much code would be necessary to encode the search space and sample a random architecture from it).
 
 <!-- suggestions on going forward. -->
 The [tutorials](https://deep-architect.readthedocs.io/en/latest/tutorials.html) and [examples](https://github.com/negrinho/deep_architect/tree/master/examples) cover additional aspects of DeepArchitect not shown in the code above.
