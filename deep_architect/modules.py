@@ -79,8 +79,8 @@ class Choose(co.SubstitutionModule):
 
     def __init__(self, fn_lst, h_choice, num_inputs=1, num_outputs=1,
                  name=None):
-        super().__init__(["in%d" for i in range(num_inputs)],
-                         ["out%d" for i in range(num_outputs)],
+        super().__init__(["in%d" % i for i in range(num_inputs)],
+                         ["out%d" % i for i in range(num_outputs)],
                          {"choice": h_choice},
                          name=name)
         self.fn_lst = fn_lst
