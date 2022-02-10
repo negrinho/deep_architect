@@ -62,7 +62,7 @@ setup(
         'numpy',
         'scipy',
         "scikit-learn",
-        "tensorflow==1.15",
+        "tensorflow==2.5.3",
         "torch>=1.2",
         "keras>=2.3",
         "matplotlib",
